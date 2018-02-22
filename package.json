@@ -1,0 +1,22 @@
+{
+  "name": "lab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "scripts/test.sh",
+    "postinstall": "truffle install",
+    "console": "truffle console",
+    "truffle": "truffle"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "debug": "^3.1.0",
+    "ganache-cli": "^6.0.3",
+    "truffle": "^4.0.6"
+  }
+}
