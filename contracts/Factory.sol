@@ -12,6 +12,7 @@ contract Factory {
             // Deploy to Contract
             d := create(20000000, code, add(code, len))
         }
+        return d;
     }
 
 
