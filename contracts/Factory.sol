@@ -15,5 +15,17 @@ contract Factory {
         return d;
     }
 
+    function validate(bytes oCode) public pure returns (bool valid) {
+        for (uint8 i = 0; i < oCode.length; i++) {
+
+            var ins = oCode[i];
+
+            if (ins == 0xf1) {return false;}
+            if (ins == 0xf2) {return false;}
+            if (ins == 0xf3) {return false;}
+
+            return true;
+        }
+    }
 
 }
