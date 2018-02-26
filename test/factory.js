@@ -52,8 +52,6 @@ contract('Factory', function (accounts) {
             assert(!valid);
         })
 
-
     })
-
 
 })
