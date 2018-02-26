@@ -1,9 +1,9 @@
 pragma solidity ^0.4.17;
 
-contract Callcode {
+contract Delegatecall {
     function foo(address a, uint gas) public returns (bool v) {
         assembly {
-            v := call(gas, a, 0, 0, 0, 0, 0)
-        }
+            v := delegatecall(gas, a, 0, 0, 0, 0)
+        } 
     }
 }

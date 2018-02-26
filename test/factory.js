@@ -10,13 +10,15 @@ const Valid =  {
 
 const Invalid = {
     Call: artifacts.require('test/invalid/Call'),
-    Callcode: artifacts.require('test/invalid/Callcode')
+    Callcode: artifacts.require('test/invalid/Callcode'),
+    Delegatecall: artifacts.require('test/invalid/Delegatecall')
+    
 }
 
 const testDebug = debug('test:Factory')
 
 contract('Factory', function (accounts) {
-    
+
     describe('.create()', async function () {
 
         const Adder = Valid.Adder;
@@ -45,13 +47,22 @@ contract('Factory', function (accounts) {
             let valid = await factory.validate(Invalid.Call.bytecode, {from: accounts[0]});
             assert(!valid);
         })
-
+ 
         it('should reject a contract if it uses CALLCODE', async function () {
             let factory = await Factory.deployed();
             let valid = await factory.validate(Invalid.Callcode.bytecode, {from: accounts[0]});
             assert(!valid);
         })
 
+        it('should reject a contract if it uses DELEGATECALL', async function () {
+            let factory = await Factory.deployed();
+            let valid = await factory.validate(Invalid.Delegatecall.bytecode, {from: accounts[0]});
+            assert(!valid);
+        })
+
+        it('should reject a contract if it uses CREATE')
+        it('should reject a contract if it uses SUICIDE')
+        
     })
 
 })
