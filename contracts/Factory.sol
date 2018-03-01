@@ -29,7 +29,7 @@ contract Factory {
 
             // Deploy to Contract
             // TODO: For some reason the first parameter must be zero.
-            d := create(1, code, add(code, len))
+            d := create(0, code, add(code, len))
         }
         return d;
     }
