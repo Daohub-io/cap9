@@ -2,6 +2,13 @@ pragma solidity ^0.4.17;
 
 contract Factory {
 
+    event LogFundsReceived(address sender, uint amount);
+    event LogFundsSent(address receiver, uint amount);
+
+    function() payable {
+        LogFundsReceived(msg.sender, msg.value);
+    }
+
     function codeLength(bytes oCode) public returns (uint len) {
         assembly {
             // Get Length
@@ -20,7 +27,7 @@ contract Factory {
         return code;
     }
 
-    function create(bytes oCode) public returns (address d) {
+    function create(bytes oCode) payable public returns (address d) {
         assembly {
             // Get Length
             let len := mload(oCode)
@@ -28,8 +35,12 @@ contract Factory {
             let code := add(oCode, 0x20)
 
             // Deploy to Contract
-            // TODO: For some reason the first parameter must be zero.
-            d := create(0, code, add(code, len))
+            // TODO: If anything is paid to the new contract, the null address
+            // is returned.
+            create(3, code, add(code, len))
+            // pop
+            // 3
+            =: d
         }
         return d;
     }
