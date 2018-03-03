@@ -8,7 +8,6 @@
   },
   "scripts": {
     "test": "scripts/test.sh",
-    "postinstall": "truffle install",
     "console": "truffle console",
     "truffle": "truffle"
   },
