@@ -27,7 +27,7 @@ contract('Factory', function (accounts) {
         });
     })
 
-    describe('.create()', async function () {
+    describe('.createProcedure()', async function () {
 
         const Adder = Valid.Adder;
         const Multiply = Valid.Multiply;
@@ -52,7 +52,7 @@ contract('Factory', function (accounts) {
         it('should create a sample contract', async function () {
 
             // Peform an ephemeral call to Factory.create
-            let address = await factory.create.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
+            let address = await factory.createProcedure.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
             assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
             assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
         })
@@ -60,8 +60,8 @@ contract('Factory', function (accounts) {
         it('the returned address should be deterministic and valid', async function () {
 
             // Perform two ephemeral calls to factory.create
-            let address1 = await factory.create.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
-            let address2 = await factory.create.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
+            let address1 = await factory.createProcedure.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
+            let address2 = await factory.createProcedure.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
             // Addresses are the same.
             assert.equal(address1, address2);
             // The addresses are valid.
@@ -76,9 +76,9 @@ contract('Factory', function (accounts) {
         it('the returned address should not be deterministic if we make an additional transaction in between', async function () {
 
             // Perform two ephemeral calls to factory.create
-            const address1 = await factory.create.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
-            const tx = await factory.create(Adder.bytecode, {from: accounts[currentAccount], value:1000});
-            const address2 = await factory.create.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
+            const address1 = await factory.createProcedure.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
+            const tx = await factory.createProcedure(Adder.bytecode, {from: accounts[currentAccount], value:1000});
+            const address2 = await factory.createProcedure.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
             // The addresses are valid.
             assert(web3.isAddress(address1), `The returned address (${address1}) is a valid address`);
             assert(web3.isAddress(address2), `The returned address (${address2}) is a valid address`);
@@ -90,8 +90,8 @@ contract('Factory', function (accounts) {
 
         it('the transaction should fail without sufficient wei', async function () {
 
-            // The current code (TODO: parameterise) requires 3 wei, this test sends 0.
-            const address = await factory.create.call(Adder.bytecode, {from: accounts[currentAccount], value:0});
+            // Create a contract with 3 wei, but don't send any.
+            const address = await factory.createProcedureAndPay.call(3, Adder.bytecode, {from: accounts[currentAccount], value:0});
             // The address is expected to be the null address, but it should still be valid
             assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
             // If a null address is returned it means the contract creation failed.
@@ -100,8 +100,8 @@ contract('Factory', function (accounts) {
 
         it('the new contract should function properly', async function () {
 
-            let address = await factory.create.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
-            let tx = await factory.create(Adder.bytecode, {from: accounts[currentAccount], value:1000});
+            let address = await factory.createProcedure.call(Adder.bytecode, {from: accounts[currentAccount], value:1000});
+            let tx = await factory.createProcedure(Adder.bytecode, {from: accounts[currentAccount], value:1000});
             assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
             assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
 
