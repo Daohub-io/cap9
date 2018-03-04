@@ -4,10 +4,10 @@ contract Multiply {
     event LogFundsReceivedMultiply(address sender, uint amount);
     event LogFundsSent(address receiver, uint amount);
 
-    function Multiply() payable {
+    function Multiply() payable public {
         LogFundsReceivedMultiply(msg.sender, msg.value);
     }
-    function() payable {
+    function() payable public {
         LogFundsReceivedMultiply(msg.sender, msg.value);
     }
 

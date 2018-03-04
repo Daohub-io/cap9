@@ -4,10 +4,10 @@ contract Adder {
     event LogFundsReceivedAdder(address sender, uint amount);
     event LogFundsSent(address receiver, uint amount);
 
-    function Adder() payable {
+    function Adder() payable public {
         LogFundsReceivedAdder(msg.sender, msg.value);
     }
-    function() payable {
+    function() payable public {
         LogFundsReceivedAdder(msg.sender, msg.value);
     }
 
