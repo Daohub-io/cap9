@@ -27,6 +27,7 @@ jobs:
           - v1-dependencies-
 
       - run: yarn install
+      - run: chmod +x ./scripts/test.sh
 
       - save_cache:
           paths:
@@ -34,6 +35,10 @@ jobs:
           key: v1-dependencies-{{ checksum "package.json" }}
         
       # run tests!
-      - run: yarn test
+      - run: 
+          name: Running Local EVM Instance
+          command: ./node_modules/.bin/ganache-cli
+          background: true
+      - run: ./node_modules/.bin/truffle test
 
 
