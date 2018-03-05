@@ -14,7 +14,6 @@ contract Factory {
             // Get Length
             len := mload(oCode)
         }
-        return len;
     }
 
     function codePosition(bytes oCode) pure public returns (uint code) {
@@ -24,7 +23,6 @@ contract Factory {
             // Get Code
             code := add(oCode, 0x00)
         }
-        return code;
     }
 
     // As 'createAndPay', but will pay no gas into the contract.
@@ -56,7 +54,6 @@ contract Factory {
             // TODO: catch null address returned here.
             d := create(value, code, add(code, len))
         }
-        return d;
     }
 
     function validate(bytes oCode) public pure returns (bool valid) {
