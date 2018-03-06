@@ -6,7 +6,8 @@ const Kernel = artifacts.require('./Kernel.sol')
 
 // Valid Contracts
 const Valid =  {
-    Adder: artifacts.require('test/valid/Adder.sol')
+    Adder: artifacts.require('test/valid/Adder.sol'),
+    Divide: artifacts.require('test/valid/Divide.sol')
 }
 
 // Test utility functions
@@ -20,7 +21,12 @@ const testAccount = 0;
 contract('Kernel', function (accounts) {
 
     describe('.listProcedures()', function () {
-        it('should return nothing if zero procedures')
+        it('should return nothing if zero procedures', async function() {
+            let kernel = await Kernel.new();
+
+            let procedures = kernel.listProcedures.call();
+            assert.equal(procedures.length, 0);
+        })
         it('should return existing procedure keys')
         it('should return a list of procedures which can be retrieved')
     })
@@ -30,7 +36,7 @@ contract('Kernel', function (accounts) {
 
             // Create "TestAdder"
             // Find the address (ephemerally)
-            let creationAddress = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode);
+            let [err, creationAddress] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode);
             assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`);
             assert(!isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is not null`);
 
@@ -53,7 +59,8 @@ contract('Kernel', function (accounts) {
         it('should create valid procedure', async function () {
             let kernel = await Kernel.new();
 
-            let address = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
+            let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
+            console.log(address)
             let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
 
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
@@ -65,10 +72,12 @@ contract('Kernel', function (accounts) {
             // The returned code should be the same as the sent code
             const code = web3.eth.getCode(address);
             assert.equal(Valid.Adder.deployedBytecode, code);
-        })
+        });
 
+        // TODO: what is an invalid payload?
         it('should reject invalid payload')
 
+        // TODO: define error methods
         describe('should reject invalid key', function () {
             it('excess length')
             it('zero length')
@@ -84,7 +93,7 @@ contract('Kernel', function (accounts) {
         it.skip('should destroy the procedures contract on deletion', async function () {
             let kernel = new Kernel.new();
 
-            let address = await kernel.createProcedure.call("test", Adder.bytecode);
+            let [err, address] = await kernel.createProcedure.call("test", Adder.bytecode);
             let tx1 = await kernel.createProcedure('test', Adder.bytecode)
 
             let delete_address = await kernel.deleteProcedure.call('test');
@@ -105,21 +114,15 @@ contract('Kernel', function (accounts) {
         describe('should return a valid value for', function () {
             it.skip('Adder Procedure', async function () {
                 const kernel = await Kernel.new();
-                let address = await kernel.createProcedure.call("TestAdder", Adder.bytecode, {from: accounts[testAccount]});
-                let tx = await kernel.createProcedure("TestAdder", Adder.bytecode, {from: accounts[testAccount]});
+                let [err, address] = await kernel.createProcedure.call("TestAdder", Adder.bytecode);
+                let tx = await kernel.createProcedure("TestAdder", Adder.bytecode);
                 assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
                 assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
 
-                let tl = await kernel.executeProcedure("TestAdder", {from: accounts[testAccount]});
-                let tc = await kernel.executeProcedure.call("TestAdder", {from: accounts[testAccount]});
-                console.log(tc.toNumber());
-                let adder = Adder.at(address);
-                let two = await adder.add.call(1, 1);
-                assert.equal(two, 2);
-
-                // The returned code should be the same as the sent code
-                const code = web3.eth.getCode(address);
-                assert.equal(Adder.deployedBytecode, code);
+                let tl = await kernel.executeProcedure("TestAdder");
+                let tc = await kernel.executeProcedure.call("TestAdder");
+                console.log("tc.toNumber()", tc.toNumber());
+                assert.equal(tc.toNumber(), 2);
             })
         })
 
@@ -127,7 +130,29 @@ contract('Kernel', function (accounts) {
 
         describe('should return an error if procedure return error when', function () {
             it('recieves invalid arguments')
-            it('throws an error')
+            it('throws an error', async function() {
+                let kernel = await Kernel.new();
+
+                let [err, address] = await kernel.createProcedure.call('TestDivide', Valid.Divide.bytecode)
+                let tx1 = await kernel.createProcedure('TestDivide', Valid.Divide.bytecode)
+
+                assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
+                assert(!isNullAddress(address), 'Procedure Address is not null')
+
+                let divide = Valid.Divide.at(address);
+                assert.equal(await divide.divide.call(8, 2), 4);
+
+                // The returned code should be the same as the sent code
+                const code = web3.eth.getCode(address);
+                assert.equal(Valid.Divide.deployedBytecode, code);
+
+                // Try dividing by zero
+                try {
+                    const divideByZero = await divide.divide.call(8, 0);
+                } catch (e) {
+                    assert.equal(e,"Error: VM Exception while processing transaction: invalid opcode");
+                }
+            });
         })
 
 

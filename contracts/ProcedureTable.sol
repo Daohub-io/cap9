@@ -11,7 +11,7 @@ library ProcedureTable {
         self.table[name] = procedure;
     }
 
-    function get(Self storage self, bytes32 name) internal returns (address p) {
+    function get(Self storage self, bytes32 name) internal view returns (address p) {
         p = self.table[name];
     }
 }

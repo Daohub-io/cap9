@@ -7,7 +7,10 @@ contract Kernel is Factory {
     using ProcedureTable for ProcedureTable.Self;
     ProcedureTable.Self procedures;
 
-    function createProcedure(bytes32 name, bytes oCode) returns (address procedureAddress) {
+    function createProcedure(bytes32 name, bytes oCode) returns (uint err, address procedureAddress) {
+        if (name.length == 0) {
+            err = 1;
+        }
         procedureAddress = create(name, oCode);
         procedures.add(name, procedureAddress);
     }
