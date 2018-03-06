@@ -276,25 +276,42 @@ contract('Kernel', function (accounts) {
     })
 
     describe('.executeProcedure(bytes32 key, bytes payload)', function () {
+        it('should return error if procedure key does not exist(3)', async function() {
+            const kernel = await Kernel.new();
+            const [err, retVal] = await kernel.executeProcedure.call('test','');
+            assert.equal(err, 3);
+            // The return value should be empty (i.e. not zero, but no bytes)
+            assert.equal(retVal, "0x");
+        });
 
         describe('should return a valid value for', function () {
-            it.skip('Adder Procedure', async function () {
+            it('Adder Procedure', async function () {
                 const kernel = await Kernel.new();
-                let [err, address] = await kernel.createProcedure.call("TestAdder", Adder.bytecode);
-                let tx = await kernel.createProcedure("TestAdder", Adder.bytecode);
+                const [err1, address] = await kernel.createProcedure.call("TestAdder", Valid.Adder.bytecode);
+                assert.equal(err1, 0);
+                const tx = await kernel.createProcedure("TestAdder", Valid.Adder.bytecode);
                 assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
                 assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
 
-                let tl = await kernel.executeProcedure("TestAdder");
-                let tc = await kernel.executeProcedure.call("TestAdder");
-                assert.equal(tc.toNumber(), 2);
+                const [err2, retVal] = await kernel.executeProcedure.call("TestAdder",'');
+                assert.equal(err2, 0);
+                const tl = await kernel.executeProcedure("TestAdder",'');
+                // TODO: unpacking of retVal is unlikely to be like below
+                assert.equal(retVal.toNumber(), 2);
             })
         })
 
-        it('should return an error if key does not exist')
+        it('should return an error if key does not exist (3)', async function() {
+            const kernel = await Kernel.new();
+            const [err, retVal] = await kernel.executeProcedure.call('test','');
+            // The error codeshould be 3
+            assert.equal(err, 3);
+            // The return value should be empty (i.e. not zero, but no bytes)
+            assert.equal(retVal, "0x");
+        });
 
         describe('should return an error if procedure return error when', function () {
-            it('recieves invalid arguments')
+            it('receives invalid arguments')
             it('throws an error', async function() {
                 let kernel = await Kernel.new();
 
@@ -320,6 +337,17 @@ contract('Kernel', function (accounts) {
             });
         })
 
+        describe('should reject invalid key', function () {
+            // TODO: excess length is truncated by truffle (or web3)
+            it('zero length (1)', async function() {
+                const kernel = await Kernel.new();
 
+                const [err, retVal] = await kernel.executeProcedure.call('','');
+                assert.equal(err, 1);
+                // The return value should be empty (i.e. not zero, but no bytes)
+                assert.equal(retVal, "0x");
+            });
+            it.skip('excess length (2)')
+        })
     })
 })

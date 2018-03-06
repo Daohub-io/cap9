@@ -47,5 +47,19 @@ contract Kernel is Factory {
         procedureAddress = procedures.get(name);
     }
 
-    function executeProcedure(bytes32 name) public {}
+    function executeProcedure(bytes32 name, bytes payload) public returns (uint8 err, bytes retVal) {
+        // Check whether the first byte is null and set err to 1 if so
+        if (name[0] == 0) {
+            err = 1;
+            return;
+        }
+        // Check whether the address exists
+        address nullAddress;
+        address procedureAddress = procedures.get(name);
+        if (procedureAddress == nullAddress) {
+            err = 3;
+            return;
+        }
+        retVal = procedures.execute(name, payload);
+    }
 }
