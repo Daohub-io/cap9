@@ -126,12 +126,12 @@ contract('Factory', function (accounts) {
             assert(!valid);
         })
 
-        // it('should reject a contract if it uses CALLCODE', async function () {
-        //     let factory = await Factory.deployed();
-        //     await factory.initialize();
-        //     let valid = await factory.validate(Invalid.Callcode.bytecode, {from: accounts[0]});
-        //     assert(!valid);
-        // })
+        it('should reject a contract if it uses CALLCODE', async function () {
+            let factory = await Factory.deployed();
+            await factory.initialize();
+            let valid = await factory.validate(Invalid.Callcode.bytecode, {from: accounts[0]});
+            assert(!valid);
+        })
 
         it('should reject a contract if it uses DELEGATECALL', async function () {
             let factory = await Factory.deployed();
