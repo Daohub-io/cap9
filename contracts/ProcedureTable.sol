@@ -17,6 +17,10 @@ library ProcedureTable {
         self.keys.push(name);
     }
 
+    function remove(Self storage self, bytes32 name) internal returns (address p) {
+
+    }
+
     function get(Self storage self, bytes32 name) internal view returns (address p) {
         p = self.table[name];
     }

@@ -208,25 +208,70 @@ contract('Kernel', function (accounts) {
     })
 
     describe('.deleteProcedure()', function () {
-        it('should return error if procedure key does not exist')
-        it('should return deleted procedure address if procedure key is valid ')
+        it('should return error if procedure key does not exist(3)', async function() {
+            const kernel = await Kernel.new();
+            const [err2, deleteAddress] = await kernel.deleteProcedure.call('test');
+            assert.equal(err2, 3);
+        });
+        it('should return deleted procedure address if procedure key is valid', async function() {
+            const kernel = await Kernel.new();
+
+            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode);
+            assert.equal(err1, 0);
+            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode)
+            const code = web3.eth.getCode(address);
+            const codeAsNumber = web3.toBigNumber(code);
+            // There should be some code at this address now
+            // (here it is returned as a hex, we test the string because we
+            // want to also be sure it is encoded as such)
+            assert.notEqual(code, "0x0");
+
+            const [err2, deleteAddress] = await kernel.deleteProcedure.call('test');
+            assert.equal(err2, 0);
+
+            const tx2 = await kernel.deleteProcedure('test');
+
+            assert.equal(address, deleteAddress);
+        });
 
         // On deletion, kernel should destroy contract instance
-        it.skip('should destroy the procedures contract on deletion', async function () {
-            let kernel = new Kernel.new();
+        it('should destroy the procedures contract on deletion', async function () {
+            const kernel = await Kernel.new();
 
-            let [err, address] = await kernel.createProcedure.call("test", Adder.bytecode);
-            let tx1 = await kernel.createProcedure('test', Adder.bytecode)
+            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode);
+            assert.equal(err1, 0);
+            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode)
+            const code = web3.eth.getCode(address);
+            const codeAsNumber = web3.toBigNumber(code);
+            // There should be some code at this address now
+            // (here it is returned as a hex, we test the string because we
+            // want to also be sure it is encoded as such)
+            assert.notEqual(code, "0x0");
 
-            let delete_address = await kernel.deleteProcedure.call('test');
-            let tx2 = await kernel.deleteProcedure('test');
+            const [err2, deleteAddress] = await kernel.deleteProcedure.call('test');
+            assert.equal(err2, 0);
 
-            assert(false, "How do we test if deleted address is destroyed?")
+            const tx2 = await kernel.deleteProcedure('test');
+
+            assert.equal(address, deleteAddress);
+            const delcode = web3.eth.getCode(deleteAddress);
+            const delcodeAsNumber = web3.toBigNumber(delcode);
+            // If there is nothing at the address it returns the number zero
+            // (here it is returned as a hex, we test the string because we
+            // want to also be sure it is encoded as such)
+            assert.equal(code, "0x0");
         })
 
         describe('should reject invalid key', function () {
-            it('excess length')
-            it('zero length')
+            // TODO: excess length is truncated by truffle (or web3)
+            it('zero length (1)', async function() {
+                const kernel = await Kernel.new();
+
+                const [err, deleteAddress] = await kernel.deleteProcedure.call('');
+                assert.equal(err, 1);
+                // const tx2 = await kernel.deleteProcedure('');
+            });
+            it.skip('excess length (2)')
         })
     })
 

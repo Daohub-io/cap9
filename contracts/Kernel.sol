@@ -22,6 +22,10 @@ contract Kernel is Factory {
         procedures.add(name, procedureAddress);
     }
 
+    function deleteProcedure(bytes32 name) public returns (uint8 err, address procedureAddress) {
+
+    }
+
     function listProcedures() public view returns (bytes32[] listedKeys) {
         listedKeys = procedures.list();
     }
