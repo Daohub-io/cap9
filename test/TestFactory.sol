@@ -15,5 +15,4 @@ contract TestFactory {
         Assert.notEqual(a, 0, "Invalid Address");
         Assert.equal(2, a.add(1,1), "Invalid Contract");
     }
-
 }
