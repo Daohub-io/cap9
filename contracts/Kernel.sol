@@ -12,7 +12,9 @@ contract Kernel is Factory {
         procedures.add(name, procedureAddress);
     }
 
-    // function getProcedure(bytes32 name, bytes oCode) returns (address procedureAddress)
+    function getProcedure(bytes32 name) returns (address procedureAddress) {
+        procedureAddress = procedures.get(name);
+    }
 
     function executeProcedure(bytes32 name) {}
 }
