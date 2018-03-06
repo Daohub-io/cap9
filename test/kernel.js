@@ -93,7 +93,6 @@ contract('Kernel', function (accounts) {
             let kernel = await Kernel.new();
             // No procedures exist yet (nor does "TestAdder")
             let address = await kernel.getProcedure.call('TestAdder');
-            console.log(address)
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
             assert(isNullAddress(address), `Procedure Address (${address}) is null`)
         });
@@ -116,19 +115,95 @@ contract('Kernel', function (accounts) {
             const code = web3.eth.getCode(address);
             assert.equal(Valid.Adder.deployedBytecode, code);
         });
+        it('should create valid procedure (max key length)', async function () {
+            const kernel = await Kernel.new();
+
+            const name = "start123456789012345678901234end";
+            assert.equal(name.length,32);
+            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
+            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
+
+            assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
+            assert(!isNullAddress(address), 'Procedure Address is not null')
+
+            const adder = Valid.Adder.at(address);
+            assert.equal(await adder.add.call(1, 1), 2)
+
+            // The returned code should be the same as the sent code
+            const code = web3.eth.getCode(address);
+            assert.equal(Valid.Adder.deployedBytecode, code);
+
+            // The address should be gettable (TODO)
+            // The correct name should be in the procedures table
+            const proceduresRaw = await kernel.listProcedures.call();
+            const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+            assert(procedures.includes(name), "The correct name is in the procedures table");
+        });
 
         // TODO: what is an invalid payload?
         it('should reject invalid payload')
 
         describe('should reject invalid key', function () {
-            it('excess length')
+            // TODO: this is currently handle by truffle which simply
+            // truncates the the string.
+            it.skip('excess length', async function() {
+                const kernel = await Kernel.new();
+                const name = "start1234567890123456789012345678901234567890end";
+                assert(name.length > 32, `Name length exceeds limit (length: ${name.length})`);
+
+                const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
+                const tx = await kernel.createProcedure(name, Valid.Adder.bytecode)
+
+                const proceduresRaw = await kernel.listProcedures.call();
+                const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+
+                assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
+                assert(isNullAddress(address), `Procedure Address (${address}) is null`)
+            });
             it('zero length', async function() {
                 let kernel = await Kernel.new();
 
-                let [err, address] = await kernel.createProcedure.call('', Valid.Adder.bytecode)
+                let [err, creationAddress] = await kernel.createProcedure.call('', Valid.Adder.bytecode)
                 assert.equal(err,1);
+                assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`)
+                assert(isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is null`)
+
+                const proceduresRaw = await kernel.listProcedures.call();
+                const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+                assert.equal(procedures.length, 0);
+                assert(!procedures.includes(''))
+
+                const address = await kernel.getProcedure.call('');
+                assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
+                assert(isNullAddress(address), 'Procedure Address is null')
             });
-            it('duplicate procedure key')
+            it('duplicate procedure key', async function() {
+                const kernel = await Kernel.new();
+                const name = "TestAdder";
+
+                // This is the first time the procedure is added
+                const [err1, address1] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
+                const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
+
+                // This is the second time the procedure is added
+                const [err2, address2] = await kernel.createProcedure.call(name, Valid.Multiply.bytecode)
+                const tx2 = await kernel.createProcedure(name, Valid.Multiply.bytecode)
+                assert.equal(err2, 3);
+
+                const proceduresRaw = await kernel.listProcedures.call();
+                const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+                assert.equal(procedures.length, 1);
+
+                const address = await kernel.getProcedure.call(name);
+                assert.equal(address, address1);
+                assert.notEqual(address, address2);
+                assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
+                assert(!isNullAddress(address), 'Procedure Address is not null')
+
+                // The returned code should be the same as the original code
+                const code = web3.eth.getCode(address);
+                assert.equal(Valid.Adder.deployedBytecode, code);
+            });
         })
     })
 
@@ -146,8 +221,7 @@ contract('Kernel', function (accounts) {
             let delete_address = await kernel.deleteProcedure.call('test');
             let tx2 = await kernel.deleteProcedure('test');
 
-            // How do we test if deleted address is destroyed???
-
+            assert(false, "How do we test if deleted address is destroyed?")
         })
 
         describe('should reject invalid key', function () {

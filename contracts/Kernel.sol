@@ -11,6 +11,12 @@ contract Kernel is Factory {
         // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             err = 1;
+            return;
+        }
+        address nullAddress;
+        if (procedures.get(name) != nullAddress) {
+            err = 3;
+            return;
         }
         procedureAddress = create(oCode);
         procedures.add(name, procedureAddress);
