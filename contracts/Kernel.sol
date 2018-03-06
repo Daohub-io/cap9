@@ -3,17 +3,14 @@ pragma solidity ^0.4.17;
 import "./Factory.sol";
 import "./ProcedureTable.sol";
 
-contract Kernel {
+contract Kernel is Factory {
     using ProcedureTable for ProcedureTable.Self;
-    Procedure.Self procedures;
+    ProcedureTable.Self procedures;
 
     function createProcedure(bytes32 name, bytes oCode) {
-        var procedureAddress = Factory.createProcedure(oCode);
+        var procedureAddress = create(name, oCode);
         procedures.add(name, procedureAddress);
     }
 
-    function callProcedure(bytes32 name) {
-        var procedureAddress = procedures.get(name);
-        procedures.call(procedureAddress);
-    }
+    function executeProcedure(bytes32 name) {}
 }

@@ -10,7 +10,8 @@
     "test": "scripts/test.sh",
     "postinstall": "truffle install",
     "console": "truffle console",
-    "truffle": "truffle"
+    "truffle": "truffle",
+    "ganache": "ganache-cli"
   },
   "author": "",
   "license": "ISC",

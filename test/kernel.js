@@ -15,10 +15,9 @@ function isNullAddress(address) {
 }
 
 const testDebug = debug('test:Factory')
-let testAccount = 0;
+const testAccount = 0;
 
 contract('Kernel', function (accounts) {
-
 
     describe('.listProcedures()', function () {
         it('should return nothing if zero procedures')
@@ -31,7 +30,19 @@ contract('Kernel', function (accounts) {
     })
 
     describe('.createProcedure()', function() {
-        it('should create valid procedure')
+        it('should create valid procedure', async function () {
+            let kernel = await Kernel.new();
+
+            let address = kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
+            let tx1 = kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
+
+            assert(web3.isAddress(address), 'Procedure Address is a real address')
+            assert(!isNullAddress(address), 'Procedure Address is not null')
+
+            let adder = Valid.Adder.at(address);
+            assert.equal(await adder.add.call(1, 1), 2)
+        })
+
         it('should reject invalid payload')
 
         describe('should reject invalid key', function () {
@@ -64,5 +75,37 @@ contract('Kernel', function (accounts) {
             it('zero length')
         })
     })
-    describe('.executeProcedure()')
-}
+
+    describe('.executeProcedure(bytes32 key, bytes payload)', function () {
+
+        describe('should return a valid value for', function () {
+            it.skip('Adder Procedure', async function () {
+                const kernel = await Kernel.new();
+                let address = await kernel.createProcedure.call("TestAdder", Adder.bytecode, {from: accounts[testAccount]});
+                let tx = await kernel.createProcedure("TestAdder", Adder.bytecode, {from: accounts[testAccount]});
+                assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
+                assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
+
+                let tl = await kernel.executeProcedure("TestAdder", {from: accounts[testAccount]});
+                let tc = await kernel.executeProcedure.call("TestAdder", {from: accounts[testAccount]});
+                console.log(tc.toNumber());
+                let adder = Adder.at(address);
+                let two = await adder.add.call(1, 1);
+                assert.equal(two, 2);
+
+                // The returned code should be the same as the sent code
+                const code = web3.eth.getCode(address);
+                assert.equal(Adder.deployedBytecode, code);
+            })            
+        })
+
+        it('should return an error if key does not exist')
+
+        describe('should return an error if procedure return error when', function () {
+            it('recieves invalid arguments')
+            it('throws an error')
+        })
+
+
+    })
+})
