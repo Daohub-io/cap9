@@ -7,6 +7,7 @@ const Kernel = artifacts.require('./Kernel.sol')
 // Valid Contracts
 const Valid =  {
     Adder: artifacts.require('test/valid/Adder.sol'),
+    Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol')
 }
 
@@ -24,11 +25,28 @@ contract('Kernel', function (accounts) {
         it('should return nothing if zero procedures', async function() {
             let kernel = await Kernel.new();
 
-            let procedures = kernel.listProcedures.call();
+            let procedures = await kernel.listProcedures.call();
             assert.equal(procedures.length, 0);
         })
-        it('should return existing procedure keys')
-        it('should return a list of procedures which can be retrieved')
+        it('should return existing procedure keys', async function() {
+            let kernel = await Kernel.new();
+
+            let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
+            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
+
+            let procedures = await kernel.listProcedures.call();
+            assert.equal(procedures.length, 1);
+        });
+        it('should return a list of procedures which can be retrieved', async function() {
+            let kernel = await Kernel.new();
+
+            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
+            let tx2 = await kernel.createProcedure('TestDivider', Valid.Divide.bytecode)
+            let tx3 = await kernel.createProcedure('TestMultiplier', Valid.Multiply.bytecode)
+
+            let procedures = await kernel.listProcedures.call();
+            assert.equal(procedures.length, 3);
+        });
     })
     describe('.getProcedure()', function () {
         it('should return a non-zero address iff procedure exists', async function () {
@@ -60,7 +78,6 @@ contract('Kernel', function (accounts) {
             let kernel = await Kernel.new();
 
             let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
-            console.log(address)
             let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
 
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
@@ -77,10 +94,14 @@ contract('Kernel', function (accounts) {
         // TODO: what is an invalid payload?
         it('should reject invalid payload')
 
-        // TODO: define error methods
         describe('should reject invalid key', function () {
             it('excess length')
-            it('zero length')
+            it('zero length', async function() {
+                let kernel = await Kernel.new();
+
+                let [err, address] = await kernel.createProcedure.call('', Valid.Adder.bytecode)
+                assert.equal(err,1);
+            });
             it('duplicate procedure key')
         })
     })
@@ -121,7 +142,6 @@ contract('Kernel', function (accounts) {
 
                 let tl = await kernel.executeProcedure("TestAdder");
                 let tc = await kernel.executeProcedure.call("TestAdder");
-                console.log("tc.toNumber()", tc.toNumber());
                 assert.equal(tc.toNumber(), 2);
             })
         })

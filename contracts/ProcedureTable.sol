@@ -5,6 +5,11 @@ library ProcedureTable {
     struct Self {
         // The table of procedures
         mapping(bytes32 => address) table;
+        bytes32[] keys;
+    }
+
+    function list(Self storage self) internal view returns (bytes32[] listedKeys) {
+        listedKeys = self.keys;
     }
 
     function add(Self storage self, bytes32 name, address procedure) internal {
