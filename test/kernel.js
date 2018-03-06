@@ -61,6 +61,10 @@ contract('Kernel', function (accounts) {
 
             let adder = Valid.Adder.at(address);
             assert.equal(await adder.add.call(1, 1), 2)
+
+            // The returned code should be the same as the sent code
+            const code = web3.eth.getCode(address);
+            assert.equal(Valid.Adder.deployedBytecode, code);
         })
 
         it('should reject invalid payload')
@@ -112,7 +116,6 @@ contract('Kernel', function (accounts) {
                 let adder = Adder.at(address);
                 let two = await adder.add.call(1, 1);
                 assert.equal(two, 2);
-                console.log("result: ",  two)
 
                 // The returned code should be the same as the sent code
                 const code = web3.eth.getCode(address);
