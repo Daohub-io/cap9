@@ -14,6 +14,7 @@ library ProcedureTable {
 
     function add(Self storage self, bytes32 name, address procedure) internal {
         self.table[name] = procedure;
+        self.keys.push(name);
     }
 
     function get(Self storage self, bytes32 name) internal view returns (address p) {
