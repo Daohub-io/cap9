@@ -33,10 +33,10 @@ contract('Kernel', function (accounts) {
         it('should create valid procedure', async function () {
             let kernel = await Kernel.new();
 
-            let address = kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
-            let tx1 = kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
+            let address = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
+            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
 
-            assert(web3.isAddress(address), 'Procedure Address is a real address')
+            assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
             assert(!isNullAddress(address), 'Procedure Address is not null')
 
             let adder = Valid.Adder.at(address);
@@ -92,11 +92,12 @@ contract('Kernel', function (accounts) {
                 let adder = Adder.at(address);
                 let two = await adder.add.call(1, 1);
                 assert.equal(two, 2);
+                console.log("result: ",  two)
 
                 // The returned code should be the same as the sent code
                 const code = web3.eth.getCode(address);
                 assert.equal(Adder.deployedBytecode, code);
-            })            
+            })
         })
 
         it('should return an error if key does not exist')
