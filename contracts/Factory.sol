@@ -4,14 +4,14 @@ contract Factory {
 
     event LogContractCreation(bytes32 name, address location);
 
-    function codeLength(bytes oCode) public returns (uint len) {
+    function codeLength(bytes oCode) pure public returns (uint len) {
         assembly {
             // Get Length
             len := mload(oCode)
         }
     }
 
-    function codePosition(bytes oCode) public returns (uint code) {
+    function codePosition(bytes oCode) pure public returns (uint code) {
         assembly {
             // Get Length
             let len := mload(oCode)
@@ -33,7 +33,7 @@ contract Factory {
     // Returns the address of the new contract. If gas is paid into the
     // new contract, but the factory doesn't hold enough gas, the null
     // address is returned.
-    function create(bytes32 procedureName, bytes oCode) public returns (address d) {
+    function create(bytes oCode) public returns (address d) {
         assembly {
             // Get length of code
             let len := mload(oCode)

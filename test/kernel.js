@@ -38,14 +38,35 @@ contract('Kernel', function (accounts) {
             assert.equal(procedures.length, 1);
         });
         it('should return a list of procedures which can be retrieved', async function() {
-            let kernel = await Kernel.new();
+            const kernel = await Kernel.new();
+            const speccedProcedures =
+                [ ["TestAdder", Valid.Adder],
+                  ["TestDivider", Valid.Divide],
+                  ["TestMultiplier", Valid.Multiply]
+                ];
+            for (const proc of speccedProcedures) {
+                await kernel.createProcedure(proc[0], proc[1].bytecode)
+            }
 
-            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
-            let tx2 = await kernel.createProcedure('TestDivider', Valid.Divide.bytecode)
-            let tx3 = await kernel.createProcedure('TestMultiplier', Valid.Multiply.bytecode)
+            const proceduresRaw = await kernel.listProcedures.call();
+            const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
 
-            let procedures = await kernel.listProcedures.call();
-            assert.equal(procedures.length, 3);
+            // Test that the number of procedures stored is the same as the
+            // number of procedures created
+            assert.equal(procedures.length, speccedProcedures.length);
+            // Cycle through each of the listed procedures
+            for (const i in procedures) {
+                // Test that the order and indexing of procedures is the same
+                assert.equal(speccedProcedures[i][0], procedures[i])
+                // Retrieve the listed procedure adress
+                const address = await kernel.getProcedure.call(procedures[i]);
+                // Check the address is correct
+                assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`);
+                assert(!isNullAddress(address), `Procedure Address (${address}) is not null`);
+                // Check that the deployed code is the same as that sent
+                const code = web3.eth.getCode(address);
+                assert.equal(speccedProcedures[i][1].deployedBytecode, code);
+            }
         });
     })
     describe('.getProcedure()', function () {
@@ -72,6 +93,7 @@ contract('Kernel', function (accounts) {
             let kernel = await Kernel.new();
             // No procedures exist yet (nor does "TestAdder")
             let address = await kernel.getProcedure.call('TestAdder');
+            console.log(address)
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
             assert(isNullAddress(address), `Procedure Address (${address}) is null`)
         });
