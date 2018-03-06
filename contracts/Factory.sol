@@ -5,18 +5,18 @@ contract Factory {
     event LogFundsReceived(address sender, uint amount);
     event LogFundsSent(address receiver, uint amount);
 
-    function() payable {
+    function() payable public {
         LogFundsReceived(msg.sender, msg.value);
     }
 
-    function codeLength(bytes oCode) public returns (uint len) {
+    function codeLength(bytes oCode) pure public returns (uint len) {
         assembly {
             // Get Length
             len := mload(oCode)
         }
     }
 
-    function codePosition(bytes oCode) public returns (uint code) {
+    function codePosition(bytes oCode) pure public returns (uint code) {
         assembly {
             // Get Length
             let len := mload(oCode)
