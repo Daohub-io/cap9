@@ -18,6 +18,8 @@ library ProcedureTable {
     }
 
     function remove(Self storage self, bytes32 name) internal returns (address p) {
+        // the bytecode will need to call self destruct, this will mean ensuring
+        // any code submitted has a standard destructor.
 
     }
 
