@@ -25,8 +25,21 @@ contract('Kernel', function (accounts) {
         it('should return a list of procedures which can be retrieved')
     })
     describe('.getProcedure()', function () {
-        it('should return a non-zero address iff procedure exists')
-        it('should return a zero address iff procedure does not exist')
+        it('should return a non-zero address iff procedure exists', async function () {
+            let kernel = await Kernel.new();
+            // Create "TestAdder"
+            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode);
+            let address = await kernel.getProcedure.call('TestAdder');
+            assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`);
+            assert(!isNullAddress(address), 'Procedure Address is not null');
+        });
+        it('should return a zero address iff procedure does not exist', async function() {
+            let kernel = await Kernel.new();
+            // No procedures exist yet (nor does "TestAdder")
+            let address = await kernel.getProcedure.call('TestAdder');
+            assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
+            assert(isNullAddress(address), 'Procedure Address is null')
+        });
     })
 
     describe('.createProcedure()', function() {
