@@ -5,7 +5,7 @@ contract Factory {
     /*opCode -> jump size*/
     mapping(byte => uint8) public opCodes;
 
-    function Factory() {
+    function Factory() public {
         /* PUSH opCodes */
         // TODO: replace with code
         opCodes[0x60] = 1;  opCodes[0x61] = 2;  opCodes[0x62] = 3;  opCodes[0x63] = 4;

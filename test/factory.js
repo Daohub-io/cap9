@@ -14,7 +14,11 @@ const Invalid = {
     Delegatecall: artifacts.require('test/invalid/Delegatecall'),
     Create: artifacts.require('test/invalid/Create'),
     Suicide: artifacts.require('test/invalid/Suicide')
-  }
+}
+
+function isNullAddress(address) {
+    return address === "0x0000000000000000000000000000000000000000";
+}
 
 const testDebug = debug('test:Factory')
 let testAccount = 0;
