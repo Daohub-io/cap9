@@ -2,13 +2,14 @@ const debug = require('debug')
 const assert = require('assert')
 
 const Kernel = artifacts.require('./Kernel.sol')
-
+const abi = require('ethereumjs-abi')
 
 // Valid Contracts
 const Valid =  {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
-    Divide: artifacts.require('test/valid/Divide.sol')
+    Divide: artifacts.require('test/valid/Divide.sol'),
+    Simple: artifacts.require('test/valid/Simple.sol')
 }
 
 // Test utility functions
@@ -285,39 +286,27 @@ contract('Kernel', function (accounts) {
         });
 
         describe.only('should return a valid value for', function () {
-            it('Adder Procedure', async function () {
+            it('Simple Procedure', async function () {
                 const kernel = await Kernel.new();
-                const [err1, address] = await kernel.createProcedure.call("TestAdder", Valid.Adder.bytecode);
-                assert.equal(err1, 0);
-                const tx = await kernel.createProcedure("TestAdder", Valid.Adder.bytecode);
-                assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
-                assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
+                const [, address] = await kernel.createProcedure.call("Simple", Valid.Simple.bytecode);
+                const tx = await kernel.createProcedure("Simple", Valid.Simple.bytecode);
 
-                // For explanation see: http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding
-                let addPayload = (a, b) => {
+                let pX= abi.simpleEncode("X()", "0x0000000000000000000000000000000000000000")
+                const [errX, valueX] = await kernel.executeProcedure.call("Simple", p1);
+                assert.equal(errX.toNumber(), 4, "X() should fail");
 
-                    const action = 'test(uint,uint)';
-                    const ahash = web3.sha3(action).slice(0, 10);
+                let pA= abi.simpleEncode("A()", "0x0000000000000000000000000000000000000000")                
+                const [err1, value1] = await kernel.executeProcedure.call("Simple", pA);
+                assert.equal(err1.toNumber(), 0, "A() should succeed");
 
-                    // 32 bytes padding
-                    const pad = '0000000000000000000000000000000000000000000000000000000000000000' 
-                    a = web3.fromDecimal(a).slice(2);
-                    b = web3.fromDecimal(b).slice(2);
+                let pB= abi.simpleEncode("B()", "0x0000000000000000000000000000000000000000")                
+                const [err2, value2] = await kernel.executeProcedure.call("Simple", pB);
+                assert.equal(err2.toNumber(), 0, "B() should succeed");
 
-                    a = pad.slice(0, -a.length).concat(a);
-                    b = pad.slice(0, -b.length).concat(b);
-                    console.log(a)
-                    return ahash.concat(a, b);
-                }
+                const tx2 = await kernel.executeProcedure("Simple", pB);
+                const delcode = web3.eth.getCode(kernel.address);
+                assert.equal(delcode, "0x0", "B() should destroy kernel");
 
-                await kernel.send(10000);
-
-                const [err2, retVal] = await kernel.executeProcedure.call("TestAdder", addPayload(1, 1));
-                assert.equal(err2, 0);
-                console.log(retVal)
-                const tl = await kernel.executeProcedure("TestAdder", addPayload(1, 1));
-                // TODO: unpacking of retVal is unlikely to be like below
-                assert.equal(retVal.toNumber(), 2);
             })
         })
 

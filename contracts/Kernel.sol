@@ -6,7 +6,7 @@ import "./ProcedureTable.sol";
 contract Kernel is Factory {
     using ProcedureTable for ProcedureTable.Self;
     ProcedureTable.Self procedures;
-
+    
     function () payable {}
 
     function createProcedure(bytes32 name, bytes oCode) public returns (uint8 err, address procedureAddress) {
@@ -49,7 +49,7 @@ contract Kernel is Factory {
         procedureAddress = procedures.get(name);
     }
 
-    function executeProcedure(bytes32 name, bytes payload) public returns (uint8 err, uint256 retVal) {
+    function executeProcedure(bytes32 name, string action) public returns (uint8 err, bytes32 retVal) {
         // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             err = 1;
@@ -62,18 +62,20 @@ contract Kernel is Factory {
             err = 3;
             return;
         }
+        
+        bytes4 sig = bytes4(keccak256(action));
+        bool status = false;
 
         assembly {
-            // Get Input Len and Pointer
-            let ilen := mload(payload)
-            let ip := add(payload, 0x20)
-
-            // Get Output pointer, for now output will be 256 bytes
-            // let olen := mload(retVal)
-            // let op := add(retVal, 0x20)
-
-            let status := delegatecall(sub(gas, 5000), a, ip, ilen, 0, 32)
-            retVal := mload(0)
+            let x := mload(0x40) // Find free location
+            mstore(x, sig) // Place Sig to free storage
+            status := delegatecall(0, a, x, 0x04, x, 0x04)
+            mstore(0x40, add(x, 0x04)) // Update Empty Space
         }
+
+        if (!status) {
+            err = 4;
+        }
+
     }
 }
