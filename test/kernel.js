@@ -308,7 +308,7 @@ contract('Kernel', function (accounts) {
             assert.equal(err, 3);
         });
 
-        describe('should return a valid value for', function () {
+        describe.only('should execute', function () {
             it('Simple Procedure', async function () {
                 const kernel = await Kernel.new();
                 const [, address] = await kernel.createProcedure.call("Simple", Valid.Simple.bytecode);
@@ -328,7 +328,28 @@ contract('Kernel', function (accounts) {
                 const tx2 = await kernel.executeProcedure("Simple", "B()");
                 assert.equal(web3.eth.getCode(kernel.address), "0x0",
                     "B() should destroy kernel");
+            })
+            it('Simple Procedure with Arguments', async function () {
+                const kernel = await Kernel.new();
+                const [, address] = await kernel.createProcedure.call("Simple", Valid.Simple.bytecode);
+                const tx = await kernel.createProcedure("Simple", Valid.Simple.bytecode);
 
+                // Should fail without correctly specifying arguments.
+                {
+                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()");
+                    assert.equal(err.toNumber(), 4, "C() should not succeed");
+                }
+                // Should fail when using type synonyms such as uint, which
+                // can't be used in function selectors
+                {
+                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()");
+                    assert.equal(err.toNumber(), 4, "C() should not succeed");
+                }
+                // Should succeed passing arguments
+                {
+                    const [err, value] = await kernel.executeProcedure.call("Simple", "C(uint256)");
+                    assert.equal(err.toNumber(), 0, "C(uint256) should succeed");
+                }
             })
         })
 

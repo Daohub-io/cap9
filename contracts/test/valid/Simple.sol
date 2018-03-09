@@ -9,4 +9,8 @@ contract Simple {
         suicide(0);
     }
 
+    function C(uint256 a) {
+
+    }
+
 }
