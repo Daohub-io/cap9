@@ -63,17 +63,24 @@ contract Kernel is Factory {
         }
         bool status = false;
         assembly {
-            // Store function selector string ("A()")
-            // let m := mload(0x40)
-            // mstore(0x40,add(m,32))
-            // mstore(m, )
-
-            // pop(mload(m))
-
-            // Take the keccak256 has of that string, store at location n
+            // Retrieve the address of new available memory from address 0x40
             let n :=  mload(0x40)
+            // Replace the value of 0x40 with the next new available memory,
+            // after the 4 bytes we will use to store the keccak hash.
             mstore(0x40,add(n,32))
-            mstore(n,keccak256(add(fselector,0x20),mload(fselector))) // 3 is the length of the function selector string
+            // Take the keccak256 hash of that string, store at location n
+            // mstore
+            // Argument #1: The address (n) calculated above, to store the
+            //    hash.
+            // Argument #2: The hash, calculted as follows:
+            //   keccack256
+            //   Argument #1: The location of the fselector string (which
+            //     is simply the name of the variable) with an added offset
+            //     of 0x20, as the first 0x20 is reserved for the length of
+            //     the string.
+            //   Argument #2: The length of the string, which is loaded from
+            //     the first 0x20 of the string.
+            mstore(n,keccak256(add(fselector,0x20),mload(fselector)))
 
             // Stores some
             let ins := n
