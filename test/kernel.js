@@ -2,7 +2,6 @@ const debug = require('debug')
 const assert = require('assert')
 
 const Kernel = artifacts.require('./Kernel.sol')
-const abi = require('ethereumjs-abi')
 
 // Valid Contracts
 const Valid =  {
@@ -291,19 +290,16 @@ contract('Kernel', function (accounts) {
                 const [, address] = await kernel.createProcedure.call("Simple", Valid.Simple.bytecode);
                 const tx = await kernel.createProcedure("Simple", Valid.Simple.bytecode);
 
-                let pX= abi.simpleEncode("X()", "0x0000000000000000000000000000000000000000")
-                const [errX, valueX] = await kernel.executeProcedure.call("Simple", p1);
+                const [errX, valueX] = await kernel.executeProcedure.call("Simple", "X()");
                 assert.equal(errX.toNumber(), 4, "X() should fail");
 
-                let pA= abi.simpleEncode("A()", "0x0000000000000000000000000000000000000000")                
-                const [err1, value1] = await kernel.executeProcedure.call("Simple", pA);
+                const [err1, value1] = await kernel.executeProcedure.call("Simple", "A()");
                 assert.equal(err1.toNumber(), 0, "A() should succeed");
 
-                let pB= abi.simpleEncode("B()", "0x0000000000000000000000000000000000000000")                
-                const [err2, value2] = await kernel.executeProcedure.call("Simple", pB);
+                const [err2, value2] = await kernel.executeProcedure.call("Simple", "B()");
                 assert.equal(err2.toNumber(), 0, "B() should succeed");
 
-                const tx2 = await kernel.executeProcedure("Simple", pB);
+                const tx2 = await kernel.executeProcedure("Simple", "B()");
                 const delcode = web3.eth.getCode(kernel.address);
                 assert.equal(delcode, "0x0", "B() should destroy kernel");
 
