@@ -10,18 +10,20 @@ contract Kernel is Factory {
 
     function createProcedure(bytes32 name, bytes oCode) public returns (uint8 err, address procedureAddress) {
         // Check whether the first byte is null and set err to 1 if so
-        if (name[0] == 0) {
+        if (name == 0) {
             err = 1;
             return;
         }
+
         // Check whether the address exists
-        address nullAddress;
-        if (procedures.get(name) != nullAddress) {
+        bool exist = procedures.contains(name);
+        if (exist) {
             err = 3;
             return;
         }
+
         procedureAddress = create(oCode);
-        procedures.add(name, procedureAddress);
+        procedures.insert(name, procedureAddress);
     }
 
     function deleteProcedure(bytes32 name) public returns (uint8 err, address procedureAddress) {
@@ -30,22 +32,20 @@ contract Kernel is Factory {
             err = 1;
             return;
         }
+
+        procedureAddress = procedures.get(name);
+        bool success = procedures.remove(name);
+
         // Check whether the address exists
-        address nullAddress;
-        procedureAddress = procedures.get(name);
-        if (procedureAddress == nullAddress) {
-            err = 3;
-            return;
-        }
-        procedureAddress = procedures.remove(name);
+        if (!success) {err = 2;}
     }
 
-    function listProcedures() public view returns (bytes32[] listedKeys) {
-        listedKeys = procedures.list();
+    function listProcedures() public view returns (bytes32[]) {
+        return procedures.keys;
     }
 
-    function getProcedure(bytes32 name) public view returns (address procedureAddress) {
-        procedureAddress = procedures.get(name);
+    function getProcedure(bytes32 name) public view returns (address) {
+        return procedures.get(name);
     }
 
     function executeProcedure(bytes32 name, string fselector, bytes payload) public returns (uint8 err, uint256 retVal) {
@@ -55,12 +55,13 @@ contract Kernel is Factory {
             return;
         }
         // Check whether the address exists
-        address nullAddress;
-        address procedureAddress = procedures.get(name);
-        if (procedureAddress == nullAddress) {
+        bool exist = procedures.contains(name);
+        if (!exist) {
             err = 3;
             return;
         }
+
+        address procedureAddress = procedures.get(name);
         bool status = false;
         assembly {
             // Retrieve the address of new available memory from address 0x40

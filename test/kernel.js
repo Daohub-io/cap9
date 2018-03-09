@@ -212,7 +212,7 @@ contract('Kernel', function (accounts) {
         it('should return error if procedure key does not exist(3)', async function() {
             const kernel = await Kernel.new();
             const [err, deleteAddress] = await kernel.deleteProcedure.call('test');
-            assert.equal(err, 3);
+            assert.equal(err, 2);
         });
         it('should return deleted procedure address if procedure key is valid', async function() {
             const kernel = await Kernel.new();
