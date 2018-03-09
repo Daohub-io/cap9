@@ -1,5 +1,5 @@
 Arguments: 
-  /home/latrasis/.nvm/versions/node/v7.10.1/bin/node /home/latrasis/.nvm/versions/node/v7.10.1/bin/yarn truffle deploy
+  /home/latrasis/.nvm/versions/node/v7.10.1/bin/node /home/latrasis/.nvm/versions/node/v7.10.1/bin/yarn truffle migrate
 
 PATH: 
   /home/linuxbrew/.linuxbrew/bin:/home/latrasis/bin:/home/latrasis/.local/bin:/home/latrasis/.nvm/versions/node/v7.10.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/mnt/c/Program Files (x86)/Intel/iCLS Client:/mnt/c/Program Files/Intel/iCLS Client:/mnt/c/Windows/System32:/mnt/c/Windows:/mnt/c/Windows/System32/wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Program Files/Git/cmd:/mnt/c/HashiCorp/Vagrant/bin:/mnt/c/Program Files (x86)/Skype/Phone:/mnt/c/Windows/System32:/mnt/c/Windows:/mnt/c/Windows/System32/wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0:/mnt/c/Program Files/Java/jdk1.8.0_152/bin:/mnt/c/Program Files/Common Files/Autodesk Shared:/mnt/c/ProgramData/nvm:/mnt/c/Users/Raketa/AppData/Roaming/local/bin:/mnt/c/Users/Raketa/.cargo/bin:/mnt/c/Users/Raketa/AppData/Local/Microsoft/WindowsApps:/mnt/c/Program Files/Oracle/VirtualBox:/mnt/c/Program Files/Microsoft VS Code/bin:/mnt/c/tools/dev:/snap/bin:/mnt/c/Windows/System32:/mnt/c/Users/Raketa/Documents/Repos/gopath/bin:/home/linuxbrew/.linuxbrew/opt/go/libexec/bin
@@ -24,9 +24,9 @@ npm manifest:
     },
     "scripts": {
       "test": "scripts/test.sh",
-      "postinstall": "truffle install",
       "console": "truffle console",
-      "truffle": "truffle"
+      "truffle": "truffle",
+      "ganache": "ganache-cli"
     },
     "author": "",
     "license": "ISC",
@@ -2359,7 +2359,7 @@ Trace:
   Error: Command failed.
   Exit code: 1
   Command: sh
-  Arguments: -c truffle deploy
+  Arguments: -c truffle migrate
   Directory: /mnt/c/Users/Raketa/Documents/Repos/lab
   Output:
   

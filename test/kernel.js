@@ -284,7 +284,7 @@ contract('Kernel', function (accounts) {
             assert.equal(retVal, "0x");
         });
 
-        describe('should return a valid value for', function () {
+        describe.only('should return a valid value for', function () {
             it('Adder Procedure', async function () {
                 const kernel = await Kernel.new();
                 const [err1, address] = await kernel.createProcedure.call("TestAdder", Valid.Adder.bytecode);
@@ -293,9 +293,29 @@ contract('Kernel', function (accounts) {
                 assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
                 assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
 
-                const [err2, retVal] = await kernel.executeProcedure.call("TestAdder",'');
+                // For explanation see: http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding
+                let addPayload = (a, b) => {
+
+                    const action = 'test(uint,uint)';
+                    const ahash = web3.sha3(action).slice(0, 10);
+
+                    // 32 bytes padding
+                    const pad = '0000000000000000000000000000000000000000000000000000000000000000' 
+                    a = web3.fromDecimal(a).slice(2);
+                    b = web3.fromDecimal(b).slice(2);
+
+                    a = pad.slice(0, -a.length).concat(a);
+                    b = pad.slice(0, -b.length).concat(b);
+                    console.log(a)
+                    return ahash.concat(a, b);
+                }
+
+                await kernel.send(10000);
+
+                const [err2, retVal] = await kernel.executeProcedure.call("TestAdder", addPayload(1, 1));
                 assert.equal(err2, 0);
-                const tl = await kernel.executeProcedure("TestAdder",'');
+                console.log(retVal)
+                const tl = await kernel.executeProcedure("TestAdder", addPayload(1, 1));
                 // TODO: unpacking of retVal is unlikely to be like below
                 assert.equal(retVal.toNumber(), 2);
             })

@@ -17,17 +17,17 @@ library ProcedureTable {
         self.keys.push(name);
     }
 
+    // TODO: The bytecode will need to call self destruct, this will mean ensuring
+    // any code submitted has a standard destructor. This can then be called
+    // using the CALL. The procedure will then need to have an owner or
+    // similar mechanism to ensure it will not be maliciously removed.
     function remove(Self storage self, bytes32 name) internal returns (address p) {
-        // The bytecode will need to call self destruct, this will mean ensuring
-        // any code submitted has a standard destructor. This can then be called
-        // using the CALL. The procedure will then need to have an owner or
-        // similar mechanism to ensure it will not be maliciously removed.
+        p = self.table[name];
+        self.table[name] = 0;
     }
 
     function get(Self storage self, bytes32 name) internal view returns (address p) {
         p = self.table[name];
     }
 
-    function execute(Self storage self, bytes32 name, bytes payload) internal view returns (bytes retVal) {
-    }
 }
