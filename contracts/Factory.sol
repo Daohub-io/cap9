@@ -4,7 +4,14 @@ contract Factory {
 
     /*opCode -> jump size*/
     mapping(byte => uint8) public opCodes;
+    
+    event LogFundsReceived(address sender, uint amount);
+    event LogFundsSent(address receiver, uint amount);
 
+    function() payable public {
+        LogFundsReceived(msg.sender, msg.value);
+    }
+    
     function Factory() public {
         /* PUSH opCodes */
         // TODO: replace with code
@@ -36,13 +43,6 @@ contract Factory {
         return true;
     }
 
-    event LogFundsReceived(address sender, uint amount);
-    event LogFundsSent(address receiver, uint amount);
-
-    function() payable public {
-        LogFundsReceived(msg.sender, msg.value);
-    }
-
     function codeLength(bytes oCode) pure public returns (uint len) {
         assembly {
             // Get Length
@@ -60,33 +60,26 @@ contract Factory {
     }
 
     // As 'createAndPay', but will pay no gas into the contract.
-    // TODO: this function should not be payable.
-    function createProcedure(bytes oCode) payable public returns (address d) {
-        return createProcedureAndPay(0, oCode);
-    }
-
-    // Will create a new contract of 'oCode' with gas of 'value'. It is up to
-    // the the caller to ensure the factory has enough gas.
-    function createProcedureAndPay(uint value, bytes oCode) payable public returns (address d) {
+    // Deploy to Contract
+    // Argument #1: The name (key) of the pocedure.
+    // Argument #2: The amount of gas to be payed into the new contract
+    //      on creation. Generally we do not want to do that, as we
+    //      don't want contracts to hold gas.
+    // Argument #3: The position of start of the code with an additional
+    //      offset (as determined above).
+    // Argument #4: The position of the end of the code
+    //      (start + length).
+    // Returns the address of the new contract. If gas is paid into the
+    // new contract, but the factory doesn't hold enough gas, the null
+    // address is returned.
+    function create(bytes oCode) public returns (address d) {
         assembly {
             // Get length of code
             let len := mload(oCode)
             // Get position of code.
             let code := add(oCode, 0x20)
 
-            // Deploy to Contract
-            // Argument #1: The amount of gas to be payed into the new contract
-            //      on creation. Generally we do not want to do that, as we
-            //      don't want contracts to hold gas.
-            // Argument #2: The position of start of the code with an additional
-            //      offset (as determined above).
-            // Argument #3: The position of the end of the code
-            //      (start + length).
-            // Returns the address of the new contract. If gas is paid into the
-            // new contract, but the factory doesn't hold enough gas, the null
-            // address is returned.
-            // TODO: catch null address returned here.
-            d := create(value, code, add(code, len))
+            d := create(0, code, add(code, len))
         }
     }
 }

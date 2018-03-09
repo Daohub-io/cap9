@@ -9,12 +9,14 @@
   "scripts": {
     "test": "scripts/test.sh",
     "console": "truffle console",
-    "truffle": "truffle"
+    "truffle": "truffle",
+    "ganache": "ganache-cli"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "debug": "^3.1.0",
+    "ethereumjs-abi": "^0.6.5",
     "ganache-cli": "^6.0.3",
     "truffle": "^4.0.6"
   }
