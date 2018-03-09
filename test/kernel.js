@@ -256,10 +256,10 @@ contract('Kernel', function (accounts) {
 
             assert.equal(address, deleteAddress);
             const retrievedAddress = await kernel.getProcedure(procedureName);
-            assert(isNullAddress, "The key should not longer be in the procedure table")
+            assert(isNullAddress, "The key be able to be retrieved")
             const proceduresRaw = await kernel.listProcedures.call();
             const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
-            assert(!procedures.includes(procedureName))
+            assert(!procedures.includes(procedureName), "The procedure name should no longer be included in the procedure table")
         })
 
         // TODO: this is not currently functional
