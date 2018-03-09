@@ -11,11 +11,11 @@ const Valid =  {
 const Invalid = {
     Call: artifacts.require('test/invalid/Call'),
     Callcode: artifacts.require('test/invalid/Callcode'),
-    Delegatecall: artifacts.require('test/invalid/Delegatecall')
-
+    Delegatecall: artifacts.require('test/invalid/Delegatecall'),
+    Create: artifacts.require('test/invalid/Create'),
+    Suicide: artifacts.require('test/invalid/Suicide')
 }
 
-// Test utility functions
 function isNullAddress(address) {
     return address === "0x0000000000000000000000000000000000000000";
 }
@@ -105,7 +105,7 @@ contract('Factory', function (accounts) {
 
     })
 
-    describe.skip('.validate()', async function() {
+    describe('.validate()', async function() {
 
         it('should accept valid contract', async function () {
             let factory = await Factory.deployed();
@@ -131,9 +131,17 @@ contract('Factory', function (accounts) {
             assert(!valid);
         })
 
-        it('should reject a contract if it uses CREATE')
-        it('should reject a contract if it uses SUICIDE')
+        it('should reject a contract if it uses CREATECALL', async function () {
+            let factory = await Factory.deployed();
+            let valid = await factory.validate(Invalid.Create.bytecode, {from: accounts[0]});
+            assert(!valid);
+        })
 
+        it('should reject a contract if it uses SUICIDECALL', async function () {
+            let factory = await Factory.deployed();
+            let valid = await factory.validate(Invalid.Suicide.bytecode, {from: accounts[0]});
+            assert(!valid);
+        })
     })
 
 })
