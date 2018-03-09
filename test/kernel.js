@@ -5,11 +5,14 @@ const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
 // Valid Contracts
-const Valid =  {
+const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
-    Simple: artifacts.require('test/valid/Simple.sol')
+}
+
+const Invalid = {
+    Simple: artifacts.require('test/invalid/Simple.sol')
 }
 
 // Test utility functions
@@ -23,13 +26,13 @@ const testAccount = 0;
 contract('Kernel', function (accounts) {
 
     describe('.listProcedures()', function () {
-        it('should return nothing if zero procedures', async function() {
+        it('should return nothing if zero procedures', async function () {
             let kernel = await Kernel.new();
 
             let procedures = await kernel.listProcedures.call();
             assert.equal(procedures.length, 0);
         })
-        it('should return existing procedure keys', async function() {
+        it('should return existing procedure keys', async function () {
             let kernel = await Kernel.new();
 
             let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
@@ -38,19 +41,20 @@ contract('Kernel', function (accounts) {
             let procedures = await kernel.listProcedures.call();
             assert.equal(procedures.length, 1);
         });
-        it('should return a list of procedures which can be retrieved', async function() {
+        it('should return a list of procedures which can be retrieved', async function () {
             const kernel = await Kernel.new();
-            const speccedProcedures =
-                [ ["TestAdder", Valid.Adder],
-                  ["TestDivider", Valid.Divide],
-                  ["TestMultiplier", Valid.Multiply]
-                ];
+            const speccedProcedures = [
+                ["TestAdder", Valid.Adder],
+                ["TestDivider", Valid.Divide],
+                ["TestMultiplier", Valid.Multiply]
+            ];
+
             for (const proc of speccedProcedures) {
                 await kernel.createProcedure(proc[0], proc[1].bytecode)
             }
 
             const proceduresRaw = await kernel.listProcedures.call();
-            const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+            const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
 
             // Test that the number of procedures stored is the same as the
             // number of procedures created
@@ -90,7 +94,7 @@ contract('Kernel', function (accounts) {
 
             assert.equal(creationAddress, address);
         });
-        it('should return a zero address iff procedure does not exist', async function() {
+        it('should return a zero address iff procedure does not exist', async function () {
             let kernel = await Kernel.new();
             // No procedures exist yet (nor does "TestAdder")
             let address = await kernel.getProcedure.call('TestAdder');
@@ -99,7 +103,7 @@ contract('Kernel', function (accounts) {
         });
     })
 
-    describe('.createProcedure()', function() {
+    describe('.createProcedure()', function () {
         it('should create valid procedure', async function () {
             let kernel = await Kernel.new();
 
@@ -120,7 +124,7 @@ contract('Kernel', function (accounts) {
             const kernel = await Kernel.new();
 
             const name = "start123456789012345678901234end";
-            assert.equal(name.length,32);
+            assert.equal(name.length, 32);
             const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
             const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
 
@@ -137,7 +141,7 @@ contract('Kernel', function (accounts) {
             // The address should be gettable (TODO)
             // The correct name should be in the procedures table
             const proceduresRaw = await kernel.listProcedures.call();
-            const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+            const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
             assert(procedures.includes(name), "The correct name is in the procedures table");
         });
 
@@ -145,32 +149,17 @@ contract('Kernel', function (accounts) {
         it('should reject invalid payload')
 
         describe('should reject invalid key', function () {
-            // TODO: this is currently handle by truffle which simply
-            // truncates the the string.
-            it.skip('excess length', async function() {
-                const kernel = await Kernel.new();
-                const name = "start1234567890123456789012345678901234567890end";
-                assert(name.length > 32, `Name length exceeds limit (length: ${name.length})`);
 
-                const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
-                const tx = await kernel.createProcedure(name, Valid.Adder.bytecode)
-
-                const proceduresRaw = await kernel.listProcedures.call();
-                const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
-
-                assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
-                assert(isNullAddress(address), `Procedure Address (${address}) is null`)
-            });
-            it('zero length', async function() {
+            it('zero length', async function () {
                 let kernel = await Kernel.new();
 
                 let [err, creationAddress] = await kernel.createProcedure.call('', Valid.Adder.bytecode)
-                assert.equal(err,1);
+                assert.equal(err, 1);
                 assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`)
                 assert(isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is null`)
 
                 const proceduresRaw = await kernel.listProcedures.call();
-                const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+                const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
                 assert.equal(procedures.length, 0);
                 assert(!procedures.includes(''))
 
@@ -178,7 +167,8 @@ contract('Kernel', function (accounts) {
                 assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
                 assert(isNullAddress(address), 'Procedure Address is null')
             });
-            it('duplicate procedure key', async function() {
+
+            it('duplicate procedure key', async function () {
                 const kernel = await Kernel.new();
                 const name = "TestAdder";
 
@@ -192,7 +182,7 @@ contract('Kernel', function (accounts) {
                 assert.equal(err2, 3);
 
                 const proceduresRaw = await kernel.listProcedures.call();
-                const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+                const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
                 assert.equal(procedures.length, 1);
 
                 const address = await kernel.getProcedure.call(name);
@@ -209,12 +199,12 @@ contract('Kernel', function (accounts) {
     })
 
     describe('.deleteProcedure()', function () {
-        it('should return error if procedure key does not exist(3)', async function() {
+        it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
             const [err, deleteAddress] = await kernel.deleteProcedure.call('test');
             assert.equal(err, 2);
         });
-        it('should return deleted procedure address if procedure key is valid', async function() {
+        it('should return deleted procedure address if procedure key is valid', async function () {
             const kernel = await Kernel.new();
 
             const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode);
@@ -244,6 +234,7 @@ contract('Kernel', function (accounts) {
             const tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode)
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
+
             // There should be some code at this address now
             // (here it is returned as a hex, we test the string because we
             // want to also be sure it is encoded as such)
@@ -257,8 +248,9 @@ contract('Kernel', function (accounts) {
             assert.equal(address, deleteAddress);
             const retrievedAddress = await kernel.getProcedure(procedureName);
             assert(isNullAddress, "The key be able to be retrieved")
+
             const proceduresRaw = await kernel.listProcedures.call();
-            const procedures = proceduresRaw.map(web3.toAscii).map(s=>s.replace(/\0.*$/, ''));
+            const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
             assert(!procedures.includes(procedureName), "The procedure name should no longer be included in the procedure table")
         })
 
@@ -291,80 +283,96 @@ contract('Kernel', function (accounts) {
         })
 
         describe('should reject invalid key', function () {
-            // TODO: excess length is truncated by truffle (or web3)
-            it('zero length (1)', async function() {
+            it('zero length (1)', async function () {
                 const kernel = await Kernel.new();
 
                 const [err, deleteAddress] = await kernel.deleteProcedure.call('');
                 assert.equal(err, 1);
             });
-            it.skip('excess length (2)')
         })
     })
 
     describe('.executeProcedure(bytes32 key, bytes payload)', function () {
-        it('should return error if procedure key does not exist(3)', async function() {
+        it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
-            const [err, retVal] = await kernel.executeProcedure.call('test','', "");
+            const [err, retVal] = await kernel.executeProcedure.call('test', '', "");
             assert.equal(err, 3);
         });
 
         describe('should execute', function () {
-            it('Simple Procedure', async function () {
-                const kernel = await Kernel.new();
-                const [, address] = await kernel.createProcedure.call("Simple", Valid.Simple.bytecode);
-                const tx = await kernel.createProcedure("Simple", Valid.Simple.bytecode);
+            describe('Simple Procedure', function () {
+                it('X() should fail', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
 
-                // need to have the ABI definition in JSON as per specification
-                const [errX, valueX] = await kernel.executeProcedure.call("Simple", "X()", "");
-                assert.equal(errX.toNumber(), 4, "X() should fail");
+                    // need to have the ABI definition in JSON as per specification
+                    const [errX, valueX] = await kernel.executeProcedure.call("Simple", "X()", "");
+                    assert.equal(errX.toNumber(), 4, "X() should fail");
+                })
 
-                const [err1, value1] = await kernel.executeProcedure.call("Simple", "A()", "");
-                assert.equal(err1.toNumber(), 0, "A() should succeed");
+                it('A() should succeed', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
 
-                const [err2, value2] = await kernel.executeProcedure.call("Simple", "B()", "");
-                assert.equal(err2.toNumber(), 0, "B() should succeed");
+                    const [err1, value1] = await kernel.executeProcedure.call("Simple", "A()", "");
+                    assert.equal(err1.toNumber(), 0, "A() should succeed");
+                })
 
-                assert.notEqual(web3.eth.getCode(kernel.address), "0x0",
-                    "B() should not yet destroy kernel");
-                const tx2 = await kernel.executeProcedure("Simple", "B()", "");
-                assert.equal(web3.eth.getCode(kernel.address), "0x0",
-                    "B() should destroy kernel");
-            })
-            it('Simple Procedure with Arguments', async function () {
-                const kernel = await Kernel.new();
-                const [, address] = await kernel.createProcedure.call("Simple", Valid.Simple.bytecode);
-                const tx = await kernel.createProcedure("Simple", Valid.Simple.bytecode);
+                it('B() should succeed', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
 
-                // Should fail without correctly specifying arguments.
-                {
+                    const [err2, value2] = await kernel.executeProcedure.call("Simple", "B()", "");
+                    assert.equal(err2.toNumber(), 0, "B() should succeed");
+                    assert.notEqual(web3.eth.getCode(kernel.address), "0x0", "B() should not yet destroy kernel");
+
+                    const tx2 = await kernel.executeProcedure("Simple", "B()", "");
+                    assert.equal(web3.eth.getCode(kernel.address), "0x0", "B() should destroy kernel");
+                })
+                
+                it('C() should fail without correctly specifying arguments', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+
                     const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(err.toNumber(), 4, "C() should not succeed");
-                }
-                // Should fail when using type synonyms such as uint, which
-                // can't be used in function selectors
-                {
+                })
+
+                it('C() should fail when using type synonyms such as uint, which cant be used in function selectors', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+
                     const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(err.toNumber(), 4, "C() should not succeed");
-                }
-                // Should succeed passing arguments
-                {
+                })
+
+                it('C(uint256) should succeed passing arguments', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+
                     const [err, value] = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
                     assert.equal(err.toNumber(), 0, "C(uint256) should succeed");
-                }
+                })
+
             })
+
         })
 
-        it('should return an error if key does not exist (3)', async function() {
+        it('should return an error if key does not exist (3)', async function () {
             const kernel = await Kernel.new();
-            const [err, retVal] = await kernel.executeProcedure.call('test','',"");
-            // The error codeshould be 3
+            const [err, retVal] = await kernel.executeProcedure.call('test', '', "");
             assert.equal(err, 3);
         });
 
         describe('should return an error if procedure return error when', function () {
             it('receives invalid arguments')
-            it('throws an error', async function() {
+            it('throws an error', async function () {
                 let kernel = await Kernel.new();
 
                 let [err, address] = await kernel.createProcedure.call('TestDivide', Valid.Divide.bytecode)
@@ -384,20 +392,18 @@ contract('Kernel', function (accounts) {
                 try {
                     const divideByZero = await divide.divide.call(8, 0);
                 } catch (e) {
-                    assert.equal(e,"Error: VM Exception while processing transaction: invalid opcode");
+                    assert.equal(e, "Error: VM Exception while processing transaction: invalid opcode");
                 }
             });
         })
 
         describe('should reject invalid key', function () {
-            // TODO: excess length is truncated by truffle (or web3)
-            it('zero length (1)', async function() {
+            it('zero length (1)', async function () {
                 const kernel = await Kernel.new();
 
-                const [err, retVal] = await kernel.executeProcedure.call('','','');
+                const [err, retVal] = await kernel.executeProcedure.call('', '', '');
                 assert.equal(err, 1);
             });
-            it.skip('excess length (2)')
         })
     })
 })
