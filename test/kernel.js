@@ -2,6 +2,7 @@ const debug = require('debug')
 const assert = require('assert')
 
 const Kernel = artifacts.require('./Kernel.sol')
+const abi = require('ethereumjs-abi')
 
 // Valid Contracts
 const Valid =  {
@@ -304,28 +305,29 @@ contract('Kernel', function (accounts) {
     describe('.executeProcedure(bytes32 key, bytes payload)', function () {
         it('should return error if procedure key does not exist(3)', async function() {
             const kernel = await Kernel.new();
-            const [err, retVal] = await kernel.executeProcedure.call('test','');
+            const [err, retVal] = await kernel.executeProcedure.call('test','', "");
             assert.equal(err, 3);
         });
 
-        describe.only('should execute', function () {
+        describe('should execute', function () {
             it('Simple Procedure', async function () {
                 const kernel = await Kernel.new();
                 const [, address] = await kernel.createProcedure.call("Simple", Valid.Simple.bytecode);
                 const tx = await kernel.createProcedure("Simple", Valid.Simple.bytecode);
 
-                const [errX, valueX] = await kernel.executeProcedure.call("Simple", "X()");
+                // need to have the ABI definition in JSON as per specification
+                const [errX, valueX] = await kernel.executeProcedure.call("Simple", "X()", "");
                 assert.equal(errX.toNumber(), 4, "X() should fail");
 
-                const [err1, value1] = await kernel.executeProcedure.call("Simple", "A()");
+                const [err1, value1] = await kernel.executeProcedure.call("Simple", "A()", "");
                 assert.equal(err1.toNumber(), 0, "A() should succeed");
 
-                const [err2, value2] = await kernel.executeProcedure.call("Simple", "B()");
+                const [err2, value2] = await kernel.executeProcedure.call("Simple", "B()", "");
                 assert.equal(err2.toNumber(), 0, "B() should succeed");
 
                 assert.notEqual(web3.eth.getCode(kernel.address), "0x0",
                     "B() should not yet destroy kernel");
-                const tx2 = await kernel.executeProcedure("Simple", "B()");
+                const tx2 = await kernel.executeProcedure("Simple", "B()", "");
                 assert.equal(web3.eth.getCode(kernel.address), "0x0",
                     "B() should destroy kernel");
             })
@@ -336,18 +338,18 @@ contract('Kernel', function (accounts) {
 
                 // Should fail without correctly specifying arguments.
                 {
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()");
+                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(err.toNumber(), 4, "C() should not succeed");
                 }
                 // Should fail when using type synonyms such as uint, which
                 // can't be used in function selectors
                 {
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()");
+                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(err.toNumber(), 4, "C() should not succeed");
                 }
                 // Should succeed passing arguments
                 {
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C(uint256)");
+                    const [err, value] = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
                     assert.equal(err.toNumber(), 0, "C(uint256) should succeed");
                 }
             })
@@ -355,7 +357,7 @@ contract('Kernel', function (accounts) {
 
         it('should return an error if key does not exist (3)', async function() {
             const kernel = await Kernel.new();
-            const [err, retVal] = await kernel.executeProcedure.call('test','');
+            const [err, retVal] = await kernel.executeProcedure.call('test','',"");
             // The error codeshould be 3
             assert.equal(err, 3);
         });
@@ -392,7 +394,7 @@ contract('Kernel', function (accounts) {
             it('zero length (1)', async function() {
                 const kernel = await Kernel.new();
 
-                const [err, retVal] = await kernel.executeProcedure.call('','');
+                const [err, retVal] = await kernel.executeProcedure.call('','','');
                 assert.equal(err, 1);
             });
             it.skip('excess length (2)')

@@ -48,7 +48,7 @@ contract Kernel is Factory {
         procedureAddress = procedures.get(name);
     }
 
-    function executeProcedure(bytes32 name, string fselector) public returns (uint8 err, uint256 retVal) {
+    function executeProcedure(bytes32 name, string fselector, bytes payload) public returns (uint8 err, uint256 retVal) {
         // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             err = 1;
@@ -82,10 +82,15 @@ contract Kernel is Factory {
             //     the first 0x20 of the string.
             mstore(n,keccak256(add(fselector,0x20),mload(fselector)))
 
-            // Stores some
+            // The input starts at where we stored the hash (n)
             let ins := n
+            // Currently that is only the function selector hash, which is 4
+            // bytes long.
             let inl := 0x4
+            // TODO: Allocate a new area of memory into which to write the
+            // return data. This will depend on the size of the return type.
             let outs := 0x60
+            // There is no return value, therefore it's length is 0 bytes long
             let outl := 0
 
             status := delegatecall(sub(gas,5000),procedureAddress,ins,inl,outs,outl)
