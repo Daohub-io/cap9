@@ -8,11 +8,7 @@ function resolve (dir) {
   return path.join(__dirname, '..', dir)
 }
 
-<<<<<<< HEAD
-=======
 
-
->>>>>>> 50814d4777717b31d4401120107f7b47deee0d43
 module.exports = {
   context: path.resolve(__dirname, '../'),
   entry: {
@@ -29,10 +25,7 @@ module.exports = {
     extensions: ['.js', '.vue', '.json'],
     alias: {
       '@': resolve('src'),
-<<<<<<< HEAD
       Contracts: resolve('src/contracts')
-=======
->>>>>>> 50814d4777717b31d4401120107f7b47deee0d43
     }
   },
   module: {

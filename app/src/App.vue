@@ -5,20 +5,13 @@
 </template>
 
 <script>
-<<<<<<< HEAD
 import Contracts from 'Contracts'
 import Web3 from 'web3'
 
-
 export default {
   name: 'App'
 }
 
-=======
-export default {
-  name: 'App'
-}
->>>>>>> 50814d4777717b31d4401120107f7b47deee0d43
 </script>
 
 <style>
