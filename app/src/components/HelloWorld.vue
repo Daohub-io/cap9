@@ -42,14 +42,17 @@ export default {
   methods: {
     async createOrg() {
       let account1 = this.status.accounts[0];
-      let instance = await Kernel.deploy({ data: KernelABI.bytecode }).send({ from: account1, gas: 4712388, gasPrice: 100000000000 })
+      try {
+        let instance = await Kernel.deploy({ data: KernelABI.bytecode }).send({ from: account1, gas: 4712388, gasPrice: 100000000000 })
 
-      // Update Frontend
-      let name = this.Org.name;
-      this.List.push({ name: instance });
-      this.Org.name = "";
-      this.done = true;  
-
+        // Update Frontend
+        let name = this.Org.name;
+        this.List.push({ name: instance });
+        this.Org.name = "";
+        this.done = true;  
+      } catch (e) {
+        console.error(e)
+      }
     },
     async connect() {
       try {
