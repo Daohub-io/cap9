@@ -1,9 +1,13 @@
 <template>
   <div class="hello">
     <nav>Daolab</nav>
+<<<<<<< HEAD
     <main>
       
     </main>
+=======
+    <main>{{ msg }}</main>
+>>>>>>> 50814d4777717b31d4401120107f7b47deee0d43
   </div>
 </template>
 
