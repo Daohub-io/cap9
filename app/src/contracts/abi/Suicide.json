@@ -1,0 +1,215 @@
+{
+  "contractName": "Suicide",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "a",
+          "type": "address"
+        }
+      ],
+      "name": "foo",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6060604052341561000f57600080fd5b60bf8061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063fdf80bda146044575b600080fd5b3415604e57600080fd5b6078600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091905050607a565b005b8073ffffffffffffffffffffffffffffffffffffffff16ff00a165627a7a72305820af980970e948173c78be9bfc6c929f61778489f1d4ea0447c66a575017534fea0029",
+  "deployedBytecode": "0x606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063fdf80bda146044575b600080fd5b3415604e57600080fd5b6078600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091905050607a565b005b8073ffffffffffffffffffffffffffffffffffffffff16ff00a165627a7a72305820af980970e948173c78be9bfc6c929f61778489f1d4ea0447c66a575017534fea0029",
+  "sourceMap": "26:88:8:-;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "26:88:8:-;;;;;;;;;;;;;;;;;;;;;;;;49:63;;;;;;;;;;;;;;;;;;;;;;;;;;;;;103:1;90:15;;",
+  "source": "pragma solidity ^0.4.17;\n\ncontract Suicide {\n    function foo(address a) public {\n        selfdestruct(a);\n    }\n}\n",
+  "sourcePath": "/mnt/c/Users/Raketa/Documents/Repos/lab/contracts/test/invalid/Suicide.sol",
+  "ast": {
+    "attributes": {
+      "absolutePath": "/mnt/c/Users/Raketa/Documents/Repos/lab/contracts/test/invalid/Suicide.sol",
+      "exportedSymbols": {
+        "Suicide": [
+          868
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.4",
+            ".17"
+          ]
+        },
+        "id": 857,
+        "name": "PragmaDirective",
+        "src": "0:24:8"
+      },
+      {
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "contract",
+          "documentation": null,
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            868
+          ],
+          "name": "Suicide",
+          "scope": 869
+        },
+        "children": [
+          {
+            "attributes": {
+              "constant": false,
+              "implemented": true,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "foo",
+              "payable": false,
+              "scope": 868,
+              "stateMutability": "nonpayable",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "a",
+                      "scope": 867,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 858,
+                        "name": "ElementaryTypeName",
+                        "src": "62:7:8"
+                      }
+                    ],
+                    "id": 859,
+                    "name": "VariableDeclaration",
+                    "src": "62:9:8"
+                  }
+                ],
+                "id": 860,
+                "name": "ParameterList",
+                "src": "61:11:8"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 861,
+                "name": "ParameterList",
+                "src": "80:0:8"
+              },
+              {
+                "children": [
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "isStructConstructorCall": false,
+                          "lValueRequested": false,
+                          "names": [
+                            null
+                          ],
+                          "type": "tuple()",
+                          "type_conversion": false
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_address",
+                                  "typeString": "address"
+                                }
+                              ],
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 920,
+                              "type": "function (address)",
+                              "value": "selfdestruct"
+                            },
+                            "id": 862,
+                            "name": "Identifier",
+                            "src": "90:12:8"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 859,
+                              "type": "address",
+                              "value": "a"
+                            },
+                            "id": 863,
+                            "name": "Identifier",
+                            "src": "103:1:8"
+                          }
+                        ],
+                        "id": 864,
+                        "name": "FunctionCall",
+                        "src": "90:15:8"
+                      }
+                    ],
+                    "id": 865,
+                    "name": "ExpressionStatement",
+                    "src": "90:15:8"
+                  }
+                ],
+                "id": 866,
+                "name": "Block",
+                "src": "80:32:8"
+              }
+            ],
+            "id": 867,
+            "name": "FunctionDefinition",
+            "src": "49:63:8"
+          }
+        ],
+        "id": 868,
+        "name": "ContractDefinition",
+        "src": "26:88:8"
+      }
+    ],
+    "id": 869,
+    "name": "SourceUnit",
+    "src": "0:115:8"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.19+commit.c4cbbb05.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "1.0.1",
+  "updatedAt": "2018-03-12T17:35:03.798Z"
+}

@@ -1,0 +1,250 @@
+{
+  "contractName": "Delegatecall",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "a",
+          "type": "address"
+        },
+        {
+          "name": "gasAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "foo",
+      "outputs": [
+        {
+          "name": "v",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6060604052341561000f57600080fd5b60da8061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063bd0d639f146044575b600080fd5b3415604e57600080fd5b6081600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091908035906020019091905050609b565b604051808215151515815260200191505060405180910390f35b60008060008060008686f49050929150505600a165627a7a72305820617832415528909930b1cc4ceb9c264d8c69d91278274b121e79366c967f16fa0029",
+  "deployedBytecode": "0x606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063bd0d639f146044575b600080fd5b3415604e57600080fd5b6081600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091908035906020019091905050609b565b604051808215151515815260200191505060405180910390f35b60008060008060008686f49050929150505600a165627a7a72305820617832415528909930b1cc4ceb9c264d8c69d91278274b121e79366c967f16fa0029",
+  "sourceMap": "28:192:6:-;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "28:192:6:-;;;;;;;;;;;;;;;;;;;;;;;;57:160;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;113:6;197:1;194;191;188;185;174:9;161:12;156:43;;141:69;;;;:::o",
+  "source": "pragma solidity ^0.4.17;\r\n\r\ncontract Delegatecall {\r\n    function foo(address a, uint gasAmount) public returns (bool v) {\r\n        assembly {\r\n            v := delegatecall(gasAmount, a, 0, 0, 0, 0)\r\n        }\r\n    }\r\n}",
+  "sourcePath": "/mnt/c/Users/Raketa/Documents/Repos/lab/contracts/test/invalid/Delegatecall.sol",
+  "ast": {
+    "attributes": {
+      "absolutePath": "/mnt/c/Users/Raketa/Documents/Repos/lab/contracts/test/invalid/Delegatecall.sol",
+      "exportedSymbols": {
+        "Delegatecall": [
+          834
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.4",
+            ".17"
+          ]
+        },
+        "id": 822,
+        "name": "PragmaDirective",
+        "src": "0:24:6"
+      },
+      {
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "contract",
+          "documentation": null,
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            834
+          ],
+          "name": "Delegatecall",
+          "scope": 835
+        },
+        "children": [
+          {
+            "attributes": {
+              "constant": false,
+              "implemented": true,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "foo",
+              "payable": false,
+              "scope": 834,
+              "stateMutability": "nonpayable",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "a",
+                      "scope": 833,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 823,
+                        "name": "ElementaryTypeName",
+                        "src": "70:7:6"
+                      }
+                    ],
+                    "id": 824,
+                    "name": "VariableDeclaration",
+                    "src": "70:9:6"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "gasAmount",
+                      "scope": 833,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 825,
+                        "name": "ElementaryTypeName",
+                        "src": "81:4:6"
+                      }
+                    ],
+                    "id": 826,
+                    "name": "VariableDeclaration",
+                    "src": "81:14:6"
+                  }
+                ],
+                "id": 827,
+                "name": "ParameterList",
+                "src": "69:27:6"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "v",
+                      "scope": 833,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bool",
+                          "type": "bool"
+                        },
+                        "id": 828,
+                        "name": "ElementaryTypeName",
+                        "src": "113:4:6"
+                      }
+                    ],
+                    "id": 829,
+                    "name": "VariableDeclaration",
+                    "src": "113:6:6"
+                  }
+                ],
+                "id": 830,
+                "name": "ParameterList",
+                "src": "112:8:6"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "externalReferences": [
+                        {
+                          "gasAmount": {
+                            "declaration": 826,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "174:9:6",
+                            "valueSize": 1
+                          }
+                        },
+                        {
+                          "a": {
+                            "declaration": 824,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "185:1:6",
+                            "valueSize": 1
+                          }
+                        },
+                        {
+                          "v": {
+                            "declaration": 829,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "156:1:6",
+                            "valueSize": 1
+                          }
+                        }
+                      ],
+                      "operations": "{\n    v := delegatecall(gasAmount, a, 0, 0, 0, 0)\n}"
+                    },
+                    "children": [],
+                    "id": 831,
+                    "name": "InlineAssembly",
+                    "src": "132:85:6"
+                  }
+                ],
+                "id": 832,
+                "name": "Block",
+                "src": "121:96:6"
+              }
+            ],
+            "id": 833,
+            "name": "FunctionDefinition",
+            "src": "57:160:6"
+          }
+        ],
+        "id": 834,
+        "name": "ContractDefinition",
+        "src": "28:192:6"
+      }
+    ],
+    "id": 835,
+    "name": "SourceUnit",
+    "src": "0:220:6"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.19+commit.c4cbbb05.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "1.0.1",
+  "updatedAt": "2018-03-12T17:35:03.803Z"
+}

@@ -1,0 +1,250 @@
+{
+  "contractName": "Callcode",
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "a",
+          "type": "address"
+        },
+        {
+          "name": "gasAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "foo",
+      "outputs": [
+        {
+          "name": "v",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6060604052341561000f57600080fd5b60db8061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063bd0d639f146044575b600080fd5b3415604e57600080fd5b6081600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091908035906020019091905050609b565b604051808215151515815260200191505060405180910390f35b6000806000806000808787f29050929150505600a165627a7a72305820ec596c1d6915ebff4b024e283cb4bfed0c1a6ae51c914041ebf75463867f9b240029",
+  "deployedBytecode": "0x606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063bd0d639f146044575b600080fd5b3415604e57600080fd5b6081600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091908035906020019091905050609b565b604051808215151515815260200191505060405180910390f35b6000806000806000808787f29050929150505600a165627a7a72305820ec596c1d6915ebff4b024e283cb4bfed0c1a6ae51c914041ebf75463867f9b240029",
+  "sourceMap": "28:187:4:-;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "28:187:4:-;;;;;;;;;;;;;;;;;;;;;;;;53:159;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;109:6;192:1;189;186;183;180;177;166:9;157:8;152:42;;137:68;;;;:::o",
+  "source": "pragma solidity ^0.4.17;\r\n\r\ncontract Callcode {\r\n    function foo(address a, uint gasAmount) public returns (bool v) {\r\n        assembly {\r\n            v := callcode(gasAmount, a, 0, 0, 0, 0, 0)\r\n        }\r\n    }\r\n}",
+  "sourcePath": "/mnt/c/Users/Raketa/Documents/Repos/lab/contracts/test/invalid/Callcode.sol",
+  "ast": {
+    "attributes": {
+      "absolutePath": "/mnt/c/Users/Raketa/Documents/Repos/lab/contracts/test/invalid/Callcode.sol",
+      "exportedSymbols": {
+        "Callcode": [
+          806
+        ]
+      }
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.4",
+            ".17"
+          ]
+        },
+        "id": 794,
+        "name": "PragmaDirective",
+        "src": "0:24:4"
+      },
+      {
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "contract",
+          "documentation": null,
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            806
+          ],
+          "name": "Callcode",
+          "scope": 807
+        },
+        "children": [
+          {
+            "attributes": {
+              "constant": false,
+              "implemented": true,
+              "isConstructor": false,
+              "modifiers": [
+                null
+              ],
+              "name": "foo",
+              "payable": false,
+              "scope": 806,
+              "stateMutability": "nonpayable",
+              "superFunction": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "a",
+                      "scope": 805,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "type": "address"
+                        },
+                        "id": 795,
+                        "name": "ElementaryTypeName",
+                        "src": "66:7:4"
+                      }
+                    ],
+                    "id": 796,
+                    "name": "VariableDeclaration",
+                    "src": "66:9:4"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "gasAmount",
+                      "scope": 805,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint",
+                          "type": "uint256"
+                        },
+                        "id": 797,
+                        "name": "ElementaryTypeName",
+                        "src": "77:4:4"
+                      }
+                    ],
+                    "id": 798,
+                    "name": "VariableDeclaration",
+                    "src": "77:14:4"
+                  }
+                ],
+                "id": 799,
+                "name": "ParameterList",
+                "src": "65:27:4"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "v",
+                      "scope": 805,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bool",
+                          "type": "bool"
+                        },
+                        "id": 800,
+                        "name": "ElementaryTypeName",
+                        "src": "109:4:4"
+                      }
+                    ],
+                    "id": 801,
+                    "name": "VariableDeclaration",
+                    "src": "109:6:4"
+                  }
+                ],
+                "id": 802,
+                "name": "ParameterList",
+                "src": "108:8:4"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "externalReferences": [
+                        {
+                          "gasAmount": {
+                            "declaration": 798,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "166:9:4",
+                            "valueSize": 1
+                          }
+                        },
+                        {
+                          "a": {
+                            "declaration": 796,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "177:1:4",
+                            "valueSize": 1
+                          }
+                        },
+                        {
+                          "v": {
+                            "declaration": 801,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "152:1:4",
+                            "valueSize": 1
+                          }
+                        }
+                      ],
+                      "operations": "{\n    v := callcode(gasAmount, a, 0, 0, 0, 0, 0)\n}"
+                    },
+                    "children": [],
+                    "id": 803,
+                    "name": "InlineAssembly",
+                    "src": "128:84:4"
+                  }
+                ],
+                "id": 804,
+                "name": "Block",
+                "src": "117:95:4"
+              }
+            ],
+            "id": 805,
+            "name": "FunctionDefinition",
+            "src": "53:159:4"
+          }
+        ],
+        "id": 806,
+        "name": "ContractDefinition",
+        "src": "28:187:4"
+      }
+    ],
+    "id": 807,
+    "name": "SourceUnit",
+    "src": "0:215:4"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.4.19+commit.c4cbbb05.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "1.0.1",
+  "updatedAt": "2018-03-12T17:35:03.803Z"
+}

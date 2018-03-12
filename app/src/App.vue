@@ -5,9 +5,14 @@
 </template>
 
 <script>
+import Contracts from 'Contracts'
+import Web3 from 'web3'
+
+
 export default {
   name: 'App'
 }
+
 </script>
 
 <style>

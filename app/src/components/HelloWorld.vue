@@ -1,7 +1,9 @@
 <template>
   <div class="hello">
     <nav>Daolab</nav>
-    <main>{{ msg }}</main>
+    <main>
+      
+    </main>
   </div>
 </template>
 
