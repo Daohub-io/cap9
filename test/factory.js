@@ -15,7 +15,7 @@ const Invalid = {
     Create: artifacts.require('test/invalid/Create'),
     Suicide: artifacts.require('test/invalid/Suicide'),
     Store: artifacts.require('test/invalid/Store')
-    
+
 }
 
 function isNullAddress(address) {
@@ -114,7 +114,7 @@ contract('Factory', function (accounts) {
             let result = await factory.validate(Valid.Adder.bytecode, {from: accounts[0]});
             assert.equal(0, result.toNumber());
         })
-        
+
         it('should reject a contract if it uses CREATECALL', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Invalid.Create.bytecode, {from: accounts[0]});
@@ -147,11 +147,13 @@ contract('Factory', function (accounts) {
 
     })
 
-    describe.only('.verifiedCreate(uint8,bytes)', function () {
+    describe('.verifiedCreate(uint8,bytes)', function () {
         it('should reject a contract if it uses Storage Table at namespace 0x0000_0000 (kernel namespace)', async function () {
             const factory = await Factory.new();
-            // Perform two ephemeral calls to factory.create
-            const address1 = await factory.create.call(Invalid.Store.bytecode, {from: accounts[testAccount]});
+            // Perform an ephemeral calls to factory.verifiedCreate to get the
+            // address
+            const address = await factory.verifiedCreate.call(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
+            // Create the procedure
             const tx = await factory.verifiedCreate(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
 
             assert.throws(async () => {
@@ -162,8 +164,10 @@ contract('Factory', function (accounts) {
 
         it('should reject a contract if it uses Storage Table outside its designated mask', async function () {
             const factory = await Factory.new();
-            // Perform two ephemeral calls to factory.create
-            const address1 = await factory.create.call(Invalid.Store.bytecode, {from: accounts[testAccount]});
+            // Perform an ephemeral calls to factory.verifiedCreate to get the
+            // address
+            const address = await factory.verifiedCreate.call(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
+            // Create the procedure
             const tx = await factory.verifiedCreate(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
 
             assert.throws(async () => {
