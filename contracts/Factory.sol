@@ -4,14 +4,14 @@ contract Factory {
 
     /*opCode -> jump size*/
     mapping(byte => uint8) public opCodes;
-    
+
     event LogFundsReceived(address sender, uint amount);
     event LogFundsSent(address receiver, uint amount);
 
     function() payable public {
         LogFundsReceived(msg.sender, msg.value);
     }
-    
+
     function Factory() public {
         /* PUSH opCodes */
         // TODO: replace with code
@@ -81,12 +81,80 @@ contract Factory {
         }
     }
 
-    function verifiedCreate(uint8 mask, bytes oCode) public view returns (uint8 err) {
+    // Create a procedure along with a mask that determines which storage
+    // addresses it can use to store data (using sstore). The kernel has tableid
+    // of 0. The tableid forms the first 8 bits of all of the storage address
+    // that a procedure has access to. For example (in binary:
+    // 0000-0000-..... is kernel storage space
+    // 0000-0001-..... is storage space of table id 1
+    // and so on.
+    // The purpose of the verification is to ensure that no procedure accesses
+    // storage outside of their address range.
+    function verifiedCreate(uint8 tableid, bytes oCode) public returns (address d) {
+        bytes newOCode;
+        uint8 oc;
+        // TODO: jump to a revert
+        // newOCode.push(0x5b /* JUMPDEST */);
+        // newOCode.push(0xfd /* REVERT */);
         for (uint256 i = 0; i < oCode.length; i ++) {
             byte ins = oCode[i];
+            if (oc == 0) {
+                if (ins == 0x55 /* SSTORE */) {
+                    newOCode.push(0x7f /* PUSH32 */);
+                    newOCode.push(0x01); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
 
-            i += opCodes[ins];
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+                    newOCode.push(0x00); // The minimum address not in kernel
+
+                    newOCode.push(0x81 /* DUP2 */);
+                    newOCode.push(0x10 /* LT */);
+                    newOCode.push(0x60 /* PUSH1 */);
+                    newOCode.push(0x02); // Label to jump to
+                    newOCode.push(0x57 /* JUMPI */); // Label to jump to
+                }
+                oc = opCodes[ins];
+            } else {
+                oc--;
+            }
+            newOCode.push(ins);
         }
-        return 0;
+        // newOCode.push(0x00);
+        // newOCode.push(0x00);
+        // newOCode.push(0x00);
+        // newOCode.push(0x00);
+
+        d = create(newOCode);
+        // require(newOCode.length == (oCode.length+4));
     }
 }
