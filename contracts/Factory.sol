@@ -87,11 +87,11 @@ contract Factory {
     // that a procedure has access to. For example (in binary:
     // 0000-0000-..... is kernel storage space
     // 0000-0001-..... is storage space of table id 1
+    // 0000-0002-..... is storage space of table id 2
     // and so on.
     // The purpose of the verification is to ensure that no procedure accesses
     // storage outside of their address range.
     function verifiedCreate(uint8 tableid, bytes oCode) public returns (address d) {
-        // bytes newOCode;
         uint8 oc;
         // TODO: jump to a revert
         // newOCode.push(0x5b /* JUMPDEST */);
@@ -106,8 +106,10 @@ contract Factory {
                     // sequence of intructions. This sequence of instructions
                     // is 38 bytes long.
 
-                    // To begin with it will be 3 bytes long and do a push and
-                    // pop of a value.
+                    // Currently we do not look for these instructions, but a
+                    // much simpler instruction sequence of 6 bytes. This sequence
+                    // must be present before each SSTORE in order to pass
+                    // validation.
 
                     if (oCode[i-6] != 0x60 /* PUSH1 */) { revert();}
                     // unknown value goes here
@@ -115,6 +117,7 @@ contract Factory {
                     if (oCode[i-3] != 0x40 /* 0x40 */) { revert();}
                     if (oCode[i-2] != 0x51 /* MLOAD */) { revert();}
                     if (oCode[i-1] != 0x52 /* MSTORE */) { revert();}
+                    // Commented below is the functioning protection sequence.
                     // newOCode.push(0x7f /* PUSH32 */);
                     // newOCode.push(0x01); // The minimum address not in kernel
                     // newOCode.push(0x00); // The minimum address not in kernel
@@ -162,14 +165,7 @@ contract Factory {
             } else {
                 oc--;
             }
-            // newOCode.push(ins);
         }
-        // newOCode.push(0x00);
-        // newOCode.push(0x00);
-        // newOCode.push(0x00);
-        // newOCode.push(0x00);
-
         d = create(oCode);
-        // require(newOCode.length == (oCode.length+4));
     }
 }

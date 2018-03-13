@@ -107,7 +107,6 @@ contract('Factory', function (accounts) {
             const code = web3.eth.getCode(address);
             assert.equal(Adder.deployedBytecode, code);
         })
-
     })
 
 
