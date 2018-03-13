@@ -152,12 +152,12 @@ contract('Factory', function (accounts) {
             const factory = await Factory.new();
             // Perform an ephemeral calls to factory.verifiedCreate to get the
             // address
-            const address = await factory.verifiedCreate.call(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
+            const address = await factory.verifiedCreate.call(0, Invalid.Store.bytecode, {from: accounts[testAccount]});
             // Create the procedure
-            const tx = await factory.verifiedCreate(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
+            const tx = await factory.verifiedCreate(0, Invalid.Store.bytecode, {from: accounts[testAccount]});
 
             assert.throws(async () => {
-                let invalidStorer = Store.at(address);
+                let invalidStorer = Invalid.Store.at(address);
                 let two = await invalidStorer.foo.call();
             }, 'should throw on invalid storage access')
         })
@@ -171,7 +171,7 @@ contract('Factory', function (accounts) {
             const tx = await factory.verifiedCreate(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
 
             assert.throws(async () => {
-                let invalidStorer = Store.at(address);
+                let invalidStorer = Invalid.Store.at(address);
                 let two = await invalidStorer.boo.call(2);
             }, 'should throw on invalid storage access')
 
