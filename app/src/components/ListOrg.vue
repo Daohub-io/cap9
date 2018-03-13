@@ -17,11 +17,15 @@ export default {
     // See http://web3js.readthedocs.io/en/1.0/web3-eth-contract.html#properties
     organizations() {
       let kernels = this.$kernels();
+      let web3 = this.$web3();
 
-      return kernels.map(([name, org]) => ({
-        name,
-        address: org.options.address
-      }));
+      return kernels.map(([name, org]) => {
+          return {
+              name,
+              address: org.options.address,
+              balance: 0
+          };
+      })
     }
   }
 };

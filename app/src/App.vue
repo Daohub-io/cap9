@@ -7,6 +7,8 @@
           <b-btn v-b-modal.modalConnection size="sm" :variant="connected ? 'success': 'danger'">{{ connected ? 'Connected': 'No Connection'}}</b-btn>
           <b-modal id="modalConnection" ref="modal" title="Set Connection" @ok="handleOk">
             <form @submit.stop.prevent="handleOk">
+              <p>Network Id: {{ network.id }}</p>
+              <p>Type: {{ network.type }} </p>
               <b-form-input type="text" placeholder="Enter Node Address" v-model="address"></b-form-input>
             </form>
           </b-modal>
@@ -15,12 +17,8 @@
     </b-navbar>
     <div class="lower-bound">
       <b-nav vertical class="side-nav">
-        <b-nav-item>
-          <router-link to="/createOrg">Create</router-link>
-        </b-nav-item>
-        <b-nav-item>
-          <router-link to="/listOrg">List</router-link>
-        </b-nav-item>
+        <b-nav-item to="/createOrg">Create</b-nav-item>
+        <b-nav-item to="/listOrg">List</b-nav-item>
       </b-nav>
       <div class="content">
         <router-view/>
@@ -42,7 +40,11 @@ export default {
   data() {
     return {
       connected: null,
-      address: "http://localhost:8545"
+      address: "http://localhost:8545",
+      network: {
+        id: '',
+        type: ''
+      }
     };
   },
   created() {
@@ -56,9 +58,16 @@ export default {
     async connect() {
       try {
         await this.$connect({address: this.address})
+
+        const web3 = this.$web3();        
+        this.network.id = await web3.eth.net.getId()
+        this.network.type = await web3.eth.net.getNetworkType()
+
       } catch (e) {
         console.error(e, `Invalid Connection`);
         this.connected = false;
+        this.network.id = false;
+        this.network.type = false;
         return;
       }
       this.connected = true;
@@ -98,7 +107,18 @@ body,
 ul.side-nav {
   flex-basis: 12rem;
   background-color: #999;
-}
+  }
+
+  ul.side-nav li a {
+    border-bottom: 1px solid #888;
+    color: #fff;
+    padding: 0.7rem 0.5rem;
+    width: 100%;
+    height: 100%;
+  }
+  ul.side-nav li a:hover {
+    background-color: #333;
+  }
 .content {
   flex-grow: 1;
 }
