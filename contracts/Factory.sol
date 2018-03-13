@@ -40,6 +40,7 @@ contract Factory {
         return 0;
     }
 
+
     function codeLength(bytes oCode) pure public returns (uint len) {
         assembly {
             // Get Length
@@ -78,5 +79,14 @@ contract Factory {
 
             d := create(0, code, add(code, len))
         }
+    }
+
+    function verifiedCreate(uint8 mask, bytes oCode) public view returns (uint8 err) {
+        for (uint256 i = 0; i < oCode.length; i ++) {
+            byte ins = oCode[i];
+
+            i += opCodes[ins];
+        }
+        return 0;
     }
 }

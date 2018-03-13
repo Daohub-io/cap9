@@ -13,7 +13,9 @@ const Invalid = {
     Callcode: artifacts.require('test/invalid/Callcode'),
     Delegatecall: artifacts.require('test/invalid/Delegatecall'),
     Create: artifacts.require('test/invalid/Create'),
-    Suicide: artifacts.require('test/invalid/Suicide')
+    Suicide: artifacts.require('test/invalid/Suicide'),
+    Store: artifacts.require('test/invalid/Store')
+    
 }
 
 function isNullAddress(address) {
@@ -105,7 +107,7 @@ contract('Factory', function (accounts) {
 
     })
 
-    describe('.validate()', async function() {
+    describe('.validate()', function() {
 
         it('should accept valid contract', async function () {
             let factory = await Factory.deployed();
@@ -142,6 +144,33 @@ contract('Factory', function (accounts) {
             let result = await factory.validate(Invalid.Suicide.bytecode, {from: accounts[0]});
             assert.equal(5, result.toNumber());
         })
+
     })
 
+    describe.only('.verifiedCreate(uint8,bytes)', function () {
+        it('should reject a contract if it uses Storage Table at namespace 0x0000_0000 (kernel namespace)', async function () {
+            const factory = await Factory.new();
+            // Perform two ephemeral calls to factory.create
+            const address1 = await factory.create.call(Invalid.Store.bytecode, {from: accounts[testAccount]});
+            const tx = await factory.verifiedCreate(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
+
+            assert.throws(async () => {
+                let invalidStorer = Store.at(address);
+                let two = await invalidStorer.foo.call();
+            }, 'should throw on invalid storage access')
+        })
+
+        it('should reject a contract if it uses Storage Table outside its designated mask', async function () {
+            const factory = await Factory.new();
+            // Perform two ephemeral calls to factory.create
+            const address1 = await factory.create.call(Invalid.Store.bytecode, {from: accounts[testAccount]});
+            const tx = await factory.verifiedCreate(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
+
+            assert.throws(async () => {
+                let invalidStorer = Store.at(address);
+                let two = await invalidStorer.boo.call(2);
+            }, 'should throw on invalid storage access')
+
+        })
+    })
 })
