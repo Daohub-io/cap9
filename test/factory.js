@@ -137,7 +137,6 @@ contract('Factory', function (accounts) {
             assert.equal(4, result.toNumber());
         })
 
-
         it('should reject a contract if it uses SUICIDECALL', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Invalid.Suicide.bytecode, {from: accounts[0]});

@@ -2,11 +2,13 @@ pragma solidity ^0.4.17;
 
 library ProcedureTable {
     using ProcedureTable for ProcedureTable.Self;
-
     struct Procedure {
         // Equal to the index of the key of this item in keys, plus 1.
         uint keyIndex;
         address location;
+        
+        // Storage Mask
+        uint256 storageMask;
     }
 
     struct Self {
@@ -14,9 +16,11 @@ library ProcedureTable {
         bytes32[] keys;
     }
 
-    function insert(Self storage self, bytes32 key, address value) internal returns (bool replaced) {
+    function insert(Self storage self, bytes32 key, address value, uint256 mask) internal returns (bool replaced) {
         Procedure storage p = self.data[key];
         p.location = value;
+        p.storageMask = mask;
+
         if (p.keyIndex > 0) {
             return true;
         } else {
