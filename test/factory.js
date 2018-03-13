@@ -118,38 +118,39 @@ contract('Factory', function (accounts) {
 
         it('should accept valid contract', async function () {
             let factory = await Factory.deployed();
-            let valid = await factory.validate(Valid.Adder.bytecode, {from: accounts[0]});
-            assert(valid);
+            let result = await factory.validate(Valid.Adder.bytecode, {from: accounts[0]});
+            assert.equal(0, result.toNumber());
+        })
+        
+        it('should reject a contract if it uses CREATECALL', async function () {
+            let factory = await Factory.deployed();
+            let result = await factory.validate(Invalid.Create.bytecode, {from: accounts[0]});
+            assert.equal(1, result.toNumber());
         })
 
         it('should reject a contract if it uses CALL', async function () {
             let factory = await Factory.deployed();
-            let valid = await factory.validate(Invalid.Call.bytecode, {from: accounts[0]});
-            assert(!valid);
+            let result = await factory.validate(Invalid.Call.bytecode, {from: accounts[0]});
+            assert.equal(2, result.toNumber());
         })
 
         it('should reject a contract if it uses CALLCODE', async function () {
             let factory = await Factory.deployed();
-            let valid = await factory.validate(Invalid.Callcode.bytecode, {from: accounts[0]});
-            assert(!valid);
+            let result = await factory.validate(Invalid.Callcode.bytecode, {from: accounts[0]});
+            assert.equal(3, result.toNumber());
         })
 
         it('should reject a contract if it uses DELEGATECALL', async function () {
             let factory = await Factory.deployed();
-            let valid = await factory.validate(Invalid.Delegatecall.bytecode, {from: accounts[0]});
-            assert(!valid);
+            let result = await factory.validate(Invalid.Delegatecall.bytecode, {from: accounts[0]});
+            assert.equal(4, result.toNumber());
         })
 
-        it('should reject a contract if it uses CREATECALL', async function () {
-            let factory = await Factory.deployed();
-            let valid = await factory.validate(Invalid.Create.bytecode, {from: accounts[0]});
-            assert(!valid);
-        })
 
         it('should reject a contract if it uses SUICIDECALL', async function () {
             let factory = await Factory.deployed();
-            let valid = await factory.validate(Invalid.Suicide.bytecode, {from: accounts[0]});
-            assert(!valid);
+            let result = await factory.validate(Invalid.Suicide.bytecode, {from: accounts[0]});
+            assert.equal(5, result.toNumber());
         })
     })
 

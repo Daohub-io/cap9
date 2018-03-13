@@ -18,22 +18,19 @@ contract Factory {
         opCodes[0x7c] = 29; opCodes[0x7d] = 30; opCodes[0x7e] = 31; opCodes[0x7f] = 32;
     }
 
-    function validate(bytes oCode) public view returns (bool valid) {
+    function validate(bytes oCode) public view returns (uint8 err) {
         for (uint256 i = 0; i < oCode.length; i ++) {
             byte ins = oCode[i];
 
-            if (ins == 0xf0 || // CREATE
-                ins == 0xf1 || // CALL
-                ins == 0xf2 || // CALLCODE
-                ins == 0xf4 || // DELEGATECALL
-                ins == 0xff)   // SUICIDE
-            {
-                return false;
-            }
+            if (ins == 0xf0) {return 1;} // CREATE
+            if (ins == 0xf1) {return 2;} // CALL
+            if (ins == 0xf2) {return 3;} // CALLCODE
+            if (ins == 0xf4) {return 4;} // DELEGATECALL
+            if (ins == 0xff) {return 5;} // SUICIDE
 
-            i = i + opCodes[ins];
+            i += opCodes[ins];
         }
-        return true;
+        return 0;
     }
 
     event LogFundsReceived(address sender, uint amount);
