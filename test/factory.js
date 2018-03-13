@@ -107,6 +107,7 @@ contract('Factory', function (accounts) {
 
     })
 
+
     describe('.validate()', function() {
 
         it('should accept valid contract', async function () {
@@ -147,7 +148,63 @@ contract('Factory', function (accounts) {
 
     })
 
-    describe('.verifiedCreate(uint8,bytes)', function () {
+    describe.only('.verifiedCreate(uint8,bytes)', function () {
+
+        it('should create a sample contract', async function () {
+            const factory = await Factory.new();
+            // Peform an ephemeral call to Factory.create
+            let address = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
+            assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
+            assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
+        })
+
+        it('the returned address should be deterministic and valid', async function () {
+            const factory = await Factory.new();
+            // Perform two ephemeral calls to factory.create
+            let address1 = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
+            let address2 = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
+            // Addresses are the same.
+            assert.equal(address1, address2);
+            // The addresses are valid.
+            assert(web3.isAddress(address1), `The returned address (${address1}) is a valid address`);
+            assert(web3.isAddress(address2), `The returned address (${address2}) is a valid address`);
+            // The addresses are not null.
+            assert(!isNullAddress(address1), `The returned address (${address1}) is not the null address`);
+            // const code = web3.eth.getCode(address1);
+            // assert.equal(Adder.bytecode)
+        })
+
+        it('the returned address should not be deterministic if we make an additional transaction in between', async function () {
+            const factory = await Factory.new();
+            // Perform two ephemeral calls to factory.create
+            const address1 = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
+            const tx = await factory.verifiedCreate(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
+            const address2 = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
+            // The addresses are valid.
+            assert(web3.isAddress(address1), `The returned address (${address1}) is a valid address`);
+            assert(web3.isAddress(address2), `The returned address (${address2}) is a valid address`);
+            // The addresses are not null.
+            assert(!isNullAddress(address1), `The returned address (${address1}) is not the null address`);
+            // Addresses are different.
+            assert.notEqual(address1, address2);
+        })
+
+        it('the new contract should function properly', async function () {
+            const factory = await Factory.new();
+            let address = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
+            let tx = await factory.verifiedCreate(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
+            assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
+            assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
+
+            let adder = Adder.at(address);
+            let two = await adder.add.call(1, 1);
+            assert.equal(two, 2);
+
+            // The returned code should be the same as the sent code
+            const code = web3.eth.getCode(address);
+            assert.equal(Adder.deployedBytecode, code);
+        })
+
         it('should reject a contract if it uses Storage Table at namespace 0x0000_0000 (kernel namespace)', async function () {
             const factory = await Factory.new();
             // Perform an ephemeral calls to factory.verifiedCreate to get the
@@ -156,8 +213,8 @@ contract('Factory', function (accounts) {
             // Create the procedure
             const tx = await factory.verifiedCreate(0, Invalid.Store.bytecode, {from: accounts[testAccount]});
 
+            let invalidStorer = Invalid.Store.at(address);
             assert.throws(async () => {
-                let invalidStorer = Invalid.Store.at(address);
                 let two = await invalidStorer.foo.call();
             }, 'should throw on invalid storage access')
         })
@@ -170,8 +227,8 @@ contract('Factory', function (accounts) {
             // Create the procedure
             const tx = await factory.verifiedCreate(1, Invalid.Store.bytecode, {from: accounts[testAccount]});
 
+            let invalidStorer = Invalid.Store.at(address);
             assert.throws(async () => {
-                let invalidStorer = Invalid.Store.at(address);
                 let two = await invalidStorer.boo.call(2);
             }, 'should throw on invalid storage access')
 
