@@ -148,7 +148,6 @@ contract('Factory', function (accounts) {
             let result = await factory.validate(Invalid.Suicide.bytecode, {from: accounts[0]});
             assert.equal(5, result.toNumber());
         })
-
     })
 
     describe.only('.verifiedCreate(uint8,bytes)', function () {
@@ -273,7 +272,6 @@ contract('Factory', function (accounts) {
                 success = false;
                 assert(success, `should not throw ${e}`);
             }
-
         })
 
         it('should fail to run a contract if it uses Storage Table outside its designated mask', async function () {
@@ -293,7 +291,6 @@ contract('Factory', function (accounts) {
                 success = false;
             }
             assert(!success, "Calling should fail");
-
         })
     })
 })
