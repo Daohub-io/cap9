@@ -5,6 +5,8 @@ const Factory = artifacts.require('./Factory.sol')
 
 // Valid Contracts
 const Valid =  {
+    StoreInTable1: artifacts.require('test/valid/StoreInTable1'),
+    StoreInKernel: artifacts.require('test/valid/StoreInKernel'),
     Adder: artifacts.require('test/valid/Adder.sol')
 }
 
@@ -14,8 +16,7 @@ const Invalid = {
     Delegatecall: artifacts.require('test/invalid/Delegatecall'),
     Create: artifacts.require('test/invalid/Create'),
     Suicide: artifacts.require('test/invalid/Suicide'),
-    StoreInKernel: artifacts.require('test/invalid/StoreInKernel'),
-    StoreInTable1: artifacts.require('test/invalid/StoreInTable1'),
+    StoreInKernelInv: artifacts.require('test/invalid/StoreInKernelInv'),
     Store: artifacts.require('test/invalid/Store')
 
 }
@@ -153,6 +154,7 @@ contract('Factory', function (accounts) {
     describe.only('.verifiedCreate(uint8,bytes)', function () {
 
         it('should create a sample contract', async function () {
+            // This contract has no SSTOREs, and therefore passes validation
             const factory = await Factory.new();
             // Peform an ephemeral call to Factory.create
             let address = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
@@ -161,6 +163,7 @@ contract('Factory', function (accounts) {
         })
 
         it('the returned address should be deterministic and valid', async function () {
+            // This contract has no SSTOREs, and therefore passes validation
             const factory = await Factory.new();
             // Perform two ephemeral calls to factory.create
             let address1 = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
@@ -175,6 +178,7 @@ contract('Factory', function (accounts) {
         })
 
         it('the returned address should not be deterministic if we make an additional transaction in between', async function () {
+            // This contract has no SSTOREs, and therefore passes validation
             const factory = await Factory.new();
             // Perform two ephemeral calls to factory.create
             const address1 = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
@@ -190,6 +194,7 @@ contract('Factory', function (accounts) {
         })
 
         it('the new contract should function properly', async function () {
+            // This contract has no SSTOREs, and therefore passes validation
             const factory = await Factory.new();
             let address = await factory.verifiedCreate.call(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
             let tx = await factory.verifiedCreate(1, Valid.Adder.bytecode, {from: accounts[testAccount]});
@@ -205,55 +210,63 @@ contract('Factory', function (accounts) {
             assert.equal(Valid.Adder.deployedBytecode, code);
         })
 
-        it('should accept contract if it uses Storage Table at namespace 0x0000_0000 (kernel namespace)', async function () {
+        it('should not accept contract if it uses Storage Table at namespace 0x0000_0000 (kernel namespace), without protections', async function () {
             const factory = await Factory.new();
             // Perform an ephemeral calls to factory.verifiedCreate to get the
             // address
-            const address = await factory.verifiedCreate.call(0, Invalid.StoreInKernel.bytecode, {from: accounts[testAccount]});
+            let address;
+            try {
+                address = await factory.verifiedCreate.call(0, Invalid.StoreInKernelInv.bytecode, {from: accounts[testAccount]});
+                assert(false, "Should fail")
+            } catch (e) {
+                assert(true, "Should fail")
+            }
+        })
+
+        it('should accept contract if it uses Storage Table at namespace 0x0000_0000 (kernel namespace), but has protections', async function () {
+            const factory = await Factory.new();
+            // Perform an ephemeral calls to factory.verifiedCreate to get the
+            // address
+            const address = await factory.verifiedCreate.call(0, Valid.StoreInKernel.bytecode, {from: accounts[testAccount]});
             // Create the procedure
-            const tx = await factory.verifiedCreate(0, Invalid.StoreInKernel.bytecode, {from: accounts[testAccount]});
+            const tx = await factory.verifiedCreate(0, Valid.StoreInKernel.bytecode, {from: accounts[testAccount]});
             // The addresses are valid.
             assert(web3.isAddress(address), `The returned address (${address}) is a valid address`);
             // The addresses are not null.
             assert(!isNullAddress(address), `The returned address (${address}) is not the null address`);
-            let invalidStorer = Invalid.StoreInKernel.at(address);
+            let invalidStorer = Valid.StoreInKernel.at(address);
         })
 
-        it('should fail to run a contract if it uses Storage Table at namespace 0x0000_0000 (kernel namespace)', async function () {
+        it('should fail to run a contract if it uses Storage Table at namespace 0x0000_0000 (kernel namespace), but has protections', async function () {
             const factory = await Factory.new();
             // Perform an ephemeral calls to factory.verifiedCreate to get the
             // address
-            const address = await factory.verifiedCreate.call(0, Invalid.StoreInKernel.bytecode, {from: accounts[testAccount]});
+            const address = await factory.verifiedCreate.call(0, Valid.StoreInKernel.bytecode, {from: accounts[testAccount]});
             // Create the procedure
-            const tx = await factory.verifiedCreate(0, Invalid.StoreInKernel.bytecode, {from: accounts[testAccount]});
-            // console.log(Invalid.StoreInKernel.bytecode)
-            let invalidStorer = Invalid.StoreInKernel.at(address);
+            const tx = await factory.verifiedCreate(0, Valid.StoreInKernel.bytecode, {from: accounts[testAccount]});
+
+            let validStorer = Valid.StoreInKernel.at(address);
             let success;
             try {
-                let two = await invalidStorer.foo.call();
+                let two = await validStorer.foo.call();
                 success = true;
             } catch (e) {
                 success = false;
             }
-            assert(!success);
+            assert(!success, "Calling should fail");
         })
 
-        it.only('should succeed in running a contract if it uses Storage Table inside its designated mask', async function () {
+        it('should succeed in running a contract if it uses Storage Table inside its designated mask, and it has protections', async function () {
             const factory = await Factory.new();
             // Perform an ephemeral calls to factory.verifiedCreate to get the
             // address
-            const address = await factory.verifiedCreate.call(1, Invalid.StoreInTable1.bytecode, {from: accounts[testAccount]});
+            const address = await factory.verifiedCreate.call(1, Valid.StoreInTable1.bytecode, {from: accounts[testAccount]});
             // Create the procedure
-            const tx = await factory.verifiedCreate(1, Invalid.StoreInTable1.bytecode, {from: accounts[testAccount]});
-            console.log(Invalid.StoreInTable1.deployedBytecode)
-            console.log(address)
-            const code = web3.eth.getCode(address);
-            console.log(code);
-
-            let invalidStorer = Invalid.StoreInTable1.at(address);
+            const tx = await factory.verifiedCreate(1, Valid.StoreInTable1.bytecode, {from: accounts[testAccount]});
+            let validStorer = Valid.StoreInTable1.at(address);
             let success;
             try {
-                let two = await invalidStorer.foo.call();
+                let two = await validStorer.foo.call();
                 success = true;
                 assert(success, `should not throw`);
             } catch (e) {
@@ -267,19 +280,19 @@ contract('Factory', function (accounts) {
             const factory = await Factory.new();
             // Perform an ephemeral calls to factory.verifiedCreate to get the
             // address
-            const address = await factory.verifiedCreate.call(1, Invalid.StoreInTable1.bytecode, {from: accounts[testAccount]});
+            const address = await factory.verifiedCreate.call(1, Valid.StoreInTable1.bytecode, {from: accounts[testAccount]});
             // Create the procedure
-            const tx = await factory.verifiedCreate(1, Invalid.StoreInTable1.bytecode, {from: accounts[testAccount]});
+            const tx = await factory.verifiedCreate(1, Valid.StoreInTable1.bytecode, {from: accounts[testAccount]});
 
-            let invalidStorer = Invalid.StoreInTable1.at(address);
+            let validStorer = Valid.StoreInTable1.at(address);
             let success;
             try {
-                let two = await invalidStorer.boo.call();
+                let two = await validStorer.boo.call();
                 success = true;
             } catch (e) {
                 success = false;
             }
-            assert(!success);
+            assert(!success, "Calling should fail");
 
         })
     })
