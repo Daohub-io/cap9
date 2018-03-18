@@ -17,8 +17,8 @@
     </b-navbar>
     <div class="lower-bound">
       <b-nav vertical class="side-nav">
-        <b-nav-item to="/createOrg">Create</b-nav-item>
-        <b-nav-item to="/listOrg">List</b-nav-item>
+        <b-nav-item to="/org/create">Create</b-nav-item>
+        <b-nav-item to="/org/list">List</b-nav-item>
       </b-nav>
       <div class="content">
         <router-view/>

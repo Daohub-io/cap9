@@ -17,11 +17,15 @@ export default {
         // Setup Provider, Default with Localhost
         Vue.web3 = new Web3(Web3.givenProvider || "http://localhost:8545"),
         Vue.accounts = [];
-        Vue.kernels = [];
+        Vue.kernels = new Map();
         
         Vue.prototype.$web3 = () => Vue.web3;
         Vue.prototype.$accounts = () => Vue.accounts;
         Vue.prototype.$kernels = () => Vue.kernels;
+
+        Vue.prototype.$MIN_GAS = () => MIN_GAS;
+        Vue.prototype.$MIN_GAS_PRICE = () => MIN_GAS_PRICE;
+
 
         Vue.prototype.$connect = async function ({address = "http://localhost:8545"}) {
             Vue.web3.setProvider(address);
@@ -32,11 +36,11 @@ export default {
             if (!account) account = Vue.accounts[0];
 
             const Kernel = new Vue.web3.eth.Contract([KernelABI])
-            let res = await Kernel.deploy({ data: KernelABI.bytecode }).send({ from: account, gas: MIN_GAS, gasPrice: MIN_GAS_PRICE })
-
+            let instance = await Kernel.deploy({ data: KernelABI.bytecode }).send({ from: account, gas: MIN_GAS, gasPrice: MIN_GAS_PRICE })
+            instance.options.jsonInterface = KernelABI.abi;
             // Add Kernel to List
-            Vue.kernels.push([name, res]);
-            return res;
+            Vue.kernels.set(instance.options.address, {name, instance});
+            return instance;
 
         }
     

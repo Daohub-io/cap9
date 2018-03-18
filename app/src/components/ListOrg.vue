@@ -1,12 +1,14 @@
 <template>
   <div class="list">
-      <b-table striped hover :items="organizations"></b-table>
+      <b-table striped hover :items="organizations">
+        <template slot="name" slot-scope="data">
+          <b-btn size="sm" :to="'/org/'+data.item.address">{{data.item.name}}</b-btn>
+        </template>
+      </b-table>
   </div>
 </template>
 
 <script>
-import { KernelABI } from "Contracts";
-import Web3 from "web3";
 
 export default {
   name: "ListOrg",
@@ -19,13 +21,13 @@ export default {
       let kernels = this.$kernels();
       let web3 = this.$web3();
 
-      return kernels.map(([name, org]) => {
+      return Array.from(kernels).map(([key, {name}]) => {
           return {
               name,
-              address: org.options.address,
+              address: key,
               balance: 0
           };
-      })
+      });
     }
   }
 };
