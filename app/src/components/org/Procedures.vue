@@ -1,19 +1,31 @@
 <template>
-  <div class="org">
-        <b-btn v-b-modal.modalCreateProc size="sm"> Create New Procedure </b-btn>
-        <b-table :items="procedures"></b-table>
-        <b-modal id="modalCreateProc" ref="modal" title="Create Procedure" @ok="createProcedure">
-            <form>
-                {{ status }}
-                <b-form-textarea id="textarea1"
-                            v-model="procedure.code"
-                            placeholder="Enter new Procedure Code"
-                            :rows="3"
-                            :max-rows="100">
-                </b-form-textarea>
-                <b-form-input v-model="procedure.name" placeholder="Enter new Procedure Name"></b-form-input>
-            </form>
-        </b-modal>
+  <div class="procedures">
+      <b-container>
+        <b-row>
+          <b-col>
+            <nav class="tools">
+              <b-btn v-b-modal.modalCreateProc size="sm"> Create New Procedure </b-btn>
+              <b-modal id="modalCreateProc" ref="modal" title="Create Procedure" @ok="createProcedure">
+                <form>
+                  <b-form-textarea id="textarea1"
+                              v-model="procedure.code"
+                              placeholder="Enter new Procedure Code"
+                              :rows="3"
+                              :max-rows="100">
+                  </b-form-textarea>
+                  <b-form-input v-model="procedure.name" placeholder="Enter new Procedure Name"></b-form-input>
+                  {{ status }}
+                </form>
+              </b-modal>
+            </nav>
+          </b-col>
+        </b-row>
+        <b-row>
+          <b-col>
+            <b-table :items="procedures"></b-table>
+          </b-col>
+        </b-row>
+      </b-container>
       
   </div>
 </template>
@@ -63,25 +75,26 @@ export default {
       }
       this.status = "finished";
       this.getData();
-
     },
     async getData() {
       let web3 = this.$web3();
       const instance = this.kernel.instance;
-      
+
       const raw = await instance.methods.listProcedures().call();
-      console.log(raw)
+      console.log(raw);
       const procedures = raw
         .map(web3.utils.toAscii)
         .map(s => s.replace(/\0.*$/, ""))
-        .map(name => ({ name }))
-     
-     for (const i in procedures) {
-         console.log(i)
-        const address = await instance.methods.getProcedure(web3.utils.toHex(procedures[i].name)).call();
+        .map(name => ({ name }));
+
+      for (const i in procedures) {
+        console.log(i);
+        const address = await instance.methods
+          .getProcedure(web3.utils.toHex(procedures[i].name))
+          .call();
         procedures[i].address = address;
-     }
-      
+      }
+
       this.procedures = procedures;
     }
   }
@@ -90,5 +103,7 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-
+.procedures .tools {
+  padding: 1rem 0;
+}
 </style>

@@ -1,28 +1,29 @@
 <template>
   <div id="app">
-    <b-navbar variant="dark" type="dark">
-      <b-navbar-brand>Daolab</b-navbar-brand>
-      <b-navbar-nav>
-        <b-nav-form>
-          <b-btn v-b-modal.modalConnection size="sm" :variant="connected ? 'success': 'danger'">{{ connected ? 'Connected': 'No Connection'}}</b-btn>
-          <b-modal id="modalConnection" ref="modal" title="Set Connection" @ok="handleOk">
-            <form @submit.stop.prevent="handleOk">
-              <p>Network Id: {{ network.id }}</p>
-              <p>Type: {{ network.type }} </p>
-              <b-form-input type="text" placeholder="Enter Node Address" v-model="address"></b-form-input>
-            </form>
-          </b-modal>
-        </b-nav-form>
-      </b-navbar-nav>
+
+    <b-navbar toggleable variant="dark" type="dark">
+      <b-container>
+        <b-navbar-brand>Daolab</b-navbar-brand>
+        <b-navbar-nav>
+          <b-nav-item to="/org/list">List</b-nav-item>
+          <b-nav-item to="/org/create">Create</b-nav-item>
+        </b-navbar-nav>
+        <b-navbar-nav class="ml-auto">
+          <b-nav-form>
+            <b-btn v-b-modal.modalConnection size="sm" :variant="connected ? 'success': 'danger'">{{ connected ? 'Connected': 'No Connection'}}</b-btn>
+            <b-modal id="modalConnection" ref="modal" title="Set Connection" @ok="handleOk">
+              <form @submit.stop.prevent="handleOk">
+                <p>Network Id: {{ network.id }}</p>
+                <p>Type: {{ network.type }} </p>
+                <b-form-input type="text" placeholder="Enter Node Address" v-model="address"></b-form-input>
+              </form>
+            </b-modal>
+          </b-nav-form>
+        </b-navbar-nav>
+      </b-container>
     </b-navbar>
-    <div class="lower-bound">
-      <b-nav vertical class="side-nav">
-        <b-nav-item to="/org/create">Create</b-nav-item>
-        <b-nav-item to="/org/list">List</b-nav-item>
-      </b-nav>
-      <div class="content">
-        <router-view/>
-      </div>
+    <div class="content">
+      <router-view/>
     </div>
   </div>
 </template>
@@ -98,27 +99,6 @@ body,
   flex-direction: column;
 }
 
-.lower-bound {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: row;
-}
-
-ul.side-nav {
-  flex-basis: 12rem;
-  background-color: #999;
-  }
-
-  ul.side-nav li a {
-    border-bottom: 1px solid #888;
-    color: #fff;
-    padding: 0.7rem 0.5rem;
-    width: 100%;
-    height: 100%;
-  }
-  ul.side-nav li a:hover {
-    background-color: #333;
-  }
 .content {
   flex-grow: 1;
 }

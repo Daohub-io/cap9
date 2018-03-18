@@ -1,11 +1,23 @@
 <template>
   <div class="org">
-       <b-nav class="sub_bar">
-           <b-nav-item disabled> {{ kernel.name }} </b-nav-item>
-            <b-nav-item :to="{name: 'k_storage'}" :active="$route.name == 'k_storage'">Storage</b-nav-item>
-            <b-nav-item :to="{name: 'k_procedures'}" :active="$route.name == 'k_procedures'">Procedures</b-nav-item>
-        </b-nav>
-      <router-view/>
+    <header>
+      <b-container>
+        <b-row>
+          <b-col>
+            <h4>{{ kernel.name }} </h4>
+          </b-col>
+        </b-row>
+        <b-row>
+          <b-col>
+            <b-nav class="sub_bar" tabs>
+                <b-nav-item :to="{name: 'k_storage'}" :active="$route.name == 'k_storage'">Storage</b-nav-item>
+                <b-nav-item :to="{name: 'k_procedures'}" :active="$route.name == 'k_procedures'">Procedures</b-nav-item>
+            </b-nav>
+          </b-col>
+        </b-row>
+      </b-container>
+    </header>
+    <router-view/>
   </div>
 </template>
 
@@ -36,7 +48,13 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-.sub_bar {
+
+.org header {
   background-color: #ddd;
+  padding-top: 1rem;
+}
+
+.org h4 {
+
 }
 </style>

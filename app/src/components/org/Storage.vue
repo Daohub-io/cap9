@@ -1,6 +1,12 @@
 <template>
-  <div class="org">
-      Storage View
+  <div class="storage">
+      <b-container>
+        <b-row >
+            <b-col cols="2">
+                <h5>Storage View</h5>
+            </b-col>
+        </b-row>
+      </b-container>
   </div>
 </template>
 
@@ -29,5 +35,7 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-
+.storage h5 {
+    padding: 2rem 0 0;
+} 
 </style>

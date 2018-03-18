@@ -1,10 +1,12 @@
 <template>
   <div class="list">
+    <b-container>
       <b-table striped hover :items="organizations">
         <template slot="name" slot-scope="data">
           <b-btn size="sm" :to="'/org/'+data.item.address">{{data.item.name}}</b-btn>
         </template>
       </b-table>
+    </b-container>
   </div>
 </template>
 
