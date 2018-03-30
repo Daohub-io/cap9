@@ -332,7 +332,7 @@ contract('Kernel', function (accounts) {
                     const tx2 = await kernel.executeProcedure("Simple", "B()", "");
                     assert.equal(web3.eth.getCode(kernel.address), "0x0", "B() should destroy kernel");
                 })
-                
+
                 it('C() should fail without correctly specifying arguments', async function () {
                     const kernel = await Kernel.new();
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);

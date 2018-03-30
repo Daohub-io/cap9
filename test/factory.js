@@ -5,7 +5,8 @@ const Factory = artifacts.require('./Factory.sol')
 
 // Valid Contracts
 const Valid =  {
-    Adder: artifacts.require('test/valid/Adder.sol')
+    Adder: artifacts.require('test/valid/Adder.sol'),
+    StorerProtectedInline: artifacts.require('test/valid/StorerProtectedInline.sol')
 }
 
 const Invalid = {
@@ -13,7 +14,8 @@ const Invalid = {
     Callcode: artifacts.require('test/invalid/Callcode'),
     Delegatecall: artifacts.require('test/invalid/Delegatecall'),
     Create: artifacts.require('test/invalid/Create'),
-    Suicide: artifacts.require('test/invalid/Suicide')
+    Suicide: artifacts.require('test/invalid/Suicide'),
+    StoreInKernelInv: artifacts.require('test/invalid/StoreInKernelInv')
 }
 
 function isNullAddress(address) {
@@ -105,7 +107,7 @@ contract('Factory', function (accounts) {
 
     })
 
-    describe('.validate()', async function() {
+    describe.only('.validate()', async function() {
 
         it('should accept valid contract', async function () {
             let factory = await Factory.deployed();
@@ -141,6 +143,19 @@ contract('Factory', function (accounts) {
             let factory = await Factory.deployed();
             let valid = await factory.validate(Invalid.Suicide.bytecode, {from: accounts[0]});
             assert(!valid);
+        })
+
+        it('should reject a contract if it uses SSTORE and is unprotected', async function () {
+            let factory = await Factory.deployed();
+            let valid = await factory.validate(Invalid.StoreInKernelInv.bytecode, {from: accounts[0]});
+            assert(!valid);
+        })
+
+
+        it('should accept a contract if it uses SSTORE but is protected', async function () {
+            let factory = await Factory.deployed();
+            let valid = await factory.validate(Valid.StorerProtectedInline.bytecode, {from: accounts[0]});
+            assert(valid);
         })
     })
 

@@ -4,14 +4,14 @@ contract Factory {
 
     /*opCode -> jump size*/
     mapping(byte => uint8) public opCodes;
-    
+
     event LogFundsReceived(address sender, uint amount);
     event LogFundsSent(address receiver, uint amount);
 
     function() payable public {
         LogFundsReceived(msg.sender, msg.value);
     }
-    
+
     function Factory() public {
         /* PUSH opCodes */
         // TODO: replace with code
@@ -26,6 +26,9 @@ contract Factory {
     }
 
     function validate(bytes oCode) public view returns (bool valid) {
+        uint256 lowerLimit = 0x0100000000000000000000000000000000000000000000000000000000000000;
+        uint256 upperLimit = 0x0200000000000000000000000000000000000000000000000000000000000000;
+
         for (uint256 i = 0; i < oCode.length; i ++) {
             byte ins = oCode[i];
 
@@ -37,6 +40,33 @@ contract Factory {
             {
                 return false;
             }
+            if (ins == 0x55 /* SSTORE */) {
+                // If an SSTORE opcode is found, check that the preceding
+                // opcodes form a valid protection.
+                if (
+                    i < 73 ||
+                oCode[i-73] != 0x7f ||
+                // lower limit address is checked below
+                oCode[i-40] != 0x81 ||
+                oCode[i-39] != 0x10 ||
+                oCode[i-38] != 0x7f ||
+                // upper limit address is checked below
+                oCode[i-5] != 0x82 ||
+                oCode[i-4] != 0x11 ||
+                oCode[i-3] != 0x17 ||
+                oCode[i-2] != 0x58 ||
+                oCode[i-1] != 0x57) return false;
+
+                // Check the lower and upper address limits
+                for (uint8 j = 0; j < 32; j ++) {
+                    if (oCode[i-72+j] != bytes1(lowerLimit >> (248 - j*8)) || // lower limit
+                        oCode[i-37+j] != bytes1(upperLimit >> (248 - j*8))    // upper limit
+                        ) {
+                        return false;
+                    }
+                }
+            }
+
 
             i = i + opCodes[ins];
         }

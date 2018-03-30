@@ -25,18 +25,18 @@
       "type": "function"
     }
   ],
-  "bytecode": "0x6060604052341561000f57600080fd5b60db8061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063bd0d639f146044575b600080fd5b3415604e57600080fd5b6081600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091908035906020019091905050609b565b604051808215151515815260200191505060405180910390f35b6000806000806000808787f29050929150505600a165627a7a72305820ec596c1d6915ebff4b024e283cb4bfed0c1a6ae51c914041ebf75463867f9b240029",
-  "deployedBytecode": "0x606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063bd0d639f146044575b600080fd5b3415604e57600080fd5b6081600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091908035906020019091905050609b565b604051808215151515815260200191505060405180910390f35b6000806000806000808787f29050929150505600a165627a7a72305820ec596c1d6915ebff4b024e283cb4bfed0c1a6ae51c914041ebf75463867f9b240029",
-  "sourceMap": "28:187:4:-;;;;;;;;;;;;;;;;;",
-  "deployedSourceMap": "28:187:4:-;;;;;;;;;;;;;;;;;;;;;;;;53:159;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;109:6;192:1;189;186;183;180;177;166:9;157:8;152:42;;137:68;;;;:::o",
+  "bytecode": "0x6060604052341561000f57600080fd5b60db8061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063bd0d639f146044575b600080fd5b3415604e57600080fd5b6081600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091908035906020019091905050609b565b604051808215151515815260200191505060405180910390f35b6000806000806000808787f29050929150505600a165627a7a72305820091760a26fd766abb6d8266b3f67d441b7f5dedb375eb7193cef763d6759a18d0029",
+  "deployedBytecode": "0x606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063bd0d639f146044575b600080fd5b3415604e57600080fd5b6081600480803573ffffffffffffffffffffffffffffffffffffffff16906020019091908035906020019091905050609b565b604051808215151515815260200191505060405180910390f35b6000806000806000808787f29050929150505600a165627a7a72305820091760a26fd766abb6d8266b3f67d441b7f5dedb375eb7193cef763d6759a18d0029",
+  "sourceMap": "28:187:5:-;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "28:187:5:-;;;;;;;;;;;;;;;;;;;;;;;;53:159;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;109:6;192:1;189;186;183;180;177;166:9;157:8;152:42;;137:68;;;;:::o",
   "source": "pragma solidity ^0.4.17;\r\n\r\ncontract Callcode {\r\n    function foo(address a, uint gasAmount) public returns (bool v) {\r\n        assembly {\r\n            v := callcode(gasAmount, a, 0, 0, 0, 0, 0)\r\n        }\r\n    }\r\n}",
-  "sourcePath": "/mnt/c/Users/Raketa/Documents/Repos/lab/contracts/test/invalid/Callcode.sol",
+  "sourcePath": "/mnt/d/jakedoc/Projects/beakeros/contracts/test/invalid/Callcode.sol",
   "ast": {
     "attributes": {
-      "absolutePath": "/mnt/c/Users/Raketa/Documents/Repos/lab/contracts/test/invalid/Callcode.sol",
+      "absolutePath": "/mnt/d/jakedoc/Projects/beakeros/contracts/test/invalid/Callcode.sol",
       "exportedSymbols": {
         "Callcode": [
-          806
+          864
         ]
       }
     },
@@ -50,9 +50,9 @@
             ".17"
           ]
         },
-        "id": 794,
+        "id": 852,
         "name": "PragmaDirective",
-        "src": "0:24:4"
+        "src": "0:24:5"
       },
       {
         "attributes": {
@@ -66,10 +66,10 @@
           "documentation": null,
           "fullyImplemented": true,
           "linearizedBaseContracts": [
-            806
+            864
           ],
           "name": "Callcode",
-          "scope": 807
+          "scope": 865
         },
         "children": [
           {
@@ -82,7 +82,7 @@
               ],
               "name": "foo",
               "payable": false,
-              "scope": 806,
+              "scope": 864,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
@@ -94,7 +94,7 @@
                     "attributes": {
                       "constant": false,
                       "name": "a",
-                      "scope": 805,
+                      "scope": 863,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -107,20 +107,20 @@
                           "name": "address",
                           "type": "address"
                         },
-                        "id": 795,
+                        "id": 853,
                         "name": "ElementaryTypeName",
-                        "src": "66:7:4"
+                        "src": "66:7:5"
                       }
                     ],
-                    "id": 796,
+                    "id": 854,
                     "name": "VariableDeclaration",
-                    "src": "66:9:4"
+                    "src": "66:9:5"
                   },
                   {
                     "attributes": {
                       "constant": false,
                       "name": "gasAmount",
-                      "scope": 805,
+                      "scope": 863,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -133,19 +133,19 @@
                           "name": "uint",
                           "type": "uint256"
                         },
-                        "id": 797,
+                        "id": 855,
                         "name": "ElementaryTypeName",
-                        "src": "77:4:4"
+                        "src": "77:4:5"
                       }
                     ],
-                    "id": 798,
+                    "id": 856,
                     "name": "VariableDeclaration",
-                    "src": "77:14:4"
+                    "src": "77:14:5"
                   }
                 ],
-                "id": 799,
+                "id": 857,
                 "name": "ParameterList",
-                "src": "65:27:4"
+                "src": "65:27:5"
               },
               {
                 "children": [
@@ -153,7 +153,7 @@
                     "attributes": {
                       "constant": false,
                       "name": "v",
-                      "scope": 805,
+                      "scope": 863,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "bool",
@@ -166,19 +166,19 @@
                           "name": "bool",
                           "type": "bool"
                         },
-                        "id": 800,
+                        "id": 858,
                         "name": "ElementaryTypeName",
-                        "src": "109:4:4"
+                        "src": "109:4:5"
                       }
                     ],
-                    "id": 801,
+                    "id": 859,
                     "name": "VariableDeclaration",
-                    "src": "109:6:4"
+                    "src": "109:6:5"
                   }
                 ],
-                "id": 802,
+                "id": 860,
                 "name": "ParameterList",
-                "src": "108:8:4"
+                "src": "108:8:5"
               },
               {
                 "children": [
@@ -187,28 +187,28 @@
                       "externalReferences": [
                         {
                           "gasAmount": {
-                            "declaration": 798,
+                            "declaration": 856,
                             "isOffset": false,
                             "isSlot": false,
-                            "src": "166:9:4",
+                            "src": "166:9:5",
                             "valueSize": 1
                           }
                         },
                         {
                           "a": {
-                            "declaration": 796,
+                            "declaration": 854,
                             "isOffset": false,
                             "isSlot": false,
-                            "src": "177:1:4",
+                            "src": "177:1:5",
                             "valueSize": 1
                           }
                         },
                         {
                           "v": {
-                            "declaration": 801,
+                            "declaration": 859,
                             "isOffset": false,
                             "isSlot": false,
-                            "src": "152:1:4",
+                            "src": "152:1:5",
                             "valueSize": 1
                           }
                         }
@@ -216,29 +216,29 @@
                       "operations": "{\n    v := callcode(gasAmount, a, 0, 0, 0, 0, 0)\n}"
                     },
                     "children": [],
-                    "id": 803,
+                    "id": 861,
                     "name": "InlineAssembly",
-                    "src": "128:84:4"
+                    "src": "128:84:5"
                   }
                 ],
-                "id": 804,
+                "id": 862,
                 "name": "Block",
-                "src": "117:95:4"
+                "src": "117:95:5"
               }
             ],
-            "id": 805,
+            "id": 863,
             "name": "FunctionDefinition",
-            "src": "53:159:4"
+            "src": "53:159:5"
           }
         ],
-        "id": 806,
+        "id": 864,
         "name": "ContractDefinition",
-        "src": "28:187:4"
+        "src": "28:187:5"
       }
     ],
-    "id": 807,
+    "id": 865,
     "name": "SourceUnit",
-    "src": "0:215:4"
+    "src": "0:215:5"
   },
   "compiler": {
     "name": "solc",
@@ -246,5 +246,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2018-03-12T17:35:03.803Z"
+  "updatedAt": "2018-03-20T11:55:40.313Z"
 }
