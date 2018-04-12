@@ -41,7 +41,7 @@ contract Kernel is Factory {
     }
 
     function listProcedures() public view returns (bytes32[]) {
-        return procedures.keys;
+        return procedures.getKeys();
     }
 
     function getProcedure(bytes32 name) public view returns (address) {
