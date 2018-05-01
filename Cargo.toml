@@ -1,0 +1,26 @@
+[package]
+name = "beaker-core"
+version = "0.1.0"
+authors = ["Jacob Payne <jacob@daolab.io>"]
+
+[dependencies]
+pwasm-std = "0.6"
+pwasm-ethereum = "0.3"
+pwasm-abi = "0.1"
+pwasm-abi-derive = "0.1"
+
+[dependencies.bigint]
+version = "4"
+default-features = false
+
+[dependencies.parity-hash]
+version = "1"
+default-features = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = "z"

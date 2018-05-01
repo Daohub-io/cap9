@@ -1,0 +1,23 @@
+{
+  "name": "beaker",
+  "description": "See (pwasm-tutorial)[https://github.com/paritytech/pwasm-tutorial] for more information.",
+  "version": "0.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "devDependencies": {
+    "web3": "^1.0.0-beta.34",
+    "mocha": "^5.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Daolab/beakeros.git"
+  },
+  "author": "Jacob Payne <jacob@daolab.io>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Daolab/beakeros/issues"
+  },
+  "homepage": "https://github.com/Daolab/beakeros#readme"
+}

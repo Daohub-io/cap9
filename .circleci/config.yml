@@ -1,0 +1,49 @@
+
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      - image: circleci/rust-node
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      - image: hub.docker.com/r/parity/parity
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+            
+      - run: rustup target add wasm32-unknown-unknown
+      - run: yarn install
+      - run: cargo install pwasm-utils
+      - save_cache:
+          paths:
+            - node_modules
+            - target
+          key: v1-dependencies-{{ checksum "package.json" }}
+      
+      - run:
+          name: Compile 
+          command: |
+            cargo build --release --target wasm32-unknown-unknown
+            wasm-build --target=wasm32-unknown-unknown ./target beaker_core
+        
+      # run tests!
+      - run: 
+          name: Running Local Parity Instance
+          command: parity --chain wasm-dev-chain.json --jsonrpc-apis=all
+          background: true
+      - run: npm test
