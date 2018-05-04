@@ -40,9 +40,14 @@ contract Kernel is Factory {
         if (!success) {err = 2;}
     }
 
-    function listProcedures() public view returns (bytes32[]) {
+    function listProcedures() public view returns (bytes32[] memory) {
         return procedures.getKeys();
     }
+
+    // function nProcedures() public view returns (uint256) {
+    //     return procedures.size();
+    // }
+
 
     function getProcedure(bytes32 name) public view returns (address) {
         return procedures.get(name);

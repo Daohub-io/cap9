@@ -12,12 +12,15 @@ library ProcedureTable {
     struct Self {}
 
     // Convert Pointer To File Pointer
+
+    // TODO: this mask logic won't work as-is
     function _filePointer(uint8 fileId, uint256 pointer) internal returns (uint256) {
         // Mask to Uint256
-        return pointer & (uint256(fileId) << 24);
+        return pointer;
+        // return pointer & (uint256(fileId) << 24);
     }
 
-    function _get(uint8 fileId, uint256 _pointer) internal returns (uint256 val) {
+    function _get(uint8 fileId, uint256 _pointer) internal view returns (uint256 val) {
         var pointer = _filePointer(fileId, _pointer);
         assembly {
             // Load Value
@@ -41,6 +44,10 @@ library ProcedureTable {
     }
 
     function _getProcedurePointerByKey(uint256 key) internal returns (uint256) {
+        // Procedure data is stored under the procedurePointer "directory". The
+        // location of the procedure data is followed by the name/key of the
+        // procedure.
+
         return uint256(keccak256("procedurePointer")) + key;
     }
 
@@ -51,10 +58,21 @@ library ProcedureTable {
     }
 
     function _storeProcedure(Procedure memory p, uint256 key) internal {
+        // Get the storage address of the name/key of the procedure. In this
+        // scope "key" is the 32 byte name which is provided by the user. The
+        // procedure "p" has already been given an index (p.keyIndex) which is
+        // the offset where the name/key is stored.
         uint256 keyPointer = _getKeyPointerByIndex(p.keyIndex);
-        uint256 pPointer = _getProcedurePointerByKey(key);
+        // Store the name/key at this location.
         _set(0, keyPointer, key);
+
+        // Get the storage address of the procedure data. This is the storage
+        // key which contains all of the procedure data.
+        uint256 pPointer = _getProcedurePointerByKey(key);
+        // Store the keyIndex at this location
         _set(0, pPointer, p.keyIndex);
+        // Store the address at the loction after this (making this data 2
+        // uint256 wide).
         _set(0, pPointer + 1, uint256(p.location));
     }
 
@@ -80,10 +98,10 @@ library ProcedureTable {
 
     function remove(Self storage self, bytes32 key) internal returns (bool success) {
         Procedure memory p1 = _getProcedureByKey(uint256(key));
-        
+
         if (p1.keyIndex == 0)
             return false;
-        
+
         uint256 lenP = _getLengthPointer();
         uint256 len = _get(0, lenP);
 
@@ -126,12 +144,16 @@ library ProcedureTable {
         return address(_get(0, _getProcedurePointerByKey(uint256(key)) + 1));
     }
 
-    function getKeys(Self storage self) internal constant returns (bytes32[] memory keys) {
+    function getKeys(Self storage self) internal returns (bytes32[] memory keys) {
         uint256 lenP = _getLengthPointer();
         uint256 len = _get(0, lenP);
+        keys = new bytes32[](len);
         for (uint256 i = 0; i < len; i += 1) {
-            keys[i] = bytes32(_get(0, lenP + i + 1));
+            // We use +2 here because the name/key is the second uint256 store,
+            // the first being the keyIndex.
+            keys[i] = bytes32(_get(0, lenP + i + 2));
         }
+
     }
 
     function getKeyByIndex(Self storage self, uint8 idx) internal constant returns (uint256) {
@@ -141,5 +163,5 @@ library ProcedureTable {
     function getValueByIndex(Self storage self, uint8 idx) internal constant returns (address) {
         return address(_get(0, _getProcedurePointerByKey(self.getKeyByIndex(idx)) + 1));
     }
-    
+
 }
