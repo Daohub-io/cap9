@@ -8,7 +8,7 @@ contract Kernel is Factory {
     using ProcedureTable for ProcedureTable.Self;
     ProcedureTable.Self procedures;
 
-    function createProcedure(bytes32 name, bytes oCode) public returns (uint8 err, address procedureAddress) {
+    function createProcedure(bytes24 name, bytes oCode) public returns (uint8 err, address procedureAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -26,7 +26,7 @@ contract Kernel is Factory {
         procedures.insert(name, procedureAddress);
     }
 
-    function deleteProcedure(bytes32 name) public returns (uint8 err, address procedureAddress) {
+    function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             err = 1;
@@ -40,7 +40,7 @@ contract Kernel is Factory {
         if (!success) {err = 2;}
     }
 
-    function listProcedures() public view returns (bytes32[] memory) {
+    function listProcedures() public view returns (bytes24[] memory) {
         return procedures.getKeys();
     }
 
@@ -49,11 +49,11 @@ contract Kernel is Factory {
     // }
 
 
-    function getProcedure(bytes32 name) public view returns (address) {
+    function getProcedure(bytes24 name) public view returns (address) {
         return procedures.get(name);
     }
 
-    function executeProcedure(bytes32 name, string fselector, bytes payload) public returns (uint8 err, uint256 retVal) {
+    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint8 err, uint256 retVal) {
         // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             err = 1;

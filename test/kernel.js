@@ -124,8 +124,8 @@ contract('Kernel', function (accounts) {
             const kernel = await Kernel.new();
 
             const proceduresRaw1 = await kernel.listProcedures.call();
-            const name = "start123456789012345678901234end";
-            assert.equal(name.length, 32);
+            const name = "start1234567890123456end";
+            assert.equal(name.length, 24);
             const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
             const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
 
@@ -150,8 +150,8 @@ contract('Kernel', function (accounts) {
             const kernel = await Kernel.new();
 
             const proceduresRaw1 = await kernel.listProcedures.call();
-            const name = "start123456789012345678901234end";
-            assert.equal(name.length, 32);
+            const name = "start1234567890123456end";
+            assert.equal(name.length, 24);
             const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
             const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
 
@@ -329,7 +329,7 @@ contract('Kernel', function (accounts) {
         })
     })
 
-    describe('.executeProcedure(bytes32 key, bytes payload)', function () {
+    describe('.executeProcedure(bytes24 key, bytes payload)', function () {
         it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
             const [err, retVal] = await kernel.executeProcedure.call('test', '', "");
