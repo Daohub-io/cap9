@@ -123,13 +123,14 @@ contract('Kernel', function (accounts) {
         it('should create valid procedure (max key length)', async function () {
             const kernel = await Kernel.new();
 
-            const name = "start123456789012345678901234end";
-            assert.equal(name.length, 32);
+            const proceduresRaw1 = await kernel.listProcedures.call();
+            const name = "start1234567890123456end";
+            assert.equal(name.length, 24);
             const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
             const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
 
-            assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
-            assert(!isNullAddress(address), 'Procedure Address is not null')
+            assert(web3.isAddress(address), `Procedure Address (${address}) should be a real address`)
+            assert(!isNullAddress(address), 'Procedure Address should not be null')
 
             const adder = Valid.Adder.at(address);
             assert.equal(await adder.add.call(1, 1), 2)
@@ -137,6 +138,42 @@ contract('Kernel', function (accounts) {
             // The returned code should be the same as the sent code
             const code = web3.eth.getCode(address);
             assert.equal(Valid.Adder.deployedBytecode, code);
+
+            // The address should be gettable (TODO)
+            // The correct name should be in the procedures table
+            const proceduresRaw = await kernel.listProcedures.call();
+            const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+            assert(procedures.includes(name), "The correct name is in the procedures table");
+        });
+
+        it('should create 2 valid procedures', async function () {
+            const kernel = await Kernel.new();
+
+            const proceduresRaw1 = await kernel.listProcedures.call();
+            const name = "start1234567890123456end";
+            assert.equal(name.length, 24);
+            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
+            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
+
+            assert(web3.isAddress(address), `Procedure Address (#1) (${address}) should be a real address`)
+            assert(!isNullAddress(address), 'Procedure Address (#1) should not be null')
+
+            const adder = Valid.Adder.at(address);
+            assert.equal(await adder.add.call(1, 1), 2)
+
+            // The returned code should be the same as the sent code
+            const code = web3.eth.getCode(address);
+            assert.equal(Valid.Adder.deployedBytecode, code);
+            const name2 = "ByAnyOtherName";
+            const [err2, address2] = await kernel.createProcedure.call(name2, Valid.Adder.bytecode)
+            const tx2 = await kernel.createProcedure(name2, Valid.Adder.bytecode)
+
+            assert(web3.isAddress(address2), `Procedure Address (#2) (${address2}) should be a real address`)
+            assert(!isNullAddress(address2), 'Procedure Address (#2) should not be null')
+
+            // The returned code should be the same as the sent code
+            const code2 = web3.eth.getCode(address2);
+            assert.equal(Valid.Adder.deployedBytecode, code2);
 
             // The address should be gettable (TODO)
             // The correct name should be in the procedures table
@@ -292,7 +329,7 @@ contract('Kernel', function (accounts) {
         })
     })
 
-    describe('.executeProcedure(bytes32 key, bytes payload)', function () {
+    describe('.executeProcedure(bytes24 key, bytes payload)', function () {
         it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
             const [err, retVal] = await kernel.executeProcedure.call('test', '', "");
@@ -332,7 +369,7 @@ contract('Kernel', function (accounts) {
                     const tx2 = await kernel.executeProcedure("Simple", "B()", "");
                     assert.equal(web3.eth.getCode(kernel.address), "0x0", "B() should destroy kernel");
                 })
-                
+
                 it('C() should fail without correctly specifying arguments', async function () {
                     const kernel = await Kernel.new();
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
