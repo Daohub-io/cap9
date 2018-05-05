@@ -46,4 +46,7 @@ jobs:
           name: Running Local Parity Instance
           command: parity --chain wasm-dev-chain.json --jsonrpc-apis=all
           background: true
+      - run:
+          name: Wait for Parity startup
+          command: sleep 5
       - run: npm test
