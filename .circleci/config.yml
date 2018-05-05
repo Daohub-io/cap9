@@ -9,7 +9,6 @@ jobs:
     docker:
       # specify the version you desire here
       - image: ccistaging/rust:1-node
-      - image: parity/parity:beta --chain wasm-dev-chain.json --jsonrpc-apis=all
 
     working_directory: ~/repo
 
@@ -26,6 +25,9 @@ jobs:
       - run: rustup target add wasm32-unknown-unknown
       - run: npm install
       - run: cargo install pwasm-utils
+      - run: 
+          name: Install Parity
+          command: bash <(curl https://get.parity.io -Lk)
       - save_cache:
           paths:
             - ~/.cargo
@@ -40,8 +42,8 @@ jobs:
             wasm-build --target=wasm32-unknown-unknown ./target beaker_core
         
       # run tests
-      # - run: 
-      #     name: Running Local Parity Instance
-      #     command: /build/target/release/parity --chain wasm-dev-chain.json --jsonrpc-apis=all
-      #     background: true
+      - run: 
+          name: Running Local Parity Instance
+          command: parity --chain wasm-dev-chain.json --jsonrpc-apis=all
+          background: true
       - run: npm test
