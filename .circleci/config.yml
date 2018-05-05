@@ -9,6 +9,7 @@ jobs:
     docker:
       # specify the version you desire here
       - image: ccistaging/rust:1-node
+      - image: parity/parity:beta
 
     working_directory: ~/repo
 
