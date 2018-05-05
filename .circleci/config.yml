@@ -8,12 +8,8 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: circleci/rust-node
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      - image: hub.docker.com/r/parity/parity
-
+      - image: circleci/rust:1.25.0-stretch
+      
     working_directory: ~/repo
 
     steps:
