@@ -9,7 +9,7 @@ jobs:
     docker:
       # specify the version you desire here
       - image: ccistaging/rust:1-node
-      - image: parity/parity:beta
+      - image: parity/parity:beta --chain wasm-dev-chain.json --jsonrpc-apis=all
 
     working_directory: ~/repo
 
@@ -39,9 +39,9 @@ jobs:
             cargo build --release --target wasm32-unknown-unknown
             wasm-build --target=wasm32-unknown-unknown ./target beaker_core
         
-      # run tests!
-      - run: 
-          name: Running Local Parity Instance
-          command: parity --chain wasm-dev-chain.json --jsonrpc-apis=all
-          background: true
+      # run tests
+      # - run: 
+      #     name: Running Local Parity Instance
+      #     command: /build/target/release/parity --chain wasm-dev-chain.json --jsonrpc-apis=all
+      #     background: true
       - run: npm test
