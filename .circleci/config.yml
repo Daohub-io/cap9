@@ -8,7 +8,7 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: circleci/rust:1.25.0-stretch
+      - image: ccistaging/rust:1-node
 
     working_directory: ~/repo
 
@@ -27,6 +27,7 @@ jobs:
       - run: cargo install pwasm-utils
       - save_cache:
           paths:
+            - ~/.cargo
             - node_modules
             - target
           key: v1-dependencies-{{ checksum "package.json" }}
