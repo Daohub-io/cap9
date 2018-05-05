@@ -24,7 +24,7 @@ pub mod kernel {
     use pwasm_abi_derive::eth_abi;
     use alloc::Vec;
 
-    static KERNEL_VERSION: H256 = H256([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]);
+    static KERNEL_VERSION_ID: H256 = H256([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
     static PROCEDURE_TABLE_ID: &[u8] = b"KERNEL_PROCEDURES"; 
 
     trait Store: Sized {
@@ -81,7 +81,7 @@ pub mod kernel {
     #[eth_abi(KernelEndpoint, KernelClient)]
     pub trait KernelContract {
         /// The constructor
-        fn constructor(&mut self, _total_supply: U256);
+        fn constructor(&mut self, version: U256);
         /// Total amount of kernels
         #[constant]
         fn version(&mut self) -> U256;
@@ -99,13 +99,13 @@ pub mod kernel {
     pub struct KernelContractInstance;
 
     impl KernelContract for KernelContractInstance {
-        fn constructor(&mut self, total_supply: U256) {
+        fn constructor(&mut self, version: U256) {
             // Set up the total supply for the kernel
-            pwasm_ethereum::write(&KERNEL_VERSION, &total_supply.into());
+            pwasm_ethereum::write(&KERNEL_VERSION_ID, &version.into());
         }
 
         fn version(&mut self) -> U256 {
-            pwasm_ethereum::read(&KERNEL_VERSION).into()
+            pwasm_ethereum::read(&KERNEL_VERSION_ID).into()
         }
 
         fn procedures(&mut self) -> Vec<U256> {
