@@ -1,6 +1,6 @@
 # System Calls
 
-**NB:** This does not include the implementation of system calls, although tries
+**NB:** This does not include the implementation of capabilities, although tries
 to be aware of there requirements in design.
 
 ## Necessary System Calls
