@@ -140,6 +140,9 @@ Therefore a Write system call's input data that stores the value `0x1234` at loc
 0x000002 - 0x0000000000000000000000000000000000000000000000000000000000000007 - 0x0000000000000000000000000000000000000000000000000000000000001234
 ```
 
+**TODO:** This then begs the question: "What is the general input format for
+calls to the kernel?".
+
 This is 3+32+32=67 bytes.
 
 For output, this is entirely dependent on the system call. For lower level
