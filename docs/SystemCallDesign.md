@@ -136,12 +136,14 @@ numbers, but for now we will for 2 32-byte values.
 Therefore a Write system call's input data that stores the value `0x1234` at location `0x7` will look like this:
 
 ```
-
 0x000002 - 0x0000000000000000000000000000000000000000000000000000000000000007 - 0x0000000000000000000000000000000000000000000000000000000000001234
 ```
 
-**TODO:** This then begs the question: "What is the general input format for
-calls to the kernel?".
+Or rather:
+
+```
+0x00000200000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000001234
+```
 
 This is 3+32+32=67 bytes.
 
@@ -157,6 +159,39 @@ possible error values in order to return more information to the calling
 procedure. Therefore the return value from the Write call is a single byte, with
 zero representing success and non-zero representing failure of some kind (with
 error codes yet to be defined).
+
+## Kernel Interface Format
+
+Now that we have defined a format for system calls, we need to define a format for general calls to the kernel.
+
+**TODO:** This then begs the question: "What is the general input format for
+calls to the kernel?".
+
+It might be worth adding the address of the kernel instance to storage on deployment so that we are able to verify whether the caller is the kernel instance itself or something else. This way, before performing any system calls we can check that the `CALLER` is equal to the kernel instance address. If it is not then system calls would be unavailable.
+
+We then have to decide if this is sufficient to differentiate between external
+calls and system calls. I think at this early stage we should let the caller
+designate that, although it's slightly more cognitive overhead for those sending
+external calls to the kernel instance. It's also very possible that a procedure
+might need to do a normal call to a kernel instance or that a normal transaction
+might perform a system call. It's likely these will be excluded, but it might be
+better to leave them as possibilities.
+
+More importantly, by encoding whether something should be a system call or an
+external transaction, you make the call/transaction independent of context, so
+it can't be misinterpreted and result in error if it is sent from the wrong
+location.
+
+External calls (i.e. transactions) will have their input data starting with the
+byte sequence bytes4(keccak256("BeakerOSCall")) plus an additional byte
+determining the version (currently `0x00`).
+
+System calls will have their input data starting with the byte sequence
+bytes4(kaccak256("BeakerOSSysCall")). We have already discussed the versioning
+byte above when we talked about the system call format.
+
+This then leads us to the format for procedure execution, which is a large
+topic.
 
 # DEPRECATED
 
