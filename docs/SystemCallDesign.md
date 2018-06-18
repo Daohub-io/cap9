@@ -162,12 +162,17 @@ error codes yet to be defined).
 
 ## Kernel Interface Format
 
-Now that we have defined a format for system calls, we need to define a format for general calls to the kernel.
+Now that we have defined a format for system calls, we need to define a format
+for general calls to the kernel.
 
 **TODO:** This then begs the question: "What is the general input format for
 calls to the kernel?".
 
-It might be worth adding the address of the kernel instance to storage on deployment so that we are able to verify whether the caller is the kernel instance itself or something else. This way, before performing any system calls we can check that the `CALLER` is equal to the kernel instance address. If it is not then system calls would be unavailable.
+It might be worth adding the address of the kernel instance to storage on
+deployment so that we are able to verify whether the caller is the kernel
+instance itself or something else. This way, before performing any system calls
+we can check that the `CALLER` is equal to the kernel instance address. If it is
+not then system calls would be unavailable.
 
 We then have to decide if this is sufficient to differentiate between external
 calls and system calls. I think at this early stage we should let the caller
