@@ -67,7 +67,9 @@ later.
 This `exec` capability is expected to be the most prevalent, as we will be doing
 little direct "hardware" access (like read and write) ourselves. These will be
 handles by whichever procedure is responsible. These capabilities must exist at
-some level however. For example, reading and writing of storage locations. Here the capabilities are written out as text, but in reality they will be indices into the CList.
+some level however. For example, reading and writing of storage locations. Here
+the capabilities are written out as text, but in reality they will be indices
+into the CList.
 
 ```c
 invoke("writeAt0x8000","somedata")
@@ -86,7 +88,8 @@ explicitly tell the kernel that we are doing this, otherwise the receiver could
 fake it and access our capabilities. We need some form of delegation. This
 delegation is only relevant during `exec`. It is up to the code (via a library,
 not the user) to correctly format the input data of `exec` to contain the
-capabilities we want to pass the callee. The input field of an `exec` capability invocation will be as follows:
+capabilities we want to pass the callee. The input field of an `exec` capability
+invocation will be as follows:
 
 ```
 exec
@@ -134,7 +137,8 @@ copies the value of the first into the second, and then wipes the value of the
 first. Obviously as these storage locations must be read from and written to,
 they must be passed as capbilities. The first will be `rw` (read/write) as it
 will need to both read from and write to that location, the second will just be
-`write` as it does not need to read from that location. Let's assume that the caller has the capability `readWriteAny` at index \#3.
+`write` as it does not need to read from that location. Let's assume that the
+caller has the capability `readWriteAny` at index \#3.
 
 ```c
 let s1 = 0xee
