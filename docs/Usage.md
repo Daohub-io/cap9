@@ -140,11 +140,15 @@ will need to both read from and write to that location, the second will just be
 `write` as it does not need to read from that location. Let's assume that the
 caller has the capability `readWriteAny` at index \#3.
 
+**Note:** When we mint from a ReadWriteAny capability, there are two possiblities: we want to restrict either read or write, or we want to restrict the storage address. Therefore, for this capability, mint takes two arguments, the first being the read and/or write component, the second being the address. If we want to maintain the ability to read any storage location, but simply remove the write capability, we only supply one argument (i.e. "read"). If we want to maintain the scope (i.e. any) then we need to supply read and write as the first argument (in this case written "rw").
+
+**TODO:** Do we need to deal with the case when a procedure receives a capability which is greater than what is asked for? For read/write this makes sense, as the procedure knows what it wants to do, but for a storage location for example, it does not know what to do with "any" if it expects a specific location (unless you teach it to for example).
+
 ```c
 let s1 = 0xee
 let s2 = 0xff
-let cap1 = mint(#3,0xee) // cap1 is now readWriteAt0xee
-let cap2 = mint(#3,0xff) // cap1 is now readWriteAt0xff
+let cap1 = mint(#3,"rw",0xee) // cap1 is now readWriteAt0xee
+let cap2 = mint(#3,"write",0xff) // cap1 is now writeAt0xff
 let execCap = mint(#2,0xad) // the capability to execute our procedure
 let out = invoke(execCap,cap1,cap2,"") // we send no other data
 ```
@@ -157,11 +161,16 @@ let [from,to]  = capabilityArguments
 // the regular arguments are empty
 assert(eq(capabiltyArguments,""))
 // we can now preform our algorithm
-// first we need a read capability from our first capability
+// first we need a read capability from our first capability, this is for a
+// specific address, so mint only needs two arguments here
 let source = mint(from,"read")
 // perform the read
 let sourceData = invoke(source,"")
-// next we need a write capability from our first capability
+// next we need a write capability from our first capability. In this case it is
+// already simply a single location write capability, but this way we can accept
+// a ReadWrite capability as an input. If this is already a write only
+// capability, no minting takes places and the old capability is simply
+// returned.
 let destination = mint(to,"write")
 // perform the write
 invoke(destination,sourceData)
