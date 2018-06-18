@@ -1,5 +1,7 @@
 # Usage
 
+**NB:** This currently has some conflicts with SystemCallDesign.md.
+
 This document is to present an overview of what it is like to interact with
 Beaker's capability system.
 
