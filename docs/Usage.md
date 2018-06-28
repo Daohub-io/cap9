@@ -189,3 +189,47 @@ write" capability, but it is expected to be rare for procedures to be writing
 directly to storage addresses themselves, they will likely want different types
 of tables, or a file system for example (this is influenced by a micro-kernel
 approach, seL4 takes a similar approach).
+
+# Proposition B
+
+This is an alternative to fully dynamic capabilities derived from the reception
+contract.
+
+One of the goals identified by the user stories is that a higher level "system
+designer" might want some control over what various contracts in the system can
+do. Even if a developer updates a contract under his or her control, the system
+designer should be able to limit the damage by sandboxing that contract. So
+where does the system designer specify those sandboxing limitations?
+
+The simplest model is simply to give every procedure a list of permitted
+actions. Procedure creation is in two steps:
+
+- Creation/Update
+- Permission assignation
+
+Which users can perform these steps is controlled by a separate procedure which
+acts as a gatekeeper to these two actions. This is by far a less general
+solution than a full capability system, but fulfills the requirements above. It
+is also much simpler to implement.
+
+When a procedure is created, it has zero actions available to it in its list.
+If, for example, it needs to modify the storage value at `0x7`, it will need to
+be provided with that permission by a separate permission assignation. In this
+workflow, the procedure is deployed by a developer, and the permissions are
+assigned by the system designer once he approves this. The requesting and
+approval of permission might be done in-band or out-of-band. Each has its pros
+and cons and is largely independent of this design.
+
+**SIDENOTE:** Perhaps we allow a procedure to be run on every syscall what does
+whichever system checks the designers deem appropriate although the large number
+of procedure calles make this very expensive.
+
+In this situation it would be important to give the system designer powerful
+design tools.
+
+*What can't this do?* Something like storage locations or procedure ids can't be
+chosen dynamically, as delegation of capabilities does not occur.
+
+Everything is statically determined by the system designer (although permissions
+may be changed at any point).
+
