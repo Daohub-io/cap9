@@ -233,3 +233,8 @@ chosen dynamically, as delegation of capabilities does not occur.
 Everything is statically determined by the system designer (although permissions
 may be changed at any point).
 
+This explanation has advantages over the above, as it explains:
+
+1. Where do permissions come from?
+2. How are they set?
+3. How are they enforced?
