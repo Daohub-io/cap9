@@ -9,6 +9,7 @@ const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
+    SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
 }
 
 const Invalid = {
@@ -398,7 +399,25 @@ contract('Kernel', function (accounts) {
                 })
 
             })
+            describe('SysCall Procedure', function () {
+                it('S() should succeed', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode);
 
+                    // need to have the ABI definition in JSON as per specification
+                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    await kernel.executeProcedure("SysCallTest", "S()", "");
+                    assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
+                    assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
+
+                    // do it again
+                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    await kernel.executeProcedure("SysCallTest", "S()", "");
+                    assert.equal(err2.toNumber(), 0, "S() should succeed with zero errcode the second time");
+                    assert.equal(value2.toNumber(), 5, "S() should succeed with correct value the second time");
+                })
+            })
         })
 
         it('should return an error if key does not exist (3)', async function () {

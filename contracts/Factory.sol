@@ -4,14 +4,14 @@ contract Factory {
 
     /*opCode -> jump size*/
     mapping(byte => uint8) public opCodes;
-    
-    event LogFundsReceived(address sender, uint amount);
-    event LogFundsSent(address receiver, uint amount);
 
-    function() payable public {
-        LogFundsReceived(msg.sender, msg.value);
-    }
-    
+    // event LogFundsReceived(address sender, uint amount);
+    // event LogFundsSent(address receiver, uint amount);
+
+    // function() payable public {
+    //     LogFundsReceived(msg.sender, msg.value);
+    // }
+
     function validate(bytes oCode) public view returns (uint8 err) {
         for (uint256 i = 0; i < oCode.length; i ++) {
             uint8 ins = uint8(oCode[i]);
@@ -21,7 +21,7 @@ contract Factory {
             if (ins == 0xf2) {return 3;} // CALLCODE
             if (ins == 0xf4) {return 4;} // DELEGATECALL
             if (ins == 0xff) {return 5;} // SUICIDE
-   
+
             if (ins >= 0x60 && ins <= 0x7f) {
                 i += ins - 95;
             }
