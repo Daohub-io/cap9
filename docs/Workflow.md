@@ -40,7 +40,8 @@ storage space for this (**TODO:** maybe `beaker` can help with the naming and
 allocation of this).
 
 Now that the developer has allocated the space, he can then work on the
-procedure for adding members. For this we want to add a procedure to our kernel that is able to modify the space we have set aside for this member list.
+procedure for adding members. For this we want to add a procedure to our kernel
+that is able to modify the space we have set aside for this member list.
 
 --- The developer writes his code
 
@@ -78,7 +79,11 @@ Under this proposition, there are only 2 relevant permissions for users
 - Create a procedure.
 - Allocate permissions to that procedure.
 
-In effect only one procedure has the ability to create and allocate permissions, and within that procedure is the information required to approve or reject transactions from various addresses. Initially this procedure will only accept transactions from the creator of the kernel. It is, of course, possible for this user to then update this procedure or create a new one.
+In effect only one procedure has the ability to create and allocate permissions,
+and within that procedure is the information required to approve or reject
+transactions from various addresses. Initially this procedure will only accept
+transactions from the creator of the kernel. It is, of course, possible for this
+user to then update this procedure or create a new one.
 
 There are 3 default procedures:
 
@@ -87,6 +92,7 @@ There are 3 default procedures:
 - #2 is the procedure creation procedure.
 - #3 is the procedure update procedure.
 - #4 is the permission allocation procedure.
+
 The creator of the kernel can send a contract creation request to this kernel.
 The kernel will process this transaction using the reception procedure. The
 format of this message will state that it wishes to call the contract creation
@@ -133,25 +139,30 @@ asking to call procedure \#2 (procedure creation) with the corresponding
 bytecode. The updated reception procedure will allow this.
 
 In order to give this procedure any permissions, the permissions must be applied
-by someone with the appropriate authority (or maybe even by member vote). For
-example, a system administrator, knowing the storage addresses of the member
-list, might give this procedure permission to modify the storage at the storage
-address of the member list.
+by someone with the appropriate authority (or maybe even by member vote, if that
+is what the reception procedure requires). For example, a system administrator,
+knowing the storage addresses of the member list, might give this procedure
+permission to modify the storage at the storage address of the member list.
 
 ## Seeing the Relationships between Procedures and Resources
+
+We have performed a number of changes now, and we want to make sure we have an
+accurate view of the system. A simple way to do this would be to list all the
+permissions that various components of our system have. As we have added a new
+procedure, we want to see what permissions that procedure has.
 
 We want to list our procedures and determine what resources they have permission
 to (e.g. storage locations). After uploading his procedure and having the
 correct permissions applied, the developer sees the following:
 
 ```
-# List the capabilities of procedure #2
-> beaker list-caps 2
-Procedure #2
+# List the capabilities of procedure #5
+> beaker list-caps 5
+Procedure #5
 - WriteStorage 0x8000-0x9000 (0x1000 or 4096 bytes)
 - ReadStorage 0x8000-0x9000 (0x1000 or 4096 bytes)
 ```
 
-This tells us that procedure 2 has write access to 4096 bytes of storage from
+This tells us that procedure \#5 has write access to 4096 bytes of storage from
 0x8000 to 0x9000, and *only* has write access to those bytes, and no others. It
 also has read access to those same bytes.
