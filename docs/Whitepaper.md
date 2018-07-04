@@ -79,7 +79,67 @@ alternatives.
 
 #### The Beaker Capability Model
 
-How do our capabilities work
+**NB:** What's described here is the simplest capability model we could build.
+From here we should expand it to make it more complete and featureful.
+
+One of the goals that would improve security and audability of a system is that
+and external party or higher level "system designer" might what some control
+over what the various conracts in th system can do. This would allow them to
+compartmentalise areas of code and ensure that code only has the priveleges it
+requires, focussing attention on more critical high-risk code. Even if another
+member of the organisation updates a contract under his or her control, the
+system designer should be able to limit the potential damage of an error or
+malign action by sandboxing that contract.
+
+This can be done by giving each contract (a *procedure* in Beaker parlance) a
+set of capabilities, outside of which it cannot act. Even if the procedure is
+updated, unless the developer also has the right to increase its capabilities,
+system designers and auditors have some guarantees that it will not do something
+harmful to parts of the system outside its purview.
+
+The simplest model is simply to give every procedure a list of permitted
+actions. Procedure creation is in two steps:
+
+- Creation/Update - Where the contract bytecode is uploaded to the kernel.
+- Permission assignation - Where somebody with the appropriate authorisation
+  sets the capabilities of the procedure.
+
+**TODO:** Include a diagram of this.
+
+It is critical to note that the capability system proposed here does not attempt
+to deal at all with *"users"*. If a particular system hs users (which is to be
+expected) it is left to the creators of that system to dictate how that is
+organised and implemented. By default, Beaker routes all external transactions
+through a (modifiable) procedure which acts as a form of "gatekeeper". It is
+within this procedure that decisions about what each user can do are made.
+
+When a procedure is created, it has zero capabilities available to it in its
+list. If, for example, it needs to modify the storage value at `0x7`, it will
+need to be provided with that permission by a separate permission assignation.
+In this workflow, the procedure is deployed by a developer, and the permissions
+are assigned by the system designer once he approves this. The workflow around
+how permissions are requested and designed are left to the system creators.
+
+**SIDENOTE:** Perhaps we allow a procedure to be run on every syscall what does
+whichever system checks the designers deem appropriate although the large number
+of procedure calls make this very expensive. It is always possible to provide
+system creators with such hooks.
+
+In this situation it would be important to give the system designer powerful
+design tools.
+
+**What can't this do?** Something like storage locations or procedure ids can't be
+chosen dynamically, as delegation of capabilities does not occur.
+
+Everything is statically determined by the system designer (although permissions
+may be changed at any point).
+
+This design has advantages over more dynamic, flexible, capability systems, as
+it explains, in a very static and assessable manner:
+
+1. Where do permissions come from?
+2. How are they set?
+3. How are they enforced?
 
 ## Using Beaker to Create a More Secure System
 
