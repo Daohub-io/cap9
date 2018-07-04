@@ -10,7 +10,7 @@ Beaker's capability system.
 Currently the capability system is designed around procedure-based capabilities.
 That is, users do not possess capabilities, only procedures do. It is then up to
 the system designer to implement procedures that handle the authentication and
-permissions of users. For example, and expected design pattern (and one we will
+permissions of users. For example, an expected design pattern (and one we will
 support with the basic templates provided with Beaker) is a procedure which
 handles all incoming user transactions, and maintains a permission list for all
 user's of the system. This procedure is completely custom, but one feature it
