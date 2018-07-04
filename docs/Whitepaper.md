@@ -66,7 +66,9 @@ functionality via capabilities.
 ### Taking Advantage of the Operating System
 
 This section will outline how we can use the operating system to allow, deny,
-and audit anything we like. This will not tackle permission/authorisation directly, but simply shows that whatever permission system we choose can use the operating system to disallow certain action etc.
+and audit anything we like. This will not tackle permission/authorisation
+directly, but simply shows that whatever permission system we choose can use the
+operating system to disallow certain action etc.
 
 ### Implementing a Capbility Based Security Model
 
