@@ -12,8 +12,8 @@
 
 ### Blockchain, Ethereum, and Smart Contracts
 
-*This will set out that: blockchains exist, smart contracts exist and Ethereum is
-an example of that. This is just a summary to prepare the reader and is low
+*This will set out that: blockchains exist, smart contracts exist and Ethereum
+is an example of that. This is just a summary to prepare the reader and is low
 priority.*
 
 ### Risks, Issues, and Problems of Smart Contract Systems
@@ -48,9 +48,15 @@ so that when it is used by the system, the system can be confident that the
 component will operate within certain bounds. This approach often involves
 things such as static verification.
 
-The alternative approach is the "top-down" approach, where it is the system that imposes restrictions on its components. For example when a system executes a stored program it restricts what that stored program can do. This requires some level of control over the program.
+The alternative approach is the "top-down" approach, where it is the system that
+imposes restrictions on its components. For example when a system executes a
+stored program it restricts what that stored program can do. This requires some
+level of control over the program.
 
-If you imagine an early computer that simply executed a sequence of instructions and manipulated hardware devices, the bottom-up approach would be to verify that your program is correct, and then run the program. Once the program is running, you have no control.
+If you imagine an early computer that simply executed a sequence of instructions
+and manipulated hardware devices, the bottom-up approach would be to verify that
+your program is correct, and then run the program. Once the program is running,
+you have no control.
 
 With the advent of operating systems, this relationship changed. Now when a
 program ran, it wasn't just excuted blindly by the machine. When it encountered
@@ -77,7 +83,8 @@ the operating system has the final say on what the contract can do.
 
 *This will outline how system calls work.*
 
-Now that we have established that we need system calls, we can begin system which  implements them.
+Now that we have established that we need system calls, we can begin system
+which  implements them.
 
 #### Overview of System Calls
 
@@ -103,7 +110,9 @@ However, if we want to execute a number of state changes during the execution of
 our contrat there is no practial way to make those state changes via the kernel
 and then return to the execution of our contract.
 
-It is possible implement the necessary bookkeeping in contracts, but as there are no interrupts or concurrency on the EVM, and each contract has its own memory space, this would be an expensive and prohibitive solution.
+It is possible implement the necessary bookkeeping in contracts, but as there
+are no interrupts or concurrency on the EVM, and each contract has its own
+memory space, this would be an expensive and prohibitive solution.
 
 Once you return to the calling contract, all memory is lost, so that memory must
 be saved somewhere.
@@ -201,7 +210,9 @@ functionality via capabilities.*
 ### Taking Advantage of the Operating System
 
 *This section will outline how we can use the operating system to allow, deny,
-and audit anything we like. This will not tackle permission/authorisation directly, but simply shows that whatever permission system we choose can use the operating system to disallow certain action etc.*
+and audit anything we like. This will not tackle permission/authorisation
+directly, but simply shows that whatever permission system we choose can use the
+operating system to disallow certain action etc.*
 
 ### Implementing a Capbility Based Security Model
 
