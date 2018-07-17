@@ -9,6 +9,7 @@ Small summary of the contents of the whitepaper
 *This whitepaper outlines the Beaker kernel and operating system.*
 
 ## Risks, Issues, and Problems of Smart Contract Systems
+
 *This will outline what the issues we're trying to solve are.*
 
 ## Requirements
@@ -30,9 +31,15 @@ so that when it is used by the system, the system can be confident that the
 component will operate within certain bounds. This approach often involves
 things such as static verification.
 
-The alternative approach is the "top-down" approach, where it is the system that imposes restrictions on its components. For example when a system executes a stored program it restricts what that stored program can do. This requires some level of control over the program.
+The alternative approach is the "top-down" approach, where it is the system that
+imposes restrictions on its components. For example when a system executes a
+stored program it restricts what that stored program can do. This requires some
+level of control over the program.
 
-If you imagine an early computer that simply executed a sequence of instructions and manipulated hardware devices, the bottom-up approach would be to verify that your program is correct, and then run the program. Once the program is running, you have no control.
+If you imagine an early computer that simply executed a sequence of instructions
+and manipulated hardware devices, the bottom-up approach would be to verify that
+your program is correct, and then run the program. Once the program is running,
+you have no control.
 
 With the advent of operating systems, this relationship changed. Now when a
 program ran, it wasn't just excuted blindly by the machine. When it encountered
@@ -89,7 +96,9 @@ However, if we want to execute a number of state changes during the execution of
 our contrat there is no practial way to make those state changes via the kernel
 and then return to the execution of our contract.
 
-It is possible implement the necessary bookkeeping in contracts, but as there are no interrupts or concurrency on the EVM, and each contract has its own memory space, this would be an expensive and prohibitive solution.
+It is possible implement the necessary bookkeeping in contracts, but as there
+are no interrupts or concurrency on the EVM, and each contract has its own
+memory space, this would be an expensive and prohibitive solution.
 
 Once you return to the calling contract, all memory is lost, so that memory must
 be saved somewhere.
@@ -186,7 +195,9 @@ functionality via capabilities.*
 ### Capability Based Security and Their Advantages
 
 *This section will outline how we can use the operating system to allow, deny,
-and audit anything we like. This will not tackle permission/authorisation directly, but simply shows that whatever permission system we choose can use the operating system to disallow certain action etc.*
+and audit anything we like. This will not tackle permission/authorisation
+directly, but simply shows that whatever permission system we choose can use the
+operating system to disallow certain action etc.*
 
 ### Implementing a Capability Based Security Model
 
@@ -259,7 +270,7 @@ it explains, in a very static and assessable manner:
 Here we list through all the kernel objects required to implement our security model and thier corresponding capabilities
 
 #### Procedure Table
-Here we descibe the procedure table as an object, and how it can be changed. 
+Here we descibe the procedure table as an object, and how it can be changed.
 We can elaborate that procedures themselves are objects and require a capability to be accessed.
 
 #### Capability Table
@@ -271,7 +282,7 @@ Here we describe storage as an object, and how it can be changed.
 #### Events
 Here we describe events as an object, and how it can be changed.
 
-#### Gas 
+#### Gas
 Here we describe gas as an object, and how it can be changed.
 
 ## Applications
