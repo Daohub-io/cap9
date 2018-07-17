@@ -288,7 +288,9 @@ it explains, in a very static and assessable manner:
 2. How are they set?
 3. How are they enforced?
 
-## Using Beaker to Create a More Secure System
+## Aplications
+
+*Was: Using Beaker to Create a More Secure System*
 
 *Some information on "usage characteristics". How do you actually use this
 properly. This should be high level and not necessarily include code examples or
