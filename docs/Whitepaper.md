@@ -64,13 +64,14 @@ the operating system has the final say on what the contract can do.
 
 ## Kernel
 
-This setion outlines how we build an operating system kernel (i.e. procedures and
-syscalls) and how this gives us the control needed to implement a number of
+This setion outlines how we build an operating system kernel (i.e. procedures
+and syscalls) and how this gives us the control needed to implement a number of
 different security systems.
 
 ### Procedures
 
-Here we outline procedures, how they would be created, deployed and how they need a system call interface to be able to interact with the kernel.
+Here we outline procedures, how they would be created, deployed and how they
+need a system call interface to be able to interact with the kernel.
 
 ### System Calls
 
@@ -267,23 +268,30 @@ it explains, in a very static and assessable manner:
 3. How are they enforced?
 
 ### Kernel Objects and Capabilities
-Here we list through all the kernel objects required to implement our security model and thier corresponding capabilities
+
+*Here we list through all the kernel objects required to implement our security model and thier corresponding capabilities.*
 
 #### Procedure Table
-Here we descibe the procedure table as an object, and how it can be changed.
-We can elaborate that procedures themselves are objects and require a capability to be accessed.
+
+*Here we descibe the procedure table as an object, and how it can be changed. We
+can elaborate that procedures themselves are objects and require a capability to
+be accessed.*
 
 #### Capability Table
-Here we describe the capability table as an object, and how it can be changed.
+
+*Here we describe the capability table as an object, and how it can be changed.*
 
 #### Storage
-Here we describe storage as an object, and how it can be changed.
+
+*Here we describe storage as an object, and how it can be changed.*
 
 #### Events
-Here we describe events as an object, and how it can be changed.
+
+*Here we describe events as an object, and how it can be changed.*
 
 #### Gas
-Here we describe gas as an object, and how it can be changed.
+
+*Here we describe gas as an object, and how it can be changed.*
 
 ## Applications
 
@@ -292,7 +300,9 @@ properly. This should be high level and not necessarily include code examples or
 the like.*
 
 ### Filesystem
-Here we can provide an example of how a filesystem that uses the capability model can provide a storage abstraction to procedures
+
+*Here we can provide an example of how a filesystem that uses the capability
+model can provide a storage abstraction to procedures*
 
 ## Conclusion
 
