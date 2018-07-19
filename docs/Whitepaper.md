@@ -1,8 +1,8 @@
 # Beaker Whitepaper
 
-
 ## Abstract
-Small summary of the contents of the whitepaper
+
+*Small summary of the contents of the whitepaper.*
 
 ## Introduction
 
@@ -12,9 +12,28 @@ Small summary of the contents of the whitepaper
 
 *This will outline what the issues we're trying to solve are.*
 
+Smart contracts are, by their nature, unforgiving machines that follow the their
+specificaiton to the letter. This is one of the selling points of smart
+contracts, but it can also be their downfall as the machine will faithfully
+execute any flaw or mistake in that code. This is a well known property of smart
+contracts, and is tackled in a variety of ways. By employing lower level
+primitives like multi-signature wallets or escrow, the users of smart contracts
+can build a more flexible and forgiving system on top of the raw and unforgiving
+Ethereum machine underneath.
+
+Building higher level systems such as wallets and escrow are a double-edged
+sword in that by providing protection against the ruthlessness of the machine,
+they also increase the complexity of the system one is using. This forces users
+of smart contracts to strike a balance between contracts that are simple but
+inflexible or flexible but complex. With this complexity comes the risk that one
+small error or vulnerability can bring down a whole system. In order to prevent
+this we want some form of security and control.
+
+**TODO:** This needs to be severely improved.
+
 ## Requirements
 
-*This sets out what we need to secure, and what tools we need to do that.  It
+*This sets out what we need to secure, and what tools we need to do that. It
 will conclude noting that we need a form of control or introspection into the
 running systems. This will dovetail with the next section.*
 
@@ -22,6 +41,8 @@ running systems. This will dovetail with the next section.*
 is happening as the system is executing. E.g. it allows us to see what each
 chunk of code is doing to the state of the system, and possibly disallow that if
 necessary.*
+
+**TODO:** Let's start with the monitoring and introspection bits.
 
 We have established that there is a requirement for enacting security measures
 in smart contract systems. There are two distinct ways of thinking about this
