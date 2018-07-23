@@ -5,7 +5,6 @@ For each procedure kernel keeps it's identifier, capability list (clist) and roo
 For making system call procedure provides capability to kernel simply by sending to it the index of the capability from it's clist.
 Root flag shows that this procedure is the root procedure - the procedure, which will be called after user's request (kind of entry point).
 
-System calls:
 ### Create
 Create procedure with given identifier (id), capabilities and root flag.
 Capabilites are minted from the capabilities of the parent procedure with clist argument.
@@ -50,13 +49,13 @@ OK
 ### Root
 Set the procedure with given id as the root procedure.
 
-### Arguments
+#### Arguments
 * id - procedure id
 
-### Return Value
+#### Return Value
 OK
 
-### Errors
+#### Errors
 * unknown_id - procedure with given id doesn't exist
 
 ## Storage
