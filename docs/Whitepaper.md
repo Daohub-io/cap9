@@ -360,7 +360,15 @@ less auditable and becomes almost as complex as the procedure themselves.
 One driving observation is that the interactions and code of Ethereum contracts
 don'y match the user-based permissions of a desktop operating system. Also,
 given the "hands-off" microkernel approach, we want to give as much freedom to
-the designer of the system as possible. For this reason our security model needs to be as abstract as possible.
+the designer of the system as possible. For this reason our security model needs
+to be as abstract as possible.
+
+It is also important that the system be as resistant as possible to the many
+mishaps that can befall permissions systems (see the confused deputies problem
+as an exemple), and be well studied in academic literature. For these reasons in
+particular we have chosen a capability-based security model for Beaker.
+
+**TODO:** How much of an overview of capabilities do we need?
 
 ### Implementing a Capability Based Security Model
 
@@ -370,8 +378,15 @@ uses all of the about material to enforce its model.*
 **NB:** What's described here is the simplest capability model we could build.
 From here we should expand it to make it more complete and featureful.
 
+**TODO:** We need to note that our capability system is based around assigning
+capabilities to procedures, which it then holds when run. This can definitely be
+used to model user capabilities (users are simply routed through procedures
+which hold the appropriate capabilies). It does not handle dynamic capabilities,
+but the current line of thinking is that we should only include those when they
+are shown to be necessary.
+
 One of the goals that would improve security and audability of a system is that
-and external party or higher level "system designer" might what some control
+an external party or higher level "system designer" might what some control
 over what the various conracts in th system can do. This would allow them to
 compartmentalise areas of code and ensure that code only has the priveleges it
 requires, focussing attention on more critical high-risk code. Even if another
