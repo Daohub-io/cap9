@@ -385,8 +385,8 @@ which hold the appropriate capabilies). It does not handle dynamic capabilities,
 but the current line of thinking is that we should only include those when they
 are shown to be necessary.
 
-One of the goals that would improve security and audability of a system is that
-an external party or higher level "system designer" might what some control
+One of the goals that would improve security and auditability of a system is
+that an external party or higher level "system designer" might what some control
 over what the various conracts in th system can do. This would allow them to
 compartmentalise areas of code and ensure that code only has the priveleges it
 requires, focussing attention on more critical high-risk code. Even if another
