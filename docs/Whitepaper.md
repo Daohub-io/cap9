@@ -1,5 +1,10 @@
 # Beaker Whitepaper
 
+> *Every program and every privileged user of the system should operate using
+> the least amount of privilege necessary to complete the job.*
+>
+> — Jerome Saltzer, Communications of the ACM
+
 ## Abstract
 
 *Small summary of the contents of the whitepaper.*
@@ -13,7 +18,7 @@
 *This will outline what the issues we're trying to solve are.*
 
 Smart contracts are, by their nature, unforgiving machines that follow the their
-specificaiton to the letter. This is one of the selling points of smart
+specification to the letter. This is one of the selling points of smart
 contracts, but it can also be their downfall as the machine will faithfully
 execute any flaw or mistake in that code. This is a well known property of smart
 contracts, and is tackled in a variety of ways. By employing lower level
@@ -36,6 +41,14 @@ this we want some form of security and control.
 *This sets out what we need to secure, and what tools we need to do that. It
 will conclude noting that we need a form of control or introspection into the
 running systems. This will dovetail with the next section.*
+
+## Introspection via an Operating System
+
+*This setion outlines how we build an operating system (i.e. procedures and
+syscalls) and how this gives us the control needed to implement a number of
+different security systems.*
+
+### The Necessity and Advantage of Introspection and Control
 
 *This will outline in more detail how having some control and insight into what
 is happening as the system is executing. E.g. it allows us to see what each
@@ -83,22 +96,26 @@ system, and require that all contracts interact with critical resources only
 through system calls. Once a contract is only operating through system calls,
 the operating system has the final say on what the contract can do.
 
-## Kernel
+### Providing Introspection and Control (System Calls)
 
-This setion outlines how we build an operating system kernel (i.e. procedures
-and syscalls) and how this gives us the control needed to implement a number of
-different security systems.
+As we covered above, a traditional operating system achieves introspection and
+control by interposing itself between the processes that are running and all
+other parts of the system including storage, memory, and even other processes.
+Each process is given its own memory and access to a processor, but is otherwise
+completely isolated. In order to do even the most fundamental thing (be in print
+a character to the screen or read some stored data) it must ask the operating
+system to do it on its behalf. It is only through the operating system that the
+process can affect the real world. Via this mechanism, we (as the owners of the
+operating system) have complete control over what that process can do.
 
-### Procedures
+TODO: insert diagram of system calls in a traditional OS.
 
-Here we outline procedures, how they would be created, deployed and how they
-need a system call interface to be able to interact with the kernel.
-
-### System Calls
-
-This will outline how system calls work.
+These requests to the operating system that a process makes are called system
+calls.
 
 #### How We Can't Implement System Calls
+
+*TODO:* This may not be necessary.*
 
 *Present the limitations of things like static call, and the difficulty of
 coroutines.*
@@ -174,7 +191,7 @@ assistance from libraries). These instructions simple ensure that the system
 call is only calling to the original kernel instance and nothing more. Because
 this sequence of instructions is the only sequence of instructions with a state
 changing opcode (`DELEGATECALL`) it is simple to verify on-chain that a contract
-contains no state changing opcodes except `DELEGATECALL, and that when it does
+contains no state changing opcodes except `DELEGATECALL`, and that when it does
 it is only in this form (i.e. system call form).
 
 ```
@@ -187,18 +204,24 @@ JUMPI
 DELEGATECALL
 ```
 
-The next challenge is the calling back into the kernel, which is also an attack
-vector. Thankfully capabilities help with this, but an extra layer of protection
-is advisable. One of the primary security features is to only accept system
-calls from the procedure (contract) it is currently returning.
+This delegate call is a call back into the kernel. The kernel only want's to
+accept system calls from its own processes. Thankfully Ethereum provides this
+feature for us. When a procedure is initially called, it is called via
+`CALLCODE`. This means that that our system, which we will call our "kernel
+instance", is the current storage and event space of the running code. It also
+means that the `CALLER` value, which is a global read-only value, is set to the
+address of out kernel instance. When our procedure does a `DELEGATECALL`, this
+address is maintained. As a consequence, whenever a kernel is executing a system
+call, it is able to simply check that the `CALLER` value is equal to its own
+address (it is necessary for this value to be hardcoded into the instance, which
+is performed during instantiation).
 
-![Without kernel instance](media/WithoutKernelInstance.svg)
-
-1. Kernel calls a contract using delegate call.
-2. Contract calls back to kernel with delegate call.
-
-In this setup the caller value is always the kernel, so the kernel can be sure
-it is only being called by itself when doing the system calls.
+With this we have a kernel that is generally only accessible from its own
+procedures. It must, however, also accept some form of external transaction,
+this is the only way it can be triggered to execute code. As an operating system
+Beaker should have no say over what kind of transactions and programs a system
+wants to execute. Beaker follows a microkernel design, where the kernel itself
+should stay out of the user's code as much as possible.
 
 ![With kernel instance](media/WithKernelInstance.svg)
 
@@ -209,10 +232,116 @@ it is only being called by itself when doing the system calls.
 4. The kernel instance checks that itself is the original caller and if so,
    calls the kernel library for processing.
 
+So we have established that a Beaker instance has to accept two types of
+transactions:
+
+- A system call, which will come from an executing procedure that the kernel
+  itself called earlier.
+- An external transaction from an address associated with a user. This is what
+  will trigger whatever actions the designer of the system has chosen to
+  implement.
+
+We have covered above how system calls are secured by only accepting system
+calls from the procedures owned by kernel (we will cover permissions and
+capabilities later), but we must also establish a procedure for external
+transactions.
+
+In order to allow maximum user freedom, rather than try and interpret and
+control a format for external messages, this is left entirely to the design of
+the user. As part of the kernel's initial setup, it will have a procedure which
+is designated as the "entry" procedure. This entry procedure is created (and
+updated if need be) by the user, and executes as a normal procedure. When the
+kernel instance receives an external transaction from another Ethereum address,
+it simply forwards the message data to the entry procedure.
+
+#### The Entry Procedure
+
+While it is completely up to the user to specify how the entry procedure works, here are some examples for how such a procedure might be implemented.
+
+Imagine a system that has many users. These users are people with Ethereum
+addresses that participate in an organtisation that is described by our system.
+When they choose, they are able to execute one of the functions of this
+organisation by sending a transaction to our system. Each of these users has
+different levels of authority, and therefore we need some way to be certain that
+only the users that we specify can execute some of the more restricted function
+of the organisation of the system.
+
+Whenever one of these transactions reaches the kernel, it is passed directly to
+user code, no questions asked. It is up to our entry procedure to decide what
+should happen. Let's say our kernel receives a message which requests that the
+"deleteMember" function be executed to delete a certain member from the
+organisation. This message will be passed on to the entry procedure, and it is
+up to the entry procedure to execute that function.
+
+However, as our entry procedure can be programmed by us, it can run some logic
+to restrict this rather dangerous function. In this example, our entry procedure
+will check the user's address against a list of known administrators and
+determine if they are permitted to execute this procedure. If they are not, the
+entry procedure can simply reject that message and rever the transaction.
+
+#### Auditabilty and the Principle of Least Privelege
+
+It may seem like no great gain to implement all of this additional complexity,
+when in the end we simply pass the transaction to a user defined contract that
+still needs to make all the same logic decisions and is subject to the same
+risks and issues as any Ethereum contracts. Where the operating system model
+improves this status quo is in isolation. Just as when running Linux it would be
+possible to run everything as root, so too in Beaker would it be possible to run
+everything in the entry procedure and have little to no benefit. What this has
+allowed us to do is to isolate the highest risk portion of our code to this
+entry procedure, which ideally should be kept as small and as robust as
+possible.
+
+As everywhere in computing, the princple of least privelege applies here, and
+once the entry procedure has made a determination of the level of privelege
+require it should pass control to more specialised more restriced procedure that
+can then implement large amounts of logic without the risk of accidentally (or
+maliciously) executing some of the more dangerous functions of the system.
+
 ## Security Model
 
 *This section builds on the operating system concepts and adds the security
 functionality via capabilities.*
+
+Above we established two critical components of Beaker: introspection via system calls, and using this to achieve the principle of least privilege.
+
+When you create a process on Linux system, that process comes with restrictions
+(usually determined by the user it is run as). Even if the code in that process
+asks to do something outside of what it is permitted to do, the operating system
+will refuse to service that system call, and the process will therefore not be
+able to escape its restricted box.
+
+These restrictions do not generally exist *within* programs. It is not possible
+in most programming languages to import a library or module and say to the "my
+program sends packets over the network, and must have permission to do so, but
+this section of code coming from this library should not be able to". This is
+the state of Ethereum security currently. Everything is built as a single
+program, without internal security boundaries (the new `STATICCALL` opcode is on
+attempt to implement this).
+
+However, now that we have established an operating system with system calls, we now have that point of control over the contracts running on our system, and we can craft policies to allow or deny any action that interacts with the rest of the system. Beaker provides a system whereby system calls from procedures can be rejected outright based on a policy set by the owner of the system.
+
+In our example above, perhaps the entry procedure contains only a very simple
+block of logic which says that if the sender is one of the administrators, the
+received message is passed to another procedure which handles administrator
+actions, while all other senders are passed to another procedure which handles
+general members and unknown senders. This is a good example of the principle of
+least privilege. If there is a bug in the code that checks which administrators
+can delete users and under what conditions, that bug can only be triggered by
+administrators. All other senders are immediately siphoned off to the general
+member procedure. This significantly reduces the risk for both mistakes and
+malicious actions.
+
+If there is a mistake in the general member procedure, this is now less critical
+as the operating system will prevent it from interacting with the critical parts
+of the system, and so actions like deleting a user are prevented by the policies
+of the system.
+
+This leaves on piece of code that has full power and could potentially do
+anything if it failed: the entry procedure. Now, however, the high risk code
+that has all of this power is limited to a few lines of code that simply direct
+different users' messages to different parts of the system. This is a small
+piece of logic that can be much more easily verified.
 
 ### Capability Based Security and Their Advantages
 
@@ -220,6 +349,18 @@ functionality via capabilities.*
 and audit anything we like. This will not tackle permission/authorisation
 directly, but simply shows that whatever permission system we choose can use the
 operating system to disallow certain action etc.*
+
+Now that we have this system which can allow or deny various system calls
+(thereby reducing the level of privelege and risk of different sections of code
+in the system), we need some way to specify the policies that provide these
+barriers. If we provide a policy mechanism that is too simple, it will not be
+able to provide the necessary guarantees. If it is too complex, than it is far
+less auditable and becomes almost as complex as the procedure themselves.
+
+One driving observation is that the interactions and code of Ethereum contracts
+don'y match the user-based permissions of a desktop operating system. Also,
+given the "hands-off" microkernel approach, we want to give as much freedom to
+the designer of the system as possible. For this reason our security model needs to be as abstract as possible.
 
 ### Implementing a Capability Based Security Model
 
