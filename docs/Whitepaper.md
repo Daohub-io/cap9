@@ -407,7 +407,7 @@ actions. Procedure creation is in two steps:
 - Permission assignation - Where somebody with the appropriate authorisation
   sets the capabilities of the procedure.
 
-**TODO:** Include a diagram of this.
+![Initial Procedures](media/InitialProcedures.svg)
 
 It is critical to note that the capability system proposed here does not attempt
 to deal at all with *"users"*. If a particular system hs users (which is to be
