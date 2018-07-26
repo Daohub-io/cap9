@@ -96,7 +96,7 @@ system, and require that all contracts interact with critical resources only
 through system calls. Once a contract is only operating through system calls,
 the operating system has the final say on what the contract can do.
 
-### Providing Introspection and Control (System Calls)
+### System Calls
 
 As we covered above, a traditional operating system achieves introspection and
 control by interposing itself between the processes that are running and all
@@ -108,58 +108,12 @@ system to do it on its behalf. It is only through the operating system that the
 process can affect the real world. Via this mechanism, we (as the owners of the
 operating system) have complete control over what that process can do.
 
-TODO: insert diagram of system calls in a traditional OS.
+**TODO:** insert diagram of system calls in a traditional OS.
 
 These requests to the operating system that a process makes are called system
 calls.
 
-#### How We Can't Implement System Calls
-
-*TODO:* This may not be necessary.*
-
-*Present the limitations of things like static call, and the difficulty of
-coroutines.*
-
-One newer feature of the EVM is *static call*. This performs a call with no side
-effects, only return values. THis is like asking the EVM to ensure the called
-contract has no capacities other than returning a value. The called contract
-will revert execution if it tries to do anything else. This is a cheap way to do
-static analysis, but it only allows for checking that the contract makes zero
-state changes. It does not allow for a contract that performs a subset of
-permitted state changes.
-
-One way to overcome this limitation is to return to the calling contract and let
-it handle the restricted operation. The contract would simply return the
-information telling our operating system what changes it wanted to effect.
-However, if we want to execute a number of state changes during the execution of
-our contrat there is no practial way to make those state changes via the kernel
-and then return to the execution of our contract.
-
-It is possible implement the necessary bookkeeping in contracts, but as there
-are no interrupts or concurrency on the EVM, and each contract has its own
-memory space, this would be an expensive and prohibitive solution.
-
-Once you return to the calling contract, all memory is lost, so that memory must
-be saved somewhere.
-
-It cannot be saved in storage, as during a static call we do not have access to
-storage.
-
-If it is returned it could be arbitrarily large, and it would require to set
-aside the correct return buffer for storing this memory before the call, which
-cannot be known.
-
-The only remaining alternative is to "re-run" all the opcodes and simply skip
-the system calls we have already used. This could result in enormous execution
-times if there are many system calls.
-
-Another possibility is to execute the procedure only once, and mark out all the
-system calls that need to be performed in the final return value. Note that this
-also means that the size of the return value must be known ahead-of-time, so the
-contract must state upfront its return size. This means the number of syscalls
-cannot be arbitrary. This is not an acceptable trade-off for a general system.
-
-#### How We Can Implement System Calls
+#### Implementing System Calls on Ethereum
 
 *Present the solution using delegate call and on chain code verification. It
 would be nicer if on chain code verification had more prominence, but this makes
@@ -281,10 +235,12 @@ entry procedure can simply reject that message and rever the transaction.
 
 #### Auditabilty and the Principle of Least Privelege
 
-It may seem like no great gain to implement all of this additional complexity,
-when in the end we simply pass the transaction to a user defined contract that
-still needs to make all the same logic decisions and is subject to the same
-risks and issues as any Ethereum contracts. Where the operating system model
+It may seem like no great gain to implement all of this additional complexity
+when in the end we simply pass the transaction to a user defined contract. This
+contract still needs to make all the same logic decisions and is subject to the
+same risks and issues as any Ethereum contracts.
+
+Where the operating system model
 improves this status quo is in isolation. Just as when running Linux it would be
 possible to run everything as root, so too in Beaker would it be possible to run
 everything in the entry procedure and have little to no benefit. What this has
