@@ -1,21 +1,31 @@
-# Beaker Whitepaper
+# Beaker: An open-source exokernel protocol for decentralized organizations on Ethereum.
+
+Authors: 
+* Jacob Payne
+* Jake O'Shannessy
+
+## Abstract
+
+We describe a secure and extensible exokernel protocol for decentralized organizations. Using a capability-based security model, we can facilitate secure and low friction peer-to-peer state management across multiple organizations on the ethereum blockchain. The protocol is intended to serve as an open standard and building block, establishing interoperability between decentralized organizations that provide 3rd party services and protocols.
+
+## Introduction
 
 > *Every program and every privileged user of the system should operate using
 > the least amount of privilege necessary to complete the job.*
 >
 > — Jerome Saltzer, Communications of the ACM
 
-## Abstract
+The overlying idea of decentralized organizations is the use of blockchain technology to securely manage and track a broad range of financial interactions without requiring a trusted third party. This in turn eliminates the need for repetitive recording of financial data and business agreements between different records.
 
-*Small summary of the contents of the whitepaper.*
+While lucrative, the development and deployment of such organizations has a high barrier of entry. Smart contract development practices and tooling are still in their prenatal stages of maturity, with zero margin for error. Communication between organizations is essential and requires the establishment of new protocols to assign contract agreements between parties. Additionally, the system must be extensible upfront to allow changes and upgrades to such protocols and still maintain high standards of safety.
 
-## Introduction
+Beaker is a minimal open exokernel protocol to establish low friction state changes within organizations. It is intended to serve as a building block for establishing interoperability between organizations that will grow in complexity and will require long term extensibility.
 
-*This whitepaper outlines the Beaker kernel and operating system.*
+Using Beaker, organisations can establish an organisation on the blockchain with a much higher level of confidence in it's stability and security. The safety model Beaker provides not only reduces risk, but allows organisations to be designed in a much more flexible and robust manner.
 
-## Risks, Issues, and Problems of Smart Contract Systems
+The exokernel model of Beaker allows organisations to freely define their own systems and procedures, but within a safe and controlled environment. The Beaker kernel can handle things such as resource usage, communication with other organisations, and provide the building blocks to build powerful permission and organisation systems, which are crucial in these types of organisations.
 
-*This will outline what the issues we're trying to solve are.*
+## Problems
 
 Smart contracts are, by their nature, unforgiving machines that follow the their
 specification to the letter. This is one of the selling points of smart
@@ -27,61 +37,25 @@ can build a more flexible and forgiving system on top of the raw and unforgiving
 Ethereum machine underneath.
 
 Building higher level systems such as wallets and escrow are a double-edged
-sword in that by providing protection against the ruthlessness of the machine,
+swords however, by providing protection against the ruthlessness of the machine,
 they also increase the complexity of the system one is using. This forces users
 of smart contracts to strike a balance between contracts that are simple but
 inflexible or flexible but complex. With this complexity comes the risk that one
 small error or vulnerability can bring down a whole system. In order to prevent
 this we want some form of security and control.
 
-**TODO:** This needs to be severely improved.
+## Existing Work
 
-## Requirements
+The design and development of decentralized organizations implemented within Ethereum have so far failed to be standardized. Due to the generally highly specialized nature of these systems, most service platforms and protocols developed have been fragmented in their common design specifications. Both the service protocol and organization model itself were tightly interdependent.
 
-*This sets out what we need to secure, and what tools we need to do that. It
-will conclude noting that we need a form of control or introspection into the
-running systems. This will dovetail with the next section.*
+The lack of a standard model for organizations has so far lead to many security vulnerabilities. One of the prominent examples was “The DAO” that was built to act as a hedge fund with a built-in proposal protocol to manage funds. The implementation was written in a highly specialized manner and did not separate protection from logic. This lead to a large attack space and ultimately a re-entrancy vulnerability that allowed the attacker to steal funds from the organization itself.
 
-## Introspection via an Operating System
+While implementations of different organization models are many, they all share the common ground of protecting funds, establishing decision management, and facilitating a token through a tokenized service platform. We propose a more general approach by creating a common ground of system protection and separating service logic from security.
 
-*This setion outlines how we build an operating system (i.e. procedures and
-syscalls) and how this gives us the control needed to implement a number of
-different security systems.*
 
-### The Necessity and Advantage of Introspection and Control
+## Overview
 
-*This will outline in more detail how having some control and insight into what
-is happening as the system is executing. E.g. it allows us to see what each
-chunk of code is doing to the state of the system, and possibly disallow that if
-necessary.*
-
-**TODO:** Let's start with the monitoring and introspection bits.
-
-We have established that there is a requirement for enacting security measures
-in smart contract systems. There are two distinct ways of thinking about this
-that have very specific implications. There is the "bottom-up" approach, where
-each of the components of a system is secured (for some definition of secured)
-so that when it is used by the system, the system can be confident that the
-component will operate within certain bounds. This approach often involves
-things such as static verification.
-
-The alternative approach is the "top-down" approach, where it is the system that
-imposes restrictions on its components. For example when a system executes a
-stored program it restricts what that stored program can do. This requires some
-level of control over the program.
-
-If you imagine an early computer that simply executed a sequence of instructions
-and manipulated hardware devices, the bottom-up approach would be to verify that
-your program is correct, and then run the program. Once the program is running,
-you have no control.
-
-With the advent of operating systems, this relationship changed. Now when a
-program ran, it wasn't just excuted blindly by the machine. When it encountered
-an instruction that required hardware access, it suspended the running program
-and passed that instruction to the operating system, which then decided what to
-do. This is more similar to the top-down approach in that the system had full
-control over what was and wasn't allowed, at the cost of some run-time
-monitoring.
+When a program runs, it isn't just excuted blindly by the machine. When the operating system encounters an instruction that requires hardware access, it suspends the running program and passes that instruction to the operating system, which then decides what to do.
 
 On Ethereum the situation is very similar. Smart contracts are thoroughly
 audited and tested, but once they are on the blockchain they execute on the raw
@@ -90,63 +64,27 @@ components and potentially dangerous resources (such as our storage) we can make
 stronger guarantees about the safety of our system, without having to apply the
 same level of verification to every component.
 
-So, how do we interpose ourself between potentially dangerous contracts and our
-system? The same way we always have in computer systems. We create an operating
-system, and require that all contracts interact with critical resources only
-through system calls. Once a contract is only operating through system calls,
-the operating system has the final say on what the contract can do.
+In order to do so, we need to require that all contracts interact with critical resources only through system calls. Once a contract is only operating through system calls, the operating system has the final say on what the contract can or cannot do.
+
+### Procedures
+
+A _procedure_ is a smart contract owned by the kernel. When we mean owned, we mean that only the kernel can destroy the contract. Unlike normal smart contracts, procedures have several restrictions in place that do not allow them to directly access storage, make outside calls or send transactions.
+
+Much like processes are stored in a process table within a traditional operating system, procedures are stored within a _procedure table_. Each entry contains the id, capability list and address. Unlike a process table however, the procedure table does not maintain procedure state across separate transaction calls.
+
+### On-Chain Code Verification
+
+In order to verify that a procedure follows certain restrictions we use _On-Chain Code Verification_, or OCCV for short. OCCV is the use a trusted smart contract to read and verify the code of an untrusted smart contract. By reading an untrusted contract before creation (CREATE) or after creation (EXTCODECOPY), you can now make assertions what it can and cannot do. By itself, OCCV alone is not enough to implement a system call, however we will discover that it will become a powerful tool in our arsenal.
+
+Using OCCV, we can check if an untrusted contract has any opcodes that we might not allow. While this can be limited, this allows us to check if a contract can potentially: self destruct, make state changes, emit events, or make an external call. This might not seem much, but the absence of such code allows us to make certain guarantees: If the code does not contain the combination of selfdestruct, delegatecall or callcode, we now know that this code will never be able to be destroyed.
+
+In our case, the trusted contract will be our kernel, while the untrusted contract would be a procedure. Before running a procedure, the kernel can check and verify the procedure, allowing the kernel to enforce certain restrictions or access control. The kernel only needs to do this check only once however, since in ethereum the code of a contract can never change.
 
 ### System Calls
 
-As we covered above, a traditional operating system achieves introspection and
-control by interposing itself between the processes that are running and all
-other parts of the system including storage, memory, and even other processes.
-Each process is given its own memory and access to a processor, but is otherwise
-completely isolated. In order to do even the most fundamental thing (be in print
-a character to the screen or read some stored data) it must ask the operating
-system to do it on its behalf. It is only through the operating system that the
-process can affect the real world. Via this mechanism, we (as the owners of the
-operating system) have complete control over what that process can do.
+The sequence of EVM opcodes below execute a beaker system call. The input and output parameters of the system call are set prior to these instructions, and are the responsibility of the designer of the contract (presumably with significant assistance from libraries). 
 
-**TODO:** insert diagram of system calls in a traditional OS.
-
-These requests to the operating system that a process makes are called system
-calls.
-
-#### Implementing System Calls on Ethereum
-
-*Present the solution using delegate call and on chain code verification. It
-would be nicer if on chain code verification had more prominence, but this makes
-the most sense when reading the whitepaper.*
-
-We can avoid the problem of moving memory around with static call by using
-delegate call. A naive attempt at fixing the problems with static call is to
-call directly into the kernel and ask the kernel to do the work. This way, when
-the kernel has completed the processing, it returns and the contract can
-continue processing with its memory and program counter intact. However, as our
-contract is running under the static flag, when we call the kernel again, the
-kernel will also be under the static flag and will not be able to complete the
-system calls, as it is also unable to effect stateful changes.
-
-In order to allow the kernel to make stateful changes we would need to delegate
-call (or similar) into the kernel. As delegate call is potentially effectful, it
-is also not available under the static flag, so we would need to delegate call
-into the contract too. However, this means we lose all of the security benefits
-of static call! In order to get those security guarantees back (i.e. that no
-stateful changes will occur under the contract) we must implement them
-ourselves. Thankfully, because we are using system calls for all of our state
-changing work, this verification is quite simple. A contract should contain no
-state changing opcodes, except those used to execute system calls.
-
-The sequence of EVM opcodes below execute a system call. The input and output
-parameters of the system call are set prior to these instructions, and are the
-responsibility of the designer of the contract (presumably with significant
-assistance from libraries). These instructions simple ensure that the system
-call is only calling to the original kernel instance and nothing more. Because
-this sequence of instructions is the only sequence of instructions with a state
-changing opcode (`DELEGATECALL`) it is simple to verify on-chain that a contract
-contains no state changing opcodes except `DELEGATECALL`, and that when it does
-it is only in this form (i.e. system call form).
+These instructions ensure that the contract is only calling to the original kernel instance and nothing more. Because this sequence of instructions is the only sequence of instructions with a state changing opcode (`DELEGATECALL`) it is simple to verify on-chain that a contract contains no state changing opcodes except `DELEGATECALL`, and that when it does it is only in this form (i.e. system call form).
 
 ```
 CALLER
@@ -158,26 +96,15 @@ JUMPI
 DELEGATECALL
 ```
 
-This delegate call is a call back into the kernel. The kernel only want's to
-accept system calls from its own processes. Thankfully Ethereum provides this
-feature for us. When a procedure is initially called, it is called via
-`CALLCODE`. This means that that our system, which we will call our "kernel
-instance", is the current storage and event space of the running code. It also
-means that the `CALLER` value, which is a global read-only value, is set to the
-address of out kernel instance. When our procedure does a `DELEGATECALL`, this
-address is maintained. As a consequence, whenever a kernel is executing a system
-call, it is able to simply check that the `CALLER` value is equal to its own
-address (it is necessary for this value to be hardcoded into the instance, which
-is performed during instantiation).
+This delegate call is a call back into the kernel. The kernel will only
+accept system calls from procedures in its procedure table. When a procedure is initially called, it is called via `CALLCODE`. This means that that our system, which we will call our "kernel instance", is the current storage and event space of the running code. It also means that the `CALLER` value, which is a global read-only value, is set to the address of out kernel instance. When our procedure does a `DELEGATECALL`, this address is maintained. As a consequence, whenever a kernel is executing a system call, it is able to simply check that the `CALLER` value is equal to its own address (it is necessary for this value to be hardcoded into the instance, which is performed during instantiation).
 
 With this we have a kernel that is generally only accessible from its own
 procedures. It must, however, also accept some form of external transaction,
 this is the only way it can be triggered to execute code. As an operating system
 Beaker should have no say over what kind of transactions and programs a system
-wants to execute. Beaker follows a microkernel design, where the kernel itself
+wants to execute. Beaker follows a exokernel design, where the kernel itself
 should stay out of the user's code as much as possible.
-
-![With kernel instance](media/WithKernelInstance.svg)
 
 1. Kernel instance executes a procedure by doing delegate call to the kernel.
 2. The kernel fulfils this request by doing a delegate call to the contract.
@@ -200,53 +127,29 @@ calls from the procedures owned by kernel (we will cover permissions and
 capabilities later), but we must also establish a procedure for external
 transactions.
 
-In order to allow maximum user freedom, rather than try and interpret and
-control a format for external messages, this is left entirely to the design of
-the user. As part of the kernel's initial setup, it will have a procedure which
-is designated as the "entry" procedure. This entry procedure is created (and
-updated if need be) by the user, and executes as a normal procedure. When the
+### Entry Procedure
+
+In order to define an interface to the kernel, we have a procedure which is designated as the _entry procedure_. This entry procedure is created (and
+updated if need be) by the user, and is executed as a normal procedure. When the
 kernel instance receives an external transaction from another Ethereum address,
 it simply forwards the message data to the entry procedure.
 
-#### The Entry Procedure
+Thus whenever any transaction reaches the kernel, it is up to our entry procedure to decide what should happen and acts as the interface to the kernel.
 
-While it is completely up to the user to specify how the entry procedure works, here are some examples for how such a procedure might be implemented.
+*Figure presents the general sequence of steps used for executing a procedure.*
 
-Imagine a system that has many users. These users are people with Ethereum
-addresses that participate in an organtisation that is described by our system.
-When they choose, they are able to execute one of the functions of this
-organisation by sending a transaction to our system. Each of these users has
-different levels of authority, and therefore we need some way to be certain that
-only the users that we specify can execute some of the more restricted function
-of the organisation of the system.
+While it is completely up to the user to specify how the entry procedure works, here is an example for how such a procedure might be implemented.
 
-Whenever one of these transactions reaches the kernel, it is passed directly to
-user code, no questions asked. It is up to our entry procedure to decide what
-should happen. Let's say our kernel receives a message which requests that the
-"deleteMember" function be executed to delete a certain member from the
-organisation. This message will be passed on to the entry procedure, and it is
-up to the entry procedure to execute that function.
+In this example, our entry procedure will check the user's address against a list of known administrators and determine if they are permitted to execute this procedure. If they are not, the entry procedure can simply reject that message and revert the transaction.
 
-However, as our entry procedure can be programmed by us, it can run some logic
-to restrict this rather dangerous function. In this example, our entry procedure
-will check the user's address against a list of known administrators and
-determine if they are permitted to execute this procedure. If they are not, the
-entry procedure can simply reject that message and rever the transaction.
-
-#### Auditabilty and the Principle of Least Privelege
+### Auditabilty and the Principle of Least Privelege
 
 It may seem like no great gain to implement all of this additional complexity
 when in the end we simply pass the transaction to a user defined contract. This
 contract still needs to make all the same logic decisions and is subject to the
 same risks and issues as any Ethereum contracts.
 
-Where the operating system model
-improves this status quo is in isolation. Just as when running Linux it would be
-possible to run everything as root, so too in Beaker would it be possible to run
-everything in the entry procedure and have little to no benefit. What this has
-allowed us to do is to isolate the highest risk portion of our code to this
-entry procedure, which ideally should be kept as small and as robust as
-possible.
+Where the operating system model improves this status quo is in isolation. Just as when running Linux it would be possible to run everything as root, so too in Beaker would it be possible to run everything in the entry procedure and have little to no benefit. What this has allowed us to do is to isolate the highest risk portion of our code to this entry procedure, which ideally should be kept as small and as robust as possible.
 
 As everywhere in computing, the princple of least privelege applies here, and
 once the entry procedure has made a determination of the level of privelege
@@ -256,10 +159,7 @@ maliciously) executing some of the more dangerous functions of the system.
 
 ## Security Model
 
-*This section builds on the operating system concepts and adds the security
-functionality via capabilities.*
-
-Above we established two critical components of Beaker: introspection via system calls, and using this to achieve the principle of least privilege.
+Above we established two critical components of the Beaker exokernel: introspection via system calls, and using this to achieve the principle of least privilege.
 
 When you create a process on Linux system, that process comes with restrictions
 (usually determined by the user it is run as). Even if the code in that process
@@ -428,15 +328,22 @@ be accessed.*
 
 ## Applications
 
-*Some information on "usage characteristics". How do you actually use this
-properly. This should be high level and not necessarily include code examples or
-the like.*
+### Relayers
+
+In order for new services and business relationships to emerge, there must be public locations where users and organizations may dispatch procedures that are subsequently aggregated and dispatched based on external event hooks. Building and operating such an event-hook system is costly and a traditional procedure call does not provide incentives for someone to take that expense. _Incentivized Procedures_ solve this issue by requiring the kernel to pay back for the procedure cost with an additional fee.
+
+This allows anyone to act as a service provider for organizations, maintain an event-hook system (public or private) and charge transaction fees on all procedure calls. We refer to entities that host and maintain an event-hook system as _Relayers_.
+
+A centralized system must build and operate proprietary infrastructure to facilitate and execute financial transactions. Relayers merely facilitate signaling between organizations by hosting and propagating events that consist of generic messages. Relayers do not execute procedures on behalf of organizations as this would require them to trust the Relayer. Instead, organization members execute their own procedures.
+
+*Figure 3. Relayers host and maintain an off-chain order book in exchange for transaction fees. This diagram illustrates the general sequence of steps used by Users and Relayers to negotiate transaction fees in a trustless way.*
 
 ### Filesystem
 
 *Here we can provide an example of how a filesystem that uses the capability
 model can provide a storage abstraction to procedures*
 
-## Conclusion
+## Summary
 
-*Summarise what we have outlined above and why it is useful.*
+* The Beaker exokernel provides a secure environment for organizations to establish extendible business logic through restricted smart contracts defined as procedures.
+* Capability-based security model allows for custom permissions and policies.
