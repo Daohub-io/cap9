@@ -3,6 +3,7 @@
 Authors: 
 * Jacob Payne
 * Jake O'Shannessy
+* Alexey Troitsky
 
 ## Abstract
 
