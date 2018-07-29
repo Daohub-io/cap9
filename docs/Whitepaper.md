@@ -104,7 +104,7 @@ wants to execute. Beaker follows a exokernel design, where the kernel itself
 should stay out of the user's code as much as possible.
 
 1. Kernel instance executes a procedure by doing delegate call to the kernel.
-2. The kernel fullfils this request by doing a delegate call to the contract.
+2. The kernel fulfils this request by doing a delegate call to the contract.
 3. While processing, the contract encounters a system call and does a
    delegate call to the `CALLER` value, which is the kernel instance.
 4. The kernel instance checks that itself is the original caller and if so,
