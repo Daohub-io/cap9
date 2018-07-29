@@ -1,5 +1,15 @@
 # Kernel Objects
 
+| Kernel Object | Capability Type | Description                                                         |
+|---------------|-----------------|---------------------------------------------------------------------|
+| Procedure     | Create          | Create procedure with given identifier, capabilities and root flag. |
+|               | Delete          | Delete procedure by identifier.                                     |
+|               | Entry           | Set the procedure with given identifier as the entry procedure.     |
+| Storage       | Read            | Read from the memory by the given address.                          |
+|               | Write           | Write to the memory by the given address.                           |
+| Log           | Write           | Append log record with given topics.                                |
+| Gas           | Received        | The total amount of gas received from user.                         |
+
 ## Procedure
 For each procedure kernel keeps it's identifier, capability list (clist) and root flag.
 For making system call procedure provides capability to kernel simply by sending to it the index of the capability from it's clist.
