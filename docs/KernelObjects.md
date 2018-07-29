@@ -3,6 +3,7 @@
 | Kernel Object | Capability Type | Description                                                         |
 |---------------|-----------------|---------------------------------------------------------------------|
 | Procedure     | Create          | Create procedure with given identifier, capabilities and root flag. |
+|               | Call            | Call procedure by given id and arguments.                           |
 |               | Delete          | Delete procedure by identifier.                                     |
 |               | Entry           | Set the procedure with given identifier as the entry procedure.     |
 | Storage       | Read            | Read from the memory by the given address.                          |
