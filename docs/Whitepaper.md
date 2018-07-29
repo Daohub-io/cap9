@@ -95,7 +95,7 @@ This delegate call is a call back into the kernel. The kernel will only accept s
 With this we have a kernel that is generally only accessible from its own procedures. It must, however, also accept some form of external transaction, this is the only way it can be triggered to execute code. As an operating system Beaker should have no say over what kind of transactions and programs a system wants to execute. Beaker follows a exokernel design, where the kernel itself should stay out of the user's code as much as possible.
 
 1. Kernel instance executes a procedure by doing delegate call to the kernel.
-2. The kernel fullfils this request by doing a delegate call to the contract.
+2. The kernel fulfils this request by doing a delegate call to the contract.
 3. While processing, the contract encounters a system call and does a
    delegate call to the `CALLER` value, which is the kernel instance.
 4. The kernel instance checks that itself is the original caller and if so,
