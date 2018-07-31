@@ -1,6 +1,6 @@
 # Beaker: An open-source exokernel protocol for decentralized organizations on Ethereum.
 
-Authors: 
+Authors:
 * Jacob Payne
 * Jake O'Shannessy
 * Alexey Troitsky
@@ -42,9 +42,23 @@ While implementations of different organization models are many, they all share 
 
 ## Overview
 
-When a program runs, it isn't just executed blindly by the machine. When the operating system encounters an instruction that requires hardware access, it suspends the running program and passes that instruction to the operating system, which then decides what to do.
+In the early days of computers, they were simply machines that executed a
+sequence of instructions and manipulated input and output devices, blindly
+following the instructions laid out by the programmer. It was up to the
+programmer to ensure that the program they wrote was correct. Once the computer
+was executing the programmer had reliquished control and the program would
+execute as written.
 
-On Ethereum the situation is very similar. Smart contracts are thoroughly audited and tested, but once they are on the blockchain they execute on the raw machine. If we want a system where we can interpose ourselves between our components and potentially dangerous resources (such as our storage) we need to make stronger guarantees about the safety of our system without having to apply the same level of verification to every component.
+Driven by a need to manage multiple programs, and eventually include
+restrictions, quotas and permisions, operating systems were created. With
+operating systems, the programs weren't just excuted blindly by the machine.
+When the machine encountered an instruction that required hardware access, it
+suspended the running program and passed that instruction to the operating
+system, which then decided what to do. This gave the operator of the machine
+control over what was and wasn't allowed to occur on the machine, at the cost of
+some run-time monitoring.
+
+On Ethereum the situation is very similar to those early days of computers. Smart contracts are thoroughly audited and tested, but once they are on the blockchain they execute on the raw machine. If we want a system where we can interpose ourselves between our components and potentially dangerous resources (such as our storage) we need to make stronger guarantees about the safety of our system without having to apply the same level of verification to every component.
 
 In order to do so, we need to require that all contracts interact with critical resources only through system calls. Once a contract is only operating through system calls, the operating system kernel has the final say on what the contract can or cannot do.
 
@@ -64,7 +78,20 @@ In our case, the trusted contract will be our kernel, while the untrusted contra
 
 ### System Calls
 
-The sequence of EVM opcodes below define a beaker system call. The input and output parameters of the system call are set prior to these instructions, and are the responsibility of the designer of the contract (presumably with significant assistance from libraries). 
+As we covered above, a traditional operating system achieves introspection and
+control by interposing itself between the processes that are running and all
+other parts of the system including storage, memory, and even other processes.
+Each process is given its own memory and access to a processor, but is otherwise
+completely isolated. In order to do even the most fundamental thing (be in print
+a character to the screen or read some stored data) it must ask the operating
+system to do it on its behalf. It is only through the operating system that the
+process can affect the real world. Via this mechanism, we (as the owners of the
+operating system) have complete control over what that process can do.
+
+These requests to the operating system that a process makes are called system
+calls.
+
+The sequence of EVM opcodes below define a beaker system call. The input and output parameters of the system call are set prior to these instructions, and are the responsibility of the designer of the contract (presumably with significant assistance from libraries).
 
 ```
 CALLER
@@ -81,6 +108,8 @@ These instructions ensure that the contract is only calling to the original kern
 This delegate call is a call back into the kernel. The kernel will only accept system calls from procedures in its procedure table. When a procedure is initially called, it is called via `CALLCODE`. This means that that our system, which we will call our "kernel instance", is the current storage and event space of the running code. It also means that the `CALLER` value, which is a global read-only value, is set to the address of out kernel instance. When our procedure does a `DELEGATECALL`, this address is maintained. As a consequence, whenever a kernel is executing a system call, it is able to simply check that the `CALLER` value is equal to its own address (it is necessary for this value to be hardcoded into the instance, which is performed during instantiation).
 
 With this we have a kernel that is generally only accessible from its own procedures. It must, however, also accept some form of external transaction, this is the only way it can be triggered to execute code. As an operating system Beaker should have no say over what kind of transactions and programs a system wants to execute. Beaker follows a exokernel design, where the kernel itself should stay out of the user's code as much as possible.
+
+![With kernel instance](media/WithKernelInstance.svg)
 
 1. Kernel instance executes a procedure by doing delegate call to the kernel.
 2. The kernel fulfils this request by doing a delegate call to the contract.
@@ -103,6 +132,24 @@ In order to define an interface to the kernel, we have a procedure which is desi
 While it is completely up to the user to specify how the entry procedure works, here is an example for how such a procedure might be implemented.
 
 *Figure presents the general sequence of steps used for executing a procedure.*
+
+> The example will be something like the following:
+>
+> Imagine a system that has
+> many users. These users are people with Ethereum addresses that participate in
+> an organtisation that is described by our system. When they choose, they are
+> able to execute one of the functions of this organisation by sending a
+> transaction to our system. Each of these users has different levels of
+> authority, and therefore we need some way to be certain that only the users
+> that we specify can execute some of the more restricted function of the
+> organisation of the system.
+>
+> Whenever one of these transactions reaches the kernel, it is passed directly to
+> user code, no questions asked. It is up to our entry procedure to decide what
+> should happen. Let's say our kernel receives a message which requests that the
+> "deleteMember" function be executed to delete a certain member from the
+> organisation. This message will be passed on to the entry procedure, and it is
+> up to the entry procedure to execute that function.
 
 In this example, our entry procedure will check the user's address against a list of known administrators and determine if they are permitted to execute this procedure. If they are not, the entry procedure can simply reject that message and revert the transaction.
 
@@ -158,6 +205,8 @@ The simplest model is simply to give every procedure a list of permitted actions
 - Creation/Update: where the contract bytecode is uploaded to the kernel.
 - Permission assignation: where somebody with the appropriate authorisation sets the capabilities of the procedure.
 
+![Initial Procedures](media/InitialProcedures.svg)
+
 It is critical to note that the capability system proposed here does not attempt to deal at all with *"users"*. If a particular system includes users (which is to be expected) it is left to the creators of that system to dictate how that is organised and implemented. By default, Beaker routes all external transactions through a (modifiable) procedure which acts as a form of "gatekeeper". It is within this procedure that decisions about what each user can do are made.
 
 When a procedure is created, it has zero capabilities available to it in its list. If, for example, it needs to modify the storage value at `0x7`, it will need to be provided with that permission by a separate permission assignation. In this workflow, the procedure is deployed by a developer, and the permissions are assigned by the system designer once he approves this. The workflow around how permissions are requested and designed are left to the users.
@@ -186,9 +235,15 @@ This design has advantages over more dynamic, flexible, capability systems, as i
 
 #### Procedure Table
 
+*Here we describe the procedure table as an object, and how it can be changed.*
+
 #### Capability Table
 
+*Here we describe the capability tables as an object, and how it can be changed.*
+
 #### Storage
+
+*Here we describe storage as an object, and how it can be changed.*
 
 #### Events
 
