@@ -42,7 +42,7 @@ While implementations of different organization models are many, they all share 
 
 ## Overview
 
-In the early days of computers, they were simply machines that executed a
+In their early days, computers were simply machines that executed a
 sequence of instructions and manipulated input and output devices, blindly
 following the instructions laid out by the programmer. It was up to the
 programmer to ensure that the program they wrote was correct. Once the computer
