@@ -70,7 +70,7 @@ Much like processes are stored in a process table within a traditional operating
 
 ### On-Chain Code Verification
 
-In order to verify that a procedure follows certain restrictions we use _On-Chain Code Verification_, or OCCV for short. OCCV is the use of a trusted smart contract to read and verify the code of an untrusted smart contract. By reading an untrusted contract before creation (CREATE opcode) or after creation (EXTCODECOPY opcode), we can now make assertions what it can and cannot do.
+In order to verify that a procedure follows certain restrictions we use _On-Chain Code Verification_, or OCCV for short. OCCV is the use of a trusted smart contract to read and verify the code of an untrusted smart contract. By reading an untrusted contract before creation (`CREATE` opcode) or after creation (`EXTCODECOPY` opcode), we can now make assertions what it can and cannot do.
 
 With OCCV we can check if an untrusted contract has any opcodes that we might not allow. While this can be limited, this allows us to check if a contract can potentially: self destruct, make state changes, emit events, or make an external call. This might not seem much, but the absence of such code allows us to make certain guarantees: If the code does not contain the combination of selfdestruct, delegatecall or callcode, we now know that this code will never be able to be destroyed.
 
