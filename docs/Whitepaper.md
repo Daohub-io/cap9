@@ -20,7 +20,7 @@ The underlying idea of decentralized organizations is the use of blockchain tech
 
 While lucrative, the development and deployment of such organizations has a high barrier of entry. Smart contract development practices and tooling are still in their prenatal stages of maturity, with zero margin for error. Communication between organizations is essential and requires the establishment of new protocols to assign contract agreements between parties. Additionally, the system must be extensible upfront to allow changes and upgrades to such protocols and still maintain high standards of safety.
 
-Beaker is a minimal open-source exokernel protocol to establish low friction state changes within organizations. It is intended to serve as a building block for establishing interoperability between organizations that will grow in complexity and will require long term extensibility.
+Beaker is a minimal open-source exokernel protocol to establish low friction state changes within organisations. It is intended to serve as a building block for establishing secure and scalable organisations that will grow in complexity and will require long term extensibility.
 
 Using Beaker, users can establish an organisation on the blockchain with a much higher level of confidence in it's stability and security. The safety model Beaker provides not only reduces risk, but allows organisations to be designed in a much more flexible and robust manner.
 
