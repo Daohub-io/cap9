@@ -231,27 +231,150 @@ This design has advantages over more dynamic, flexible, capability systems, as i
 
 ### Capability Types
 
-*Here we list through all the kernel objects required to implement our security model and thier corresponding capabilities.*
+
+| Kernel Object | Capability Type | Description                                                         |
+|---------------|-----------------|---------------------------------------------------------------------|
+| Procedure     | Create          | Create procedure with given identifier, capabilities and root flag. |
+|               | Call            | Call procedure by given id and arguments.                           |
+|               | Delete          | Delete procedure by identifier.                                     |
+|               | Entry           | Set the procedure with given identifier as the entry procedure.     |
+| Storage       | Read            | Read from the memory by the given address.                          |
+|               | Write           | Write to the memory by the given address.                           |
+| Log           | Write           | Append log record with given topics.                                |
+| Gas           | Received        | The total amount of gas received from user.                         |
+
+Kernel Objects are defined by a category of related capability types that designate the resources in the kernel that can only be accessed through a system call and are protected by the kernel's reference monitor.
 
 #### Procedure Table
 
-*Here we describe the procedure table as an object, and how it can be changed.*
+The procedure table object is a dynamic list of procedure identifiers that designate what procedures the kernel has available. Each procedure is defined by a unique identifier, contract address and a capability list.
 
-#### Capability Table
+##### Create
+```rust
+fn proc_create(id: u32, mlist: &[MintParameters], root_flag: bool) -> Result<(), id_already_exists>;
+```
+Create procedure with given identifier (id), capabilities and root flag.
+Capabilites are minted from the capabilities of the parent procedure with clist argument.
 
-*Here we describe the capability tables as an object, and how it can be changed.*
+
+###### Arguments
+* id - identifier of the new procedure
+* mlist - array of same size as the clist of parent procedure and contains logic of minting capabilities of the parent procedure to child procedure
+* root flag - boolean value whitch indicates that this procedure become the root procedure 
+
+###### Return Value
+OK
+
+###### Errors
+* id_already_exists - procedure with given id already exists
+
+##### Call
+
+```rust
+fn proc_call<T, E>(id: u32, args: &[u256]) -> Result<T,E>;
+```
+Call procedure by given id and with a list 32byte arguments.
+
+##### Arguments
+* id - identifier of the procedure to call
+* args - list of arguments
+
+##### Return Value
+The result of the procedure.
+
+##### Errors
+* unknown_procedure - no procedure with given id
+* procedure_error - some error happened during procedure execution
+
+#### Delete
+```rust
+fn proc_delete(id: u32) -> Result<(), UnknownId>;
+```
+
+Delete procedure by id.
+
+##### Arguments
+* id - identifier of the procedure
+
+##### Return Value
+OK
+
+##### Errors
+* unknown_id - procedure with given id doesn't exist
+
+#### Root
+```rust
+fn proc_set_root(id: u32) -> Result<(), UnknownId>;
+```
+Set the procedure with given id as the root procedure.
+
+##### Arguments
+* id - procedure id
+
+##### Return Value
+OK
+
+##### Errors
+* unknown_id - procedure with given id doesn't exist
 
 #### Storage
 
-*Here we describe storage as an object, and how it can be changed.*
+The Storage object is defined by a 32 byte storage location that a procedure can either read or write a 32 byte value. In order to provide the kernel a protected storage space, storage is divided into two spaces, kernel-space and user-space storage, which is designated with the last bit where kernel-storage is true (1), and userspace is false (0). This provides userspace 2^255 unique keys which should be adequate long-term.
+
+##### Read
+```rust
+fn store_read(addr: u256) -> u256;
+```
+Read from the memory by the given address.
+
+###### Arguments
+* addr - memory address
+
+###### Return Value
+256 bits stored in the given address
+
+##### Write
+```rust
+fn store_write(addr: &u256, val: &u256);
+```
+Write to the memory by the given address. 
+
+###### Arguments
+* addr - memory address
+* value - 256 bits to store 
 
 #### Events
 
-*Here we describe events as an object, and how it can be changed.*
+The Event Object is defined directly from the `LOG{1,2,3,4}` opcodes, where a procedure event capabilitiy is defined by a 32 byte namespace for unique event propogation.
+
+##### Write
+```rust
+fn event_write(topics: [&u256]) -> Result<(), illegal_topics>;
+```
+Append log record with given topics.
+Size of the topics array determines the log opcode, and that's why it has to be less or equal to 4. 
+
+###### Arguments
+* topics - array of topics
+
+###### Return Value
+OK
+
+###### Errors
+* illegal_topics - illegal size of the topics array  
 
 #### Gas
 
-*Here we describe gas as an object, and how it can be changed.*
+The Gas Object is defined as the total gas resources the kernel has available and designates how much resources are allocated to a procedure to spend during execution.
+
+##### Received
+```rust
+fn gas_recieved() -> u32;
+```
+The total amount of gas received from user.
+
+###### Return Value
+Amount of gas.
 
 ## Applications
 
