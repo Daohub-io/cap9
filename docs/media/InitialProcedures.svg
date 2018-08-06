@@ -14,8 +14,11 @@
    viewBox="0 0 210 297"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.1 r15371"
-   sodipodi:docname="InitialProcedure.svg">
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="InitialProcedures.svg"
+   inkscape:export-filename="D:\jakedoc\Projects\beakeros\docs\media\InitialProcedures.png"
+   inkscape:export-xdpi="157.09"
+   inkscape:export-ydpi="157.09">
   <defs
      id="defs2">
     <marker
@@ -84,8 +87,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.70710678"
-     inkscape:cx="163.94165"
-     inkscape:cy="681.77819"
+     inkscape:cx="270.62584"
+     inkscape:cy="625.20965"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -106,7 +109,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
