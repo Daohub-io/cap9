@@ -1,5 +1,4 @@
 # Procedure Execution
-Here we describe how a procedure will write an arbitrary, 32-byte value to address 0x07. This should be executed via a capability attached to a procedure. This will be the basis from which we extend to other capabilities.
 
 ## Format
 ### Procedure
@@ -59,6 +58,7 @@ fn invoke(cap_type: CapabilityType, cap_index: u8, input: &Vec<u256>, output: &m
 Where `cap_type` is the type of the capability, `cap_index` is the index of the capability, `input` is the memory location and size for reading the input parameters and `output` is the output memory location for the kernel to write the result. When the kernel reads the `input` it will parse it according to the `cap_type`.
 
 ## Example: Storage Capability
+Here we describe how a procedure will write an arbitrary, 32-byte value to address 0x07. This should be executed via a capability attached to a procedure. This will be the basis from which we extend to other capabilities.
 
 ### Format
 ``` rust
