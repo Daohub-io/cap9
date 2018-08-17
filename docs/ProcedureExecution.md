@@ -25,7 +25,7 @@ Each capability type is referenced by a byte identifier. In this case, from 0 to
 ```rust
 enum CapabilityType {
     /// Create procedure with given identifier.
-    ProcedureCreate = 0, 
+    ProcedureCreate = 0,
     /// Add capability to procedure with given identifier
     ProcedurePushCap = 1,
     /// Delete capability from procedure with given identifier and index
@@ -108,7 +108,45 @@ struct StorageCapReadOutput {
 
 ```
 
-When reading, the parameters are parsed as a list of u256 keys, and for each key a value is returned. When writing, we parse two lists of keys and values to be written. Output in this case are the old values being written over. 
+When reading, the parameters are parsed as a list of u256 keys, and for each key a value is returned. When writing, we parse two lists of keys and values to be written. Output in this case are the old values being written over.
+
+#### Summary of Message Format
+
+The format of the memory message is as follows: 1 byte for the capability type, one byte for the capability index. Each procedure has a list of capabilities, and the capability index is an index into this list. (**TODO**: Why do we need to specify the capability type here? Isn't that contained within the capability?). After that is the start address where we will write, as well as the number of addresses we will write to.
+
+* Byte 0: Capability Type
+* Byte 1: Capability Index
+* Bytes 2 to 34: Number of addresses to be written to (this values is referred to as `n`)
+* Bytes 34 to 34+n\*3`: Storage keys to be written to.
+* Bytes 34+n\*3 to 34+2\*n\*32: Values to be written into each corresponding key.
+
+For example, to write the value `0x34` into the storage key `0x7` the message format will be as follows.
+
+* Byte 0: `0x7`
+* Byte 1: A single byte corresponding to the index of this capability in the list.
+* Bytes 2-33: `0x1`, we are writing to a single address.
+* Bytes 34-65: `0x7`, the single address we are writing to.
+* Bytes 66-97: `0x34`, the single value we are writing into to.
+
+#### Summary of the Capability Format
+
+The write capability is 2 32-byte values. A storage address and an offset/size. The capability allows writing to any value with `address + offset`.
+
+* Byte 0: The capability type (for write it is `0x7`)
+* Bytes 1-32: `address`, the start address.
+* Bytes 33-64: `offset`, the number of addresses (starting with `address` that can be written)
+
+For example, the ability to write to storage location `0x7` only is:
+
+1. `0x07`
+2. `0x07`
+3. `0x01`
+
+That is: storage location `0x7`, a single address. Fully padded (with dashes to separate values) this is:
+
+```
+0x07-0000000000000000000000000000000000000000000000000000000000000007-0000000000000000000000000000000000000000000000000000000000000001
+```
 
 ### Execution
 
