@@ -7,14 +7,23 @@ library ProcedureTable {
         // Equal to the index of the key of this item in keys, plus 1.
         uint8 keyIndex;
         address location;
+        bool capability;
     }
+
+    // struct Capability {
+    //     // Equal to the index of the key of this item in keys, plus 1.
+    //     uint8 capType;
+    //     uint256 storageLocation;
+    //     uint256 storageValue;
+    // }
 
     struct Self {}
 
     // Convert Pointer To File Pointer
-
+    // Takes a single byte and a full 256 bit storage location
     function _filePointer(uint8 fileId, uint256 pointer) internal returns (uint256) {
         // Mask to Uint256
+        // Overwrite the most significant byte of pointer with fileId
         return uint256(pointer) | (uint256(fileId) << 248);
     }
 
@@ -47,14 +56,38 @@ library ProcedureTable {
         // Procedure data is stored under the procedurePointer "directory". The
         // location of the procedure data is followed by the name/key of the
         // procedure.
+        // keccak256("procedurePointer") is 0x85a94e7072614513158f210a7e69624a1aadd1603708f4f46564d8dd4195f87d
         var directory = keccak256("procedurePointer");
+        // The case to uint248 drops the least significant byte (0x7d) converting the value to
+        // 0x85a94e7072614513158f210a7e69624a1aadd1603708f4f46564d8dd4195f8
+        // then left shift the value 240 bits, losing all but the least signficant byte, the result is
+        // 0xf8000000000000000000000000000000000000000000000000000000000000
+        // We than OR that with the key, which is 192 bits or 24 bytes. This is
+        // the key provided on creation. If the key was 0x555555555555555555555555555555555555555555555555
+        // then the resulting uint248 would be
+        // 0xf8000000000000555555555555555555555555555555555555555555555555
+        // TODO: it seems like this might not be what was intended
         return (uint248(directory) << 240) | key;
     }
 
     function _getProcedureByKey(uint192 key) internal returns (Procedure memory p) {
+        // pPointer is a uint248, which is all but one byte of a storage
+        // address. This means that there are 256 storage keys "under"
+        // this pPointer (at 32 bytes each this means 8,192 bytes of storage).
         uint248 pPointer = _getProcedurePointerByKey(key);
+        // The first storage location (0) is used to store the keyIndex.
         p.keyIndex = uint8(_get(0, pPointer));
+        // The second storage location (1) is used to store the address of the
+        // contract.
         p.location = address(_get(0, pPointer + 1));
+        // TODO: add the capability list here. For now we only have a single
+        // capability slot for a single capability type, which is write.
+        // For now this is:
+        // type + key + value
+        //  8   + 32  +  32   = 72 bytes
+        // Actually, for now it is simply a boolean to determine if the procedure
+        // is allowed to write or not
+        p.capability = bool(_get(0, pPointer + 2) != 0);
     }
 
     function _storeProcedure(Procedure memory p, uint192 key) internal {
@@ -74,6 +107,14 @@ library ProcedureTable {
         // Store the address at the loction after this (making this data 2
         // uint256 wide).
         _set(0, pPointer + 1, uint256(p.location));
+        // Store the write capability at the third location
+        uint256 cap;
+        if (p.capability) {
+            cap = 1;
+        } else {
+            cap = 0;
+        }
+        _set(0, pPointer + 2, cap);
     }
 
     function _freeProcedure(uint248 pPointer) internal {
@@ -82,8 +123,10 @@ library ProcedureTable {
     }
 
     function insert(Self storage self, bytes24 key, address value) internal returns (bool replaced) {
+        // TODO: explain what this does
         Procedure memory p = _getProcedureByKey(uint192(key));
         p.location = value;
+        p.capability = false;
         if (p.keyIndex > 0) {
             return true;
         } else {

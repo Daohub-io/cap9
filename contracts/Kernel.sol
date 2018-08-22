@@ -65,11 +65,26 @@ contract Kernel is Factory {
             switch div(calldataload(0), 0x10000000000000000000000000000000000000000000000000000000000)
             case 0 {
                 // non-syscall case
-                // here we need to use call. delegatecall would leave the CALLER as
+                // here we need to use callcode. delegatecall would leave the CALLER as
                 // the account which started the transaction
                 // The address here needs to be updated to call Procedure1
                 // everytime Procedure1 is deployed
-                call(gas, 0x8885584aa73fccf0f4572a770d1a0d6bd0b4360a, 0, 29, 67, 0x80, 0x40)
+                //
+                // TODO: Determine the address of the procedure at index 0 of
+                // the procedure table.
+                //
+                // This (from last parameters to first):
+                // 1. Allocates an area in memory of size 0x40 (64 bytes)
+                // 2.    At memory location 0x80
+                // 3. Set the input size to 67 bytes
+                // 4.    At memory location 29
+                // 5. Send 0 wei
+                // 6. The contract address we are calling to
+                // 7. The gas we are budgeting
+                //
+                //        7                       6                       5   4   3   2      1
+                callcode(gas, 0x8885584aa73fccf0f4572a770d1a0d6bd0b4360a, 0, 29, 67, 0x80, 0x40)
+                // store the return code in memory location 0x60 (1 byte)
                 0x60
                 mstore
                 // return both delegatecall return values and the system call
@@ -78,6 +93,9 @@ contract Kernel is Factory {
             }
             // This is a store system call
             case 2 {
+                // First we need to check the capability is valid.
+                // That means getting the capability list for the procedure.
+                // let caps = procedures[currentProcedure].capabilities
                 let location := calldataload(3)
                 let value := calldataload(add(3,32))
                 sstore(location, value)
@@ -157,7 +175,7 @@ contract Kernel is Factory {
     // }
 
 
-    function getProcedure(bytes24 name) public view returns (address) {
+    function getProcedure(bytes24 name) public returns (address) {
         return procedures.get(name);
     }
 
