@@ -21,13 +21,13 @@ library ProcedureTable {
 
     // Convert Pointer To File Pointer
     // Takes a single byte and a full 256 bit storage location
-    function _filePointer(uint8 fileId, uint256 pointer) internal returns (uint256) {
+    function _filePointer(uint8 fileId, uint248 pointer) internal returns (uint256) {
         // Mask to Uint256
         // Overwrite the most significant byte of pointer with fileId
         return uint256(pointer) | (uint256(fileId) << 248);
     }
 
-    function _get(uint8 fileId, uint256 _pointer) internal view returns (uint256 val) {
+    function _get(uint8 fileId, uint248 _pointer) internal view returns (uint256 val) {
         var pointer = _filePointer(fileId, _pointer);
         assembly {
             // Load Value
@@ -58,16 +58,18 @@ library ProcedureTable {
         // procedure.
         // keccak256("procedurePointer") is 0x85a94e7072614513158f210a7e69624a1aadd1603708f4f46564d8dd4195f87d
         var directory = keccak256("procedurePointer");
-        // The case to uint248 drops the least significant byte (0x7d) converting the value to
-        // 0x85a94e7072614513158f210a7e69624a1aadd1603708f4f46564d8dd4195f8
+        // The case to uint240 drops the most significant bytes converting the value to
+        // 0xd8dd4195f87d0000000000000000000000000000000000000000000000000000
         // then left shift the value 240 bits, losing all but the least signficant byte, the result is
-        // 0xf8000000000000000000000000000000000000000000000000000000000000
+        //   proc-prefix              procedure key
+        // 0xd8dd4195f87d--000000000000000000000000000000000000000000000000
         // We than OR that with the key, which is 192 bits or 24 bytes. This is
         // the key provided on creation. If the key was 0x555555555555555555555555555555555555555555555555
         // then the resulting uint248 would be
-        // 0xf8000000000000555555555555555555555555555555555555555555555555
+        // 0xd8dd4195f87d5555555555555555555555555555555555555555555555555
         // TODO: it seems like this might not be what was intended
-        return (uint248(directory) << 240) | key;
+        return uint248(uint240(uint240(directory) << 192) | uint240(key)) << 8;
+
     }
 
     function _getProcedureByKey(uint192 key) internal returns (Procedure memory p) {
