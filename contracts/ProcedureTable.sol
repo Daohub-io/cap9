@@ -90,6 +90,28 @@ library ProcedureTable {
         p.capability = bool(_get(0, pPointer + 2) != 0);
     }
 
+    function getProcedureCapabilityByKey(Self storage self, uint192 key) internal returns (bool cap) {
+        // pPointer is a uint248, which is all but one byte of a storage
+        // address. This means that there are 256 storage keys "under"
+        // this pPointer (at 32 bytes each this means 8,192 bytes of storage).
+        uint248 pPointer = _getProcedurePointerByKey(key);
+        Procedure p;
+        // The first storage location (0) is used to store the keyIndex.
+        p.keyIndex = uint8(_get(0, pPointer));
+        // The second storage location (1) is used to store the address of the
+        // contract.
+        p.location = address(_get(0, pPointer + 1));
+        // TODO: add the capability list here. For now we only have a single
+        // capability slot for a single capability type, which is write.
+        // For now this is:
+        // type + key + value
+        //  8   + 32  +  32   = 72 bytes
+        // Actually, for now it is simply a boolean to determine if the procedure
+        // is allowed to write or not
+        p.capability = bool(_get(0, pPointer + 2) != 0);
+        cap = p.capability;
+    }
+
     function _storeProcedure(Procedure memory p, uint192 key) internal {
         // Get the storage address of the name/key of the procedure. In this
         // scope "key" is the 24 byte name which is provided by the user. The
@@ -126,7 +148,7 @@ library ProcedureTable {
         // TODO: explain what this does
         Procedure memory p = _getProcedureByKey(uint192(key));
         p.location = value;
-        p.capability = false;
+        p.capability = true;
         if (p.keyIndex > 0) {
             return true;
         } else {

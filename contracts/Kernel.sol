@@ -54,6 +54,10 @@ contract Kernel is Factory {
         // if (isExternal) {
         //     callGuardProcedure(msg.sender, msg.data);
         // }
+        bytes24 thisProcedureKey = "SysCallTest";
+        // address thisProcedureAddress = procedures.get(thisProcedureKey);
+        bool cap = procedures.getProcedureCapabilityByKey(uint192(thisProcedureKey));
+        // bool cap = thisProcedure.capability;
 
 
         // 0x00 - not a syscall
@@ -95,7 +99,12 @@ contract Kernel is Factory {
             case 2 {
                 // First we need to check the capability is valid.
                 // That means getting the capability list for the procedure.
-                // let caps = procedures[currentProcedure].capabilities
+                // Get the
+                // let caps = procedures.get(currentProcedure)
+                // .capabilities
+                if iszero(cap) {
+                    revert(0,0)
+                }
                 let location := calldataload(3)
                 let value := calldataload(add(3,32))
                 sstore(location, value)
