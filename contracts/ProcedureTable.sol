@@ -147,17 +147,33 @@ library ProcedureTable {
     }
 
     function insert(Self storage self, bytes24 key, address value, bool writeCap) internal returns (bool replaced) {
-        // TODO: explain what this does
+        // First we get retrieve the procedure that is specified by this key, if
+        // it exists, otherwise the struct we create in memory is just
+        // zero-filled.
         Procedure memory p = _getProcedureByKey(uint192(key));
+        // We then write or overwrite the various properties
         p.location = value;
         p.capability = writeCap;
+        // TODO: what does the code below do
+
+        // If the keyIndex is not zero then that indicates that the procedure
+        // already exists. In this case *WE HAVE NOT OVERWRITTEN * the values,
+        // as we have not called _storeProcdure.
         if (p.keyIndex > 0) {
             return true;
+        // If the keyIndex is zero (it is unsigned and cannot be negative) then
+        // it means the procedure is new. We must therefore assign it a key
+        // index.
         } else {
+            // First we retrieve a pointer to the Procedure Table Length value.
             uint248 lenP = _getLengthPointer();
+            // We then dereference that value.
             uint256 len = _get(0, lenP);
+            // We assign this procedure the next keyIndex, i.e. len+1
             p.keyIndex = uint8(len + 1);
+            // We increment the Procedure Table Length value
             _set(0, lenP, len + 1);
+            // We actually commit the values in p to storage
             _storeProcedure(p, uint192(key));
             return false;
         }
@@ -168,8 +184,11 @@ library ProcedureTable {
 
         if (p1.keyIndex == 0)
             return false;
-
+        // When we remove a procedure, we want to move another procedure into
+        // this "slot" to keep the active keys contiguous
+        // First we get the storage address of the Procedure Table Length
         uint248 lenP = _getLengthPointer();
+        // We then dereference that to get the value
         uint256 len = _get(0, lenP);
 
         if (p1.keyIndex <= len) {
