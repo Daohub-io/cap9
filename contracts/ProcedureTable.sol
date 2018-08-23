@@ -144,11 +144,11 @@ library ProcedureTable {
         _set(0, pPointer + 1, 0);
     }
 
-    function insert(Self storage self, bytes24 key, address value) internal returns (bool replaced) {
+    function insert(Self storage self, bytes24 key, address value, bool writeCap) internal returns (bool replaced) {
         // TODO: explain what this does
         Procedure memory p = _getProcedureByKey(uint192(key));
         p.location = value;
-        p.capability = true;
+        p.capability = writeCap;
         if (p.keyIndex > 0) {
             return true;
         } else {

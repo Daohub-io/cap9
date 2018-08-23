@@ -14,6 +14,7 @@ contract Kernel is Factory {
     using ProcedureTable for ProcedureTable.Self;
     ProcedureTable.Self procedures;
     address kernelAddress;
+    bytes24 currentProcedure;
 
     struct Process {
         // Equal to the index of the key of this item in keys, plus 1.
@@ -54,10 +55,7 @@ contract Kernel is Factory {
         // if (isExternal) {
         //     callGuardProcedure(msg.sender, msg.data);
         // }
-        bytes24 thisProcedureKey = "SysCallTest";
-        // address thisProcedureAddress = procedures.get(thisProcedureKey);
-        bool cap = procedures.getProcedureCapabilityByKey(uint192(thisProcedureKey));
-        // bool cap = thisProcedure.capability;
+        bool cap = procedures.getProcedureCapabilityByKey(uint192(currentProcedure));
 
 
         // 0x00 - not a syscall
@@ -103,7 +101,9 @@ contract Kernel is Factory {
                 // let caps = procedures.get(currentProcedure)
                 // .capabilities
                 if iszero(cap) {
-                    revert(0,0)
+                    // return 11
+                    mstore(0,11)
+                    revert(0,1)
                 }
                 let location := calldataload(3)
                 let value := calldataload(add(3,32))
@@ -143,7 +143,7 @@ contract Kernel is Factory {
         }
     }
 
-    function createProcedure(bytes24 name, bytes oCode) public returns (uint8 err, address procedureAddress) {
+    function createProcedure(bytes24 name, bytes oCode, bool writeCap) public returns (uint8 err, address procedureAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -158,7 +158,7 @@ contract Kernel is Factory {
         }
 
         procedureAddress = create(oCode);
-        procedures.insert(name, procedureAddress);
+        procedures.insert(name, procedureAddress, writeCap);
     }
 
     function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {
@@ -201,6 +201,7 @@ contract Kernel is Factory {
             return;
         }
 
+        currentProcedure = name;
         address procedureAddress = procedures.get(name);
         bool status = false;
         assembly {
@@ -239,6 +240,7 @@ contract Kernel is Factory {
             if eq(status,0) {
                 // error
                 mstore(0x40,4)
+                // TODO: switch to revert
                 return(0x40,0x40)
             }
             if eq(status,1) {
