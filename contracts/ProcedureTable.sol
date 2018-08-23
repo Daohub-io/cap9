@@ -96,14 +96,15 @@ library ProcedureTable {
         // is allowed to write or not
 
         // The type of capability (currently only WRITE 0x7)
-        p.capabilityType = uint8(_get(0, pPointer + 2) != 0);
+        p.capabilityType = uint8(_get(0, pPointer + 2));
         // The key to which we can write
-        p.capabilityKey = uint256(_get(0, pPointer + 3) != 0);
+        p.capabilityKey = uint256(_get(0, pPointer + 3));
         // The number of additional keys we can write to
-        p.capabilitySize = uint256(_get(0, pPointer + 4) != 0);
+        p.capabilitySize = uint256(_get(0, pPointer + 4));
     }
 
-    function getProcedureCapabilityByKey(Self storage self, uint192 key) internal returns (bool cap) {
+    function checkWriteCapability(Self storage self, uint192 key, uint256 toStoreAddress) internal returns (bool allow) {
+        allow = false;
         // pPointer is a uint248, which is all but one byte of a storage
         // address. This means that there are 256 storage keys "under"
         // this pPointer (at 32 bytes each this means 8,192 bytes of storage).
@@ -121,8 +122,12 @@ library ProcedureTable {
         //  8   + 32  +  32   = 72 bytes
         // Actually, for now it is simply a boolean to determine if the procedure
         // is allowed to write or not
-        p.capability = bool(_get(0, pPointer + 2) != 0);
-        cap = p.capability;
+        p.capabilityType = uint8(_get(0, pPointer + 2));
+        p.capabilityKey = _get(0, pPointer + 3);
+        p.capabilitySize = _get(0, pPointer + 4);
+        if (p.capabilityType == 0x7 && toStoreAddress >= p.capabilityKey && toStoreAddress <= (p.capabilityKey + p.capabilitySize)) {
+            allow = true;
+        }
     }
 
     function _storeProcedure(Procedure memory p, uint192 key) internal {
@@ -153,21 +158,16 @@ library ProcedureTable {
         _set(0, pPointer + 1, 0);
     }
 
-    function insert(Self storage self, bytes24 key, address value, bool writeCap, uint256 writeAddress) internal returns (bool replaced) {
+    function insert(Self storage self, bytes24 key, address value, uint8 capType, uint256 capAddress, uint256 capSize) internal returns (bool replaced) {
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
         Procedure memory p = _getProcedureByKey(uint192(key));
         // We then write or overwrite the various properties
         p.location = value;
-        if (writeCap) {
-            p.capabilityType = 0x7;
-        } else {
-            // This is not a null capability
-            p.capabilityType = 0x0;
-        }
-        p.capabilityKey = writeAddress;
-        p.capabilitySize = 0;
+        p.capabilityType = capType;
+        p.capabilityKey = capAddress;
+        p.capabilitySize = capSize;
         // TODO: what does the code below do
 
         // If the keyIndex is not zero then that indicates that the procedure

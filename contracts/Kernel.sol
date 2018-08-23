@@ -55,16 +55,37 @@ contract Kernel is Factory {
         // if (isExternal) {
         //     callGuardProcedure(msg.sender, msg.data);
         // }
-        bool cap = procedures.getProcedureCapabilityByKey(uint192(currentProcedure));
 
+        // TODO: we somehow need to execute this function
+        // Let's see if we can decode the system call message at a higher level
+        uint8 capType = uint8(msg.data[0]);
+        uint256 writeAddress = 0;
+        uint256 writeValue = 0;
+
+        for (uint256 i = 0; i < 32; i++) {
+            writeAddress = writeAddress << 8;
+            writeAddress = writeAddress | uint256(msg.data[i+1]);
+        }
+
+        for (uint256 j = 0; j < 32; j++) {
+            writeValue = writeValue << 8;
+            writeValue = writeValue | uint256(msg.data[j+1+32]);
+        }
+
+        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress);
+        // bool cap = true;
 
         // 0x00 - not a syscall
         // 0x01 - read syscall
         // 0x02 - write syscall
         // 0x03 - exec syscall
         assembly {
+            if iszero(eq(capType,0x7)) {
+                mstore(0,12)
+                revert(0,0x20)
+            }
             // Here we decode the system call (if there is one)
-            switch div(calldataload(0), 0x10000000000000000000000000000000000000000000000000000000000)
+            switch capType
             case 0 {
                 // non-syscall case
                 // here we need to use callcode. delegatecall would leave the CALLER as
@@ -94,23 +115,20 @@ contract Kernel is Factory {
                 return(0x60,0x60)
             }
             // This is a store system call
-            case 2 {
-                // First we need to check the capability is valid.
-                // That means getting the capability list for the procedure.
-                // Get the
-                // let caps = procedures.get(currentProcedure)
-                // .capabilities
+            case 0x07 {
                 if iszero(cap) {
                     // return 11
                     mstore(0,11)
-                    revert(0,1)
+                    revert(0,0x20)
                 }
-                let location := calldataload(3)
-                let value := calldataload(add(3,32))
+
+                // let location := calldataload(3)
+                // let value := calldataload(add(3,32))
+                let location := writeAddress
+                let value := writeValue
                 sstore(location, value)
                 mstore8(0xb0,3)
                 log0(0xb0, 1)
-                // sstore(0, div(x, 2))
             }
             // This is the exec system call
             case 0x03 {
@@ -143,7 +161,7 @@ contract Kernel is Factory {
         }
     }
 
-    function createProcedure(bytes24 name, bytes oCode, bool writeCap) public returns (uint8 err, address procedureAddress) {
+    function createProcedure(bytes24 name, bytes oCode, uint8 capType, uint256 capAddress, uint256 capSize) public returns (uint8 err, address procedureAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -158,7 +176,8 @@ contract Kernel is Factory {
         }
 
         procedureAddress = create(oCode);
-        procedures.insert(name, procedureAddress, writeCap);
+        // TODO: true and 0x7 are just example values.
+        procedures.insert(name, procedureAddress, capType, capAddress, capSize);
     }
 
     function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {
