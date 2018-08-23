@@ -15,7 +15,18 @@ contract Factory {
     function validate(bytes oCode) public view returns (uint8 err) {
         for (uint256 i = 0; i < oCode.length; i ++) {
             uint8 ins = uint8(oCode[i]);
-
+            // TODO: this also checks the swarm metadata, which is not actually
+            // meant to be executed. We can't just skip it, as it is possible
+            // to include code hidden in this metadata. We can either force
+            // developers to remove it before being entered as a procedure, or
+            // somehow try and prove that it is unreachable, which is possible
+            // but an extra cost we probably don't want.
+            //
+            // It is always possible for legitimate swarm metadata to have a
+            // jump destination which could be used to embed executable code.
+            // It is not generally possible to determine what is a legitmate
+            // swarm hash which just happens to contain a jump destination and
+            // what is malicious code.
             if (ins == 0xf0) {return 1;} // CREATE
             if (ins == 0xf1) {return 2;} // CALL
             if (ins == 0xf2) {return 3;} // CALLCODE
