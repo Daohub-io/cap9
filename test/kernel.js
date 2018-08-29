@@ -9,6 +9,7 @@ const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
+    SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
 }
 
 const Invalid = {
@@ -35,8 +36,8 @@ contract('Kernel', function (accounts) {
         it('should return existing procedure keys', async function () {
             let kernel = await Kernel.new();
 
-            let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
-            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
+            let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
 
             let procedures = await kernel.listProcedures.call();
             assert.equal(procedures.length, 1);
@@ -50,7 +51,7 @@ contract('Kernel', function (accounts) {
             ];
 
             for (const proc of speccedProcedures) {
-                await kernel.createProcedure(proc[0], proc[1].bytecode)
+                await kernel.createProcedure(proc[0], proc[1].bytecode, 0x0, 0x0, 0x0)
             }
 
             const proceduresRaw = await kernel.listProcedures.call();
@@ -80,12 +81,12 @@ contract('Kernel', function (accounts) {
 
             // Create "TestAdder"
             // Find the address (ephemerally)
-            let [err, creationAddress] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode);
+            let [err, creationAddress] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode, 0x0, 0x0, 0x0);
             assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`);
             assert(!isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is not null`);
 
             // Carry out the creation
-            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode);
+            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode, 0x0, 0x0, 0x0);
 
             // Get the procedure
             let address = await kernel.getProcedure.call("TestAdder");
@@ -106,15 +107,20 @@ contract('Kernel', function (accounts) {
     describe('.createProcedure()', function () {
         it('should create valid procedure', async function () {
             let kernel = await Kernel.new();
-
-            let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode)
-            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode)
+            const procedureName = "TestAdder";
+            let [err, address] = await kernel.createProcedure.call(procedureName, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            let tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
 
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
             assert(!isNullAddress(address), 'Procedure Address is not null')
 
+            // Check that the code works
             let adder = Valid.Adder.at(address);
             assert.equal(await adder.add.call(1, 1), 2)
+
+            // Check that the address returned by getProcedure is the same as
+            // the one returned by creation.
+            const retrievedAddress = await kernel.getProcedure(procedureName);
 
             // The returned code should be the same as the sent code
             const code = web3.eth.getCode(address);
@@ -126,8 +132,8 @@ contract('Kernel', function (accounts) {
             const proceduresRaw1 = await kernel.listProcedures.call();
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
-            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
-            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
+            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
 
             assert(web3.isAddress(address), `Procedure Address (${address}) should be a real address`)
             assert(!isNullAddress(address), 'Procedure Address should not be null')
@@ -152,8 +158,8 @@ contract('Kernel', function (accounts) {
             const proceduresRaw1 = await kernel.listProcedures.call();
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
-            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
-            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
+            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
 
             assert(web3.isAddress(address), `Procedure Address (#1) (${address}) should be a real address`)
             assert(!isNullAddress(address), 'Procedure Address (#1) should not be null')
@@ -165,8 +171,8 @@ contract('Kernel', function (accounts) {
             const code = web3.eth.getCode(address);
             assert.equal(Valid.Adder.deployedBytecode, code);
             const name2 = "ByAnyOtherName";
-            const [err2, address2] = await kernel.createProcedure.call(name2, Valid.Adder.bytecode)
-            const tx2 = await kernel.createProcedure(name2, Valid.Adder.bytecode)
+            const [err2, address2] = await kernel.createProcedure.call(name2, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const tx2 = await kernel.createProcedure(name2, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
 
             assert(web3.isAddress(address2), `Procedure Address (#2) (${address2}) should be a real address`)
             assert(!isNullAddress(address2), 'Procedure Address (#2) should not be null')
@@ -190,7 +196,7 @@ contract('Kernel', function (accounts) {
             it('zero length', async function () {
                 let kernel = await Kernel.new();
 
-                let [err, creationAddress] = await kernel.createProcedure.call('', Valid.Adder.bytecode)
+                let [err, creationAddress] = await kernel.createProcedure.call('', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
                 assert.equal(err, 1);
                 assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`)
                 assert(isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is null`)
@@ -210,12 +216,12 @@ contract('Kernel', function (accounts) {
                 const name = "TestAdder";
 
                 // This is the first time the procedure is added
-                const [err1, address1] = await kernel.createProcedure.call(name, Valid.Adder.bytecode)
-                const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode)
+                const [err1, address1] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+                const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
 
                 // This is the second time the procedure is added
-                const [err2, address2] = await kernel.createProcedure.call(name, Valid.Multiply.bytecode)
-                const tx2 = await kernel.createProcedure(name, Valid.Multiply.bytecode)
+                const [err2, address2] = await kernel.createProcedure.call(name, Valid.Multiply.bytecode, 0x0, 0x0, 0x0)
+                const tx2 = await kernel.createProcedure(name, Valid.Multiply.bytecode, 0x0, 0x0, 0x0)
                 assert.equal(err2, 3);
 
                 const proceduresRaw = await kernel.listProcedures.call();
@@ -244,9 +250,9 @@ contract('Kernel', function (accounts) {
         it('should return deleted procedure address if procedure key is valid', async function () {
             const kernel = await Kernel.new();
 
-            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode);
+            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode, 0x0, 0x0, 0x0);
             assert.equal(err1, 0);
-            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode)
+            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
             // There should be some code at this address now
@@ -266,9 +272,9 @@ contract('Kernel', function (accounts) {
             const kernel = await Kernel.new();
 
             const procedureName = "test";
-            const [err1, address] = await kernel.createProcedure.call(procedureName, Valid.Adder.bytecode);
+            const [err1, address] = await kernel.createProcedure.call(procedureName, Valid.Adder.bytecode, 0x0, 0x0, 0x0);
             assert.equal(err1, 0);
-            const tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode)
+            const tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
 
@@ -295,9 +301,9 @@ contract('Kernel', function (accounts) {
         it.skip('should destroy the procedures contract on deletion', async function () {
             const kernel = await Kernel.new();
 
-            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode);
+            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode, 0x0, 0x0, 0x0);
             assert.equal(err1, 0);
-            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode)
+            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
             // There should be some code at this address now
@@ -340,8 +346,8 @@ contract('Kernel', function (accounts) {
             describe('Simple Procedure', function () {
                 it('X() should fail', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
 
                     // need to have the ABI definition in JSON as per specification
                     const [errX, valueX] = await kernel.executeProcedure.call("Simple", "X()", "");
@@ -350,8 +356,8 @@ contract('Kernel', function (accounts) {
 
                 it('A() should succeed', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
 
                     const [err1, value1] = await kernel.executeProcedure.call("Simple", "A()", "");
                     assert.equal(err1.toNumber(), 0, "A() should succeed");
@@ -359,8 +365,8 @@ contract('Kernel', function (accounts) {
 
                 it('B() should succeed', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
 
                     const [err2, value2] = await kernel.executeProcedure.call("Simple", "B()", "");
                     assert.equal(err2.toNumber(), 0, "B() should succeed");
@@ -372,8 +378,8 @@ contract('Kernel', function (accounts) {
 
                 it('C() should fail without correctly specifying arguments', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
 
                     const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(err.toNumber(), 4, "C() should not succeed");
@@ -381,8 +387,8 @@ contract('Kernel', function (accounts) {
 
                 it('C() should fail when using type synonyms such as uint, which cant be used in function selectors', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
 
                     const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(err.toNumber(), 4, "C() should not succeed");
@@ -390,15 +396,98 @@ contract('Kernel', function (accounts) {
 
                 it('C(uint256) should succeed passing arguments', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
 
                     const [err, value] = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
                     assert.equal(err.toNumber(), 0, "C(uint256) should succeed");
                 })
 
             })
+            describe('SysCall Procedure', function () {
+                it('S() should succeed when given cap', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, 0x7, 0x8000, 0x0);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, 0x7, 0x8000, 0x0);
 
+                    // need to have the ABI definition in JSON as per specification
+                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    await kernel.executeProcedure("SysCallTest", "S()", "");
+                    assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
+                    assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
+
+                    // do it again to check that the value has been correctly incremented
+                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    await kernel.executeProcedure("SysCallTest", "S()", "");
+                    assert.equal(err2.toNumber(), 0, "S() should succeed with zero errcode the second time");
+                    assert.equal(value2.toNumber(), 5, "S() should succeed with correct value the second time");
+                })
+                it('S() should fail when not given cap', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, 0x0, 0x0, 0x0);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, 0x0, 0x0, 0x0);
+
+                    // need to have the ABI definition in JSON as per specification
+                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    await kernel.executeProcedure("SysCallTest", "S()", "");
+                    // 4 is the error code we are after
+                    assert.equal(errX.toNumber(), 4, "S() should succeed with zero errcode the first time");
+                    assert.equal(valueX.toNumber(), 905, "S() should succeed with correct value the first time");
+
+                    // do it again
+                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    await kernel.executeProcedure("SysCallTest", "S()", "");
+                    // 4 is the error code we are after
+                    assert.equal(err2.toNumber(), 4, "S() should succeed with zero errcode the second time");
+                    assert.equal(value2.toNumber(), 905, "S() should succeed with correct value the second time");
+                })
+                it('S() should fail when trying to write to an address below its cap', async function () {
+                    const kernel = await Kernel.new();
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, 0x7, 0x8001, 0x0);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, 0x7, 0x8001, 0x0);
+
+                    // need to have the ABI definition in JSON as per specification
+                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    await kernel.executeProcedure("SysCallTest", "S()", "");
+                    // 4 is the error code we are after
+                    assert.equal(errX.toNumber(), 4, "S() should succeed with zero errcode the first time");
+                    assert.equal(valueX.toNumber(), 905, "S() should succeed with correct value the first time");
+
+                    // do it again
+                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    await kernel.executeProcedure("SysCallTest", "S()", "");
+                    // 4 is the error code we are after
+                    assert.equal(err2.toNumber(), 4, "S() should succeed with zero errcode the second time");
+                    assert.equal(value2.toNumber(), 905, "S() should succeed with correct value the second time");
+                })
+            })
+        })
+
+        describe.skip('Entry Procedure', function () {
+            it('should return the entry procedure address', async function () {
+                const kernel = await Kernel.new();
+                const procedureName = "Entry";
+                const [a, address] = await kernel.createProcedure.call(procedureName, Valid.SysCallTest.bytecode, 0x7, 0x80, 0x0);
+                // assert.equal(a.toNumber(), 0, "S() should succeed with zero errcode the second time");
+                const tx = await kernel.createProcedure(procedureName, Valid.SysCallTest.bytecode, 0x7, 0x80, 0x0);
+                const valueA = await kernel.getProcedure.call(procedureName);
+                // const
+                // console.log(errA, valueA);
+                // console.log(errA)
+                // console.log("valueA:", valueA)
+
+                // // need to have the ABI definition in JSON as per specification
+                // const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                // await kernel.executeProcedure("SysCallTest", "S()", "");
+                // assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
+                // assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
+
+                // // do it again
+                // const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                // await kernel.executeProcedure("SysCallTest", "S()", "");
+                // assert.equal(err2.toNumber(), 0, "S() should succeed with zero errcode the second time");
+                // assert.equal(value2.toNumber(), 5, "S() should succeed with correct value the second time");
+            })
         })
 
         it('should return an error if key does not exist (3)', async function () {
@@ -412,8 +501,8 @@ contract('Kernel', function (accounts) {
             it('throws an error', async function () {
                 let kernel = await Kernel.new();
 
-                let [err, address] = await kernel.createProcedure.call('TestDivide', Valid.Divide.bytecode)
-                let tx1 = await kernel.createProcedure('TestDivide', Valid.Divide.bytecode)
+                let [err, address] = await kernel.createProcedure.call('TestDivide', Valid.Divide.bytecode, 0x0, 0x0, 0x0)
+                let tx1 = await kernel.createProcedure('TestDivide', Valid.Divide.bytecode, 0x0, 0x0, 0x0)
 
                 assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
                 assert(!isNullAddress(address), 'Procedure Address is not null')
