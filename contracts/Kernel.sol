@@ -72,7 +72,7 @@ contract Kernel is Factory {
             writeValue = writeValue | uint256(msg.data[j+1+32]);
         }
 
-        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress);
+        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, 0);
         // bool cap = true;
 
         // 0x00 - not a syscall
@@ -161,7 +161,7 @@ contract Kernel is Factory {
         }
     }
 
-    function createProcedure(bytes24 name, bytes oCode, uint8 capType, uint256 capAddress, uint256 capSize) public returns (uint8 err, address procedureAddress) {
+    function createProcedure(bytes24 name, bytes oCode, uint256[] caps) public returns (uint8 err, address procedureAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -177,7 +177,7 @@ contract Kernel is Factory {
 
         procedureAddress = create(oCode);
         // TODO: true and 0x7 are just example values.
-        procedures.insert(name, procedureAddress, capType, capAddress, capSize);
+        procedures.insert(name, procedureAddress, caps);
     }
 
     function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {
@@ -196,6 +196,10 @@ contract Kernel is Factory {
 
     function listProcedures() public view returns (bytes24[] memory) {
         return procedures.getKeys();
+    }
+
+    function returnProcedureTable() public view returns (uint256[]) {
+        return procedures.returnProcedureTable();
     }
 
     // function nProcedures() public view returns (uint256) {
@@ -268,7 +272,7 @@ contract Kernel is Factory {
             }
         }
         if (!status) {
-            err = 4;
+            err = 85;
         }
     }
 }

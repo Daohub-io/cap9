@@ -15,7 +15,7 @@ contract SysCallTest {
             // "in_offset" is at 31, because we only want the last byte
             // "in_size" is 65 because it is 1+32+32
             // we will store the result at 0x80 and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, 31, 66, 0x80, 0x20)) {
+            if iszero(delegatecall(gas, caller, 31, 65, 0x80, 0x20)) {
                 // If delegate call reverted with a value of 11, the action
                 // was rejected as the capability was incorrect
                 if eq(11,mload(0x80)) {
@@ -23,12 +23,19 @@ contract SysCallTest {
                     revert(0xd,0x20)
                 }
                 if eq(12,mload(0x80)) {
-
                     mstore(0xd,906)
                     revert(0xd,0x20)
                 }
+                if eq(888,mload(0x80)) {
+                    mstore(0xd,888)
+                    revert(0xd,0x20)
+                }
+                if eq(889,mload(0x80)) {
+                    mstore(0xd,889)
+                    revert(0xd,0x20)
+                }
                 // If delegate call returns an error code, revert with 909
-                mstore(0xd,909)
+                mstore(0xd,add(1000,mload(0x80)))
                 revert(0xd,0x20)
             }
             mstore(0xd,sload(0x8000))
