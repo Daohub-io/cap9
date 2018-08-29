@@ -463,7 +463,7 @@ contract('Kernel', function (accounts) {
             })
         })
 
-        describe('Entry Procedure', function () {
+        describe.skip('Entry Procedure', function () {
             it('should return the entry procedure address', async function () {
                 const kernel = await Kernel.new();
                 const procedureName = "Entry";
