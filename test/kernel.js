@@ -474,7 +474,7 @@ contract('Kernel', function (accounts) {
             })
         })
 
-        describe.only('Discover Procedure Table', function () {
+        describe('Discover Procedure Table', function () {
             it('should print a procedure table', async function () {
                 const kernel = await Kernel.new();
                 const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8500, 0x2, 3, 0x7, 0x8000, 0x0]);
