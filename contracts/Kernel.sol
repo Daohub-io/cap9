@@ -72,7 +72,7 @@ contract Kernel is Factory {
             writeValue = writeValue | uint256(msg.data[j+1+32]);
         }
 
-        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, 0);
+        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, 1);
         // bool cap = true;
 
         // 0x00 - not a syscall

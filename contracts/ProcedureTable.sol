@@ -119,32 +119,21 @@ library ProcedureTable {
         uint256 capabilitySize = 0;
 
 
-        for (uint248 i; i < 256; i++) {
-            uint256 capSize = _get(0, capArrayPointer+1+i);
+        for (uint248 i = 1; i < 256; i++) {
+            uint256 capSize = _get(0, capArrayPointer+i+0);
             // if this is the relevant cap, then process it
-            if (i == reqCapIndex) {
+            if (capIndex == reqCapIndex) {
                 // process the cap
-                capabilityType = _get(0, capArrayPointer+2+i);
-                capabilityKey  = _get(0, capArrayPointer+3+i);
-                capabilitySize = _get(0, capArrayPointer+4+i);
+                capabilityType = _get(0, capArrayPointer+i+1);
+                capabilityKey  = _get(0, capArrayPointer+i+2);
+                capabilitySize = _get(0, capArrayPointer+i+3);
+                break;
             } else {
                 // skip the length of this cap
                 i = i + uint248(capSize);
+                capIndex++;
             }
         }
-        // capabilityType = _get(0, capArrayPointer+2+0);
-        // if (capabilityType == 0) {
-        //     assembly{
-        //         mstore(0x40,788)
-        //         revert(0x40,0x40)
-        //     }
-        // }
-        // if (capabilityKey == 0) {
-        //     assembly{
-        //         mstore(0x40,789)
-        //         revert(0x40,0x40)
-        //     }
-        // }
         if (capabilityType == 0x7 && toStoreAddress >= capabilityKey && toStoreAddress <= (capabilityKey + capabilitySize)) {
             allow = true;
         }
