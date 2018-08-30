@@ -404,11 +404,11 @@ contract('Kernel', function (accounts) {
                 })
 
             })
-            describe('SysCall Procedure', function () {
+            describe.only('SysCall Procedure', function () {
                 it('S() should succeed when given cap', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [0x7, 0x8000, 0x0]);
-                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [0x7, 0x8000, 0x0]);
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8000, 0x0]);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8000, 0x0]);
 
                     // need to have the ABI definition in JSON as per specification
                     const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
@@ -452,8 +452,8 @@ contract('Kernel', function (accounts) {
                 })
                 it('S() should fail when trying to write to an address below its cap', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [0x7, 0x8001, 0x0]);
-                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [0x7, 0x8001, 0x0]);
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8001, 0x0]);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8001, 0x0]);
 
                     // need to have the ABI definition in JSON as per specification
                     const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
@@ -476,9 +476,9 @@ contract('Kernel', function (accounts) {
             it('should return the entry procedure address', async function () {
                 const kernel = await Kernel.new();
                 const procedureName = "Entry";
-                const [a, address] = await kernel.createProcedure.call(procedureName, Valid.SysCallTest.bytecode, [0x7, 0x80, 0x0]);
+                const [a, address] = await kernel.createProcedure.call(procedureName, Valid.SysCallTest.bytecode, [3, 0x7, 0x80, 0x0]);
                 // assert.equal(a.toNumber(), 0, "S() should succeed with zero errcode the second time");
-                const tx = await kernel.createProcedure(procedureName, Valid.SysCallTest.bytecode, [0x7, 0x80, 0x0]);
+                const tx = await kernel.createProcedure(procedureName, Valid.SysCallTest.bytecode, [3, 0x7, 0x80, 0x0]);
                 const valueA = await kernel.getProcedure.call(procedureName);
                 // const
                 // console.log(errA, valueA);
