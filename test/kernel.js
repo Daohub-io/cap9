@@ -404,7 +404,7 @@ contract('Kernel', function (accounts) {
                 })
 
             })
-            describe.only('SysCall Procedure', function () {
+            describe('SysCall Procedure', function () {
                 it('S() should succeed when given cap', async function () {
                     const kernel = await Kernel.new();
                     const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8000, 0x0]);
