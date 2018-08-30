@@ -474,7 +474,7 @@ contract('Kernel', function (accounts) {
             })
         })
 
-        describe('Discover Procedure Table', function () {
+        describe.only('Discover Procedure Table', function () {
             it('should print a procedure table', async function () {
                 const kernel = await Kernel.new();
                 const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8500, 0x2, 3, 0x7, 0x8000, 0x0]);
@@ -492,7 +492,10 @@ contract('Kernel', function (accounts) {
                 const procTable = parseProcedureTable(rawProcTable);
                 // printProcedureTable(procTable);
                 let procedures = await kernel.listProcedures.call();
-                assert.equal(procedures, Object.keys(procTable), "Procedure keys should be the same as returned by listProcedures");
+                assert.equal(procedures.length, Object.keys(procTable).length, "Same number of procedures as returned by listProcedures");
+                for (let i = 0; i< procedures.length; i++) {
+                    assert.equal(procedures[i], Object.keys(procTable)[i], "each procedure keys should be the same as returned by listProcedures");
+                }
             })
         })
 
