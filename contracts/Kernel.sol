@@ -59,27 +59,34 @@ contract Kernel is Factory {
         // TODO: we somehow need to execute this function
         // Let's see if we can decode the system call message at a higher level
         uint8 capType = uint8(msg.data[0]);
+        uint256 capIndex = 0;
         uint256 writeAddress = 0;
         uint256 writeValue = 0;
 
         for (uint256 i = 0; i < 32; i++) {
-            writeAddress = writeAddress << 8;
-            writeAddress = writeAddress | uint256(msg.data[i+1]);
+            capIndex = capIndex << 8;
+            capIndex = capIndex | uint256(msg.data[i+1]);
         }
 
         for (uint256 j = 0; j < 32; j++) {
-            writeValue = writeValue << 8;
-            writeValue = writeValue | uint256(msg.data[j+1+32]);
+            writeAddress = writeAddress << 8;
+            writeAddress = writeAddress | uint256(msg.data[j+1+32]);
         }
 
-        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, 1);
-        // bool cap = true;
+        for (uint256 k = 0; k < 32; k++) {
+            writeValue = writeValue << 8;
+            writeValue = writeValue | uint256(msg.data[k+1+32+32]);
+        }
+
+        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
 
         // 0x00 - not a syscall
         // 0x01 - read syscall
         // 0x02 - write syscall
         // 0x03 - exec syscall
         assembly {
+            // TODO: this is a temporary error to throw when we are doing
+            // something other than a WRITE
             if iszero(eq(capType,0x7)) {
                 mstore(0,12)
                 revert(0,0x20)
@@ -176,7 +183,6 @@ contract Kernel is Factory {
         }
 
         procedureAddress = create(oCode);
-        // TODO: true and 0x7 are just example values.
         procedures.insert(name, procedureAddress, caps);
     }
 
