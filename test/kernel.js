@@ -404,24 +404,24 @@ contract('Kernel', function (accounts) {
                 })
 
             })
-            describe('SysCall Procedure', function () {
+            describe.only('SysCall Procedure', function () {
                 it('S() should succeed when given cap', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8000, 0x0]);
-                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8000, 0x0]);
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8000, 0x0,3, 0x7, 0x8500, 0x0]);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8000, 0x0,3, 0x7, 0x8500, 0x0]);
 
                     // need to have the ABI definition in JSON as per specification
                     const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    // console.log("errX:", errX.toNumber());
-                    // console.log("valueX:", valueX.toNumber());
-                    // const val = await kernel.returnProcedureTable.call();
-                    // let vVals = [];
-                    // for (const v of val) {
-                    //     vVals.push("0x" + v.toNumber().toString(16));
-                    // }
-                    // console.log("val:", vVals);
-                    // console.log("len:", vVals.length);
+                    console.log("errX:", errX.toNumber());
+                    console.log("valueX:", valueX.toNumber());
+                    const val = await kernel.returnProcedureTable.call();
+                    let vVals = [];
+                    for (const v of val) {
+                        vVals.push("0x" + v.toNumber().toString(16));
+                    }
+                    console.log("val:", vVals);
+                    console.log("len:", vVals.length);
                     assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
                     assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
 
