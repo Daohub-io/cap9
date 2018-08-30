@@ -413,6 +413,8 @@ contract('Kernel', function (accounts) {
                     // need to have the ABI definition in JSON as per specification
                     const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
+                    // This code is for printing out raw information from the
+                    // procedure table
                     // console.log("errX:", errX.toNumber());
                     // console.log("valueX:", valueX.toNumber());
                     // const val = await kernel.returnProcedureTable.call();
@@ -469,6 +471,28 @@ contract('Kernel', function (accounts) {
                     assert.equal(err2.toNumber(), 4, "S() should succeed with zero errcode the second time");
                     assert.equal(value2.toNumber(), 905, "S() should succeed with correct value the second time");
                 })
+            })
+        })
+
+        describe('Discover Procedure Table', function () {
+            it('should print a procedure table', async function () {
+                const kernel = await Kernel.new();
+                const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8500, 0x2, 3, 0x7, 0x8000, 0x0]);
+                const tx2 = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
+                const rawProcTable = await kernel.returnProcedureTable.call();
+
+                // First print it raw
+                // let vVals = [];
+                // for (const v in rawProcTable) {
+                //     console.log(v, ": " + web3.toHex(rawProcTable[v]));
+                // }
+                // console.log("val:", vVals);
+                // console.log("len:", vVals.length);
+
+                const procTable = parseProcedureTable(rawProcTable);
+                // printProcedureTable(procTable);
+                let procedures = await kernel.listProcedures.call();
+                assert.equal(procedures, Object.keys(procTable), "Procedure keys should be the same as returned by listProcedures");
             })
         })
 
@@ -542,3 +566,57 @@ contract('Kernel', function (accounts) {
         })
     })
 })
+
+function parseProcedureTable(val) {
+    const procTable = {};
+    for (let i = 0; i < val.length; i++) {
+        const proc = {};
+        // Key
+        proc.key = web3.toHex(val[i]);
+        // KeyIndex
+        proc.keyIndex = web3.toHex(val[i+1]);
+        // Location
+        proc.location = web3.toHex(val[i+2]);
+        // Capabilities
+        proc.caps = [];
+        const nCapKeys = val[i+3].toNumber();
+        for (let j = 0; j < nCapKeys; j++) {
+            const cap = {};
+            const length = web3.toHex(val[i+4+j+0]);
+            cap.type = web3.toHex(val[i+4+j+1]);
+            // (length - 1) as the first value is the length
+            cap.values = [];
+            for (let k = 0; k < (length-1); k++) {
+                cap.values.push(web3.toHex(val[i+6+j+k]));
+            }
+            j = j + length;
+            proc.caps.push(cap);
+        }
+        // i = i + nCapKeys;
+        i = i + (255);
+        procTable[proc.key] = proc;
+    }
+    return procTable;
+}
+
+function printProcedureTable(procTable) {
+    for (const procKey of Object.keys(procTable)) {
+        const proc = procTable[procKey];
+        // Print key
+        console.log(`Key: ${proc.key}`);
+        // Print keyIndex
+        console.log(`  KeyIndex: ${proc.keyIndex}`);
+        // Print location
+        console.log(`  Location: ${proc.location}`);
+        // Print Capabilities
+        console.log(`  Capabilities(${proc.caps.length} keys)`);
+        for (const i in proc.caps) {
+            const cap = proc.caps[i];
+            console.log(`    Capability[${i}]: Type: ${cap.type}`);
+            for (const j in cap.values) {
+                console.log(`      ${j}: ${cap.values[j]}`)
+
+            }
+        }
+    }
+}

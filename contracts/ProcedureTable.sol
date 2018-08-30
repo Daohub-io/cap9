@@ -168,64 +168,29 @@ library ProcedureTable {
     }
 
     function returnProcedureTable(Self storage self) internal returns (uint256[]) {
-        // uint248 lenP = _getLengthPointer();
-        // uint256 len = _get(0, lenP);
-        // bytes24[] memorykeys = new bytes24[](len);
         bytes24[] memory keys = self.getKeys();
         uint256 len = keys.length;
+        // max is 256 keys times the number of procedures
         uint256[] memory r = new uint256[](len*256);
-        // uint256 loc;
-        // assembly {
-        //     // load the next free memory address
-        //     let nextFree := mload(0x40)
-        //     mstore(loc,nextFree)
-        //     // bump the allocator len+2 slots
-        //     mstore(0x40,mul(add(len,3),0x20))
-        //     // first 32 byte value is the data offset
-        //     mstore(add(nextFree,mul(0,0x20)),0x20)
-        //     // the second is the length of the array
-        //     mstore(add(nextFree,mul(1,0x20)),len)
-        // }
         // The rest are the elements
-        for (uint248 i = 0; i < 1 ; i++) {
+        for (uint248 i = 0; i < len ; i++) {
+            uint248 n = i*256;
             uint192 key = uint192(keys[i]);
             uint248 pPointer = _getProcedurePointerByKey(key);
-            r[i+0] = uint256(key);
+            r[n+0] = uint256(key);
             // Store the keyIndex at this location
             uint256 keyIndex = _get(0, pPointer+0);
-            r[i+1] = keyIndex;
+            r[n+1] = keyIndex;
             uint256 location = _get(0, pPointer+1);
-            r[i+2] = location;
+            r[n+2] = location;
             // number of capabilities in array
             uint256 capArrayLength = _get(0, pPointer+2);
-            r[i+3] = capArrayLength;
-            r[i+4] = _get(0, pPointer+3);
-            r[i+5] = _get(0, pPointer+4);
-            r[i+6] = _get(0, pPointer+5);
-            r[i+7] = _get(0, pPointer+6);
-            r[i+8] = _get(0, pPointer+7);
-            r[i+9] = _get(0, pPointer+8);
-            r[i+10] = _get(0, pPointer+9);
-            r[i+11] = _get(0, pPointer+10);
+            r[n+3] = capArrayLength;
             // cycle through each capability
-            // for (uint248 j = 0; j < capArrayLength; j++) {
-            //     uint256 capLength = _get(0, pPointer+3+j);
-            //     r[i+4+j] = capLength;
-            //     // for (uint248 k = 0; k < capLength; k++) {
-            //     //     r[i] = _get(0, pPointer+i);
-            //     // }
-            // }
-            // assembly {
-            //     let nextFree := mload(loc)
-            //     mstore(add(nextFree,mul(2,0x20)),768)
-            // }
+            for (uint248 j = 0; j < capArrayLength; j++) {
+                r[n+4+j] = _get(0, pPointer+3+j);
+            }
         }
-        // We then return the value
-    //     assembly {
-    //         let nextFree := mload(loc)
-    //         // mstore(add(nextFree,mul(2,0x20)),268)
-    //         return(nextFree,mul(add(len,2),0x20))
-    //     }
         return r;
     }
 
