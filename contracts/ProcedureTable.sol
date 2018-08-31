@@ -7,22 +7,16 @@ library ProcedureTable {
         // Equal to the index of the key of this item in keys, plus 1.
         uint8 keyIndex;
         address location;
-        // The type of capability (currently only WRITE 0x7)
-        // uint8 capabilityType;
-        // The key to which we can write
-        // uint256 capabilityKey;
-        // The number of additional keys we can write to
-        // uint256 capabilitySize;
         // The start of the capability array. The first value is the length
-        uint256 capabilityArray;
+        uint248 capabilityArray;
+        // TODO: pack into this array.
+        Capability[] caps;
     }
 
-    // struct Capability {
-    //     // Equal to the index of the key of this item in keys, plus 1.
-    //     uint8 capType;
-    //     uint256 storageLocation;
-    //     uint256 storageValue;
-    // }
+    struct Capability {
+        uint8 capType;
+        uint256[] values;
+    }
 
     struct Self {}
 
@@ -50,21 +44,21 @@ library ProcedureTable {
         }
     }
 
-    function _getLengthPointer() internal returns (uint248) {
+    function _getLengthPointer() internal view returns (uint248) {
         var directory = bytes8(keccak256("keyPointer"));
         return uint248(directory) << 240;
     }
-    function _getKeyPointerByIndex(uint8 idx) internal returns (uint248) {
-        var directory = bytes8(keccak256("keyPointer"));
+    function _getKeyPointerByIndex(uint8 idx) internal view returns (uint248) {
+        bytes8 directory = bytes8(keccak256("keyPointer"));
         return (uint248(directory) << 240) + 1 + uint248(idx);
     }
 
-    function _getProcedurePointerByKey(uint192 key) internal returns (uint248) {
+    function _getProcedurePointerByKey(uint192 key) internal view returns (uint248) {
         // Procedure data is stored under the procedurePointer "directory". The
         // location of the procedure data is followed by the name/key of the
         // procedure.
         // keccak256("procedurePointer") is 0x85a94e7072614513158f210a7e69624a1aadd1603708f4f46564d8dd4195f87d
-        var directory = keccak256("procedurePointer");
+        bytes32 directory = keccak256("procedurePointer");
         // The case to uint240 drops the most significant bytes converting the value to
         // 0xd8dd4195f87d0000000000000000000000000000000000000000000000000000
         // then left shift the value 240 bits, losing all but the least signficant byte, the result is
@@ -79,7 +73,7 @@ library ProcedureTable {
 
     }
 
-    function _getProcedureByKey(uint192 key) internal returns (Procedure memory p) {
+    function _getProcedureByKey(uint192 key) internal view returns (Procedure memory p) {
         // pPointer is a uint248, which is all but one byte of a storage
         // address. This means that there are 256 storage keys "under"
         // this pPointer (at 32 bytes each this means 8,192 bytes of storage).
@@ -94,25 +88,22 @@ library ProcedureTable {
         //  8   + 32  +  32   = 72 bytes
         // Actually, for now it is simply a boolean to determine if the
         // procedure is allowed to write or not
+        // TODO: I don't like the way we remove information here. If we want to
+        // be consistent we should deserialise the capabilities. This feels
+        // expensive to me.
+        p.capabilityArray = uint248(pPointer + 2);
     }
 
-    function checkWriteCapability(Self storage self, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal returns (bool allow) {
+    function checkWriteCapability(Self storage self, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool allow) {
         allow = false;
         // pPointer is a uint248, which is all but one byte of a storage
         // address. This means that there are 256 storage keys "under"
         // this pPointer (at 32 bytes each this means 8,192 bytes of storage).
-        uint248 pPointer = _getProcedurePointerByKey(key);
-        Procedure p;
-        // The first storage location (0) is used to store the keyIndex.
-        p.keyIndex = uint8(_get(0, pPointer));
-        // The second storage location (1) is used to store the address of the
-        // contract.
-        p.location = address(_get(0, pPointer + 1));
+        Procedure memory p = _getProcedureByKey(uint192(key));
         // The capability we have chosen is at capIndex
         // First we must find the capability at capIndex which means iterating
         // through the cap array
-        uint248 capArrayPointer = pPointer + 2;
-        uint256 capabilityArrayLength = _get(0, capArrayPointer);
+        uint248 capArrayPointer = p.capabilityArray;
         uint256 capIndex = 0;
         uint256 capabilityType = 0;
         uint256 capabilityKey = 0;
@@ -156,10 +147,6 @@ library ProcedureTable {
         // Store the address at the loction after this (making this data 2
         // uint256 wide).
         _set(0, pPointer + 1, uint256(p.location));
-        // Store the write capability at the third location
-        // _set(0, pPointer + 2, p.capabilityType);
-        // _set(0, pPointer + 3, p.capabilityKey);
-        // _set(0, pPointer + 4, p.capabilitySize);
     }
 
     function _freeProcedure(uint248 pPointer) internal {
@@ -167,7 +154,7 @@ library ProcedureTable {
         _set(0, pPointer + 1, 0);
     }
 
-    function returnProcedureTable(Self storage self) internal returns (uint256[]) {
+    function returnProcedureTable(Self storage self) internal view returns (uint256[]) {
         bytes24[] memory keys = self.getKeys();
         uint256 len = keys.length;
         // max is 256 keys times the number of procedures
@@ -195,17 +182,11 @@ library ProcedureTable {
     }
 
     function insert(Self storage self, bytes24 key, address value, uint256[] caps) internal returns (bool replaced) {
-
-        // uint8 capType, uint256 capAddress, uint256 capSize
-
-
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
         Procedure memory p = _getProcedureByKey(uint192(key));
-        uint248 pPointer = _getProcedurePointerByKey(uint192(key));
         // We then write or overwrite the various properties
-        uint248 capArrayPointer = pPointer + 2;
         p.location = value;
         // we just copy in the table in verbatim as long as its length is less
         // than 128 (arbitrary, but less than 256 minus room for other parameters)
@@ -214,14 +195,14 @@ library ProcedureTable {
         }
         // The first value of the array is the length of the capability array
         // (in keys)
-        _set(0, capArrayPointer, caps.length);
+        _set(0, p.capabilityArray, caps.length);
         // Set all the other bytes verbatim, with an offset of 1, as the first
         // value is used to store the length. We step through the capabilities
         // to ensure that the length values are correct.
         for (uint248 i = 0; i < caps.length; i++) {
             // Save the start offset of this cap, we add one, as the very first
             // value is the total length of the cap array
-            uint248 startOffset = capArrayPointer+1+i;
+            uint248 startOffset = p.capabilityArray+1+i;
             // The first value is the length of the cap we are currently
             // processing.
             uint248 capLength = uint248(caps[i]);
@@ -295,19 +276,19 @@ library ProcedureTable {
         }
     }
 
-    function contains(Self storage self, bytes24 key) internal constant returns (bool exists) {
+    function contains(Self storage self, bytes24 key) internal view returns (bool exists) {
         return _get(0, _getProcedurePointerByKey(uint192(key))) > 0;
     }
 
-    function size(Self storage self) internal constant returns (uint) {
+    function size(Self storage self) internal view returns (uint) {
         return _get(0, _getLengthPointer());
     }
 
-    function get(Self storage self, bytes24 key) internal constant returns (address) {
+    function get(Self storage self, bytes24 key) internal view returns (address) {
         return address(_get(0, _getProcedurePointerByKey(uint192(key)) + 1));
     }
 
-    function getKeys(Self storage self) internal returns (bytes24[] memory keys) {
+    function getKeys(Self storage self) internal view returns (bytes24[] memory keys) {
         uint248 lenP = _getLengthPointer();
         uint256 len = _get(0, lenP);
         keys = new bytes24[](len);
@@ -319,11 +300,11 @@ library ProcedureTable {
 
     }
 
-    function getKeyByIndex(Self storage self, uint8 idx) internal constant returns (uint192) {
+    function getKeyByIndex(Self storage self, uint8 idx) internal view returns (uint192) {
         return uint192(_get(0, _getKeyPointerByIndex(idx)));
     }
 
-    function getValueByIndex(Self storage self, uint8 idx) internal constant returns (address) {
+    function getValueByIndex(Self storage self, uint8 idx) internal view returns (address) {
         return address(_get(0, _getProcedurePointerByKey(self.getKeyByIndex(idx)) + 1));
     }
 

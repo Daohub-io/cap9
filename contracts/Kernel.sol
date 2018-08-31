@@ -22,8 +22,19 @@ contract Kernel is Factory {
         address location;
     }
 
+    // All of the data that is sent as a system call. Currently this is fairly
+    // hard coded to write.
+    // @Jacob, I was looking at how you do things like Sum types or inheritance
+    // and all the techniques look like they have implications like being
+    // in separate contents. I'll leave this for now to hear your thoughts.
+    struct SystemCall {
+        uint8 capType;
+        uint256 capIndex;
+        uint256 writeAddress;
+        uint256 writeValue;
+    }
 
-    function Kernel() {
+    function Kernel() public {
         // kernelAddress = WhatIsMyAddress.get();
         // This is an example kernel global variable for testing.
         assembly {
@@ -36,135 +47,153 @@ contract Kernel is Factory {
         // early
     }
 
-    function callGuardProcedure() {
+    // Parse the system call from msg.data
+    function parseSystemCall() internal pure returns (SystemCall) {
+        SystemCall memory syscall;
+        syscall.capType = uint8(msg.data[0]);
 
+        for (uint256 i = 0; i < 32; i++) {
+            syscall.capIndex = syscall.capIndex << 8;
+            syscall.capIndex = syscall.capIndex | uint256(msg.data[i+1]);
+        }
+
+        for (uint256 j = 0; j < 32; j++) {
+            syscall.writeAddress = syscall.writeAddress << 8;
+            syscall.writeAddress = syscall.writeAddress | uint256(msg.data[j+1+32]);
+        }
+
+        for (uint256 k = 0; k < 32; k++) {
+            syscall.writeValue = syscall. writeValue << 8;
+            syscall.writeValue = syscall.writeValue | uint256(msg.data[k+1+32+32]);
+        }
+        return syscall;
+    }
+
+    // Check if a transaction is external.
+    function isExternal() internal view returns (bool) {
+        // If the current transaction is from the procedure we are executing,
+        // then it is a systemcall. Otherwise it is an external transaction.
+        // We have in storage a value (currentProcedure) which states which
+        // procedure the kernel is currently executing. If we have this value
+        // then something is running, so it must be an internal transaction.
+        // If it is empty, it means we are not executing anything, and it is an
+        // external transaction.
+
+        // While the kernel is executing a procedure, nothing else can run
+        // across the whole blockchain, therefore we must be receiving a
+        // transaction from the procedure set in "currentProcedure"
+
+
+        // TODO: we will need to reserve a value for "not executing anything"
+        // If the transaction is from this procedure...
+        return (currentProcedure == 0);
+
+    }
+
+    // This is what we execute when we receive an external transaction.
+    function callGuardProcedure(address sender, bytes data) internal {
+        revert("external call");
+        // TODO: this is not currerntly in any code path because we just use
+        // "executeProcedure"
+        // here we need to use callcode. delegatecall would leave the CALLER as
+        // the account which started the transaction
+        // The address here needs to be updated to call Procedure1
+        // everytime Procedure1 is deployed
+        //
+        // TODO: Determine the address of the procedure at index 0 of
+        // the procedure table.
+        // This (from last parameters to first):
+        // 1. Allocates an area in memory of size 0x40 (64 bytes)
+        // 2.    At memory location 0x80
+        // 3. Set the input size to 67 bytes
+        // 4.    At memory location 29
+        // 5. Send 0 wei
+        // 6. The contract address we are calling to
+        // 7. The gas we are budgeting
+        //
+        assembly {
+            //        7                       6                       5   4   3   2      1
+            callcode(gas, 0x8885584aa73fccf0f4572a770d1a0d6bd0b4360a, 0, 29, 67, 0x80, 0x40)
+            // store the return code in memory location 0x60 (1 byte)
+            0x60
+            mstore
+            // return both delegatecall return values and the system call
+            // return value
+            return(0x60,0x60)
+        }
     }
 
     // This is the fallback function which is used to handle system calls. This
     // is only called if the other functions fail.
     function() public {
         // This is the entry point for the kernel
+        // TODO: we aren't currently using this, as we can't invoke a cap that
+        // calls other procedures.
         Process[] memory processTable = new Process[](256);
         // Before we do anything, let's set up some information about this call.
         // Where is this call coming from? If it is an external account we can
         // just use the caller value.
+        // TODO: we will implement this when we stop using "executeProcedure"
 
 
         // If it is an external account, we forward it straight to the init
-        // procedure.
-        // if (isExternal) {
-        //     callGuardProcedure(msg.sender, msg.data);
-        // }
-
-        // TODO: we somehow need to execute this function
-        // Let's see if we can decode the system call message at a higher level
-        uint8 capType = uint8(msg.data[0]);
-        uint256 capIndex = 0;
-        uint256 writeAddress = 0;
-        uint256 writeValue = 0;
-
-        for (uint256 i = 0; i < 32; i++) {
-            capIndex = capIndex << 8;
-            capIndex = capIndex | uint256(msg.data[i+1]);
+        // procedure. We currently shouldn't reach this point, as we usually use
+        // "executeProcedure"
+        if (isExternal()) {
+            callGuardProcedure(msg.sender, msg.data);
         }
 
-        for (uint256 j = 0; j < 32; j++) {
-            writeAddress = writeAddress << 8;
-            writeAddress = writeAddress | uint256(msg.data[j+1+32]);
-        }
-
-        for (uint256 k = 0; k < 32; k++) {
-            writeValue = writeValue << 8;
-            writeValue = writeValue | uint256(msg.data[k+1+32+32]);
-        }
-
-        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
+        // Parse the system call
+        SystemCall memory syscall = parseSystemCall();
 
         // 0x00 - not a syscall
         // 0x01 - read syscall
         // 0x02 - write syscall
         // 0x03 - exec syscall
-        assembly {
-            // TODO: this is a temporary error to throw when we are doing
-            // something other than a WRITE
-            if iszero(eq(capType,0x7)) {
-                mstore(0,12)
-                revert(0,0x20)
-            }
-            // Here we decode the system call (if there is one)
-            switch capType
-            case 0 {
-                // non-syscall case
-                // here we need to use callcode. delegatecall would leave the CALLER as
-                // the account which started the transaction
-                // The address here needs to be updated to call Procedure1
-                // everytime Procedure1 is deployed
-                //
-                // TODO: Determine the address of the procedure at index 0 of
-                // the procedure table.
-                //
-                // This (from last parameters to first):
-                // 1. Allocates an area in memory of size 0x40 (64 bytes)
-                // 2.    At memory location 0x80
-                // 3. Set the input size to 67 bytes
-                // 4.    At memory location 29
-                // 5. Send 0 wei
-                // 6. The contract address we are calling to
-                // 7. The gas we are budgeting
-                //
-                //        7                       6                       5   4   3   2      1
-                callcode(gas, 0x8885584aa73fccf0f4572a770d1a0d6bd0b4360a, 0, 29, 67, 0x80, 0x40)
-                // store the return code in memory location 0x60 (1 byte)
-                0x60
-                mstore
-                // return both delegatecall return values and the system call
-                // retun value
-                return(0x60,0x60)
-            }
+
+        // Here we decode the system call (if there is one)
+        if (syscall.capType == 0) {
+            // non-syscall case
+        } else if (syscall.capType == 0x07) {
             // This is a store system call
-            case 0x07 {
+            // we put these into normal variables to access in assembly, this is
+            // an inconvinience
+            uint256 writeAddress = syscall.writeAddress;
+            uint256 writeValue = syscall.writeValue;
+            bool cap = procedures.checkWriteCapability(uint192(currentProcedure), syscall.writeAddress, syscall.capIndex);
+            assembly {
                 if iszero(cap) {
                     // return 11
                     mstore(0,11)
                     revert(0,0x20)
                 }
-
-                // let location := calldataload(3)
-                // let value := calldataload(add(3,32))
-                let location := writeAddress
-                let value := writeValue
-                sstore(location, value)
+                sstore(writeAddress, writeValue)
                 mstore8(0xb0,3)
                 log0(0xb0, 1)
             }
+        } else if (syscall.capType == 0x03) {
             // This is the exec system call
-            case 0x03 {
-                // First we need to check if we have the capability to
-                // execute this procedure. The first argument is simply an index
-                // of the procedure we want to call (in the procedure table).
-                // How do we determine if we have the capability? Perhaps this
-                // is not an address, but simply an index into the CList of the
-                // process that called this syscall. How do we access that
-                // CList? What if it is an account? If it is an account we know
-                // the sender. But if it is a procedure the sender is the
-                // the kernel and we don't know who is doing the sending.
+            //
+            // First we need to check if we have the capability to
+            // execute this procedure. The first argument is simply an index
+            // of the procedure we want to call (in the procedure table).
+            // How do we determine if we have the capability? Perhaps this
+            // is not an address, but simply an index into the CList of the
+            // process that called this syscall. How do we access that
+            // CList? What if it is an account? If it is an account we know
+            // the sender. But if it is a procedure the sender is the
+            // the kernel and we don't know who is doing the sending.
 
-                // What process is calling this and what capabilities does it
-                // have?
+            // What process is calling this and what capabilities does it
+            // have?
 
-
-                let location := calldataload(3)
-                let value := calldataload(add(3,32))
-                sstore(location, value)
-                mstore8(0xb0,3)
-                log0(0xb0, 1)
-                // sstore(0, div(x, 2))
-            }
-            default {
+            // TODO: implement
+        } else {
+            // default; fallthrough action
+            assembly {
                 mstore8(0xb0,5)
                 log0(0xb0, 1)
             }
-
         }
     }
 
@@ -229,7 +258,7 @@ contract Kernel is Factory {
             err = 3;
             return;
         }
-
+        // TODO: I believe this should use the keyindex
         currentProcedure = name;
         address procedureAddress = procedures.get(name);
         bool status = false;
@@ -266,6 +295,7 @@ contract Kernel is Factory {
             let outl := 0x20
 
             status := callcode(gas,procedureAddress,0,ins,inl,outs,outl)
+            sstore(currentProcedure_slot,0)
             if eq(status,0) {
                 // error
                 mstore(0x40,4)

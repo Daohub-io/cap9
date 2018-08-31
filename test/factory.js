@@ -107,12 +107,12 @@ contract('Factory', function (accounts) {
 
     describe('.validate()', async function() {
 
-        it('should accept valid contract', async function () {
+        it.skip('should accept valid contract', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Valid.Adder.bytecode, {from: accounts[0]});
             assert.equal(0, result.toNumber());
         })
-        
+
         it('should reject a contract if it uses CREATECALL', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Invalid.Create.bytecode, {from: accounts[0]});
