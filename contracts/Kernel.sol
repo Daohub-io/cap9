@@ -28,10 +28,9 @@ contract Kernel is Factory {
     // and all the techniques look like they have implications like being
     // in separate contents. I'll leave this for now to hear your thoughts.
     struct SystemCall {
+        // This is the most structure we can define in general
         uint8 capType;
-        uint256 capIndex;
-        uint256 writeAddress;
-        uint256 writeValue;
+        uint256[] values;
     }
 
     function Kernel() public {
@@ -50,23 +49,25 @@ contract Kernel is Factory {
     // Parse the system call from msg.data
     function parseSystemCall() internal pure returns (SystemCall) {
         SystemCall memory syscall;
+        // The cap type is the first byte
         syscall.capType = uint8(msg.data[0]);
-
-        for (uint256 i = 0; i < 32; i++) {
-            syscall.capIndex = syscall.capIndex << 8;
-            syscall.capIndex = syscall.capIndex | uint256(msg.data[i+1]);
+        uint256 nKeys = (msg.data.length-1)/32;
+        syscall.values = new uint256[](nKeys);
+        for (uint256 i = 0; i < nKeys; i++) {
+            syscall.values[i] = parse32ByteValue(1+i*32);
         }
 
-        for (uint256 j = 0; j < 32; j++) {
-            syscall.writeAddress = syscall.writeAddress << 8;
-            syscall.writeAddress = syscall.writeAddress | uint256(msg.data[j+1+32]);
-        }
-
-        for (uint256 k = 0; k < 32; k++) {
-            syscall.writeValue = syscall. writeValue << 8;
-            syscall.writeValue = syscall.writeValue | uint256(msg.data[k+1+32+32]);
-        }
         return syscall;
+    }
+
+    function parse32ByteValue(uint256 startOffset) pure returns (uint256) {
+        uint256 value = 0;
+        for (uint256 i = 0; i < 32; i++) {
+            value = value << 8;
+            value = value | uint256(msg.data[startOffset+i]);
+        }
+        return value;
+
     }
 
     // Check if a transaction is external.
@@ -156,11 +157,12 @@ contract Kernel is Factory {
             // non-syscall case
         } else if (syscall.capType == 0x07) {
             // This is a store system call
-            // we put these into normal variables to access in assembly, this is
-            // an inconvinience
-            uint256 writeAddress = syscall.writeAddress;
-            uint256 writeValue = syscall.writeValue;
-            bool cap = procedures.checkWriteCapability(uint192(currentProcedure), syscall.writeAddress, syscall.capIndex);
+            // Here we have established that we are processing a write call and
+            // we must destructure the necessary values.
+            uint256 capIndex = syscall.values[0];
+            uint256 writeAddress = syscall.values[1];
+            uint256 writeValue = syscall.values[2];
+            bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
             assembly {
                 if iszero(cap) {
                     // return 11
