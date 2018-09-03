@@ -7,9 +7,6 @@ library ProcedureTable {
         // Equal to the index of the key of this item in keys, plus 1.
         uint8 keyIndex;
         address location;
-        // The start of the capability array. The first value is the length
-        uint248 capabilityArray;
-        // TODO: pack into this array.
         Capability[] caps;
     }
 
@@ -91,7 +88,6 @@ library ProcedureTable {
         // TODO: I don't like the way we remove information here. If we want to
         // be consistent we should deserialise the capabilities. This feels
         // expensive to me.
-        p.capabilityArray = uint248(pPointer + 2);
         // Count the number of caps
         uint256 nCaps = _get(0, pPointer + 2);
         p.caps = new Capability[](nCaps);
@@ -166,8 +162,7 @@ library ProcedureTable {
         // uint256 wide).
         _set(storagePage, pPointer + 1, uint256(p.location));
 
-        // The first value of the array is the length of the capability array
-        // (in caps)
+        // The first value of the array is the number of capabilities
         _set(storagePage, pPointer + 2, p.caps.length);
         _serialiseCapArray(p, storagePage, pPointer);
     }

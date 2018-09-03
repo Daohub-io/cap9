@@ -479,7 +479,7 @@ contract('Kernel', function (accounts) {
                 const rawProcTableData = await kernel.returnRawProcedureTable.call();
                 const procTableData = await kernel.returnProcedureTable.call();
 
-                // Check that the two methods are the same
+                // // Check that the two methods are the same
                 // for (const v in procTableData) {
                 //     console.log(v, ": " + web3.toHex(procTableData[v]) + " -- " + web3.toHex(rawProcTableData[v]));
                 //     if (v > 24) break;
