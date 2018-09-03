@@ -413,17 +413,7 @@ contract('Kernel', function (accounts) {
                     // need to have the ABI definition in JSON as per specification
                     const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    // This code is for printing out raw information from the
-                    // procedure table
-                    // console.log("errX:", errX.toNumber());
-                    // console.log("valueX:", valueX.toNumber());
-                    // const val = await kernel.returnProcedureTable.call();
-                    // let vVals = [];
-                    // for (const v of val) {
-                    //     vVals.push("0x" + v.toNumber().toString(16));
-                    // }
-                    // console.log("val:", vVals);
-                    // console.log("len:", vVals.length);
+
                     assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
                     assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
 
@@ -474,7 +464,7 @@ contract('Kernel', function (accounts) {
             })
         })
 
-        describe.only('Discover Procedure Table', function () {
+        describe('Discover Procedure Table', function () {
             it('should print a procedure table', async function () {
                 const kernel = await Kernel.new();
                 const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8500, 0x2, 3, 0x7, 0x8000, 0x0]);
@@ -483,23 +473,13 @@ contract('Kernel', function (accounts) {
                 const rawProcTableAlt = await kernel.returnProcedureTableAlt.call();
 
                 // Check that the two methods are the same
-                for (const v in rawProcTableAlt) {
-                    console.log(v, ": " + web3.toHex(rawProcTableAlt[v]) + " -- " + web3.toHex(rawProcTable[v]));
-                    if (v > 24) break;
-                }
-
-                // First print it raw
-                // let vVals = [];
-                // for (const v in rawProcTable) {
-                //     console.log(v, ": " + web3.toHex(rawProcTable[v]));
-                //     if
+                // for (const v in rawProcTableAlt) {
+                //     console.log(v, ": " + web3.toHex(rawProcTableAlt[v]) + " -- " + web3.toHex(rawProcTable[v]));
+                //     if (v > 24) break;
                 // }
-                // console.log("val:", vVals);
-                // console.log("len:", vVals.length);
 
                 const procTable = parseProcedureTable(rawProcTableAlt);
-                console.log(procTable);
-                printProcedureTable(procTable);
+                // printProcedureTable(procTable);
                 let procedures = await kernel.listProcedures.call();
                 assert.equal(procedures.length, Object.keys(procTable).length, "Same number of procedures as returned by listProcedures");
                 for (let i = 0; i< procedures.length; i++) {
