@@ -92,7 +92,7 @@ contract Kernel is Factory {
 
     // This is what we execute when we receive an external transaction.
     function callGuardProcedure(address sender, bytes data) internal {
-        revert("external call");
+        // revert("external call");
         // TODO: this is not currerntly in any code path because we just use
         // "executeProcedure"
         // here we need to use callcode. delegatecall would leave the CALLER as
