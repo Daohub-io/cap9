@@ -56,6 +56,12 @@ class Cap {
     constructor(type) {
         this.type = type;
     }
+    toIntegerArray() {
+        const keyValArray = this.keyValues();
+        // The plus one is to account for the type value
+        const headerArray = Array.from([keyValArray.length+1, this.type]);
+        return headerArray.concat(keyValArray);
+    }
     static toInput(caps) {
         let input = new Array();
         for (const cap of caps) {
@@ -71,8 +77,10 @@ class WriteCap extends Cap {
         this.address = address;
         this.size = size;
     }
-    toIntegerArray() {
-        return Array.from([3,this.type,this.address,this.size]);
+    // Format the capability values into the values that will be stored in the
+    // kernel. Must be defined for all subclasses
+    keyValues() {
+        return Array.from([this.address,this.size]);
     }
 }
 exports.WriteCap = WriteCap;
