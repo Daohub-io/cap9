@@ -237,6 +237,10 @@ contract Kernel is Factory {
         return procedures.returnProcedureTable();
     }
 
+    function returnProcedureTableAlt() public view returns (uint256[]) {
+        return procedures.returnProcedureTableAlt();
+    }
+
     // function nProcedures() public view returns (uint256) {
     //     return procedures.size();
     // }

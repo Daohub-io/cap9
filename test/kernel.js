@@ -474,23 +474,32 @@ contract('Kernel', function (accounts) {
             })
         })
 
-        describe('Discover Procedure Table', function () {
+        describe.only('Discover Procedure Table', function () {
             it('should print a procedure table', async function () {
                 const kernel = await Kernel.new();
                 const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8500, 0x2, 3, 0x7, 0x8000, 0x0]);
                 const tx2 = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
                 const rawProcTable = await kernel.returnProcedureTable.call();
+                const rawProcTableAlt = await kernel.returnProcedureTableAlt.call();
+
+                // Check that the two methods are the same
+                for (const v in rawProcTableAlt) {
+                    console.log(v, ": " + web3.toHex(rawProcTableAlt[v]) + " -- " + web3.toHex(rawProcTable[v]));
+                    if (v > 24) break;
+                }
 
                 // First print it raw
                 // let vVals = [];
                 // for (const v in rawProcTable) {
                 //     console.log(v, ": " + web3.toHex(rawProcTable[v]));
+                //     if
                 // }
                 // console.log("val:", vVals);
                 // console.log("len:", vVals.length);
 
-                const procTable = parseProcedureTable(rawProcTable);
-                // printProcedureTable(procTable);
+                const procTable = parseProcedureTable(rawProcTableAlt);
+                console.log(procTable);
+                printProcedureTable(procTable);
                 let procedures = await kernel.listProcedures.call();
                 assert.equal(procedures.length, Object.keys(procTable).length, "Same number of procedures as returned by listProcedures");
                 for (let i = 0; i< procedures.length; i++) {
@@ -572,31 +581,29 @@ contract('Kernel', function (accounts) {
 
 function parseProcedureTable(val) {
     const procTable = {};
-    for (let i = 0; i < val.length; i++) {
+    for (let i = 0; i < val.length;) {
         const proc = {};
         // Key
-        proc.key = web3.toHex(val[i]);
+        proc.key = web3.toHex(val[i]); i++;
+        if (proc.key == "0x0") break;
         // KeyIndex
-        proc.keyIndex = web3.toHex(val[i+1]);
+        proc.keyIndex = web3.toHex(val[i]); i++;
         // Location
-        proc.location = web3.toHex(val[i+2]);
+        proc.location = web3.toHex(val[i]); i++;
         // Capabilities
         proc.caps = [];
-        const nCapKeys = val[i+3].toNumber();
-        for (let j = 0; j < nCapKeys; j++) {
+        const nCaps = val[i].toNumber(); i++;
+        for (let j = 0; j < nCaps; j++) {
             const cap = {};
-            const length = web3.toHex(val[i+4+j+0]);
-            cap.type = web3.toHex(val[i+4+j+1]);
+            const length = web3.toHex(val[i]); i++;
+            cap.type = web3.toHex(val[i]); i++;
             // (length - 1) as the first value is the length
             cap.values = [];
             for (let k = 0; k < (length-1); k++) {
-                cap.values.push(web3.toHex(val[i+6+j+k]));
+                cap.values.push(web3.toHex(val[i])); i++;
             }
-            j = j + length;
             proc.caps.push(cap);
         }
-        // i = i + nCapKeys;
-        i = i + (255);
         procTable[proc.key] = proc;
     }
     return procTable;
