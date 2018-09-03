@@ -233,12 +233,12 @@ contract Kernel is Factory {
         return procedures.getKeys();
     }
 
-    function returnProcedureTable() public view returns (uint256[]) {
-        return procedures.returnProcedureTable();
+    function returnRawProcedureTable() public view returns (uint256[]) {
+        return procedures.returnRawProcedureTable();
     }
 
-    function returnProcedureTableAlt() public view returns (uint256[]) {
-        return procedures.returnProcedureTableAlt();
+    function returnProcedureTable() public view returns (uint256[]) {
+        return procedures.returnProcedureTable();
     }
 
     // function nProcedures() public view returns (uint256) {

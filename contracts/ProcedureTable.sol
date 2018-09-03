@@ -92,7 +92,6 @@ library ProcedureTable {
         // be consistent we should deserialise the capabilities. This feels
         // expensive to me.
         p.capabilityArray = uint248(pPointer + 2);
-        uint256 capArrayLength = _get(0, pPointer + 2);
         // Count the number of caps
         uint256 nCaps = _get(0, pPointer + 2);
         p.caps = new Capability[](nCaps);
@@ -116,36 +115,32 @@ library ProcedureTable {
         }
     }
 
-    function checkWriteCapability(Self storage self, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool allow) {
-        allow = false;
+    function checkWriteCapability(Self storage self, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
-        // The capability we have chosen is at capIndex
-        // First we must find the capability at capIndex which means iterating
-        // through the cap array
-        uint248 capArrayPointer = p.capabilityArray;
-        uint256 capIndex = 0;
-        uint256 capabilityType = 0;
-        uint256 capabilityKey = 0;
-        uint256 capabilitySize = 0;
 
-
-        for (uint248 i = 1; i < 256; i++) {
-            uint256 capSize = _get(0, capArrayPointer+i+0);
-            // if this is the relevant cap, then process it
-            if (capIndex == reqCapIndex) {
-                // process the cap
-                capabilityType = _get(0, capArrayPointer+i+1);
-                capabilityKey  = _get(0, capArrayPointer+i+2);
-                capabilitySize = _get(0, capArrayPointer+i+3);
-                break;
-            } else {
-                // skip the length of this cap
-                i = i + uint248(capSize);
-                capIndex++;
-            }
+        // If the requested cap is out of the bounds of the cap table, we
+        // clearly don't have the capability;
+        if ((p.caps.length == 0) || (reqCapIndex > (p.caps.length - 1))) {
+            return false;
         }
-        if (capabilityType == 0x7 && toStoreAddress >= capabilityKey && toStoreAddress <= (capabilityKey + capabilitySize)) {
-            allow = true;
+        Capability memory cap = p.caps[reqCapIndex];
+        uint256 capabilityType = cap.capType;
+        // If the capability type is not WRITE (0x7) it is the wrong type of
+        // capability and we should reject
+        if (capabilityType != 0x7) {
+            return false;
+        }
+        // We need two values for a valid write cap
+        if (cap.values.length < 2) {
+            return false;
+        }
+        uint256 capabilityKey = cap.values[0];
+        uint256 capabilitySize = cap.values[1];
+
+        if (capabilityType == 0x7
+                && toStoreAddress >= capabilityKey
+                && toStoreAddress <= (capabilityKey + capabilitySize)) {
+            return true;
         }
     }
 
@@ -161,25 +156,33 @@ library ProcedureTable {
         // Get the storage address of the procedure data. This is the storage
         // key which contains all of the procedure data.
         uint248 pPointer = _getProcedurePointerByKey(key);
+        _serialiseProcedure(p, 0, pPointer);
+    }
+
+    function _serialiseProcedure(Procedure memory p, uint8 storagePage, uint248 pPointer) internal {
         // Store the keyIndex at this location
-        _set(0, pPointer, p.keyIndex);
+        _set(storagePage, pPointer, p.keyIndex);
         // Store the address at the loction after this (making this data 2
         // uint256 wide).
-        _set(0, pPointer + 1, uint256(p.location));
+        _set(storagePage, pPointer + 1, uint256(p.location));
 
         // The first value of the array is the length of the capability array
         // (in caps)
-        _set(0, pPointer + 2, p.caps.length);
+        _set(storagePage, pPointer + 2, p.caps.length);
+        _serialiseCapArray(p, storagePage, pPointer);
+    }
+
+    function _serialiseCapArray(Procedure memory p, uint8 storagePage, uint248 pPointer) internal {
         // n is the storage key index
         uint248 n = 0;
         // i is the index of the cap
         for (uint248 i = 0; i < p.caps.length; i++) {
             uint256 nValues = p.caps[i].values.length;
             uint256 capSize = nValues + 1;
-            _set(0, pPointer + 3 + n, capSize); n++;
-            _set(0, pPointer + 3 + n, p.caps[i].capType); n++;
+            _set(storagePage, pPointer + 3 + n, capSize); n++;
+            _set(storagePage, pPointer + 3 + n, p.caps[i].capType); n++;
             for (uint248 j = 0; j < nValues; j++) {
-                _set(0, pPointer + 3 + n, p.caps[i].values[j]); n++;
+                _set(storagePage, pPointer + 3 + n, p.caps[i].values[j]); n++;
             }
         }
     }
@@ -189,7 +192,8 @@ library ProcedureTable {
         _set(0, pPointer + 1, 0);
     }
 
-    function returnProcedureTable(Self storage self) internal view returns (uint256[]) {
+    // Just returns an array of all the procedure data (257 32-byte values) concatenated.
+    function returnRawProcedureTable(Self storage self) internal view returns (uint256[]) {
         bytes24[] memory keys = self.getKeys();
         uint256 len = keys.length;
         // max is 256 keys times the number of procedures
@@ -207,7 +211,7 @@ library ProcedureTable {
         return r;
     }
 
-    function returnProcedureTableAlt(Self storage self) internal view returns (uint256[]) {
+    function returnProcedureTable(Self storage self) internal view returns (uint256[]) {
         bytes24[] memory keys = self.getKeys();
         uint256 len = keys.length;
         // max is 256 keys times the number of procedures
@@ -250,26 +254,9 @@ library ProcedureTable {
             revert();
         }
 
-        // count caps
-        uint256 nCaps = 0;
-        for (uint256 i = 0; i < caps.length; i++) {
-            uint256 capLength = caps[i];
-            i = i + capLength;
-            nCaps++;
-        }
-        p.caps = new Capability[](nCaps);
-        uint256 n = 0;
-        for (i = 0; i < caps.length; i++) {
-            capLength = caps[i]; i++;
-            uint256 nValues = capLength - 1;
-            p.caps[n].values = new uint256[](nValues);
-            p.caps[n].capType = uint8(caps[i]); i++;
-            for (uint256 j = 0; j < nValues; j++) {
-                p.caps[n].values[j] = caps[i];i++;
-            }
-            i--;
-            n++;
-        }
+        // The capabilities are parsed here. We neeed to pass in the Procedure
+        // struct as solidity can't return complex data structures.
+        _parseCaps(p,caps);
 
         // If the keyIndex is not zero then that indicates that the procedure
         // already exists. In this case *WE HAVE NOT OVERWRITTEN * the values,
@@ -291,6 +278,28 @@ library ProcedureTable {
             // We actually commit the values in p to storage
             _storeProcedure(p, uint192(key));
             return false;
+        }
+    }
+
+    function _parseCaps(Procedure memory p, uint256[] caps) internal pure {
+        // count caps
+        uint256 nCaps = 0;
+        for (uint256 i = 0; i < caps.length; i++) {
+            uint256 capLength = caps[i];
+            i = i + capLength;
+            nCaps++;
+        }
+        p.caps = new Capability[](nCaps);
+        uint256 n = 0;
+        for (i = 0; i < caps.length; ) {
+            capLength = caps[i]; i++;
+            uint256 nValues = capLength - 1;
+            p.caps[n].values = new uint256[](nValues);
+            p.caps[n].capType = uint8(caps[i]); i++;
+            for (uint256 j = 0; j < nValues; j++) {
+                p.caps[n].values[j] = caps[i];i++;
+            }
+            n++;
         }
     }
 

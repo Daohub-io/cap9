@@ -4,6 +4,8 @@ const assert = require('assert')
 const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
+const beakerlib = require("../beakerlib");
+
 // Valid Contracts
 const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
@@ -467,24 +469,42 @@ contract('Kernel', function (accounts) {
         describe('Discover Procedure Table', function () {
             it('should print a procedure table', async function () {
                 const kernel = await Kernel.new();
-                const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8500, 0x2, 3, 0x7, 0x8000, 0x0]);
+
+                const cap1 = new beakerlib.WriteCap(0x8500,2);
+                const cap2 = new beakerlib.WriteCap(0x8000,0);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, capArray);
                 const tx2 = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
-                const rawProcTable = await kernel.returnProcedureTable.call();
-                const rawProcTableAlt = await kernel.returnProcedureTableAlt.call();
+                const rawProcTableData = await kernel.returnRawProcedureTable.call();
+                const procTableData = await kernel.returnProcedureTable.call();
 
                 // Check that the two methods are the same
-                // for (const v in rawProcTableAlt) {
-                //     console.log(v, ": " + web3.toHex(rawProcTableAlt[v]) + " -- " + web3.toHex(rawProcTable[v]));
+                // for (const v in procTableData) {
+                //     console.log(v, ": " + web3.toHex(procTableData[v]) + " -- " + web3.toHex(rawProcTableData[v]));
                 //     if (v > 24) break;
                 // }
 
-                const procTable = parseProcedureTable(rawProcTableAlt);
-                // printProcedureTable(procTable);
+                const procTable = beakerlib.parseProcedureTable(procTableData);
+                // beakerlib.printProcedureTable(procTable);
                 let procedures = await kernel.listProcedures.call();
                 assert.equal(procedures.length, Object.keys(procTable).length, "Same number of procedures as returned by listProcedures");
                 for (let i = 0; i< procedures.length; i++) {
                     assert.equal(procedures[i], Object.keys(procTable)[i], "each procedure keys should be the same as returned by listProcedures");
                 }
+
+                const proc1 = procTable[procedures[0]];
+                const proc2 = procTable[procedures[1]];
+
+                assert.equal(proc1.caps[0].type,0x7, "proc1: First cap should have the right type");
+                assert.equal(proc1.caps[0].values[0],0x8500, "proc1: First cap first value should be correct");
+                assert.equal(proc1.caps[0].values[1],0x2, "proc1: First cap second value should be correct");
+
+                assert.equal(proc1.caps[1].type,0x7, "proc1: Second cap should have the right type");
+                assert.equal(proc1.caps[1].values[0],0x8000, "proc1: Second cap first value should be correct");
+                assert.equal(proc1.caps[1].values[1],0x0, "proc1: Second cap second value should be correct");
+
+                assert.equal(proc2.caps.length,0, "Second procedure should have no caps");
             })
         })
 
@@ -558,55 +578,3 @@ contract('Kernel', function (accounts) {
         })
     })
 })
-
-function parseProcedureTable(val) {
-    const procTable = {};
-    for (let i = 0; i < val.length;) {
-        const proc = {};
-        // Key
-        proc.key = web3.toHex(val[i]); i++;
-        if (proc.key == "0x0") break;
-        // KeyIndex
-        proc.keyIndex = web3.toHex(val[i]); i++;
-        // Location
-        proc.location = web3.toHex(val[i]); i++;
-        // Capabilities
-        proc.caps = [];
-        const nCaps = val[i].toNumber(); i++;
-        for (let j = 0; j < nCaps; j++) {
-            const cap = {};
-            const length = web3.toHex(val[i]); i++;
-            cap.type = web3.toHex(val[i]); i++;
-            // (length - 1) as the first value is the length
-            cap.values = [];
-            for (let k = 0; k < (length-1); k++) {
-                cap.values.push(web3.toHex(val[i])); i++;
-            }
-            proc.caps.push(cap);
-        }
-        procTable[proc.key] = proc;
-    }
-    return procTable;
-}
-
-function printProcedureTable(procTable) {
-    for (const procKey of Object.keys(procTable)) {
-        const proc = procTable[procKey];
-        // Print key
-        console.log(`Key: ${proc.key}`);
-        // Print keyIndex
-        console.log(`  KeyIndex: ${proc.keyIndex}`);
-        // Print location
-        console.log(`  Location: ${proc.location}`);
-        // Print Capabilities
-        console.log(`  Capabilities(${proc.caps.length} keys)`);
-        for (const i in proc.caps) {
-            const cap = proc.caps[i];
-            console.log(`    Capability[${i}]: Type: ${cap.type}`);
-            for (const j in cap.values) {
-                console.log(`      ${j}: ${cap.values[j]}`)
-
-            }
-        }
-    }
-}
