@@ -140,6 +140,38 @@ library ProcedureTable {
         }
     }
 
+    function checkLogCapability(Self storage self, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
+        Procedure memory p = _getProcedureByKey(uint192(key));
+
+        // If the requested cap is out of the bounds of the cap table, we
+        // clearly don't have the capability;
+        if ((p.caps.length == 0) || (reqCapIndex > (p.caps.length - 1))) {
+            return false;
+        }
+        Capability memory cap = p.caps[reqCapIndex];
+        uint256 capabilityType = cap.capType;
+        // If the capability type is not WRITE (0x7) it is the wrong type of
+        // capability and we should reject
+        if (capabilityType != 0x9) {
+            return false;
+        }
+        return true;
+        // We need at least one value for a valid log cap
+        if (cap.values.length < 1) {
+            return false;
+        }
+        // uint256 capabilityKey = cap.values[0];
+        // uint256 capabilitySize = cap.values[1];
+
+        // if (capabilityType == 0x7
+        //         && toStoreAddress >= capabilityKey
+        //         && toStoreAddress <= (capabilityKey + capabilitySize)) {
+        //     return true;
+        // }
+        // We are happy as long as the capability is present and correct type
+        return true;
+    }
+
     function _storeProcedure(Procedure memory p, uint192 key) internal {
         // Get the storage address of the name/key of the procedure. In this
         // scope "key" is the 24 byte name which is provided by the user. The

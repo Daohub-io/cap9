@@ -127,6 +127,8 @@ contract Kernel is Factory {
     // This is the fallback function which is used to handle system calls. This
     // is only called if the other functions fail.
     function() public {
+        bool cap;
+        uint256 capIndex;
         // This is the entry point for the kernel
         // TODO: we aren't currently using this, as we can't invoke a cap that
         // calls other procedures.
@@ -159,10 +161,10 @@ contract Kernel is Factory {
             // This is a store system call
             // Here we have established that we are processing a write call and
             // we must destructure the necessary values.
-            uint256 capIndex = syscall.values[0];
+            capIndex = syscall.values[0];
             uint256 writeAddress = syscall.values[1];
             uint256 writeValue = syscall.values[2];
-            bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
+            cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
             assembly {
                 if iszero(cap) {
                     // return 11
@@ -172,6 +174,25 @@ contract Kernel is Factory {
                 sstore(writeAddress, writeValue)
                 mstore8(0xb0,3)
                 log0(0xb0, 1)
+            }
+        } else if (syscall.capType == 0x09) {
+            // This is a log system call
+            // Here we have established that we are processing a write call and
+            // we must destructure the necessary values.
+            capIndex = syscall.values[0];
+            uint256 nTopics = syscall.values[1];
+            bytes32 logValue = bytes32(syscall.values[2]);
+            cap = procedures.checkLogCapability(uint192(currentProcedure), capIndex);
+            if (cap) {
+                if (nTopics == 0) {
+                    log0(logValue);
+                }
+            } else {
+                assembly {
+                    // return 11
+                    mstore(0,11)
+                    revert(0,0x20)
+                }
             }
         } else if (syscall.capType == 0x03) {
             // This is the exec system call

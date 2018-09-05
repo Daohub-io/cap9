@@ -12,6 +12,7 @@ const Valid = {
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
     SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
+    SysCallTestLog: artifacts.require('test/valid/SysCallTestLog.sol'),
 }
 
 const Invalid = {
@@ -409,8 +410,13 @@ contract('Kernel', function (accounts) {
             describe('SysCall Procedure', function () {
                 it('S() should succeed when given cap', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8500, 0x2, 3, 0x7, 0x8000, 0x0]);
-                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8500, 0x2, 3, 0x7, 0x8000, 0x0]);
+
+                    const cap1 = new beakerlib.WriteCap(0x8500,2);
+                    const cap2 = new beakerlib.WriteCap(0x8000,0);
+                    const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                    const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, capArray);
+                    const tx2 = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
                     // need to have the ABI definition in JSON as per specification
                     const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
@@ -462,6 +468,59 @@ contract('Kernel', function (accounts) {
                     // 4 is the error code we are after
                     assert.equal(err2.toNumber(), 4, "S() should succeed with zero errcode the second time");
                     assert.equal(value2.toNumber(), 905, "S() should succeed with correct value the second time");
+                })
+            })
+            describe('Log capability', function () {
+                const procName = "SysCallTestLog";
+                const bytecode = Valid.SysCallTestLog.bytecode;
+                const functionSpec = "A()";
+                it('A() should succeed when given cap', async function () {
+                    const kernel = await Kernel.new();
+
+                    const procName = "SysCallTestLog";
+
+                    const cap1 = new beakerlib.WriteCap(0x8500,2);
+                    const cap2 = new beakerlib.LogCap();
+                    const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                    const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                    const [errX, valueX] = await kernel.executeProcedure.call(procName, functionSpec, "");
+                    const tx = await kernel.executeProcedure(procName, functionSpec, "");
+
+                    assert.equal(errX.toNumber(), 0, "should succeed with zero errcode the first time");
+                    assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
+                    assert.equal(tx.receipt.logs[0].topics.length,0,"Topics should be correct");
+                })
+                it('A() should fail when not given cap', async function () {
+                    const kernel = await Kernel.new();
+
+                    const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
+                    const tx = await kernel.createProcedure(procName, bytecode, []);
+
+                    const [errX, valueX] = await kernel.executeProcedure.call(procName, functionSpec, "");
+                    const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                    // 4 is the error code we are after
+                    assert.equal(errX.toNumber(), 4, "should fail errcode the first time");
+                    assert.equal(valueX.toNumber(), 905, "errcode should be correct");
+                    assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                })
+                it('A() should fail when trying to log to something outside its capability', async function () {
+                    const kernel = await Kernel.new();
+
+                    const procName = "SysCallTestLog";
+
+                    const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+                    const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+
+                    // need to have the ABI definition in JSON as per specification
+                    const [errX, valueX] = await kernel.executeProcedure.call(procName, functionSpec, "");
+                    const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                    // 4 is the error code we are after
+                    assert.equal(errX.toNumber(), 4, "should fail errcode the first time");
+                    assert.equal(valueX.toNumber(), 905, "errcode should be correct");
+                    assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
                 })
             })
         })
