@@ -39,11 +39,13 @@ contract Kernel is Factory {
         assembly {
             sstore(0x8000,3)
         }
-        // The kernel is inaccessible if there is not init procedure, so we must
-        // deploy one.
+    }
 
-        // We also need a createProcedure procedure which must be deployed
-        // early
+    function testGetter() public view returns(uint256) {
+        assembly {
+            mstore(0,sload(0x8000))
+            return(0,0x20)
+        }
     }
 
     // Parse the system call from msg.data
