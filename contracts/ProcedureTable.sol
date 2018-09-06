@@ -175,16 +175,11 @@ library ProcedureTable {
             // The system call specifies an insufficient number of topics
             return false;
         }
-        return true;
-        // uint256 capabilityKey = cap.values[0];
-        // uint256 capabilitySize = cap.values[1];
-
-        // if (capabilityType == 0x7
-        //         && toStoreAddress >= capabilityKey
-        //         && toStoreAddress <= (capabilityKey + capabilitySize)) {
-        //     return true;
-        // }
-        // We are happy as long as the capability is present and correct type
+        for (uint256 j = 0; j < capTopics.length; j++) {
+            if (reqTopics[j] != capTopics[j]) {
+                return false;
+            }
+        }
         return true;
     }
 

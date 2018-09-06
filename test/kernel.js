@@ -555,7 +555,7 @@ contract('Kernel', function (accounts) {
                         assert.equal(tx.receipt.logs[0].topics.length,1,"There should be 1 topic");
                         assert.equal(tx.receipt.logs[0].topics[0],topic,"The topic should be correct");
                     })
-                    it.skip('B() should fail when cap has incorrect topic', async function () {
+                    it('B() should fail when cap has incorrect topic', async function () {
                         const kernel = await Kernel.new();
 
                         const cap1 = new beakerlib.WriteCap(0x8500,2);
