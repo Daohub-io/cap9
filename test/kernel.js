@@ -786,16 +786,16 @@ contract('Kernel', function (accounts) {
                 //     if (v > 24) break;
                 // }
 
-                const procTable = beakerlib.parseProcedureTable(procTableData);
-                // beakerlib.printProcedureTable(procTable);
+                const procTable = beakerlib.ProcedureTable.parse(procTableData);
+                // console.log(beakerlib.ProcedureTable.stringify(procTable));
                 let procedures = await kernel.listProcedures.call();
-                assert.equal(procedures.length, Object.keys(procTable).length, "Same number of procedures as returned by listProcedures");
+                assert.equal(procedures.length, Object.keys(procTable.procedures).length, "Same number of procedures as returned by listProcedures");
                 for (let i = 0; i< procedures.length; i++) {
-                    assert.equal(procedures[i], Object.keys(procTable)[i], "each procedure keys should be the same as returned by listProcedures");
+                    assert.equal(procedures[i], Object.keys(procTable.procedures)[i], "each procedure keys should be the same as returned by listProcedures");
                 }
 
-                const proc1 = procTable[procedures[0]];
-                const proc2 = procTable[procedures[1]];
+                const proc1 = procTable.procedures[procedures[0]];
+                const proc2 = procTable.procedures[procedures[1]];
 
                 assert.equal(proc1.caps[0].type,0x7, "proc1: First cap should have the right type");
                 assert.equal(proc1.caps[0].values[0],0x8500, "proc1: First cap first value should be correct");

@@ -1,56 +1,64 @@
-exports.parseProcedureTable = parseProcedureTable;
-function parseProcedureTable(val) {
-    const procTable = {};
-    for (let i = 0; i < val.length;) {
-        const proc = {};
-        // Key
-        proc.key = web3.toHex(val[i]); i++;
-        if (proc.key == "0x0") break;
-        // KeyIndex
-        proc.keyIndex = web3.toHex(val[i]); i++;
-        // Location
-        proc.location = web3.toHex(val[i]); i++;
-        // Capabilities
-        proc.caps = [];
-        const nCaps = val[i].toNumber(); i++;
-        for (let j = 0; j < nCaps; j++) {
-            const cap = {};
-            const length = web3.toHex(val[i]); i++;
-            cap.type = web3.toHex(val[i]); i++;
-            // (length - 1) as the first value is the length
-            cap.values = [];
-            for (let k = 0; k < (length-1); k++) {
-                cap.values.push(web3.toHex(val[i])); i++;
-            }
-            proc.caps.push(cap);
-        }
-        procTable[proc.key] = proc;
+class ProcedureTable {
+    constructor(procTable) {
+        this.procedures = procTable;
     }
-    return procTable;
-}
-
-exports.printProcedureTable = printProcedureTable;
-function printProcedureTable(procTable) {
-    for (const procKey of Object.keys(procTable)) {
-        const proc = procTable[procKey];
-        // Print key
-        console.log(`Key: ${proc.key}`);
-        // Print keyIndex
-        console.log(`  KeyIndex: ${proc.keyIndex}`);
-        // Print location
-        console.log(`  Location: ${proc.location}`);
-        // Print Capabilities
-        console.log(`  Capabilities(${proc.caps.length} keys)`);
-        for (const i in proc.caps) {
-            const cap = proc.caps[i];
-            console.log(`    Capability[${i}]: Type: ${cap.type}`);
-            for (const j in cap.values) {
-                console.log(`      ${j}: ${cap.values[j]}`)
-
+    // get procedures() {
+    //     return this.procTable;
+    // }
+    static parse(val) {
+        const procTable = {};
+        for (let i = 0; i < val.length;) {
+            const proc = {};
+            // Key
+            proc.key = web3.toHex(val[i]); i++;
+            if (proc.key == "0x0") break;
+            // KeyIndex
+            proc.keyIndex = web3.toHex(val[i]); i++;
+            // Location
+            proc.location = web3.toHex(val[i]); i++;
+            // Capabilities
+            proc.caps = [];
+            const nCaps = val[i].toNumber(); i++;
+            for (let j = 0; j < nCaps; j++) {
+                const cap = {};
+                const length = web3.toHex(val[i]); i++;
+                cap.type = web3.toHex(val[i]); i++;
+                // (length - 1) as the first value is the length
+                cap.values = [];
+                for (let k = 0; k < (length-1); k++) {
+                    cap.values.push(web3.toHex(val[i])); i++;
+                }
+                proc.caps.push(cap);
+            }
+            procTable[proc.key] = proc;
+        }
+        return new ProcedureTable(procTable);
+    }
+    static stringify(procTable) {
+        let str = "";
+        for (const procKey of Object.keys(procTable.procedures)) {
+            const proc = procTable.procedures[procKey];
+            // Print key
+            str += `Key: ${proc.key}\n`;
+            // Print keyIndex
+            str += `  KeyIndex: ${proc.keyIndex}\n`;
+            // Print location
+            str += `  Location: ${proc.location}\n`;
+            // Print Capabilities
+            str += `  Capabilities(${proc.caps.length} keys)\n`;
+            for (const i in proc.caps) {
+                const cap = proc.caps[i];
+                str += `    Capability[${i}]: Type: ${cap.type}\n`;
+                for (const j in cap.values) {
+                    str += `      ${j}: ${cap.values[j]}\n`;
+                }
             }
         }
+        return str;
     }
 }
+exports.ProcedureTable = ProcedureTable;
+
 
 class Cap {
     constructor(type) {

@@ -62,7 +62,7 @@ contract Kernel is Factory {
         return syscall;
     }
 
-    function parse32ByteValue(uint256 startOffset) pure returns (uint256) {
+    function parse32ByteValue(uint256 startOffset) pure internal returns (uint256) {
         uint256 value = 0;
         for (uint256 i = 0; i < 32; i++) {
             value = value << 8;
@@ -254,7 +254,7 @@ contract Kernel is Factory {
             // What process is calling this and what capabilities does it
             // have?
 
-            // TODO: implement
+            // TODO: implement, this is issue #58.
         } else {
             // default; fallthrough action
             assembly {
