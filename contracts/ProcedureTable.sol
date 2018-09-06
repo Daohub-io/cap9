@@ -80,20 +80,13 @@ library ProcedureTable {
         // The second storage location (1) is used to store the address of the
         // contract.
         p.location = address(_get(0, pPointer + 1));
-        // For now this is:
-        // type + key + value
-        //  8   + 32  +  32   = 72 bytes
-        // Actually, for now it is simply a boolean to determine if the
-        // procedure is allowed to write or not
-        // TODO: I don't like the way we remove information here. If we want to
-        // be consistent we should deserialise the capabilities. This feels
-        // expensive to me.
-        // Count the number of caps
+        // The thirs storage location (2) is used to store the number of caps
         uint256 nCaps = _get(0, pPointer + 2);
         p.caps = new Capability[](nCaps);
         // n is the cap index
         uint256 n = 0;
-        for (uint248 i = 0; i < 256; i++) {
+        // The rest of the 256 keys are (or can be) used for the caps
+        for (uint248 i = 0; i < (256-3); i++) {
             if (n >= nCaps) {
                 break;
             }
