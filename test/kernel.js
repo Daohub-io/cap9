@@ -4,12 +4,15 @@ const assert = require('assert')
 const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
+const beakerlib = require("../beakerlib");
+
 // Valid Contracts
 const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
     SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
+    SysCallTestLog: artifacts.require('test/valid/SysCallTestLog.sol'),
 }
 
 const Invalid = {
@@ -24,8 +27,10 @@ function isNullAddress(address) {
 const testDebug = debug('test:Factory')
 const testAccount = 0;
 
+// For use with parity test account
+// web3.eth.defaultAccount = "0x00a329c0648769a73afac7f9381e08fb43dbea72";
+// throw new Error("the test")
 contract('Kernel', function (accounts) {
-
     describe('.listProcedures()', function () {
         it('should return nothing if zero procedures', async function () {
             let kernel = await Kernel.new();
@@ -36,8 +41,8 @@ contract('Kernel', function (accounts) {
         it('should return existing procedure keys', async function () {
             let kernel = await Kernel.new();
 
-            let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
-            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            let [err, address] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode, []);
+            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode, []);
 
             let procedures = await kernel.listProcedures.call();
             assert.equal(procedures.length, 1);
@@ -51,7 +56,7 @@ contract('Kernel', function (accounts) {
             ];
 
             for (const proc of speccedProcedures) {
-                await kernel.createProcedure(proc[0], proc[1].bytecode, 0x0, 0x0, 0x0)
+                await kernel.createProcedure(proc[0], proc[1].bytecode, []);
             }
 
             const proceduresRaw = await kernel.listProcedures.call();
@@ -81,12 +86,12 @@ contract('Kernel', function (accounts) {
 
             // Create "TestAdder"
             // Find the address (ephemerally)
-            let [err, creationAddress] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode, 0x0, 0x0, 0x0);
+            let [err, creationAddress] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode, []);
             assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`);
             assert(!isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is not null`);
 
             // Carry out the creation
-            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode, 0x0, 0x0, 0x0);
+            let tx1 = await kernel.createProcedure('TestAdder', Valid.Adder.bytecode, []);
 
             // Get the procedure
             let address = await kernel.getProcedure.call("TestAdder");
@@ -108,8 +113,8 @@ contract('Kernel', function (accounts) {
         it('should create valid procedure', async function () {
             let kernel = await Kernel.new();
             const procedureName = "TestAdder";
-            let [err, address] = await kernel.createProcedure.call(procedureName, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
-            let tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            let [err, address] = await kernel.createProcedure.call(procedureName, Valid.Adder.bytecode, []);
+            let tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode, []);
 
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
             assert(!isNullAddress(address), 'Procedure Address is not null')
@@ -132,8 +137,8 @@ contract('Kernel', function (accounts) {
             const proceduresRaw1 = await kernel.listProcedures.call();
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
-            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
-            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, []);
+            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, []);
 
             assert(web3.isAddress(address), `Procedure Address (${address}) should be a real address`)
             assert(!isNullAddress(address), 'Procedure Address should not be null')
@@ -158,8 +163,8 @@ contract('Kernel', function (accounts) {
             const proceduresRaw1 = await kernel.listProcedures.call();
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
-            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
-            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, []);
+            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, []);
 
             assert(web3.isAddress(address), `Procedure Address (#1) (${address}) should be a real address`)
             assert(!isNullAddress(address), 'Procedure Address (#1) should not be null')
@@ -171,8 +176,8 @@ contract('Kernel', function (accounts) {
             const code = web3.eth.getCode(address);
             assert.equal(Valid.Adder.deployedBytecode, code);
             const name2 = "ByAnyOtherName";
-            const [err2, address2] = await kernel.createProcedure.call(name2, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
-            const tx2 = await kernel.createProcedure(name2, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const [err2, address2] = await kernel.createProcedure.call(name2, Valid.Adder.bytecode, []);
+            const tx2 = await kernel.createProcedure(name2, Valid.Adder.bytecode, []);
 
             assert(web3.isAddress(address2), `Procedure Address (#2) (${address2}) should be a real address`)
             assert(!isNullAddress(address2), 'Procedure Address (#2) should not be null')
@@ -196,7 +201,7 @@ contract('Kernel', function (accounts) {
             it('zero length', async function () {
                 let kernel = await Kernel.new();
 
-                let [err, creationAddress] = await kernel.createProcedure.call('', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+                let [err, creationAddress] = await kernel.createProcedure.call('', Valid.Adder.bytecode, []);
                 assert.equal(err, 1);
                 assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`)
                 assert(isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is null`)
@@ -216,12 +221,12 @@ contract('Kernel', function (accounts) {
                 const name = "TestAdder";
 
                 // This is the first time the procedure is added
-                const [err1, address1] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
-                const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+                const [err1, address1] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, []);
+                const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, []);
 
                 // This is the second time the procedure is added
-                const [err2, address2] = await kernel.createProcedure.call(name, Valid.Multiply.bytecode, 0x0, 0x0, 0x0)
-                const tx2 = await kernel.createProcedure(name, Valid.Multiply.bytecode, 0x0, 0x0, 0x0)
+                const [err2, address2] = await kernel.createProcedure.call(name, Valid.Multiply.bytecode, []);
+                const tx2 = await kernel.createProcedure(name, Valid.Multiply.bytecode, []);
                 assert.equal(err2, 3);
 
                 const proceduresRaw = await kernel.listProcedures.call();
@@ -250,9 +255,9 @@ contract('Kernel', function (accounts) {
         it('should return deleted procedure address if procedure key is valid', async function () {
             const kernel = await Kernel.new();
 
-            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode, 0x0, 0x0, 0x0);
+            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode, []);
             assert.equal(err1, 0);
-            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode, []);
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
             // There should be some code at this address now
@@ -272,9 +277,9 @@ contract('Kernel', function (accounts) {
             const kernel = await Kernel.new();
 
             const procedureName = "test";
-            const [err1, address] = await kernel.createProcedure.call(procedureName, Valid.Adder.bytecode, 0x0, 0x0, 0x0);
+            const [err1, address] = await kernel.createProcedure.call(procedureName, Valid.Adder.bytecode, []);
             assert.equal(err1, 0);
-            const tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode, []);
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
 
@@ -301,9 +306,9 @@ contract('Kernel', function (accounts) {
         it.skip('should destroy the procedures contract on deletion', async function () {
             const kernel = await Kernel.new();
 
-            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode, 0x0, 0x0, 0x0);
+            const [err1, address] = await kernel.createProcedure.call("test", Valid.Adder.bytecode, []);
             assert.equal(err1, 0);
-            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode, 0x0, 0x0, 0x0)
+            const tx1 = await kernel.createProcedure('test', Valid.Adder.bytecode, []);
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
             // There should be some code at this address now
@@ -338,38 +343,38 @@ contract('Kernel', function (accounts) {
     describe('.executeProcedure(bytes24 key, bytes payload)', function () {
         it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
-            const [err, retVal] = await kernel.executeProcedure.call('test', '', "");
-            assert.equal(err, 3);
+            const retVal = await kernel.executeProcedure.call('test', '', "");
+            assert.equal(retVal, 3);
         });
 
         describe('should execute', function () {
             describe('Simple Procedure', function () {
                 it('X() should fail', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
                     // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call("Simple", "X()", "");
-                    assert.equal(errX.toNumber(), 4, "X() should fail");
+                    const valueX = await kernel.executeProcedure.call("Simple", "X()", "");
+                    assert.equal(valueX.toNumber(), 220000, "X() should fail");
                 })
 
                 it('A() should succeed', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err1, value1] = await kernel.executeProcedure.call("Simple", "A()", "");
-                    assert.equal(err1.toNumber(), 0, "A() should succeed");
+                    const value1 = await kernel.executeProcedure.call("Simple", "A()", "");
+                    assert.equal(value1.toNumber(), 110000, "A() should succeed");
                 })
 
                 it('B() should succeed', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err2, value2] = await kernel.executeProcedure.call("Simple", "B()", "");
-                    assert.equal(err2.toNumber(), 0, "B() should succeed");
+                    const value2 = await kernel.executeProcedure.call("Simple", "B()", "");
+                    assert.equal(value2.toNumber(), 110000, "B() should succeed");
                     assert.notEqual(web3.eth.getCode(kernel.address), "0x0", "B() should not yet destroy kernel");
 
                     const tx2 = await kernel.executeProcedure("Simple", "B()", "");
@@ -378,88 +383,429 @@ contract('Kernel', function (accounts) {
 
                 it('C() should fail without correctly specifying arguments', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
-                    assert.equal(err.toNumber(), 4, "C() should not succeed");
+                    const value = await kernel.executeProcedure.call("Simple", "C()", "");
+                    assert.equal(value.toNumber(), 220000, "C() should not succeed");
                 })
 
                 it('C() should fail when using type synonyms such as uint, which cant be used in function selectors', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
-                    assert.equal(err.toNumber(), 4, "C() should not succeed");
+                    const value = await kernel.executeProcedure.call("Simple", "C()", "");
+                    assert.equal(value.toNumber(), 220000, "C() should not succeed");
                 })
 
                 it('C(uint256) should succeed passing arguments', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
-                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, 0x0, 0x0, 0x0);
+                    const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
+                    const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
-                    assert.equal(err.toNumber(), 0, "C(uint256) should succeed");
+                    const value = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
+                    assert.equal(value.toNumber(), 110000, "C(uint256) should succeed");
                 })
-
             })
             describe('SysCall Procedure', function () {
                 it('S() should succeed when given cap', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, 0x7, 0x8000, 0x0);
-                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, 0x7, 0x8000, 0x0);
 
-                    // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const cap1 = new beakerlib.WriteCap(0x8500,2);
+                    const cap2 = new beakerlib.WriteCap(0x8000,0);
+                    const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                    const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, capArray);
+                    const tx2 = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
+
+                    const newValue1 = await kernel.testGetter.call();
+                    assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
+
+                    const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
-                    assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
+                    assert.equal(valueX.toNumber(), 111111, "S() should succeed with correct value the first time");
+                    const newValue2 = await kernel.testGetter.call();
+                    assert.equal(newValue2.toNumber(), 4, "The value should be 4 after the first execution");
 
                     // do it again to check that the value has been correctly incremented
-                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    assert.equal(err2.toNumber(), 0, "S() should succeed with zero errcode the second time");
-                    assert.equal(value2.toNumber(), 5, "S() should succeed with correct value the second time");
+                    assert.equal(value2.toNumber(), 111111, "S() should succeed with correct value the second time");
+                    const newValue3 = await kernel.testGetter.call();
+                    assert.equal(newValue3.toNumber(), 5, "The value should be 5 after the second execution");
                 })
                 it('S() should fail when not given cap', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, 0x0, 0x0, 0x0);
-                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, 0x0, 0x0, 0x0);
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, []);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, []);
 
-                    // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const newValue1 = await kernel.testGetter.call();
+                    assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
+                    const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    // 4 is the error code we are after
-                    assert.equal(errX.toNumber(), 4, "S() should succeed with zero errcode the first time");
-                    assert.equal(valueX.toNumber(), 905, "S() should succeed with correct value the first time");
+                    assert.equal(valueX.toNumber(), 222222, "S() should succeed with correct value the first time");
+                    const newValue2 = await kernel.testGetter.call();
+                    assert.equal(newValue2.toNumber(), 3, "The value should still be 3 before the first execution");
 
                     // do it again
-                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    // 4 is the error code we are after
-                    assert.equal(err2.toNumber(), 4, "S() should succeed with zero errcode the second time");
-                    assert.equal(value2.toNumber(), 905, "S() should succeed with correct value the second time");
+                    assert.equal(value2.toNumber(), 222222, "S() should succeed with correct value the second time");
+                    const newValue3 = await kernel.testGetter.call();
+                    assert.equal(newValue3.toNumber(), 3, "The value should still be 3 before the second execution");
                 })
                 it('S() should fail when trying to write to an address below its cap', async function () {
                     const kernel = await Kernel.new();
-                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, 0x7, 0x8001, 0x0);
-                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, 0x7, 0x8001, 0x0);
+                    const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8001, 0x0]);
+                    const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8001, 0x0]);
 
-                    // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const newValue1 = await kernel.testGetter.call();
+                    assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
+                    const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    // 4 is the error code we are after
-                    assert.equal(errX.toNumber(), 4, "S() should succeed with zero errcode the first time");
-                    assert.equal(valueX.toNumber(), 905, "S() should succeed with correct value the first time");
+                    assert.equal(valueX.toNumber(), 222222, "S() should fail with correct value the first time");
+                    const newValue2 = await kernel.testGetter.call();
+                    assert.equal(newValue2.toNumber(), 3, "The value should remain the same the first time");
 
                     // do it again
-                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    // 4 is the error code we are after
-                    assert.equal(err2.toNumber(), 4, "S() should succeed with zero errcode the second time");
-                    assert.equal(value2.toNumber(), 905, "S() should succeed with correct value the second time");
+                    assert.equal(value2.toNumber(), 222222, "S() should fail with correct value the second time");
+                    const newValue3 = await kernel.testGetter.call();
+                    assert.equal(newValue3.toNumber(), 3, "The value should remain the same the second time");
                 })
+            })
+            describe('Log capability', function () {
+                const procName = "SysCallTestLog";
+                const bytecode = Valid.SysCallTestLog.bytecode;
+                describe('A() No topics', function () {
+                    const functionSpec = "A()";
+                    it('A() should succeed when given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap([]);
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                        const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                        assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
+                        assert.equal(tx.receipt.logs[0].topics.length,0,"There should not be any topics");
+                    })
+                    it('A() should fail when not given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const capArray = beakerlib.Cap.toInput([cap1]);
+
+                        const tx0 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                    it('A() should fail when cap requires more topics', async function () {
+                        const kernel = await Kernel.new();
+
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap([0xaabb]);
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                        const tx0 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                        // need to have the ABI definition in JSON as per specification
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                        // 4 is the error code we are after
+                        assert.equal(valueX.toNumber(), 222233, "should fail with correct error code");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                })
+                describe('B() Single topic', function () {
+                    const functionSpec = "B()";
+                    // This topic is also defined in the Solidity file and
+                    // must be the same
+                    const topic = 0xabcd;
+                    it('B() should succeed when given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap([]);
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                        const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                        assert.equal(valueX.toNumber(), 111111, "errcode should be correct");
+                        // console.log(tx);
+                        // console.log(tx.receipt.logs);
+
+                        // console.log("valueX(dec):", valueX.toNumber());
+                        // console.log("valueX(hex):", web3.toHex(valueX));
+
+                        assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
+                        assert.equal(tx.receipt.logs[0].topics.length,1,"There should be 1 topic");
+                        assert.equal(tx.receipt.logs[0].topics[0],topic,"The topic should be correct");
+                    })
+                    it('B() should fail when cap has incorrect topic', async function () {
+                        const kernel = await Kernel.new();
+
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap([topic+1]);
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                        const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                    it('B() should fail when not given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
+                        const tx = await kernel.createProcedure(procName, bytecode, []);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                    it('B() should fail when trying to log to something outside its capability', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+                        const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+
+                        // need to have the ABI definition in JSON as per specification
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                })
+                describe('C() Two topics', function () {
+                    const functionSpec = "C()";
+                    // This topic is also defined in the Solidity file and
+                    // must be the same
+                    const topic0 = 0xabcd;
+                    const topic1 = 0xbeef;
+                    it('C() should succeed when given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap([]);
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                        const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                        assert.equal(valueX.toNumber(), 111111, "errcode should be correct");
+                        // console.log(tx);
+                        // console.log(tx.receipt.logs);
+
+                        // console.log("valueX(dec):", valueX.toNumber());
+                        // console.log("valueX(hex):", web3.toHex(valueX));
+
+                        assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
+                        assert.equal(tx.receipt.logs[0].topics.length,2,"There should be 2 topics");
+                        assert.equal(tx.receipt.logs[0].topics[0],topic0,"The topic0 should be correct");
+                        assert.equal(tx.receipt.logs[0].topics[1],topic1,"The topic1 should be correct");
+                    })
+                    it('C() should fail when not given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
+                        const tx = await kernel.createProcedure(procName, bytecode, []);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                    it('C() should fail when trying to log to something outside its capability', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+                        const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                })
+                describe('D() Three topics', function () {
+                    const functionSpec = "D()";
+                    // This topic is also defined in the Solidity file and
+                    // must be the same
+                    const topic0 = 0xabcd;
+                    const topic1 = 0xbeef;
+                    const topic2 = 0xcafe;
+                    it('D() should succeed when given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap([]);
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                        const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                        assert.equal(valueX.toNumber(), 111111, "errcode should be correct");
+                        // console.log(tx);
+                        // console.log(tx.receipt.logs);
+
+                        // console.log("valueX(dec):", valueX.toNumber());
+                        // console.log("valueX(hex):", web3.toHex(valueX));
+
+                        assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
+                        assert.equal(tx.receipt.logs[0].topics.length,3,"There should be 3 topics");
+                        assert.equal(tx.receipt.logs[0].topics[0],topic0,"The topic0 should be correct");
+                        assert.equal(tx.receipt.logs[0].topics[1],topic1,"The topic1 should be correct");
+                        assert.equal(tx.receipt.logs[0].topics[2],topic2,"The topic1 should be correct");
+                    })
+                    it('D() should fail when not given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
+                        const tx = await kernel.createProcedure(procName, bytecode, []);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                    it('D() should fail when trying to log to something outside its capability', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+                        const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                })
+                describe('E() Four topics', function () {
+                    const functionSpec = "E()";
+                    // This topic is also defined in the Solidity file and
+                    // must be the same
+                    const topic0 = 0xabcd;
+                    const topic1 = 0xbeef;
+                    const topic2 = 0xcafe;
+                    const topic3 = 0x4545;
+                    it('E() should succeed when given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap([]);
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                        const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                        assert.equal(valueX.toNumber(), 111111, "errcode should be correct");
+                        // console.log(tx);
+                        // console.log(tx.receipt.logs);
+
+                        // console.log("valueX(dec):", valueX.toNumber());
+                        // console.log("valueX(hex):", web3.toHex(valueX));
+
+                        assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
+                        assert.equal(tx.receipt.logs[0].topics.length,4,"There should be 4 topics");
+                        assert.equal(tx.receipt.logs[0].topics[0],topic0,"The topic0 should be correct");
+                        assert.equal(tx.receipt.logs[0].topics[1],topic1,"The topic1 should be correct");
+                        assert.equal(tx.receipt.logs[0].topics[2],topic2,"The topic1 should be correct");
+                        assert.equal(tx.receipt.logs[0].topics[3],topic3,"The topic1 should be correct");
+                    })
+                    it('E() should fail when not given cap', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
+                        const tx = await kernel.createProcedure(procName, bytecode, []);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                    it('E() should fail when trying to log to something outside its capability', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+                        const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                })
+            })
+        })
+
+        describe('Discover Procedure Table', function () {
+            it('should print a procedure table', async function () {
+                const kernel = await Kernel.new();
+
+                const cap1 = new beakerlib.WriteCap(0x8500,2);
+                const cap2 = new beakerlib.WriteCap(0x8000,0);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+
+                const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, capArray);
+                const tx2 = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
+                const rawProcTableData = await kernel.returnRawProcedureTable.call();
+                const procTableData = await kernel.returnProcedureTable.call();
+
+                // // Check that the two methods are the same
+                // for (const v in procTableData) {
+                //     console.log(v, ": " + web3.toHex(procTableData[v]) + " -- " + web3.toHex(rawProcTableData[v]));
+                //     if (v > 24) break;
+                // }
+
+                const procTable = beakerlib.ProcedureTable.parse(procTableData);
+                // console.log(beakerlib.ProcedureTable.stringify(procTable));
+                let procedures = await kernel.listProcedures.call();
+                assert.equal(procedures.length, Object.keys(procTable.procedures).length, "Same number of procedures as returned by listProcedures");
+                for (let i = 0; i< procedures.length; i++) {
+                    assert.equal(procedures[i], Object.keys(procTable.procedures)[i], "each procedure keys should be the same as returned by listProcedures");
+                }
+
+                const proc1 = procTable.procedures[procedures[0]];
+                const proc2 = procTable.procedures[procedures[1]];
+
+                assert.equal(proc1.caps[0].type,0x7, "proc1: First cap should have the right type");
+                assert.equal(proc1.caps[0].values[0],0x8500, "proc1: First cap first value should be correct");
+                assert.equal(proc1.caps[0].values[1],0x2, "proc1: First cap second value should be correct");
+
+                assert.equal(proc1.caps[1].type,0x7, "proc1: Second cap should have the right type");
+                assert.equal(proc1.caps[1].values[0],0x8000, "proc1: Second cap first value should be correct");
+                assert.equal(proc1.caps[1].values[1],0x0, "proc1: Second cap second value should be correct");
+
+                assert.equal(proc2.caps.length,0, "Second procedure should have no caps");
             })
         })
 
@@ -467,9 +813,9 @@ contract('Kernel', function (accounts) {
             it('should return the entry procedure address', async function () {
                 const kernel = await Kernel.new();
                 const procedureName = "Entry";
-                const [a, address] = await kernel.createProcedure.call(procedureName, Valid.SysCallTest.bytecode, 0x7, 0x80, 0x0);
+                const [a, address] = await kernel.createProcedure.call(procedureName, Valid.SysCallTest.bytecode, [3, 0x7, 0x80, 0x0]);
                 // assert.equal(a.toNumber(), 0, "S() should succeed with zero errcode the second time");
-                const tx = await kernel.createProcedure(procedureName, Valid.SysCallTest.bytecode, 0x7, 0x80, 0x0);
+                const tx = await kernel.createProcedure(procedureName, Valid.SysCallTest.bytecode, [3, 0x7, 0x80, 0x0]);
                 const valueA = await kernel.getProcedure.call(procedureName);
                 // const
                 // console.log(errA, valueA);
@@ -477,9 +823,8 @@ contract('Kernel', function (accounts) {
                 // console.log("valueA:", valueA)
 
                 // // need to have the ABI definition in JSON as per specification
-                // const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                // const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                 // await kernel.executeProcedure("SysCallTest", "S()", "");
-                // assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
                 // assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
 
                 // // do it again
@@ -492,8 +837,8 @@ contract('Kernel', function (accounts) {
 
         it('should return an error if key does not exist (3)', async function () {
             const kernel = await Kernel.new();
-            const [err, retVal] = await kernel.executeProcedure.call('test', '', "");
-            assert.equal(err, 3);
+            const retVal = await kernel.executeProcedure.call('test', '', "");
+            assert.equal(retVal, 3);
         });
 
         describe('should return an error if procedure return error when', function () {
@@ -501,8 +846,8 @@ contract('Kernel', function (accounts) {
             it('throws an error', async function () {
                 let kernel = await Kernel.new();
 
-                let [err, address] = await kernel.createProcedure.call('TestDivide', Valid.Divide.bytecode, 0x0, 0x0, 0x0)
-                let tx1 = await kernel.createProcedure('TestDivide', Valid.Divide.bytecode, 0x0, 0x0, 0x0)
+                let [err, address] = await kernel.createProcedure.call('TestDivide', Valid.Divide.bytecode, []);
+                let tx1 = await kernel.createProcedure('TestDivide', Valid.Divide.bytecode, []);
 
                 assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
                 assert(!isNullAddress(address), 'Procedure Address is not null')
@@ -527,8 +872,8 @@ contract('Kernel', function (accounts) {
             it('zero length (1)', async function () {
                 const kernel = await Kernel.new();
 
-                const [err, retVal] = await kernel.executeProcedure.call('', '', '');
-                assert.equal(err, 1);
+                const retVal = await kernel.executeProcedure.call('', '', '');
+                assert.equal(retVal.toNumber(), 1);
             });
         })
     })
