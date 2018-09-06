@@ -18,36 +18,15 @@ contract SysCallTest {
             // "in_size" is 97 because it is 1+32+32+32
             // we will store the result at 0x80 and it will be 32 bytes
             if iszero(delegatecall(gas, caller, 31, 97, 0x80, 0x20)) {
-                // If delegate call reverted with a value of 11, the action
-                // was rejected as the capability was incorrect
-                if eq(11,mload(0x80)) {
-                    mstore(0xd,905)
-                    revert(0xd,0x20)
-                }
-                if eq(12,mload(0x80)) {
-                    mstore(0xd,906)
-                    revert(0xd,0x20)
-                }
-                if eq(888,mload(0x80)) {
-                    mstore(0xd,888)
-                    revert(0xd,0x20)
-                }
-                if eq(889,mload(0x80)) {
-                    mstore(0xd,889)
-                    revert(0xd,0x20)
-                }
-                // If delegate call returns an error code, revert with 909
-                mstore(0xd,add(1000,mload(0x80)))
+                mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
             mstore(0xd,sload(0x8000))
             if iszero(eq(sload(0x8000),add(orig_value,1))) {
-                mstore(0xd,999)
+                mstore(0xd,add(3300,mload(0x80)))
                 revert(0xd,0x20)
             }
-            log0(0xd,32)
-            // return both the delegatecall return value and the system call
-            // retun value
+            mstore(0xd,add(1100,mload(0x80)))
             return(0xd,0x20)
         }
     }

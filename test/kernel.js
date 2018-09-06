@@ -27,8 +27,11 @@ function isNullAddress(address) {
 const testDebug = debug('test:Factory')
 const testAccount = 0;
 
+// For use with parity test account
+// web3.eth.defaultAccount = "0x00a329c0648769a73afac7f9381e08fb43dbea72";
+// throw new Error("the test")
 contract('Kernel', function (accounts) {
-
+    console.log('test')
     describe('.listProcedures()', function () {
         it('should return nothing if zero procedures', async function () {
             let kernel = await Kernel.new();
@@ -341,8 +344,8 @@ contract('Kernel', function (accounts) {
     describe('.executeProcedure(bytes24 key, bytes payload)', function () {
         it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
-            const [err, retVal] = await kernel.executeProcedure.call('test', '', "");
-            assert.equal(err, 3);
+            const retVal = await kernel.executeProcedure.call('test', '', "");
+            assert.equal(retVal, 3);
         });
 
         describe('should execute', function () {
@@ -353,8 +356,8 @@ contract('Kernel', function (accounts) {
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
                     // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call("Simple", "X()", "");
-                    assert.equal(errX.toNumber(), 4, "X() should fail");
+                    const valueX = await kernel.executeProcedure.call("Simple", "X()", "");
+                    assert.equal(valueX.toNumber(), 220000, "X() should fail");
                 })
 
                 it('A() should succeed', async function () {
@@ -362,8 +365,8 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err1, value1] = await kernel.executeProcedure.call("Simple", "A()", "");
-                    assert.equal(err1.toNumber(), 0, "A() should succeed");
+                    const value1 = await kernel.executeProcedure.call("Simple", "A()", "");
+                    assert.equal(value1.toNumber(), 110000, "A() should succeed");
                 })
 
                 it('B() should succeed', async function () {
@@ -371,8 +374,8 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err2, value2] = await kernel.executeProcedure.call("Simple", "B()", "");
-                    assert.equal(err2.toNumber(), 0, "B() should succeed");
+                    const value2 = await kernel.executeProcedure.call("Simple", "B()", "");
+                    assert.equal(value2.toNumber(), 110000, "B() should succeed");
                     assert.notEqual(web3.eth.getCode(kernel.address), "0x0", "B() should not yet destroy kernel");
 
                     const tx2 = await kernel.executeProcedure("Simple", "B()", "");
@@ -384,8 +387,8 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
-                    assert.equal(err.toNumber(), 4, "C() should not succeed");
+                    const value = await kernel.executeProcedure.call("Simple", "C()", "");
+                    assert.equal(value.toNumber(), 220000, "C() should not succeed");
                 })
 
                 it('C() should fail when using type synonyms such as uint, which cant be used in function selectors', async function () {
@@ -393,8 +396,8 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C()", "");
-                    assert.equal(err.toNumber(), 4, "C() should not succeed");
+                    const value = await kernel.executeProcedure.call("Simple", "C()", "");
+                    assert.equal(value.toNumber(), 220000, "C() should not succeed");
                 })
 
                 it('C(uint256) should succeed passing arguments', async function () {
@@ -402,10 +405,9 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const [err, value] = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
-                    assert.equal(err.toNumber(), 0, "C(uint256) should succeed");
+                    const value = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
+                    assert.equal(value.toNumber(), 110000, "C(uint256) should succeed");
                 })
-
             })
             describe('SysCall Procedure', function () {
                 it('S() should succeed when given cap', async function () {
@@ -419,17 +421,15 @@ contract('Kernel', function (accounts) {
                     const tx2 = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
                     // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
 
-                    assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
-                    assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
+                    assert.equal(valueX.toNumber(), 111111, "S() should succeed with correct value the first time");
 
                     // do it again to check that the value has been correctly incremented
-                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
-                    assert.equal(err2.toNumber(), 0, "S() should succeed with zero errcode the second time");
-                    assert.equal(value2.toNumber(), 5, "S() should succeed with correct value the second time");
+                    assert.equal(value2.toNumber(), 111111, "S() should succeed with correct value the second time");
                 })
                 it('S() should fail when not given cap', async function () {
                     const kernel = await Kernel.new();
@@ -437,18 +437,16 @@ contract('Kernel', function (accounts) {
                     const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, []);
 
                     // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
                     // 4 is the error code we are after
-                    assert.equal(errX.toNumber(), 4, "S() should succeed with zero errcode the first time");
-                    assert.equal(valueX.toNumber(), 905, "S() should succeed with correct value the first time");
+                    assert.equal(valueX.toNumber(), 222222, "S() should succeed with correct value the first time");
 
                     // do it again
-                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
                     // 4 is the error code we are after
-                    assert.equal(err2.toNumber(), 4, "S() should succeed with zero errcode the second time");
-                    assert.equal(value2.toNumber(), 905, "S() should succeed with correct value the second time");
+                    assert.equal(value2.toNumber(), 222222, "S() should succeed with correct value the second time");
                 })
                 it('S() should fail when trying to write to an address below its cap', async function () {
                     const kernel = await Kernel.new();
@@ -456,71 +454,120 @@ contract('Kernel', function (accounts) {
                     const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8001, 0x0]);
 
                     // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
                     // 4 is the error code we are after
-                    assert.equal(errX.toNumber(), 4, "S() should succeed with zero errcode the first time");
-                    assert.equal(valueX.toNumber(), 905, "S() should succeed with correct value the first time");
+                    assert.equal(valueX.toNumber(), 222222, "S() should fail with correct value the first time");
+                    // TODO: assert that the value is actually correct
 
                     // do it again
-                    const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                    const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                     await kernel.executeProcedure("SysCallTest", "S()", "");
                     // 4 is the error code we are after
-                    assert.equal(err2.toNumber(), 4, "S() should succeed with zero errcode the second time");
-                    assert.equal(value2.toNumber(), 905, "S() should succeed with correct value the second time");
+                    assert.equal(value2.toNumber(), 222222, "S() should fail with correct value the second time");
                 })
             })
             describe('Log capability', function () {
                 const procName = "SysCallTestLog";
                 const bytecode = Valid.SysCallTestLog.bytecode;
-                const functionSpec = "A()";
-                it('A() should succeed when given cap', async function () {
-                    const kernel = await Kernel.new();
+                describe('A() No topics', function () {
+                    const functionSpec = "A()";
+                    it('A() should succeed when given cap', async function () {
+                        const kernel = await Kernel.new();
 
-                    const procName = "SysCallTestLog";
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap();
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                    const cap1 = new beakerlib.WriteCap(0x8500,2);
-                    const cap2 = new beakerlib.LogCap();
-                    const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                        const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                    const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx = await kernel.executeProcedure(procName, functionSpec, "");
 
-                    const [errX, valueX] = await kernel.executeProcedure.call(procName, functionSpec, "");
-                    const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                        assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                        assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
+                        assert.equal(tx.receipt.logs[0].topics.length,0,"There should not be any topics");
+                    })
+                    it('A() should fail when not given cap', async function () {
+                        const kernel = await Kernel.new();
 
-                    assert.equal(errX.toNumber(), 0, "should succeed with zero errcode the first time");
-                    assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
-                    assert.equal(tx.receipt.logs[0].topics.length,0,"Topics should be correct");
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
+                        const tx = await kernel.createProcedure(procName, bytecode, []);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        // 4 is the error code we are after
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                    it('A() should fail when trying to log to something outside its capability', async function () {
+                        const kernel = await Kernel.new();
+
+                        const procName = "SysCallTestLog";
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+                        const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+
+                        // need to have the ABI definition in JSON as per specification
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                        // 4 is the error code we are after
+                        assert.equal(valueX.toNumber(), 222233, "should fail with correct error code");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
                 })
-                it('A() should fail when not given cap', async function () {
-                    const kernel = await Kernel.new();
+                describe('B() Single topic', function () {
+                    const functionSpec = "B()";
+                    // This topic is also defined in the Solidity file and
+                    // must be the same
+                    const topic = 0xabcd;
+                    it('B() should succeed when given cap', async function () {
+                        const kernel = await Kernel.new();
 
-                    const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
-                    const tx = await kernel.createProcedure(procName, bytecode, []);
+                        const cap1 = new beakerlib.WriteCap(0x8500,2);
+                        const cap2 = new beakerlib.LogCap();
+                        const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                    const [errX, valueX] = await kernel.executeProcedure.call(procName, functionSpec, "");
-                    const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                        const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                    // 4 is the error code we are after
-                    assert.equal(errX.toNumber(), 4, "should fail errcode the first time");
-                    assert.equal(valueX.toNumber(), 905, "errcode should be correct");
-                    assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
-                })
-                it('A() should fail when trying to log to something outside its capability', async function () {
-                    const kernel = await Kernel.new();
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                        // console.log(tx);
+                        // console.log(tx.receipt.logs);
 
-                    const procName = "SysCallTestLog";
+                        // console.log("valueX(dec):", valueX.toNumber());
+                        // console.log("valueX(hex):", web3.toHex(valueX));
 
-                    const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
-                    const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+                        assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
+                        assert.equal(tx.receipt.logs[0].topics.length,1,"There should be 1 topic");
+                        assert.equal(tx.receipt.logs[0].topics[0],topic,"The topic should be correct");
+                    })
+                    it('B() should fail when not given cap', async function () {
+                        const kernel = await Kernel.new();
 
-                    // need to have the ABI definition in JSON as per specification
-                    const [errX, valueX] = await kernel.executeProcedure.call(procName, functionSpec, "");
-                    const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
-                    // 4 is the error code we are after
-                    assert.equal(errX.toNumber(), 4, "should fail errcode the first time");
-                    assert.equal(valueX.toNumber(), 905, "errcode should be correct");
-                    assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
+                        const tx = await kernel.createProcedure(procName, bytecode, []);
+
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
+                    it('B() should fail when trying to log to something outside its capability', async function () {
+                        const kernel = await Kernel.new();
+
+                        const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+                        const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
+
+                        // need to have the ABI definition in JSON as per specification
+                        const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                        const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+
+                        assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                        assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
+                    })
                 })
             })
         })
@@ -581,9 +628,8 @@ contract('Kernel', function (accounts) {
                 // console.log("valueA:", valueA)
 
                 // // need to have the ABI definition in JSON as per specification
-                // const [errX, valueX] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                // const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
                 // await kernel.executeProcedure("SysCallTest", "S()", "");
-                // assert.equal(errX.toNumber(), 0, "S() should succeed with zero errcode the first time");
                 // assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
 
                 // // do it again
@@ -596,8 +642,8 @@ contract('Kernel', function (accounts) {
 
         it('should return an error if key does not exist (3)', async function () {
             const kernel = await Kernel.new();
-            const [err, retVal] = await kernel.executeProcedure.call('test', '', "");
-            assert.equal(err, 3);
+            const retVal = await kernel.executeProcedure.call('test', '', "");
+            assert.equal(retVal, 3);
         });
 
         describe('should return an error if procedure return error when', function () {
@@ -631,8 +677,8 @@ contract('Kernel', function (accounts) {
             it('zero length (1)', async function () {
                 const kernel = await Kernel.new();
 
-                const [err, retVal] = await kernel.executeProcedure.call('', '', '');
-                assert.equal(err, 1);
+                const retVal = await kernel.executeProcedure.call('', '', '');
+                assert.equal(retVal.toNumber(), 1);
             });
         })
     })

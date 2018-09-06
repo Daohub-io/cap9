@@ -165,15 +165,17 @@ contract Kernel is Factory {
             uint256 writeAddress = syscall.values[1];
             uint256 writeValue = syscall.values[2];
             cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
-            assembly {
-                if iszero(cap) {
-                    // return 11
+            if (cap) {
+                assembly {
+                    sstore(writeAddress, writeValue)
                     mstore(0,11)
+                    return(0,0x20)
+                }
+            } else {
+                assembly {
+                    mstore(0,22)
                     revert(0,0x20)
                 }
-                sstore(writeAddress, writeValue)
-                mstore8(0xb0,3)
-                log0(0xb0, 1)
             }
         } else if (syscall.capType == 0x09) {
             // This is a log system call
@@ -181,18 +183,58 @@ contract Kernel is Factory {
             // we must destructure the necessary values.
             capIndex = syscall.values[0];
             uint256 nTopics = syscall.values[1];
-            bytes32 logValue = bytes32(syscall.values[2]);
+            bytes32[] memory topicVals = new bytes32[](nTopics);
+            for (uint256 i = 0; i < nTopics; i++) {
+                topicVals[i] = bytes32(syscall.values[2+i]);
+            }
+            bytes32 logValue = bytes32(syscall.values[2+nTopics]);
             cap = procedures.checkLogCapability(uint192(currentProcedure), capIndex);
             if (cap) {
                 if (nTopics == 0) {
                     log0(logValue);
+                    assembly {
+                        mstore(0,11)
+                        return(0,0x20)
+                    }
+                } else if (nTopics == 1) {
+                    log1(logValue, topicVals[0]);
+                    assembly {
+                        mstore(0,11)
+                        return(0,0x20)
+                    }
+                } else if (nTopics == 2) {
+                    log2(logValue, topicVals[0], topicVals[1]);
+                    assembly {
+                        mstore(0,11)
+                        return(0,0x20)
+                    }
+                } else if (nTopics == 3) {
+                    log3(logValue, topicVals[0], topicVals[1], topicVals[2]);
+                    assembly {
+                        mstore(0,11)
+                        return(0,0x20)
+                    }
+                } else if (nTopics == 4) {
+                    log4(logValue, topicVals[0], topicVals[1], topicVals[2], topicVals[3]);
+                    assembly {
+                        mstore(0,11)
+                        return(0,0x20)
+                    }
+                } else {
+                    assembly {
+                        mstore(0,44)
+                        revert(0,0x20)
+                    }
                 }
             } else {
                 assembly {
-                    // return 11
-                    mstore(0,11)
+                    mstore(0,33)
                     revert(0,0x20)
                 }
+            }
+            assembly{
+                mstore(0xd,152)
+                return(0xd,0x20)
             }
         } else if (syscall.capType == 0x03) {
             // This is the exec system call
@@ -273,16 +315,16 @@ contract Kernel is Factory {
         return procedures.get(name);
     }
 
-    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint8 err, uint256 retVal) {
-        // Check whether the first byte is null and set err to 1 if so
+    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint256 retVal) {
+        // // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
-            err = 1;
+            retVal = 1;
             return;
         }
         // Check whether the address exists
         bool exist = procedures.contains(name);
         if (!exist) {
-            err = 3;
+            retVal = 3;
             return;
         }
         // TODO: I believe this should use the keyindex
@@ -325,17 +367,20 @@ contract Kernel is Factory {
             sstore(currentProcedure_slot,0)
             if eq(status,0) {
                 // error
-                mstore(0x40,4)
+                mstore(0x0,add(220000,mload(outs)))
+                // mstore(0x40,235)
                 // TODO: switch to revert
-                return(0x40,0x40)
+                return(0x0,0x20)
             }
             if eq(status,1) {
-                mstore(0x40,0)
-                return(0x40,0x40)
+                mstore(0x0,add(110000,mload(outs)))
+                // mstore(0x40,235)
+                // TODO: switch to revert
+                return(0x0,0x20)
             }
         }
         if (!status) {
-            err = 85;
+            retVal = 85;
         }
     }
 }
