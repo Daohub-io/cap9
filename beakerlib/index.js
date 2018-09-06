@@ -88,15 +88,14 @@ exports.WriteCap = WriteCap;
 
 // Currently the log is just a boolean flag determining whether it can log.
 class LogCap extends Cap {
-    constructor(canLog) {
+    constructor(topics) {
         super(0x9);
-        this.canLog;
-        // TODO: work out how this should be specified.
+        this.topics = topics;
     }
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        return Array.from([this.canLog]);
+        return Array.from([this.topics.length].concat(this.topics));
     }
 }
 exports.LogCap = LogCap;

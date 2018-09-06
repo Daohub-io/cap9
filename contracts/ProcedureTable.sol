@@ -140,7 +140,7 @@ library ProcedureTable {
         }
     }
 
-    function checkLogCapability(Self storage self, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
+    function checkLogCapability(Self storage self, uint192 key, bytes32[] reqTopics, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
 
         // If the requested cap is out of the bounds of the cap table, we
@@ -155,11 +155,27 @@ library ProcedureTable {
         if (capabilityType != 0x9) {
             return false;
         }
-        return true;
         // We need at least one value for a valid log cap
         if (cap.values.length < 1) {
             return false;
         }
+        // The first value is the number of topics
+        uint256 nTopics = cap.values[0];
+        // Then we retrieve the topics
+        bytes32[] memory capTopics = new bytes32[](nTopics);
+        for (uint256 i = 0; i < nTopics; i++) {
+            capTopics[i] = bytes32(cap.values[i+1]);
+        }
+
+        // Check that all of the topics required by the cap are satisfied. That
+        // is, for every topic in the capability, the corresponding exists in
+        // the system call and is set to that exact value. First we check that
+        // there are enough topics in the request.
+        if (reqTopics.length < capTopics.length) {
+            // The system call specifies an insufficient number of topics
+            return false;
+        }
+        return true;
         // uint256 capabilityKey = cap.values[0];
         // uint256 capabilitySize = cap.values[1];
 

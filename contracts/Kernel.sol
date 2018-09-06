@@ -190,7 +190,7 @@ contract Kernel is Factory {
                 topicVals[i] = bytes32(syscall.values[2+i]);
             }
             bytes32 logValue = bytes32(syscall.values[2+nTopics]);
-            cap = procedures.checkLogCapability(uint192(currentProcedure), capIndex);
+            cap = procedures.checkLogCapability(uint192(currentProcedure), topicVals, capIndex);
             if (cap) {
                 if (nTopics == 0) {
                     log0(logValue);
