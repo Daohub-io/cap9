@@ -2,6 +2,7 @@ pragma solidity ^0.4.17;
 
 import "./Factory.sol";
 import "./ProcedureTable.sol";
+import "./Instance.sol";
 
 library WhatIsMyAddress {
     function get() public view returns (address) {
@@ -13,20 +14,10 @@ contract Kernel is Factory {
     event KernelLog(string message);
     using ProcedureTable for ProcedureTable.Self;
     ProcedureTable.Self procedures;
-    address kernelAddress;
     bytes24 currentProcedure;
-
-    struct Process {
-        // Equal to the index of the key of this item in keys, plus 1.
-        uint8 keyIndex;
-        address location;
-    }
 
     // All of the data that is sent as a system call. Currently this is fairly
     // hard coded to write.
-    // @Jacob, I was looking at how you do things like Sum types or inheritance
-    // and all the techniques look like they have implications like being
-    // in separate contents. I'll leave this for now to hear your thoughts.
     struct SystemCall {
         // This is the most structure we can define in general
         uint8 capType;
@@ -39,6 +30,11 @@ contract Kernel is Factory {
         assembly {
             sstore(0x8000,3)
         }
+    }
+
+    // Creates a New Kernel Instance
+    function new_instance(address entryProcedure, bytes32 id) public {
+        new Instance(0, entryProcedure, id);
     }
 
     function testGetter() public view returns(uint256) {
@@ -137,15 +133,12 @@ contract Kernel is Factory {
     function() public {
         bool cap;
         uint256 capIndex;
+
         // This is the entry point for the kernel
-        // TODO: we aren't currently using this, as we can't invoke a cap that
-        // calls other procedures.
-        Process[] memory processTable = new Process[](256);
         // Before we do anything, let's set up some information about this call.
         // Where is this call coming from? If it is an external account we can
         // just use the caller value.
         // TODO: we will implement this when we stop using "executeProcedure"
-
 
         // If it is an external account, we forward it straight to the init
         // procedure. We currently shouldn't reach this point, as we usually use

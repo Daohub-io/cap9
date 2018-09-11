@@ -2,16 +2,6 @@ pragma solidity ^0.4.17;
 
 contract Factory {
 
-    /*opCode -> jump size*/
-    mapping(byte => uint8) public opCodes;
-
-    // event LogFundsReceived(address sender, uint amount);
-    // event LogFundsSent(address receiver, uint amount);
-
-    // function() payable public {
-    //     LogFundsReceived(msg.sender, msg.value);
-    // }
-
     function validate(bytes oCode) public view returns (uint8 err) {
         for (uint256 i = 0; i < oCode.length; i ++) {
             uint8 ins = uint8(oCode[i]);
