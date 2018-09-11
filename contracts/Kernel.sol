@@ -48,6 +48,12 @@ contract Kernel is Factory {
         }
     }
 
+    function testSetter(uint256 value) public {
+        assembly {
+            sstore(0x8000,value)
+        }
+    }
+
     // Parse the system call from msg.data
     function parseSystemCall() internal pure returns (SystemCall) {
         SystemCall memory syscall;
