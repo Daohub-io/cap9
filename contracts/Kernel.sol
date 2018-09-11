@@ -163,6 +163,10 @@ contract Kernel is Factory {
         // 0x03 - exec syscall
         // 0x09 - log syscall
 
+        // TODO: this was used to track some things but conflicts with some
+        // tests
+        // log1(bytes32(currentProcedure), bytes32("current-procedure"));
+
         // Here we decode the system call (if there is one)
         if (syscall.capType == 0) {
             // non-syscall case
@@ -170,10 +174,12 @@ contract Kernel is Factory {
             // This is a call system call
             capIndex = syscall.values[0];
             bytes24 procedureKey = bytes24(syscall.values[1]/0x10000000000000000);
-            // uint256
             // TODO: pass data values
             cap = procedures.checkCallCapability(uint192(currentProcedure), procedureKey, capIndex);
             address procedureAddress = procedures.get(procedureKey);
+            // Set a new current procedure
+            bytes24 previousProcedure = currentProcedure;
+            currentProcedure = procedureKey;
             if (cap) {
                 assembly {
                     // Retrieve the address of new available memory from address 0x40
@@ -213,7 +219,7 @@ contract Kernel is Factory {
                         // Currently that is only the function selector hash,
                         // which is 4 bytes long.
                         // let inl := 0x4
-                        0x4,
+                        0x0,
                         // TODO: Allocate a new area of memory into which to
                         // write the return data. This will depend on the size
                         // of the return type.
@@ -225,10 +231,10 @@ contract Kernel is Factory {
                         // let outl := 0x20
                         0x20)
                     // Store the procedure we are currently running
-                    sstore(currentProcedure_slot,0)
+                    sstore(currentProcedure_slot,procedureAddress)
                     if eq(status,0) {
                         // error
-                        mstore(0x0,22)
+                        mstore(0x0,add(22,mload(0x60)))
                         // mstore(0x40,235)
                         // TODO: switch to revert
                         return(0x0,0x20)
@@ -264,7 +270,7 @@ contract Kernel is Factory {
             } else {
                 assembly {
                     mstore(0,22)
-                    revert(0,0x20)
+                    return(0,0x20)
                 }
             }
         } else if (syscall.capType == 0x09) {
@@ -418,6 +424,9 @@ contract Kernel is Factory {
             return;
         }
         // TODO: I believe this should use the keyindex
+        // assembly {
+        //     sstore(currentProcedure_slot,div(name,exp(0x100,8)))
+        // }
         currentProcedure = name;
         address procedureAddress = procedures.get(name);
         bool status = false;

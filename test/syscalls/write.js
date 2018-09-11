@@ -56,14 +56,14 @@ contract('Kernel', function (accounts) {
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
             const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
             await kernel.executeProcedure("SysCallTest", "S()", "");
-            assert.equal(valueX.toNumber(), 222222, "S() should succeed with correct value the first time");
+            assert.equal(valueX.toNumber(), 222222, "S() should fail with correct value the first time");
             const newValue2 = await kernel.testGetter.call();
             assert.equal(newValue2.toNumber(), 3, "The value should still be 3 before the first execution");
 
             // do it again
             const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
             await kernel.executeProcedure("SysCallTest", "S()", "");
-            assert.equal(value2.toNumber(), 222222, "S() should succeed with correct value the second time");
+            assert.equal(value2.toNumber(), 222222, "S() should succeedfail with correct value the second time");
             const newValue3 = await kernel.testGetter.call();
             assert.equal(newValue3.toNumber(), 3, "The value should still be 3 before the second execution");
         })
