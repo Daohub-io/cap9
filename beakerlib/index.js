@@ -94,7 +94,6 @@ class WriteCap extends Cap {
 }
 exports.WriteCap = WriteCap;
 
-// Currently the log is just a boolean flag determining whether it can log.
 class LogCap extends Cap {
     constructor(topics) {
         super(0x9);
@@ -107,3 +106,18 @@ class LogCap extends Cap {
     }
 }
 exports.LogCap = LogCap;
+
+// Currently the call is just a boolean flag determining whether it can call.
+class CallCap extends Cap {
+    constructor() {
+        super(0x3);
+        // this.topics = topics;
+    }
+    // Format the capability values into the values that will be stored in the
+    // kernel. Must be defined for all subclasses
+    keyValues() {
+        return Array.from([]);
+        // return Array.from([this.topics.length].concat(this.topics));
+    }
+}
+exports.CallCap = CallCap;

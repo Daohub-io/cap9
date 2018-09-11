@@ -159,12 +159,77 @@ contract Kernel is Factory {
 
         // 0x00 - not a syscall
         // 0x01 - read syscall
-        // 0x02 - write syscall
+        // 0x07 - write syscall
         // 0x03 - exec syscall
+        // 0x09 - log syscall
 
         // Here we decode the system call (if there is one)
         if (syscall.capType == 0) {
             // non-syscall case
+        } else if (syscall.capType == 0x03) {
+            // This is a call system call
+            capIndex = syscall.values[0];
+            // uint256 procedureKey = syscall.values[1];
+            // uint256
+            // TODO: pass data values
+            cap = procedures.checkCallCapability(uint192(currentProcedure), capIndex);
+            address procedureAddress = procedures.get("TestWrite");
+            if (cap) {
+                assembly {
+                    // Retrieve the address of new available memory from address 0x40
+                    let n :=  mload(0x40)
+                    // Replace the value of 0x40 with the next new available memory,
+                    // after the 4 bytes we will use to store the keccak hash.
+                    mstore(0x40,add(n,32))
+                    // Take the keccak256 hash of that string, store at location n
+                    // mstore
+                    // Argument #1: The address (n) calculated above, to store the
+                    //    hash.
+                    // Argument #2: The hash, calculted as follows:
+                    //   keccack256
+                    //   Argument #1: The location of the fselector string (which
+                    //     is simply the name of the variable) with an added offset
+                    //     of 0x20, as the first 0x20 is reserved for the length of
+                    //     the string.
+                    //   Argument #2: The length of the string, which is loaded from
+                    //     the first 0x20 of the string.
+                    // mstore(n,keccak256(add(fselector,0x20),mload(fselector)))
+
+                    // The input starts at where we stored the hash (n)
+                    // let ins := n
+                    // Currently that is only the function selector hash, which is 4
+                    // bytes long.
+                    // let inl := 0x4
+                    // TODO: Allocate a new area of memory into which to write the
+                    // return data. This will depend on the size of the return type.
+                    // let outs := 0x60
+                    // There is no return value, therefore it's length is 0 bytes long
+                    // REVISION: lets assume a 32 byte return value for now
+                    // let outl := 0x20
+
+                    let status := callcode(gas,procedureAddress,0,n,0x4,0x60,0x20)
+                    sstore(currentProcedure_slot,0)
+                    if eq(status,0) {
+                        // error
+                        mstore(0x0,22)
+                        // mstore(0x40,235)
+                        // TODO: switch to revert
+                        return(0x0,0x20)
+                    }
+                    if eq(status,1) {
+                        mstore(0x0,11)
+                        // mstore(0x40,235)
+                        // TODO: switch to revert
+                        return(0x0,0x20)
+                    }
+                }
+            } else {
+                assembly {
+                    // 33 means the capability was rejected
+                    mstore(0,33)
+                    revert(0,0x20)
+                }
+            }
         } else if (syscall.capType == 0x07) {
             // This is a store system call
             // Here we have established that we are processing a write call and
