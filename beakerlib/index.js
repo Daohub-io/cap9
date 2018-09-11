@@ -107,17 +107,23 @@ class LogCap extends Cap {
 }
 exports.LogCap = LogCap;
 
-// Currently the call is just a boolean flag determining whether it can call.
+// Currently the call is a list of procedure keys it can call. If the list is
+// empty it means that any procedure can be called.
 class CallCap extends Cap {
-    constructor() {
+    // keys should be a list of strings
+    constructor(keys) {
         super(0x3);
-        // this.topics = topics;
+        if (!keys) {
+            this.keys = [];
+        } else  {
+            this.keys = keys;
+        }
     }
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        return Array.from([]);
-        // return Array.from([this.topics.length].concat(this.topics));
+        const val = Array.from(this.keys.map(x=>web3.fromAscii(x.padEnd(32,'\0'))));
+        return val;
     }
 }
 exports.CallCap = CallCap;

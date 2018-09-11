@@ -169,18 +169,20 @@ contract Kernel is Factory {
         } else if (syscall.capType == 0x03) {
             // This is a call system call
             capIndex = syscall.values[0];
-            // uint256 procedureKey = syscall.values[1];
+            bytes24 procedureKey = bytes24(syscall.values[1]/0x10000000000000000);
             // uint256
             // TODO: pass data values
-            cap = procedures.checkCallCapability(uint192(currentProcedure), capIndex);
-            address procedureAddress = procedures.get("TestWrite");
+            cap = procedures.checkCallCapability(uint192(currentProcedure), procedureKey, capIndex);
+            address procedureAddress = procedures.get(procedureKey);
             if (cap) {
                 assembly {
                     // Retrieve the address of new available memory from address 0x40
-                    let n :=  mload(0x40)
+                    // we will use this as the start of the input (ins)
+                    let ins :=  mload(0x40)
+                    // TODO: update this allocation
                     // Replace the value of 0x40 with the next new available memory,
                     // after the 4 bytes we will use to store the keccak hash.
-                    mstore(0x40,add(n,32))
+                    mstore(0x40,add(ins,32))
                     // Take the keccak256 hash of that string, store at location n
                     // mstore
                     // Argument #1: The address (n) calculated above, to store the
@@ -197,17 +199,32 @@ contract Kernel is Factory {
 
                     // The input starts at where we stored the hash (n)
                     // let ins := n
-                    // Currently that is only the function selector hash, which is 4
-                    // bytes long.
-                    // let inl := 0x4
-                    // TODO: Allocate a new area of memory into which to write the
-                    // return data. This will depend on the size of the return type.
-                    // let outs := 0x60
-                    // There is no return value, therefore it's length is 0 bytes long
-                    // REVISION: lets assume a 32 byte return value for now
-                    // let outl := 0x20
 
-                    let status := callcode(gas,procedureAddress,0,n,0x4,0x60,0x20)
+                    let status := callcode(
+                        // The gas we are budgeting, which is always all the
+                        // available gas
+                        gas,
+                        // The address for the chosen procedure which we
+                        // obtained earlier
+                        procedureAddress,
+                        // The value we are sending, we never want to do this
+                        0,
+                        ins,
+                        // Currently that is only the function selector hash,
+                        // which is 4 bytes long.
+                        // let inl := 0x4
+                        0x4,
+                        // TODO: Allocate a new area of memory into which to
+                        // write the return data. This will depend on the size
+                        // of the return type.
+                        // let outs := 0x60
+                        0x60,
+                        // There is no return value, therefore it's length is 0
+                        // bytes long
+                        // REVISION: lets assume a 32 byte return value for now
+                        // let outl := 0x20
+                        0x20)
+                    // Store the procedure we are currently running
                     sstore(currentProcedure_slot,0)
                     if eq(status,0) {
                         // error
