@@ -22,17 +22,6 @@ contract Kernel is Factory {
         address location;
     }
 
-    // All of the data that is sent as a system call. Currently this is fairly
-    // hard coded to write.
-    // @Jacob, I was looking at how you do things like Sum types or inheritance
-    // and all the techniques look like they have implications like being
-    // in separate contents. I'll leave this for now to hear your thoughts.
-    struct SystemCall {
-        // This is the most structure we can define in general
-        uint8 capType;
-        uint256[] values;
-    }
-
     function Kernel() public {
         // kernelAddress = WhatIsMyAddress.get();
         // This is an example kernel global variable for testing.
@@ -54,20 +43,6 @@ contract Kernel is Factory {
         }
     }
 
-    // Parse the system call from msg.data
-    function parseSystemCall() internal pure returns (SystemCall) {
-        SystemCall memory syscall;
-        // The cap type is the first byte
-        syscall.capType = uint8(msg.data[0]);
-        uint256 nKeys = (msg.data.length-1)/32;
-        syscall.values = new uint256[](nKeys);
-        for (uint256 i = 0; i < nKeys; i++) {
-            syscall.values[i] = parse32ByteValue(1+i*32);
-        }
-
-        return syscall;
-    }
-
     function parse32ByteValue(uint256 startOffset) pure internal returns (uint256) {
         uint256 value = 0;
         for (uint256 i = 0; i < 32; i++) {
@@ -75,7 +50,6 @@ contract Kernel is Factory {
             value = value | uint256(msg.data[startOffset+i]);
         }
         return value;
-
     }
 
     // Check if a transaction is external.
@@ -160,8 +134,8 @@ contract Kernel is Factory {
 
         // 0x00 - not a syscall
         // 0x01 - read syscall
-        // 0x07 - write syscall
         // 0x03 - exec syscall
+        // 0x07 - write syscall
         // 0x09 - log syscall
 
         // TODO: this was used to track some things but conflicts with some
@@ -180,10 +154,11 @@ contract Kernel is Factory {
             // We also perform a shift as this is 24 byte value, not a 32 byte
             // value
             bytes24 procedureKey = bytes24(parse32ByteValue(1+32)/0x10000000000000000);
+            uint256 returnLength = uint256(parse32ByteValue(1+32*2));
             uint256 dataLength;
             // log1(bytes32(msg.data.length), bytes32("msg.data.length"));
-            if (msg.data.length > (1+2*32)) {
-                dataLength = msg.data.length - (1+2*32);
+            if (msg.data.length > (1+3*32)) {
+                dataLength = msg.data.length - (1+3*32);
             } else {
                 dataLength = 0;
             }
@@ -212,9 +187,9 @@ contract Kernel is Factory {
 
                         // Then we store that data at this allocated memory
                         // location
-                        // mstore(ins,sel)
-                        calldatacopy(ins, 65, dataLength)
+                        calldatacopy(ins, 97, dataLength)
                         inl := dataLength
+                        // log0(ins,inl)
                     }
                     if iszero(dataLength) {
                         // If there is not data to be sent we just set the
@@ -250,21 +225,17 @@ contract Kernel is Factory {
                         procedureAddress,
                         // The value we are sending, we never want to do this
                         0,
+                        // The starting memory offset of the innput data
                         ins,
-                        // Currently that is only the function selector hash,
-                        // which is 4 bytes long.
-                        // let inl := 0x4
+                        // The length of the input data
                         inl,
                         // TODO: Allocate a new area of memory into which to
                         // write the return data. This will depend on the size
                         // of the return type.
-                        // let outs := 0x60
+                        // The starting memory offset to place the output data
                         0x60,
-                        // There is no return value, therefore it's length is 0
-                        // bytes long
-                        // REVISION: lets assume a 32 byte return value for now
-                        // let outl := 0x20
-                        0x20)
+                        // The length of the output data
+                        returnLength)
                     // Store the procedure we are currently running
                     sstore(currentProcedure_slot,procedureAddress)
                     if eq(status,0) {
@@ -278,7 +249,7 @@ contract Kernel is Factory {
                         mstore(0x0,11)
                         // mstore(0x40,235)
                         // TODO: switch to revert
-                        return(0x0,0x20)
+                        return(0x60,returnLength)
                     }
                 }
             } else {

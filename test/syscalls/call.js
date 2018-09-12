@@ -52,9 +52,9 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 for (const log of tx.receipt.logs) {
                     if (log.topics.length > 0) {
-                        console.log(`Lognx: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
                     } else {
-                        console.log(`Lognt: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                        console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
                     }
                 }
                 assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
@@ -111,7 +111,7 @@ contract('Kernel', function (accounts) {
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
             })
-            it('A() should succeed with a more restriced cap', async function () {
+            it('A() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
                 const kernel = await Kernel.new();
@@ -249,7 +249,7 @@ contract('Kernel', function (accounts) {
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
             })
-            it('B() should succeed with a more restriced cap', async function () {
+            it('B() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
                 const kernel = await Kernel.new();
@@ -327,9 +327,9 @@ contract('Kernel', function (accounts) {
                 // console.log(tx.receipt.logs)
                 for (const log of tx.receipt.logs) {
                     if (log.topics.length > 0) {
-                        console.log(`Lognx: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
                     } else {
-                        console.log(`Lognt: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                        console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
                     }
                 }
                 assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
@@ -386,7 +386,7 @@ contract('Kernel', function (accounts) {
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
             })
-            it('C() should succeed with a more restriced cap', async function () {
+            it('C() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
                 const kernel = await Kernel.new();
@@ -437,7 +437,7 @@ contract('Kernel', function (accounts) {
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
             })
         })
-        describe.skip('D() - with data (function selector and arguments)', function () {
+        describe('D() - with data (function selector and arguments)', function () {
             const testProcName = "Adder";
             const testBytecode = Valid.Adder.bytecode;
             const functionSpec = "D()";
@@ -464,15 +464,15 @@ contract('Kernel', function (accounts) {
                 // console.log(tx.receipt.logs)
                 for (const log of tx.receipt.logs) {
                     if (log.topics.length > 0) {
-                        console.log(`Lognx: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
                     } else {
-                        console.log(`Lognt: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                        console.log(`Log: ${log.topics[0]} - ${log.data} - ${web3.toAscii(log.data)}`);
                     }
                 }
                 assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
+                assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('D() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -523,7 +523,7 @@ contract('Kernel', function (accounts) {
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
             })
-            it('D() should succeed with a more restriced cap', async function () {
+            it('D() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
                 const kernel = await Kernel.new();
@@ -546,7 +546,7 @@ contract('Kernel', function (accounts) {
                 assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
+                assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('D() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -574,7 +574,7 @@ contract('Kernel', function (accounts) {
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
             })
         })
-        describe.skip('E() - with data (function selector and arguments) and return', function () {
+        describe('E() - with data (function selector and arguments) and return', function () {
             const testProcName = "Adder";
             const testBytecode = Valid.Adder.bytecode;
             const functionSpec = "E()";
@@ -593,23 +593,17 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap2, cap1]));
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
-
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 // console.log(tx.receipt.logs)
                 for (const log of tx.receipt.logs) {
                     if (log.topics.length > 0) {
-                        console.log(`Lognx: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
                     } else {
-                        console.log(`Lognt: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                        console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
                     }
                 }
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
-
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
+                assert.equal(newValue.toNumber(),110008, `new value should be 8`);
             })
             it('E() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -625,15 +619,9 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
-
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
-
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
             })
             it('E() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -650,17 +638,11 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
-
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
-
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
             })
-            it('E() should succeed with a more restriced cap', async function () {
+            it('E() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
                 const kernel = await Kernel.new();
@@ -675,15 +657,17 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap2, cap1]));
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
-
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
-
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
+                // console.log(tx.receipt.logs)
+                for (const log of tx.receipt.logs) {
+                    if (log.topics.length > 0) {
+                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                    } else {
+                        console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                    }
+                }
+                assert.equal(newValue.toNumber(),110008, `new value should be 8`);
             })
             it('E() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -700,15 +684,9 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
-
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
-
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
             })
         })
     })
