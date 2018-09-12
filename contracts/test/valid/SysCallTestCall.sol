@@ -26,7 +26,7 @@ contract SysCallTestCall {
         }
     }
 
-    // Log to a single topic
+    // Call SysCallTes
     function B() public {
         bytes24 reqProc = bytes24("SysCallTest");
         assembly {
@@ -51,97 +51,62 @@ contract SysCallTestCall {
         }
     }
 
-    // Log to two topics
+    // Call SysTestCall:S()
     function C() public {
+        bytes24 reqProc = bytes24("SysCallTest");
+        string memory fselector = "S()";
         assembly {
             // First set up the input data (at memory location 0x0)
-            // The log call is 0x-09
-            mstore(0x0,0x09)
-            // The capability index is 0x-01
-            mstore(0x20,0x01)
-            // The number of topics we will use
-            mstore(0x40,0x2)
-            // The first topic
-            mstore(0x60,0xabcd)
-            // The second topic
-            mstore(0x80,0xbeef)
-            // The value we want to log
-            mstore(0xa0,0x1234567890)
+            // The call call is 0x-03
+            mstore(0x0,0x03)
+            // The capability index is 0x-02
+            mstore(0x20,0x02)
+            // The key of the procedure
+            mstore(0x40,reqProc)
+            // The data from 0x60 onwards is the data we want to send to
+            // this procedure
+            // First we store the function selector in the 0x20 bytes from 0x60
+            mstore(0x60,keccak256(add(fselector,0x20),mload(fselector)))
+            // mstore(0x60,mload(add(fselector,0x20)))
+            // we only want the first 4 bytes of this
             // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 129 because it is 1+32+32+32+32+32
+            // "in_size" is 69 because it is 1+32+32+4
             // we will store the result at 0x80 and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, 31, 161, 0x80, 0x20)) {
+            if iszero(delegatecall(gas, caller, 31, 69, 0x80, 0x20)) {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            // return both the delegatecall return value and the system call
-            // retun value
             mstore(0xd,add(1100,mload(0x80)))
             return(0xd,0x20)
         }
     }
 
-    // Log to three topics
+    // Call Adder:add(3,5)
     function D() public {
+        bytes24 reqProc = bytes24("Adder");
+        string memory fselector = "add()";
         assembly {
             // First set up the input data (at memory location 0x0)
-            // The log call is 0x-09
-            mstore(0x0,0x09)
-            // The capability index is 0x-01
-            mstore(0x20,0x01)
-            // The number of topics we will use
-            mstore(0x40,0x3)
-            // The first topic
-            mstore(0x60,0xabcd)
-            // The second topic
-            mstore(0x80,0xbeef)
-            // The third topic
-            mstore(0xa0,0xcafe)
-            // The value we want to log
-            mstore(0xc0,0x1234567890)
+            // The call call is 0x-03
+            mstore(0x0,0x03)
+            // The capability index is 0x-02
+            mstore(0x20,0x02)
+            // The key of the procedure
+            mstore(0x40,reqProc)
+            // The data from 0x60 onwards is the data we want to send to
+            // this procedure
+            // First we store the function selector in the 0x20 bytes from 0x60
+            mstore(0x60,keccak256(add(fselector,0x20),mload(fselector)))
+            mstore(0x64,3)
+            mstore(0x84,5)
+            // we only want the first 4 bytes of this
             // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 129 because it is 1+32+32+32+32+32
+            // "in_size" is 69 because it is 1+32+32+4+32+32
             // we will store the result at 0x80 and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, 31, 193, 0x80, 0x20)) {
+            if iszero(delegatecall(gas, caller, 31, 133, 0x80, 0x20)) {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            // return both the delegatecall return value and the system call
-            // retun value
-            mstore(0xd,add(1100,mload(0x80)))
-            return(0xd,0x20)
-        }
-    }
-
-    // Log to four topics
-    function E() public {
-        assembly {
-            // First set up the input data (at memory location 0x0)
-            // The log call is 0x-09
-            mstore(0x0,0x09)
-            // The capability index is 0x-01
-            mstore(0x20,0x01)
-            // The number of topics we will use
-            mstore(0x40,0x4)
-            // The first topic
-            mstore(0x60,0xabcd)
-            // The second topic
-            mstore(0x80,0xbeef)
-            // The third topic
-            mstore(0xa0,0xcafe)
-            // The fourth topic
-            mstore(0xc0,0x4545)
-            // The value we want to log
-            mstore(0xe0,0x1234567890)
-            // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 129 because it is 1+32+32+32+32+32
-            // we will store the result at 0x80 and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, 31, 225, 0x80, 0x20)) {
-                mstore(0xd,add(2200,mload(0x80)))
-                revert(0xd,0x20)
-            }
-            // return both the delegatecall return value and the system call
-            // retun value
             mstore(0xd,add(1100,mload(0x80)))
             return(0xd,0x20)
         }

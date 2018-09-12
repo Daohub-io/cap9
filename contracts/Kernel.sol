@@ -155,7 +155,8 @@ contract Kernel is Factory {
         }
 
         // Parse the system call
-        SystemCall memory syscall = parseSystemCall();
+        // SystemCall memory syscall = parseSystemCall();
+        uint8 sysCallCapType = uint8(msg.data[0]);
 
         // 0x00 - not a syscall
         // 0x01 - read syscall
@@ -168,27 +169,61 @@ contract Kernel is Factory {
         // log1(bytes32(currentProcedure), bytes32("current-procedure"));
 
         // Here we decode the system call (if there is one)
-        if (syscall.capType == 0) {
+        if (sysCallCapType == 0) {
             // non-syscall case
-        } else if (syscall.capType == 0x03) {
+        } else if (sysCallCapType == 0x03) {
             // This is a call system call
-            capIndex = syscall.values[0];
-            bytes24 procedureKey = bytes24(syscall.values[1]/0x10000000000000000);
-            // TODO: pass data values
+            // parse a 32-byte value at offset 1 (offset 0 is the capType byte)
+            capIndex = parse32ByteValue(1);
+            // parse a 32-byte value at offset 1 (offset 0 is the capType byte,
+            // offset 1 is the capIndex (32 bytes)
+            // We also perform a shift as this is 24 byte value, not a 32 byte
+            // value
+            bytes24 procedureKey = bytes24(parse32ByteValue(1+32)/0x10000000000000000);
+            uint256 dataLength;
+            // log1(bytes32(msg.data.length), bytes32("msg.data.length"));
+            if (msg.data.length > (1+2*32)) {
+                dataLength = msg.data.length - (1+2*32);
+            } else {
+                dataLength = 0;
+            }
             cap = procedures.checkCallCapability(uint192(currentProcedure), procedureKey, capIndex);
             address procedureAddress = procedures.get(procedureKey);
             // Set a new current procedure
-            bytes24 previousProcedure = currentProcedure;
+            // bytes24 previousProcedure = currentProcedure;
             currentProcedure = procedureKey;
             if (cap) {
                 assembly {
                     // Retrieve the address of new available memory from address 0x40
                     // we will use this as the start of the input (ins)
-                    let ins :=  mload(0x40)
-                    // TODO: update this allocation
-                    // Replace the value of 0x40 with the next new available memory,
-                    // after the 4 bytes we will use to store the keccak hash.
-                    mstore(0x40,add(ins,32))
+                    let ins
+                    let inl
+                    if dataLength {
+                        // If there is any data associated with this procedure
+                        // call (this inlcudes the data such as a function
+                        // selector) we need to set that as the input data to
+                        // the delegatecall.
+                        // First we must allocate some memory.
+                        ins :=  mload(0x40) // get the allocated location
+                        // Bump the value of 0x40 so that it holds the next
+                        // available memory location.
+                        // TODO: align this bump to 32-byte boundaries
+                        mstore(0x40,add(ins,dataLength))
+
+                        // Then we store that data at this allocated memory
+                        // location
+                        // mstore(ins,sel)
+                        calldatacopy(ins, 65, dataLength)
+                        inl := dataLength
+                    }
+                    if iszero(dataLength) {
+                        // If there is not data to be sent we just set the
+                        // location and length of the input data to zero. The
+                        // location doesn't actually matter as long the length
+                        // is zero.
+                        ins := 0
+                        inl := 0
+                    }
                     // Take the keccak256 hash of that string, store at location n
                     // mstore
                     // Argument #1: The address (n) calculated above, to store the
@@ -219,7 +254,7 @@ contract Kernel is Factory {
                         // Currently that is only the function selector hash,
                         // which is 4 bytes long.
                         // let inl := 0x4
-                        0x0,
+                        inl,
                         // TODO: Allocate a new area of memory into which to
                         // write the return data. This will depend on the size
                         // of the return type.
@@ -253,13 +288,13 @@ contract Kernel is Factory {
                     revert(0,0x20)
                 }
             }
-        } else if (syscall.capType == 0x07) {
+        } else if (sysCallCapType == 0x07) {
             // This is a store system call
             // Here we have established that we are processing a write call and
             // we must destructure the necessary values.
-            capIndex = syscall.values[0];
-            uint256 writeAddress = syscall.values[1];
-            uint256 writeValue = syscall.values[2];
+            capIndex = parse32ByteValue(1);
+            uint256 writeAddress = parse32ByteValue(1+32*1);
+            uint256 writeValue = parse32ByteValue(1+32*2);
             cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
             if (cap) {
                 assembly {
@@ -273,17 +308,17 @@ contract Kernel is Factory {
                     return(0,0x20)
                 }
             }
-        } else if (syscall.capType == 0x09) {
+        } else if (sysCallCapType == 0x09) {
             // This is a log system call
             // Here we have established that we are processing a write call and
             // we must destructure the necessary values.
-            capIndex = syscall.values[0];
-            uint256 nTopics = syscall.values[1];
+            capIndex = parse32ByteValue(1);
+            uint256 nTopics = parse32ByteValue(1+32*1);
             bytes32[] memory topicVals = new bytes32[](nTopics);
             for (uint256 i = 0; i < nTopics; i++) {
-                topicVals[i] = bytes32(syscall.values[2+i]);
+                topicVals[i] = bytes32(parse32ByteValue(1+32*(2+i)));
             }
-            bytes32 logValue = bytes32(syscall.values[2+nTopics]);
+            bytes32 logValue = bytes32(parse32ByteValue(1+32*(2+nTopics)));
             cap = procedures.checkLogCapability(uint192(currentProcedure), topicVals, capIndex);
             if (cap) {
                 if (nTopics == 0) {
@@ -332,7 +367,7 @@ contract Kernel is Factory {
                 mstore(0xd,152)
                 return(0xd,0x20)
             }
-        } else if (syscall.capType == 0x03) {
+        } else if (sysCallCapType == 0x03) {
             // This is the exec system call
             //
             // First we need to check if we have the capability to
