@@ -57,7 +57,7 @@ contract('Kernel', function (accounts) {
                         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
                     }
                 }
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),356, "new value should be 356");
@@ -131,7 +131,7 @@ contract('Kernel', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),356, "new value should be 356");
@@ -195,7 +195,7 @@ contract('Kernel', function (accounts) {
                         console.log(`${log.topics[0]} - ${web3.toAscii(log.data)}`);
                     }
                 }
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),356, "new value should be 356");
@@ -269,7 +269,7 @@ contract('Kernel', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),356, "new value should be 356");
@@ -332,7 +332,7 @@ contract('Kernel', function (accounts) {
                         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
                     }
                 }
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
@@ -406,7 +406,7 @@ contract('Kernel', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
@@ -469,7 +469,7 @@ contract('Kernel', function (accounts) {
                         console.log(`Log: ${log.topics[0]} - ${log.data} - ${web3.toAscii(log.data)}`);
                     }
                 }
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
@@ -543,7 +543,7 @@ contract('Kernel', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
@@ -603,7 +603,7 @@ contract('Kernel', function (accounts) {
                         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
                     }
                 }
-                assert.equal(newValue.toNumber(),110008, `new value should be 8`);
+                assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('E() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -667,7 +667,7 @@ contract('Kernel', function (accounts) {
                         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
                     }
                 }
-                assert.equal(newValue.toNumber(),110008, `new value should be 8`);
+                assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('E() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage

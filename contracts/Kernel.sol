@@ -246,9 +246,6 @@ contract Kernel is Factory {
                         return(0x0,0x20)
                     }
                     if eq(status,1) {
-                        mstore(0x0,11)
-                        // mstore(0x40,235)
-                        // TODO: switch to revert
                         return(0x60,returnLength)
                     }
                 }
@@ -270,8 +267,8 @@ contract Kernel is Factory {
             if (cap) {
                 assembly {
                     sstore(writeAddress, writeValue)
-                    mstore(0,11)
-                    return(0,0x20)
+                    // We don't need to return anything
+                    return(0,0)
                 }
             } else {
                 assembly {
@@ -295,35 +292,36 @@ contract Kernel is Factory {
                 if (nTopics == 0) {
                     log0(logValue);
                     assembly {
-                        mstore(0,11)
-                        return(0,0x20)
+                        // We don't need to return anything
+                        return(0,0)
                     }
                 } else if (nTopics == 1) {
                     log1(logValue, topicVals[0]);
                     assembly {
-                        mstore(0,11)
-                        return(0,0x20)
+                        // We don't need to return anything
+                        return(0,0)
                     }
                 } else if (nTopics == 2) {
                     log2(logValue, topicVals[0], topicVals[1]);
                     assembly {
-                        mstore(0,11)
-                        return(0,0x20)
+                        // We don't need to return anything
+                        return(0,0)
                     }
                 } else if (nTopics == 3) {
                     log3(logValue, topicVals[0], topicVals[1], topicVals[2]);
                     assembly {
-                        mstore(0,11)
-                        return(0,0x20)
+                        // We don't need to return anything
+                        return(0,0)
                     }
                 } else if (nTopics == 4) {
                     log4(logValue, topicVals[0], topicVals[1], topicVals[2], topicVals[3]);
                     assembly {
-                        mstore(0,11)
-                        return(0,0x20)
+                        // We don't need to return anything
+                        return(0,0)
                     }
                 } else {
                     assembly {
+                        // Revert with an error code
                         mstore(0,44)
                         revert(0,0x20)
                     }
@@ -478,10 +476,7 @@ contract Kernel is Factory {
                 return(0x0,0x20)
             }
             if eq(status,1) {
-                mstore(0x0,add(110000,mload(outs)))
-                // mstore(0x40,235)
-                // TODO: switch to revert
-                return(0x0,0x20)
+                return(outs,outl)
             }
         }
         if (!status) {

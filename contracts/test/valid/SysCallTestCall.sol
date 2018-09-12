@@ -22,8 +22,7 @@ contract SysCallTestCall {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            mstore(0xd,add(1100,11))
-            return(0xd,0x20)
+            return(0x80, retSize)
         }
     }
 
@@ -48,8 +47,7 @@ contract SysCallTestCall {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            mstore(0xd,add(1100,11))
-            return(0xd,0x20)
+            return(0x80, retSize)
         }
     }
 
@@ -81,8 +79,8 @@ contract SysCallTestCall {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            mstore(0xd,add(1100,11))
-            return(0xd,0x20)
+            // Return nothing in success
+            return(0,0)
         }
     }
 
@@ -107,7 +105,7 @@ contract SysCallTestCall {
             mstore(0x80,keccak256(add(fselector,0x20),mload(fselector)))
             // Then we write the arguments to memory. This will overwrite all
             // but the first 4 bytes of the function selector, which is what we
-            // want..
+            // want.
             // first argument
             mstore(0x84,3)
             // second argument
@@ -120,9 +118,10 @@ contract SysCallTestCall {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
+            // Store the value in the test location
             sstore(0x8000,mload(0x80))
-            mstore(0xd,add(1100,11))
-            return(0xd,0x20)
+            // return nothing in success
+            return(0, 0)
         }
     }
 

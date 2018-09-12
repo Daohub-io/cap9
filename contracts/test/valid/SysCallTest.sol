@@ -26,8 +26,7 @@ contract SysCallTest {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            mstore(0xd,add(1100,mload(0x80)))
-            return(0xd,0x20)
+            return(0x80,0x20)
         }
     }
 
@@ -51,8 +50,7 @@ contract SysCallTest {
                 mstore(0xd,add(2500,mload(0x80)))
                 revert(0xd,0x20)
             }
-            mstore(0xd,add(1100,mload(0x80)))
-            return(0xd,0x20)
+            return(0x80, 0x20)
         }
     }
 }
