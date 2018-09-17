@@ -112,14 +112,6 @@ contract Kernel is Factory {
         bool cap;
         uint256 capIndex;
         // This is the entry point for the kernel
-        // TODO: we aren't currently using this, as we can't invoke a cap that
-        // calls other procedures.
-        Process[] memory processTable = new Process[](256);
-        // Before we do anything, let's set up some information about this call.
-        // Where is this call coming from? If it is an external account we can
-        // just use the caller value.
-        // TODO: we will implement this when we stop using "executeProcedure"
-
 
         // If it is an external account, we forward it straight to the init
         // procedure. We currently shouldn't reach this point, as we usually use
@@ -164,11 +156,43 @@ contract Kernel is Factory {
             }
             cap = procedures.checkCallCapability(uint192(currentProcedure), procedureKey, capIndex);
             address procedureAddress = procedures.get(procedureKey);
-            // Set a new current procedure
-            // bytes24 previousProcedure = currentProcedure;
+            // Note the procedure we are currently running, we will put this
+            // back into the "currentProcedure" after we have finished the call.
+            bytes24 previousProcedure = currentProcedure;
+            // We set the value for the current procedure in the kernel so that
+            // it knows which procedure it is executing (this is important for
+            // looking up capabilities).
             currentProcedure = procedureKey;
             if (cap) {
                 assembly {
+                    function malloc(size) -> result {
+                        // align to 32-byte words
+                        let rsize := add(size,sub(32,mod(size,32)))
+                        // get the current free mem location
+                        result :=  mload(0x40)
+                        // Bump the value of 0x40 so that it holds the next
+                        // available memory location.
+                        mstore(0x40,add(result,rsize))
+                    }
+
+                    function mallocZero(size) -> result {
+                        // align to 32-byte words
+                        let rsize := add(size,sub(32,mod(size,32)))
+                        // get the current free mem location
+                        result :=  mload(0x40)
+                        // zero-out the memory
+                        let n := 0
+                        jumpi(loopend, eq(rsize, 0))
+                        loop:
+                            mstore(add(result,n),0)
+                            n := add(n, 32)
+                            jumpi(loop, iszero(eq(n, rsize)))
+                        loopend:
+                        // Bump the value of 0x40 so that it holds the next
+                        // available memory location.
+                        mstore(0x40,add(result,rsize))
+                    }
+
                     // Retrieve the address of new available memory from address 0x40
                     // we will use this as the start of the input (ins)
                     let ins
@@ -179,12 +203,7 @@ contract Kernel is Factory {
                         // selector) we need to set that as the input data to
                         // the delegatecall.
                         // First we must allocate some memory.
-                        ins :=  mload(0x40) // get the allocated location
-                        // Bump the value of 0x40 so that it holds the next
-                        // available memory location.
-                        // TODO: align this bump to 32-byte boundaries
-                        mstore(0x40,add(ins,dataLength))
-
+                        ins :=  malloc(dataLength)
                         // Then we store that data at this allocated memory
                         // location
                         calldatacopy(ins, 97, dataLength)
@@ -199,32 +218,14 @@ contract Kernel is Factory {
                         ins := 0
                         inl := 0
                     }
-                    // Take the keccak256 hash of that string, store at location n
-                    // mstore
-                    // Argument #1: The address (n) calculated above, to store the
-                    //    hash.
-                    // Argument #2: The hash, calculted as follows:
-                    //   keccack256
-                    //   Argument #1: The location of the fselector string (which
-                    //     is simply the name of the variable) with an added offset
-                    //     of 0x20, as the first 0x20 is reserved for the length of
-                    //     the string.
-                    //   Argument #2: The length of the string, which is loaded from
-                    //     the first 0x20 of the string.
-                    // mstore(n,keccak256(add(fselector,0x20),mload(fselector)))
-
-                    // The input starts at where we stored the hash (n)
-                    // let ins := n
-
-                    let status := callcode(
+                    let retLoc := mallocZero(returnLength)
+                    let status := delegatecall(
                         // The gas we are budgeting, which is always all the
                         // available gas
                         gas,
                         // The address for the chosen procedure which we
                         // obtained earlier
                         procedureAddress,
-                        // The value we are sending, we never want to do this
-                        0,
                         // The starting memory offset of the innput data
                         ins,
                         // The length of the input data
@@ -233,20 +234,22 @@ contract Kernel is Factory {
                         // write the return data. This will depend on the size
                         // of the return type.
                         // The starting memory offset to place the output data
-                        0x60,
+                        retLoc,
                         // The length of the output data
                         returnLength)
-                    // Store the procedure we are currently running
-                    sstore(currentProcedure_slot,procedureAddress)
-                    if eq(status,0) {
-                        // error
-                        mstore(0x0,add(22,mload(0x60)))
+                    // We need to restore the previous procedure as the current
+                    // procedure, this can simply be on the stack
+                    // sstore(currentProcedure_slot,previousProcedure)
+                    sstore(currentProcedure_slot,div(previousProcedure,exp(0x100,8)))
+                    if iszero(status) {
+                        let errStore := malloc(0x20)
+                        mstore(errStore,add(22,mload(retLoc)))
                         // mstore(0x40,235)
                         // TODO: switch to revert
-                        return(0x0,0x20)
+                        revert(errStore,0x20)
                     }
                     if eq(status,1) {
-                        return(0x60,returnLength)
+                        return(retLoc,returnLength)
                     }
                 }
             } else {
@@ -435,11 +438,34 @@ contract Kernel is Factory {
         address procedureAddress = procedures.get(name);
         bool status = false;
         assembly {
+            function malloc(size) -> result {
+                // align to 32-byte words
+                let rsize := add(size,sub(32,mod(size,32)))
+                // get the current free mem location
+                result :=  mload(0x40)
+                // Bump the value of 0x40 so that it holds the next
+                // available memory location.
+                mstore(0x40,add(result,rsize))
+            }
+            function mallocZero(size) -> result {
+                // align to 32-byte words
+                let rsize := add(size,sub(32,mod(size,32)))
+                // get the current free mem location
+                result :=  mload(0x40)
+                // zero-out the memory
+                let n := 0
+                jumpi(loopend, eq(rsize, 0))
+                loop:
+                    mstore(add(result,n),0)
+                    n := add(n, 32)
+                    jumpi(loop, iszero(eq(n, rsize)))
+                loopend:
+                // Bump the value of 0x40 so that it holds the next
+                // available memory location.
+                mstore(0x40,add(result,rsize))
+            }
             // Retrieve the address of new available memory from address 0x40
-            let n :=  mload(0x40)
-            // Replace the value of 0x40 with the next new available memory,
-            // after the 4 bytes we will use to store the keccak hash.
-            mstore(0x40,add(n,32))
+            let n :=  malloc(0x20)
             // Take the keccak256 hash of that string, store at location n
             // mstore
             // Argument #1: The address (n) calculated above, to store the
@@ -459,21 +485,19 @@ contract Kernel is Factory {
             // Currently that is only the function selector hash, which is 4
             // bytes long.
             let inl := 0x4
-            // TODO: Allocate a new area of memory into which to write the
-            // return data. This will depend on the size of the return type.
-            let outs := 0x60
             // There is no return value, therefore it's length is 0 bytes long
             // REVISION: lets assume a 32 byte return value for now
             let outl := 0x20
+            let outs := mallocZero(outl)
 
             status := callcode(gas,procedureAddress,0,ins,inl,outs,outl)
+            // Zero-out the currentProcedure
             sstore(currentProcedure_slot,0)
             if eq(status,0) {
-                // error
-                mstore(0x0,add(220000,mload(outs)))
+                let errStore := malloc(0x20)
+                mstore(errStore,add(220000,mload(outs)))
                 // mstore(0x40,235)
-                // TODO: switch to revert
-                return(0x0,0x20)
+                return(errStore,0x20)
             }
             if eq(status,1) {
                 return(outs,outl)

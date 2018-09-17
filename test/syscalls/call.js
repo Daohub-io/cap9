@@ -13,6 +13,12 @@ const Valid = {
     Divide: artifacts.require('test/valid/Divide.sol'),
     SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
     SysCallTestCall: artifacts.require('test/valid/SysCallTestCall.sol'),
+    FirstNestedCall: artifacts.require('test/valid/NestedCalls/FirstNestedCall.sol'),
+    SecondNestedCall: artifacts.require('test/valid/NestedCalls/SecondNestedCall.sol'),
+    ThirdNestedCall: artifacts.require('test/valid/NestedCalls/ThirdNestedCall.sol'),
+    FourthNestedCall: artifacts.require('test/valid/NestedCalls/FourthNestedCall.sol'),
+    FifthNestedCall: artifacts.require('test/valid/NestedCalls/FifthNestedCall.sol'),
+    SixthNestedCall: artifacts.require('test/valid/NestedCalls/SixthNestedCall.sol'),
 }
 
 const TestWrite = artifacts.require('test/TestWrite.sol');
@@ -49,14 +55,21 @@ contract('Kernel', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                // console.log(web3.toHex(valueX))
+                // try {
+                //     console.log(web3.toAscii(web3.toHex(valueX)))
+                // } catch (e) {
+
+                // }
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                for (const log of tx.receipt.logs) {
-                    if (log.topics.length > 0) {
-                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                    } else {
-                        console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                    }
-                }
+                // console.log(tx)
+                // for (const log of tx.receipt.logs) {
+                //     if (log.topics.length > 0) {
+                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                //     } else {
+                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                //     }
+                // }
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -687,6 +700,92 @@ contract('Kernel', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+            })
+        })
+        describe('F() - successive calls single depth', function () {
+            const testProcName = "Adder";
+            const testBytecode = Valid.Adder.bytecode;
+            const functionSpec = "F()";
+            it('F() should succeed when given cap', async function () {
+                // This tests calls a test procedure which changes a storage
+                // value in the kernel from x to x+1.
+                const kernel = await Kernel.new();
+
+                const cap1 = new beakerlib.WriteCap(0x8000,2);
+                const cap2 = new beakerlib.LogCap([]);
+                const cap3 = new beakerlib.CallCap();
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+
+                // This is the procedure that will do the calling
+                const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+                // This is the first called procedure, which doesn't really do anything
+                await kernel.createProcedure("Adder", Valid.Adder.bytecode, beakerlib.Cap.toInput([]));
+                // // This is the second called procedure, which requires capabilities
+                await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+                // await kernel.createProcedure("SysCallTestCall", Valid.SysCallTestCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+
+                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
+                // Execute
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                // console.log(tx);
+
+                // console.log(tx.receipt.logs)
+                // for (const log of tx.receipt.logs) {
+                //     if (log.topics.length > 0) {
+                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                //     } else {
+                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                //     }
+                // }
+                // console.log(web3.toHex(newValue))
+                assert.equal(newValue.toNumber(),8, `new value should be 8`);
+                const newValue2 =  await kernel.testGetter.call();
+                assert.equal(newValue2.toNumber(),4, "new value should be 4");
+            })
+        })
+        describe.skip('G() - deeper stacks', function () {
+            const testProcName = "FirstNestedCall";
+            const testBytecode = Valid.FirstNestedCall.bytecode;
+            const functionSpec = "G()";
+            it('G() should succeed when given cap', async function () {
+                // This tests calls a test procedure which changes a storage
+                // value in the kernel from x to x+1.
+                const kernel = await Kernel.new();
+
+                const cap1 = new beakerlib.WriteCap(0x8000,2);
+                const cap2 = new beakerlib.LogCap([]);
+                const cap3 = new beakerlib.CallCap();
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+
+                // This is the procedure that will do the calling
+                const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
+                // This is the called procedure
+                await kernel.createProcedure("Adder", Valid.Adder.bytecode, beakerlib.Cap.toInput([]));
+                await kernel.createProcedure("FirstNestedCall",  Valid.FirstNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.createProcedure("SecondNestedCall", Valid.SecondNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.createProcedure("ThirdNestedCall",  Valid.ThirdNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.createProcedure("FourthNestedCall", Valid.FourthNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.createProcedure("FifthNestedCall",  Valid.FifthNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.createProcedure("SixthNestedCall",  Valid.SixthNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.createProcedure("SysCallTest",      Valid.SysCallTest.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+
+                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
+                // Execute Adder
+                await kernel.executeProcedure(procName, functionSpec, "");
+
+                const testBytecode = Valid.SysCallTest.bytecode;
+                const functionSpec = "B()";
+                // Execute Logger
+                await kernel.executeProcedure("SysCallTest", "B()", "");
+                // console.log(tx.receipt.logs)
+                // for (const log of tx.receipt.logs) {
+                //     if (log.topics.length > 0) {
+                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                //     } else {
+                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                //     }
+                // }
+                assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
         })
     })
