@@ -37,6 +37,13 @@ contract Kernel is Factory {
         }
     }
 
+    function anyTestGetter(uint256 addr) public view returns(uint256) {
+        assembly {
+            mstore(0,sload(addr))
+            return(0,0x20)
+        }
+    }
+
     function testSetter(uint256 value) public {
         assembly {
             sstore(0x8000,value)
@@ -208,7 +215,6 @@ contract Kernel is Factory {
                         // location
                         calldatacopy(ins, 97, dataLength)
                         inl := dataLength
-                        // log0(ins,inl)
                     }
                     if iszero(dataLength) {
                         // If there is not data to be sent we just set the
@@ -230,22 +236,16 @@ contract Kernel is Factory {
                         ins,
                         // The length of the input data
                         inl,
-                        // TODO: Allocate a new area of memory into which to
-                        // write the return data. This will depend on the size
-                        // of the return type.
                         // The starting memory offset to place the output data
                         retLoc,
                         // The length of the output data
                         returnLength)
                     // We need to restore the previous procedure as the current
                     // procedure, this can simply be on the stack
-                    // sstore(currentProcedure_slot,previousProcedure)
                     sstore(currentProcedure_slot,div(previousProcedure,exp(0x100,8)))
                     if iszero(status) {
                         let errStore := malloc(0x20)
                         mstore(errStore,add(22,mload(retLoc)))
-                        // mstore(0x40,235)
-                        // TODO: switch to revert
                         revert(errStore,0x20)
                     }
                     if eq(status,1) {

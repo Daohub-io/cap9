@@ -743,7 +743,7 @@ contract('Kernel', function (accounts) {
                 assert.equal(newValue2.toNumber(),4, "new value should be 4");
             })
         })
-        describe.skip('G() - deeper stacks', function () {
+        describe('G() - deeper stacks', function () {
             const testProcName = "FirstNestedCall";
             const testBytecode = Valid.FirstNestedCall.bytecode;
             const functionSpec = "G()";
@@ -761,31 +761,32 @@ contract('Kernel', function (accounts) {
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
                 // This is the called procedure
                 await kernel.createProcedure("Adder", Valid.Adder.bytecode, beakerlib.Cap.toInput([]));
-                await kernel.createProcedure("FirstNestedCall",  Valid.FirstNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
-                await kernel.createProcedure("SecondNestedCall", Valid.SecondNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
-                await kernel.createProcedure("ThirdNestedCall",  Valid.ThirdNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
-                await kernel.createProcedure("FourthNestedCall", Valid.FourthNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
-                await kernel.createProcedure("FifthNestedCall",  Valid.FifthNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
-                await kernel.createProcedure("SixthNestedCall",  Valid.SixthNestedCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
-                await kernel.createProcedure("SysCallTest",      Valid.SysCallTest.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.createProcedure("FirstNestedCall",  Valid.FirstNestedCall.bytecode,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8001,0), new beakerlib.CallCap()]));
+                await kernel.createProcedure("SecondNestedCall", Valid.SecondNestedCall.bytecode, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8002,0), new beakerlib.CallCap()]));
+                await kernel.createProcedure("ThirdNestedCall",  Valid.ThirdNestedCall.bytecode,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8003,0), new beakerlib.CallCap()]));
+                await kernel.createProcedure("FourthNestedCall", Valid.FourthNestedCall.bytecode, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8004,0), new beakerlib.CallCap()]));
+                await kernel.createProcedure("FifthNestedCall",  Valid.FifthNestedCall.bytecode,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()]));
+                await kernel.createProcedure("SixthNestedCall",  Valid.SixthNestedCall.bytecode,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()]));
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
-                // Execute Adder
-                await kernel.executeProcedure(procName, functionSpec, "");
+                await kernel.executeProcedure("FirstNestedCall", "G()", "");
 
-                const testBytecode = Valid.SysCallTest.bytecode;
-                const functionSpec = "B()";
-                // Execute Logger
-                await kernel.executeProcedure("SysCallTest", "B()", "");
-                // console.log(tx.receipt.logs)
-                // for (const log of tx.receipt.logs) {
-                //     if (log.topics.length > 0) {
-                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                //     } else {
-                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                //     }
-                // }
-                assert.equal(newValue.toNumber(),8, `new value should be 8`);
+                const firstVal = await kernel.anyTestGetter(0x8001);
+                assert.equal(firstVal.toNumber(),75, `new value should be 75`);
+
+                const secondVal = await kernel.anyTestGetter(0x8002);
+                assert.equal(secondVal.toNumber(),76, `new value should be 76`);
+
+                const thirdVal = await kernel.anyTestGetter(0x8003);
+                assert.equal(thirdVal.toNumber(),77, `new value should be 77`);
+
+                const fourthVal = await kernel.anyTestGetter(0x8004);
+                assert.equal(fourthVal.toNumber(),78, `new value should be 78`);
+
+                const fifthVal = await kernel.anyTestGetter(0x8005);
+                assert.equal(fifthVal.toNumber(),79, `new value should be 79`);
+
+                const sixthVal = await kernel.anyTestGetter(0x8006);
+                assert.equal(sixthVal.toNumber(),80, `new value should be 80`);
             })
         })
     })
