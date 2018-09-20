@@ -49,7 +49,7 @@ contract('Kernel', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
                 // This is the called procedure
-                const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.createProcedure(testProcName, testBytecode, []);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -87,7 +87,7 @@ contract('Kernel', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
                 // This is the called procedure
-                const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.createProcedure(testProcName, testBytecode, []);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -112,7 +112,7 @@ contract('Kernel', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
                 // This is the called procedure
-                const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.createProcedure(testProcName, testBytecode, []);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -137,7 +137,7 @@ contract('Kernel', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
                 // This is the called procedure
-                const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.createProcedure(testProcName, testBytecode, []);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -162,7 +162,7 @@ contract('Kernel', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
                 // This is the called procedure
-                const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.createProcedure(testProcName, testBytecode, []);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
