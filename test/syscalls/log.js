@@ -37,7 +37,7 @@ contract('Kernel', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 111111, "should succeed with zero errcode the first time");
+                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
                 assert.equal(tx.receipt.logs[0].topics.length,0,"There should not be any topics");
             })
@@ -88,7 +88,7 @@ contract('Kernel', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "errcode should be correct");
+                assert.equal(valueX.toNumber(), 0, "errcode should be correct");
                 // console.log(tx);
                 // console.log(tx.receipt.logs);
 
@@ -157,7 +157,7 @@ contract('Kernel', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "errcode should be correct");
+                assert.equal(valueX.toNumber(), 0, "errcode should be correct");
                 // console.log(tx);
                 // console.log(tx.receipt.logs);
 
@@ -212,7 +212,7 @@ contract('Kernel', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "errcode should be correct");
+                assert.equal(valueX.toNumber(), 0, "errcode should be correct");
                 // console.log(tx);
                 // console.log(tx.receipt.logs);
 
@@ -269,7 +269,7 @@ contract('Kernel', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 111111, "errcode should be correct");
+                assert.equal(valueX.toNumber(), 0, "errcode should be correct");
                 // console.log(tx);
                 // console.log(tx.receipt.logs);
 

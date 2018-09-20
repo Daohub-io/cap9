@@ -104,6 +104,34 @@ library ProcedureTable {
         }
     }
 
+    function checkCallCapability(Self storage self, uint192 key, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
+        Procedure memory p = _getProcedureByKey(uint192(key));
+
+        // If the requested cap is out of the bounds of the cap table, we
+        // clearly don't have the capability;
+        if ((p.caps.length == 0) || (reqCapIndex > (p.caps.length - 1))) {
+            return false;
+        }
+        Capability memory cap = p.caps[reqCapIndex];
+        // If the capability type is not CALL (0x3) it is the wrong type of
+        // capability and we should reject
+        if (cap.capType != 0x3) {
+            return false;
+        }
+        // If the cap is empty it implies all procedures are ok
+        if (cap.values.length == 0) {
+            return true;
+        } else {
+            // otherwise we cycle through the permitted procedure keys and see
+            // if we can find the requested on
+            for (uint256 i = 0; i < cap.values.length; i++) {
+                if (bytes24(cap.values[i]/0x10000000000000000) == procedureKey) {
+                    return true;
+                }
+            }
+        }
+    }
+
     function checkWriteCapability(Self storage self, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
 

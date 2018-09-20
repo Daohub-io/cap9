@@ -365,7 +365,7 @@ contract('Kernel', function (accounts) {
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
                     const value1 = await kernel.executeProcedure.call("Simple", "A()", "");
-                    assert.equal(value1.toNumber(), 110000, "A() should succeed");
+                    assert.equal(value1.toNumber(), 0, "A() should succeed");
                 })
 
                 it('B() should succeed', async function () {
@@ -374,7 +374,7 @@ contract('Kernel', function (accounts) {
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
                     const value2 = await kernel.executeProcedure.call("Simple", "B()", "");
-                    assert.equal(value2.toNumber(), 110000, "B() should succeed");
+                    assert.equal(value2.toNumber(), 0, "B() should succeed");
                     assert.notEqual(web3.eth.getCode(kernel.address), "0x0", "B() should not yet destroy kernel");
 
                     const tx2 = await kernel.executeProcedure("Simple", "B()", "");
@@ -405,7 +405,7 @@ contract('Kernel', function (accounts) {
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
                     const value = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
-                    assert.equal(value.toNumber(), 110000, "C(uint256) should succeed");
+                    assert.equal(value.toNumber(), 0, "C(uint256) should succeed");
                 })
             })
         })

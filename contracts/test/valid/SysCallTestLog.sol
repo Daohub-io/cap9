@@ -20,8 +20,8 @@ contract SysCallTestLog {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            mstore(0xd,add(1100,mload(0x80)))
-            return(0xd,0x20)
+            // We don't need to return anything in success
+            return(0,0)
         }
     }
 
@@ -46,10 +46,8 @@ contract SysCallTestLog {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            // return both the delegatecall return value and the system call
-            // retun value
-            mstore(0xd,add(1100,mload(0x80)))
-            return(0xd,0x20)
+            // We don't need to return anything in success
+            return(0,0)
         }
     }
 
@@ -76,10 +74,8 @@ contract SysCallTestLog {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            // return both the delegatecall return value and the system call
-            // retun value
-            mstore(0xd,add(1100,mload(0x80)))
-            return(0xd,0x20)
+            // We don't need to return anything in success
+            return(0,0)
         }
     }
 
@@ -108,10 +104,8 @@ contract SysCallTestLog {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            // return both the delegatecall return value and the system call
-            // retun value
-            mstore(0xd,add(1100,mload(0x80)))
-            return(0xd,0x20)
+            // We don't need to return anything in success
+            return(0,0)
         }
     }
 
@@ -142,10 +136,8 @@ contract SysCallTestLog {
                 mstore(0xd,add(2200,mload(0x80)))
                 revert(0xd,0x20)
             }
-            // return both the delegatecall return value and the system call
-            // retun value
-            mstore(0xd,add(1100,mload(0x80)))
-            return(0xd,0x20)
+            // We don't need to return anything in success
+            return(0,0)
         }
     }
 }
