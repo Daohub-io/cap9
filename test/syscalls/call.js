@@ -32,7 +32,7 @@ contract('Kernel', function (accounts) {
         const procName = "SysCallTestCall";
         const bytecode = Valid.SysCallTestCall.bytecode;
 
-        describe('A()', function () {
+        describe('A() - call procedure which needs no caps', function () {
             const testProcName = "TestWrite";
             const testBytecode = TestWrite.bytecode;
             const functionSpec = "A()";
