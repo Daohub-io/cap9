@@ -365,6 +365,16 @@ contract Kernel is Factory {
         }
     }
 
+    // Create a procedure without  going through any validation. This is mainly
+    // used for testing and should not exist in a production kernel.
+    // TODO: Currently this calls the normal createAnyProcedure function, which
+    // needs to be updated to do validation.
+    function createAnyProcedure(bytes24 name, bytes oCode, uint256[] caps) public returns (uint8 err, address procedureAddress) {
+        return createProcedure(name, oCode, caps);
+    }
+
+    // Create a validated procedure.
+    // TODO: this does not currently do validation.
     function createProcedure(bytes24 name, bytes oCode, uint256[] caps) public returns (uint8 err, address procedureAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
