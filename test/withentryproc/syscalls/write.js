@@ -4,7 +4,7 @@ const assert = require('assert')
 const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
-const beakerlib = require("../../beakerlib");
+const beakerlib = require("../../../beakerlib");
 
 // Valid Contracts
 const Valid = {
@@ -50,8 +50,7 @@ contract('Kernel', function (accounts) {
             // Procedure keys must occupay the first 24 bytes, so must be
             // padded
             const functionSelector = "S()";
-            // const functionSelectorHash = web3.sha3(functionSelector);
-            const functionSelectorHash = "4be1c796"
+            const functionSelectorHash = web3.sha3(functionSelector).slice(2,10);
             const inputData = web3.fromAscii("SysCallTest".padEnd(24,"\0")) + functionSelectorHash;
             const tx3 = await kernel.sendTransaction({data: inputData});
 
