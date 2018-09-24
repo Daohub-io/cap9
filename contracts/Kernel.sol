@@ -73,7 +73,6 @@ contract Kernel is Factory {
         // across the whole blockchain, therefore we must be receiving a
         // transaction from the procedure set in "currentProcedure"
 
-
         // TODO: we will need to reserve a value for "not executing anything"
         // If the transaction is from this procedure...
         return (currentProcedure == 0);
@@ -92,25 +91,8 @@ contract Kernel is Factory {
         //
         // TODO: Determine the address of the procedure at index 0 of
         // the procedure table.
-        // This (from last parameters to first):
-        // 1. Allocates an area in memory of size 0x40 (64 bytes)
-        // 2.    At memory location 0x80
-        // 3. Set the input size to 67 bytes
-        // 4.    At memory location 29
-        // 5. Send 0 wei
-        // 6. The contract address we are calling to
-        // 7. The gas we are budgeting
-        //
-        assembly {
-            //        7                       6                       5   4   3   2      1
-            callcode(gas, 0x8885584aa73fccf0f4572a770d1a0d6bd0b4360a, 0, 29, 67, 0x80, 0x40)
-            // store the return code in memory location 0x60 (1 byte)
-            0x60
-            mstore
-            // return both delegatecall return values and the system call
-            // return value
-            return(0x60,0x60)
-        }
+        // log0(bytes32("about to call entry"));
+        executeProcedure(bytes24("EntryProcedure"), "", msg.data);
     }
 
     // This is the fallback function which is used to handle system calls. This
@@ -118,6 +100,7 @@ contract Kernel is Factory {
     function() public {
         bool cap;
         uint256 capIndex;
+        // log0(bytes32("reached the kernel"));
         // This is the entry point for the kernel
 
         // If it is an external account, we forward it straight to the init
