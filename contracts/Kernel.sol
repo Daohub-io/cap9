@@ -91,7 +91,6 @@ contract Kernel is Factory {
         //
         // TODO: Determine the address of the procedure at index 0 of
         // the procedure table.
-        // log0(bytes32("about to call entry"));
         executeProcedure(bytes24("EntryProcedure"), "", msg.data);
     }
 
@@ -100,7 +99,6 @@ contract Kernel is Factory {
     function() public {
         bool cap;
         uint256 capIndex;
-        // log0(bytes32("reached the kernel"));
         // This is the entry point for the kernel
 
         // If it is an external account, we forward it straight to the init
@@ -153,6 +151,7 @@ contract Kernel is Factory {
             // it knows which procedure it is executing (this is important for
             // looking up capabilities).
             currentProcedure = procedureKey;
+            // log1(bytes32(procedureKey),bytes32("calling"));
             if (cap) {
                 assembly {
                     function malloc(size) -> result {
@@ -457,27 +456,68 @@ contract Kernel is Factory {
                 // available memory location.
                 mstore(0x40,add(result,rsize))
             }
-            // Retrieve the address of new available memory from address 0x40
-            let n :=  malloc(0x20)
-            // Take the keccak256 hash of that string, store at location n
-            // mstore
-            // Argument #1: The address (n) calculated above, to store the
-            //    hash.
-            // Argument #2: The hash, calculted as follows:
-            //   keccack256
-            //   Argument #1: The location of the fselector string (which
-            //     is simply the name of the variable) with an added offset
-            //     of 0x20, as the first 0x20 is reserved for the length of
-            //     the string.
-            //   Argument #2: The length of the string, which is loaded from
-            //     the first 0x20 of the string.
-            mstore(n,keccak256(add(fselector,0x20),mload(fselector)))
+            // Allocate new memory on the stack for function selector and
+            // payload data.
+            let inl := 0
+            // if we have a function selector, we start with a length of 4
+            // bytes
+            // If there is no function selector, send nothing. mload(fselector)
+            // is the length.
+            if mload(fselector) {
+                // set the input length to 4
+                inl := 4
+            }
+            // Then we add on the length of the payload
+            inl := add(inl,mload(payload))
 
-            // The input starts at where we stored the hash (n)
-            let ins := n
-            // Currently that is only the function selector hash, which is 4
-            // bytes long.
-            let inl := 0x4
+            // n is the actual size we allocate for the input buffer (which may
+            // be a little more than we actually need to send)
+            let n := inl
+            // We need at least 0x20 bytes to perform our hash in, even though
+            // we won't send it all
+            if lt(n,0x20) {
+                n := 0x20
+            }
+            let ins := malloc(n)
+
+            // next we need to create the function selector hash (if it exists)
+            if mload(fselector) {
+                // we don't need to allocate memory as we already have enough
+                // space in the input buffer (we always allocate at lest 0x20)
+                // // allocate some memory to work with
+                // let n :=  malloc(0x20)
+                // Take the keccak256 hash of that string, store at location n
+                // mstore
+                // Argument #1: The address (n) calculated above, to store the
+                //    hash.
+                // Argument #2: The hash, calculted as follows:
+                //   keccack256
+                //   Argument #1: The location of the fselector string (which
+                //     is simply the name of the variable) with an added offset
+                //     of 0x20, as the first 0x20 is reserved for the length of
+                //     the string.
+                //   Argument #2: The length of the string, which is loaded from
+                //     the first 0x20 of the string.
+                // This hash must be written first, as it write 32 bytes and
+                // would overwrite our payload data. We will store the payload
+                // data after this so the unused hash bytes get overwrittem.
+                mstore(ins,keccak256(add(fselector,0x20),mload(fselector)))
+            }
+            // Copy the payload data into the input buffer
+            // i starts as the payload length
+            let i := mload(payload)
+            // The start offset of payload data (either 0 or 4);
+            let payloadStart := add(ins,0)
+            if mload(fselector) {
+                payloadStart := add(ins,4)
+            }
+            if i {
+                // TODO: solidity assembly supports for loops
+                payloop:
+                    mstore8(add(payloadStart,sub(i,  1)),mload(add(payload,i)))
+                    i := sub(i,  1)
+                    jumpi(payloop, i)
+            }
             // There is no return value, therefore it's length is 0 bytes long
             // REVISION: lets assume a 32 byte return value for now
             let outl := 0x20
