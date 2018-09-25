@@ -82,8 +82,6 @@ contract Kernel is Factory {
     // This is what we execute when we receive an external transaction.
     function callGuardProcedure(address sender, bytes data) internal {
         // revert("external call");
-        // TODO: this is not currerntly in any code path because we just use
-        // "executeProcedure"
         // here we need to use callcode. delegatecall would leave the CALLER as
         // the account which started the transaction
         // The address here needs to be updated to call Procedure1
@@ -91,7 +89,11 @@ contract Kernel is Factory {
         //
         // TODO: Determine the address of the procedure at index 0 of
         // the procedure table.
-        executeProcedure(bytes24("EntryProcedure"), "", msg.data);
+        uint256 retVal = executeProcedure(bytes24("EntryProcedure"), "", msg.data);
+        assembly {
+            mstore(0,retVal)
+            return(0,0x29)
+        }
     }
 
     // This is the fallback function which is used to handle system calls. This
@@ -153,6 +155,7 @@ contract Kernel is Factory {
             currentProcedure = procedureKey;
             // log1(bytes32(procedureKey),bytes32("calling"));
             if (cap) {
+                // log1(bytes32("permitted"),bytes32("call-cap"));
                 assembly {
                     function malloc(size) -> result {
                         // align to 32-byte words
@@ -235,6 +238,7 @@ contract Kernel is Factory {
                     }
                 }
             } else {
+                // log1(bytes32("not-permitted"),bytes32("call-cap"));
                 assembly {
                     // 33 means the capability was rejected
                     mstore(0,33)
@@ -530,9 +534,11 @@ contract Kernel is Factory {
                 let errStore := malloc(0x20)
                 mstore(errStore,add(220000,mload(outs)))
                 // mstore(0x40,235)
+                // log1(errStore,0x20,"returnedErr")
                 return(errStore,0x20)
             }
             if eq(status,1) {
+                // log1(outs,outl,"returned")
                 return(outs,outl)
             }
         }

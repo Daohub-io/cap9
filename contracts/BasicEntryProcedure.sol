@@ -65,6 +65,7 @@ contract BasicEntryProcedure {
                 return(retLoc,retSize)
             }
             res := mload(retLoc)
+            return(retLoc,retSize)
         }
         // log0(res);
         // log0(bytes32("call complete"));

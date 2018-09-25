@@ -4,7 +4,7 @@ const assert = require('assert')
 const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
-const beakerlib = require("../../beakerlib");
+const beakerlib = require("../../../beakerlib");
 
 // Valid Contracts
 const Valid = {

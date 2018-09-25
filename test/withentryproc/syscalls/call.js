@@ -19,6 +19,7 @@ const Valid = {
     FourthNestedCall: artifacts.require('test/valid/NestedCalls/FourthNestedCall.sol'),
     FifthNestedCall: artifacts.require('test/valid/NestedCalls/FifthNestedCall.sol'),
     SixthNestedCall: artifacts.require('test/valid/NestedCalls/SixthNestedCall.sol'),
+    BasicEntryProcedure: artifacts.require('BasicEntryProcedure.sol'),
 }
 
 const TestWrite = artifacts.require('test/TestWrite.sol');
@@ -54,26 +55,32 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                // console.log(web3.toHex(valueX))
-                // try {
-                //     console.log(web3.toAscii(web3.toHex(valueX)))
-                // } catch (e) {
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
 
-                // }
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx)
-                // for (const log of tx.receipt.logs) {
-                //     if (log.topics.length > 0) {
-                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                //     } else {
-                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                //     }
-                // }
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),356, "new value should be 356");
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+
+                    const newValue =  await kernel.testGetter.call();
+                    assert.equal(newValue.toNumber(),356, "new value should be 356");
+                }
+
             })
             it('A() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -84,7 +91,8 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                // This is the procedure that will do the calling
+                // This is the procedure that will do the calling, note that
+                // it has no call cap
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
                 // This is the called procedure
                 const tx2 = await kernel.createAnyProcedure(testProcName, testBytecode, []);
@@ -92,9 +100,36 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8001,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    for (const log of tx3.receipt.logs) {
+                        if (log.topics.length > 0) {
+                            console.log(`${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                        } else {
+                            console.log(`${log.topics[0]} - ${web3.toAscii(log.data)}`);
+                        }
+                    }
+
+                    assert.equal(valueX.toNumber(), 4455, "should fail with correct errcode");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -117,9 +152,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -142,9 +196,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),356, "new value should be 356");
@@ -167,9 +240,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -197,19 +289,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx.receipt.logs)
-                for (const log of tx.receipt.logs) {
-                    // console.log(`${log.topics[0]} - ${log.data}`);
-                    if (log.topics.length > 0) {
-                        console.log(`${web3.toAscii(log.topics[0])} - ${web3.toAscii(log.data)}`);
-                    } else {
-                        console.log(`${log.topics[0]} - ${web3.toAscii(log.data)}`);
-                    }
-                }
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
 
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                }
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),356, "new value should be 356");
             })
@@ -230,9 +331,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -255,9 +375,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -280,9 +419,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),356, "new value should be 356");
@@ -305,9 +463,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -335,17 +512,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx.receipt.logs)
-                for (const log of tx.receipt.logs) {
-                    if (log.topics.length > 0) {
-                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                    } else {
-                        console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                    }
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
                 }
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
@@ -367,9 +555,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -392,9 +599,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -417,9 +643,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
@@ -442,9 +687,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -472,17 +736,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx.receipt.logs)
-                for (const log of tx.receipt.logs) {
-                    if (log.topics.length > 0) {
-                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                    } else {
-                        console.log(`Log: ${log.topics[0]} - ${log.data} - ${web3.toAscii(log.data)}`);
-                    }
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
                 }
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
@@ -504,9 +779,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -529,9 +823,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -554,9 +867,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
@@ -579,9 +911,28 @@ contract('Kernel', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -606,17 +957,36 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap2, cap1]));
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx.receipt.logs)
-                for (const log of tx.receipt.logs) {
-                    if (log.topics.length > 0) {
-                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                    } else {
-                        console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    for (const log of tx3.receipt.logs) {
+                        if (log.topics.length > 0) {
+                            console.log(`${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                        } else {
+                            console.log(`${log.topics[0]} - ${log.data} - ${web3.toAscii(log.data)}`);
+                        }
                     }
+
+                    assert.equal(valueX.toNumber(),8, `new value should be 8`);
                 }
-                assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('E() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -632,9 +1002,28 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
             })
             it('E() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -651,9 +1040,28 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
             })
             it('E() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -670,17 +1078,28 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap2, cap1]));
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx.receipt.logs)
-                for (const log of tx.receipt.logs) {
-                    if (log.topics.length > 0) {
-                        console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                    } else {
-                        console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                    }
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(),8, `new value should be 8`);
                 }
-                assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('E() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -697,9 +1116,28 @@ contract('Kernel', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.createProcedure(testProcName, testBytecode, beakerlib.Cap.toInput([cap1]));
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
+
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                }
             })
         })
         describe('F() - successive calls single depth', function () {
@@ -724,21 +1162,28 @@ contract('Kernel', function (accounts) {
                 await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
                 // await kernel.createProcedure("SysCallTestCall", Valid.SysCallTestCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
-                // Execute
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx);
+                {
+                    const entryProcName = "EntryProcedure";
+                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
+                    const capArrayEntryProc = beakerlib.Cap.toInput([
+                        new beakerlib.WriteCap(0x8000,2),
+                        new beakerlib.LogCap([]),
+                        new beakerlib.CallCap()
+                    ]);
 
-                // console.log(tx.receipt.logs)
-                // for (const log of tx.receipt.logs) {
-                //     if (log.topics.length > 0) {
-                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                //     } else {
-                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                //     }
-                // }
-                // console.log(web3.toHex(newValue))
-                assert.equal(newValue.toNumber(),8, `new value should be 8`);
+                    // Install the entry procedure
+                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+
+                    // Procedure keys must occupay the first 24 bytes, so must be
+                    // padded
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+
+                    assert.equal(valueX.toNumber(),8, `new value should be 8`);
+                }
                 const newValue2 =  await kernel.testGetter.call();
                 assert.equal(newValue2.toNumber(),4, "new value should be 4");
             })
