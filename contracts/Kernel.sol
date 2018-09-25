@@ -15,6 +15,7 @@ contract Kernel is Factory {
     ProcedureTable.Self procedures;
     address kernelAddress;
     bytes24 currentProcedure;
+    bytes24 entryProcedure;
 
     struct Process {
         // Equal to the index of the key of this item in keys, plus 1.
@@ -59,6 +60,10 @@ contract Kernel is Factory {
         return value;
     }
 
+    function setEntryProcedure(bytes24 key) public {
+        entryProcedure = key;
+    }
+
     // Check if a transaction is external.
     function isExternal() internal view returns (bool) {
         // If the current transaction is from the procedure we are executing,
@@ -81,15 +86,7 @@ contract Kernel is Factory {
 
     // This is what we execute when we receive an external transaction.
     function callGuardProcedure(address sender, bytes data) internal {
-        // revert("external call");
-        // here we need to use callcode. delegatecall would leave the CALLER as
-        // the account which started the transaction
-        // The address here needs to be updated to call Procedure1
-        // everytime Procedure1 is deployed
-        //
-        // TODO: Determine the address of the procedure at index 0 of
-        // the procedure table.
-        uint256 retVal = executeProcedure(bytes24("EntryProcedure"), "", msg.data);
+        uint256 retVal = executeProcedure(entryProcedure, "", msg.data);
         assembly {
             mstore(0,retVal)
             return(0,0x29)
@@ -111,7 +108,6 @@ contract Kernel is Factory {
         }
 
         // Parse the system call
-        // SystemCall memory syscall = parseSystemCall();
         uint8 sysCallCapType = uint8(msg.data[0]);
 
         // 0x00 - not a syscall
@@ -120,8 +116,6 @@ contract Kernel is Factory {
         // 0x07 - write syscall
         // 0x09 - log syscall
 
-        // TODO: this was used to track some things but conflicts with some
-        // tests
         // log1(bytes32(currentProcedure), bytes32("current-procedure"));
 
         // Here we decode the system call (if there is one)
@@ -325,23 +319,6 @@ contract Kernel is Factory {
                 mstore(0xd,152)
                 return(0xd,0x20)
             }
-        } else if (sysCallCapType == 0x03) {
-            // This is the exec system call
-            //
-            // First we need to check if we have the capability to
-            // execute this procedure. The first argument is simply an index
-            // of the procedure we want to call (in the procedure table).
-            // How do we determine if we have the capability? Perhaps this
-            // is not an address, but simply an index into the CList of the
-            // process that called this syscall. How do we access that
-            // CList? What if it is an account? If it is an account we know
-            // the sender. But if it is a procedure the sender is the
-            // the kernel and we don't know who is doing the sending.
-
-            // What process is calling this and what capabilities does it
-            // have?
-
-            // TODO: implement, this is issue #58.
         } else {
             // default; fallthrough action
             assembly {

@@ -5,6 +5,7 @@ const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
 const beakerlib = require("../../../beakerlib");
+const testutils = require("../../testutils.js");
 
 // Valid Contracts
 const Valid = {
@@ -36,16 +37,7 @@ contract('Kernel', function (accounts) {
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the execution");
 
-            const entryProcName = "EntryProcedure";
-            const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-            const capArrayEntryProc = beakerlib.Cap.toInput([
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.LogCap([]),
-                new beakerlib.CallCap()
-            ]);
-
-            // Install the entry procedure
-            await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+            await testutils.installEntryProc(kernel);
 
             // Procedure keys must occupay the first 24 bytes, so must be
             // padded
@@ -81,16 +73,7 @@ contract('Kernel', function (accounts) {
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the execution");
 
-            const entryProcName = "EntryProcedure";
-            const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-            const capArrayEntryProc = beakerlib.Cap.toInput([
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.LogCap([]),
-                new beakerlib.CallCap()
-            ]);
-
-            // Install the entry procedure
-            await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+            await testutils.installEntryProc(kernel);
 
             // Procedure keys must occupay the first 24 bytes, so must be
             // padded
@@ -130,16 +113,7 @@ contract('Kernel', function (accounts) {
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the execution");
 
-            const entryProcName = "EntryProcedure";
-            const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-            const capArrayEntryProc = beakerlib.Cap.toInput([
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.LogCap([]),
-                new beakerlib.CallCap()
-            ]);
-
-            // Install the entry procedure
-            await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+            await testutils.installEntryProc(kernel);
 
             // Procedure keys must occupay the first 24 bytes, so must be
             // padded

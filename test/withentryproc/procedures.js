@@ -5,6 +5,7 @@ const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
 const beakerlib = require("../../beakerlib");
+const testutils = require("../testutils.js");
 
 // Valid Contracts
 const Valid = {
@@ -37,13 +38,8 @@ contract('Kernel', function (accounts) {
             it('A() should succeed when given cap', async function () {
                 const kernel = await Kernel.new();
 
-                const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
-
                 // Install the entry procedure
-                const tx1 = await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArray);
+                await testutils.installEntryProc(kernel);
                 // We want to send an empty transaction. With an empty
                 // transaction, the following things should occur:
                 //   1. The payload should get forwared to the entry

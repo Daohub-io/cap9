@@ -5,6 +5,7 @@ const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
 const beakerlib = require("../../../beakerlib");
+const testutils = require("../../testutils.js");
 
 // Valid Contracts
 const Valid = {
@@ -36,16 +37,7 @@ contract('Kernel', function (accounts) {
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -66,16 +58,7 @@ contract('Kernel', function (accounts) {
                 const tx0 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -101,16 +84,7 @@ contract('Kernel', function (accounts) {
                 const tx0 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -141,16 +115,7 @@ contract('Kernel', function (accounts) {
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -174,16 +139,7 @@ contract('Kernel', function (accounts) {
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -205,16 +161,7 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, []);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -236,16 +183,7 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -277,16 +215,7 @@ contract('Kernel', function (accounts) {
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -307,16 +236,7 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, []);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -338,16 +258,7 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -380,16 +291,7 @@ contract('Kernel', function (accounts) {
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -411,16 +313,7 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, []);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -442,16 +335,7 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -485,16 +369,7 @@ contract('Kernel', function (accounts) {
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -518,16 +393,7 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, []);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -549,16 +415,7 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
 
                 {
-                    const entryProcName = "EntryProcedure";
-                    const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
-                    const capArrayEntryProc = beakerlib.Cap.toInput([
-                        new beakerlib.WriteCap(0x8000,2),
-                        new beakerlib.LogCap([]),
-                        new beakerlib.CallCap()
-                    ]);
-
-                    // Install the entry procedure
-                    await kernel.createAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
