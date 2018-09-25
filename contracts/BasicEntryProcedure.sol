@@ -29,7 +29,6 @@ contract BasicEntryProcedure {
         bytes memory payload = msg.data;
         // Call the requested procedure
         // Begin our call
-        // string memory fselector = "S()";
         bytes32 res;
         assembly {
             function malloc(size) -> result {
@@ -62,8 +61,8 @@ contract BasicEntryProcedure {
             // "in_size" is 65 because it is 1+32+32+32+4
             // we will store the result at 0x80 and it will be 32 bytes
             if iszero(delegatecall(gas, caller, add(ins,31), 101, retLoc, retSize)) {
-                mstore(0xd,add(2200,mload(retLoc)))
-                revert(0xd,0x20)
+                mstore(retLoc,add(2200,mload(retLoc)))
+                return(retLoc,retSize)
             }
             res := mload(retLoc)
         }
