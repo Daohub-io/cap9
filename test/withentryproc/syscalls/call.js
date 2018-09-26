@@ -980,7 +980,7 @@ contract('Kernel', function (accounts) {
                 await kernel.createProcedure("FifthNestedCall",  Valid.FifthNestedCall.bytecode,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()]));
                 await kernel.createProcedure("SixthNestedCall",  Valid.SixthNestedCall.bytecode,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()]));
 
-                await kernel.executeProcedure("FirstNestedCall", "G()", "");
+                await kernel.executeProcedure("FirstNestedCall", "G()", "", 32);
 
                 const firstVal = await kernel.anyTestGetter(0x8001);
                 assert.equal(firstVal.toNumber(),75, `new value should be 75`);

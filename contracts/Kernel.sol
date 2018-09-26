@@ -86,10 +86,12 @@ contract Kernel is Factory {
 
     // This is what we execute when we receive an external transaction.
     function callGuardProcedure(address sender, bytes data) internal {
-        uint256 retVal = executeProcedure(entryProcedure, "", msg.data);
+        // TODO: we need to pass through the sender somehow
+        uint256 retSize = 32;
+        uint256 retVal = executeProcedure(entryProcedure, "", msg.data, retSize);
         assembly {
             mstore(0,retVal)
-            return(0,0x29)
+            return(0,retSize)
         }
     }
 
@@ -391,7 +393,7 @@ contract Kernel is Factory {
         return procedures.get(name);
     }
 
-    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint256 retVal) {
+    function executeProcedure(bytes24 name, string fselector, bytes payload, uint256 retSize) public returns (uint256 retVal) {
         // // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             retVal = 1;
@@ -501,7 +503,7 @@ contract Kernel is Factory {
             }
             // There is no return value, therefore it's length is 0 bytes long
             // REVISION: lets assume a 32 byte return value for now
-            let outl := 0x20
+            let outl := retSize
             let outs := mallocZero(outl)
 
             status := callcode(gas,procedureAddress,0,ins,inl,outs,outl)
