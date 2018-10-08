@@ -4,7 +4,7 @@ const assert = require('assert')
 const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
-const beakerlib = require("../beakerlib");
+const beakerlib = require("../../beakerlib");
 
 // Valid Contracts
 const Valid = {
@@ -343,7 +343,7 @@ contract('Kernel', function (accounts) {
     describe('.executeProcedure(bytes24 key, bytes payload)', function () {
         it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
-            const retVal = await kernel.executeProcedure.call('test', '', "");
+            const retVal = await kernel.executeProcedure.call('test', '', "", 32);
             assert.equal(retVal, 3);
         });
 
@@ -355,7 +355,7 @@ contract('Kernel', function (accounts) {
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
                     // need to have the ABI definition in JSON as per specification
-                    const valueX = await kernel.executeProcedure.call("Simple", "X()", "");
+                    const valueX = await kernel.executeProcedure.call("Simple", "X()", "", 32);
                     assert.equal(valueX.toNumber(), 220000, "X() should fail");
                 })
 
@@ -364,7 +364,7 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const value1 = await kernel.executeProcedure.call("Simple", "A()", "");
+                    const value1 = await kernel.executeProcedure.call("Simple", "A()", "", 32);
                     assert.equal(value1.toNumber(), 0, "A() should succeed");
                 })
 
@@ -373,11 +373,11 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const value2 = await kernel.executeProcedure.call("Simple", "B()", "");
+                    const value2 = await kernel.executeProcedure.call("Simple", "B()", "", 32);
                     assert.equal(value2.toNumber(), 0, "B() should succeed");
                     assert.notEqual(web3.eth.getCode(kernel.address), "0x0", "B() should not yet destroy kernel");
 
-                    const tx2 = await kernel.executeProcedure("Simple", "B()", "");
+                    const tx2 = await kernel.executeProcedure("Simple", "B()", "", 32);
                     assert.equal(web3.eth.getCode(kernel.address), "0x0", "B() should destroy kernel");
                 })
 
@@ -386,7 +386,7 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const value = await kernel.executeProcedure.call("Simple", "C()", "");
+                    const value = await kernel.executeProcedure.call("Simple", "C()", "", 32);
                     assert.equal(value.toNumber(), 220000, "C() should not succeed");
                 })
 
@@ -395,7 +395,7 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const value = await kernel.executeProcedure.call("Simple", "C()", "");
+                    const value = await kernel.executeProcedure.call("Simple", "C()", "", 32);
                     assert.equal(value.toNumber(), 220000, "C() should not succeed");
                 })
 
@@ -404,7 +404,7 @@ contract('Kernel', function (accounts) {
                     const [, address] = await kernel.createProcedure.call("Simple", Invalid.Simple.bytecode, []);
                     const tx = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
 
-                    const value = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
+                    const value = await kernel.executeProcedure.call("Simple", "C(uint256)", "", 32);
                     assert.equal(value.toNumber(), 0, "C(uint256) should succeed");
                 })
             })
@@ -466,13 +466,13 @@ contract('Kernel', function (accounts) {
                 // console.log("valueA:", valueA)
 
                 // // need to have the ABI definition in JSON as per specification
-                // const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
-                // await kernel.executeProcedure("SysCallTest", "S()", "");
+                // const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
+                // await kernel.executeProcedure("SysCallTest", "S()", "", 32);
                 // assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
 
                 // // do it again
-                // const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
-                // await kernel.executeProcedure("SysCallTest", "S()", "");
+                // const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
+                // await kernel.executeProcedure("SysCallTest", "S()", "", 32);
                 // assert.equal(err2.toNumber(), 0, "S() should succeed with zero errcode the second time");
                 // assert.equal(value2.toNumber(), 5, "S() should succeed with correct value the second time");
             })
@@ -480,7 +480,7 @@ contract('Kernel', function (accounts) {
 
         it('should return an error if key does not exist (3)', async function () {
             const kernel = await Kernel.new();
-            const retVal = await kernel.executeProcedure.call('test', '', "");
+            const retVal = await kernel.executeProcedure.call('test', '', "", 32);
             assert.equal(retVal, 3);
         });
 
@@ -515,7 +515,7 @@ contract('Kernel', function (accounts) {
             it('zero length (1)', async function () {
                 const kernel = await Kernel.new();
 
-                const retVal = await kernel.executeProcedure.call('', '', '');
+                const retVal = await kernel.executeProcedure.call('', '', '', 32);
                 assert.equal(retVal.toNumber(), 1);
             });
         })

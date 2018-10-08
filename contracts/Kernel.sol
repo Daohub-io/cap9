@@ -15,6 +15,7 @@ contract Kernel is Factory {
     ProcedureTable.Self procedures;
     address kernelAddress;
     bytes24 currentProcedure;
+    bytes24 entryProcedure;
 
     struct Process {
         // Equal to the index of the key of this item in keys, plus 1.
@@ -59,6 +60,10 @@ contract Kernel is Factory {
         return value;
     }
 
+    function setEntryProcedure(bytes24 key) public {
+        entryProcedure = key;
+    }
+
     // Check if a transaction is external.
     function isExternal() internal view returns (bool) {
         // If the current transaction is from the procedure we are executing,
@@ -73,7 +78,6 @@ contract Kernel is Factory {
         // across the whole blockchain, therefore we must be receiving a
         // transaction from the procedure set in "currentProcedure"
 
-
         // TODO: we will need to reserve a value for "not executing anything"
         // If the transaction is from this procedure...
         return (currentProcedure == 0);
@@ -82,34 +86,12 @@ contract Kernel is Factory {
 
     // This is what we execute when we receive an external transaction.
     function callGuardProcedure(address sender, bytes data) internal {
-        // revert("external call");
-        // TODO: this is not currerntly in any code path because we just use
-        // "executeProcedure"
-        // here we need to use callcode. delegatecall would leave the CALLER as
-        // the account which started the transaction
-        // The address here needs to be updated to call Procedure1
-        // everytime Procedure1 is deployed
-        //
-        // TODO: Determine the address of the procedure at index 0 of
-        // the procedure table.
-        // This (from last parameters to first):
-        // 1. Allocates an area in memory of size 0x40 (64 bytes)
-        // 2.    At memory location 0x80
-        // 3. Set the input size to 67 bytes
-        // 4.    At memory location 29
-        // 5. Send 0 wei
-        // 6. The contract address we are calling to
-        // 7. The gas we are budgeting
-        //
+        // TODO: we need to pass through the sender somehow
+        uint256 retSize = 32;
+        uint256 retVal = executeProcedure(entryProcedure, "", msg.data, retSize);
         assembly {
-            //        7                       6                       5   4   3   2      1
-            callcode(gas, 0x8885584aa73fccf0f4572a770d1a0d6bd0b4360a, 0, 29, 67, 0x80, 0x40)
-            // store the return code in memory location 0x60 (1 byte)
-            0x60
-            mstore
-            // return both delegatecall return values and the system call
-            // return value
-            return(0x60,0x60)
+            mstore(0,retVal)
+            return(0,retSize)
         }
     }
 
@@ -128,7 +110,6 @@ contract Kernel is Factory {
         }
 
         // Parse the system call
-        // SystemCall memory syscall = parseSystemCall();
         uint8 sysCallCapType = uint8(msg.data[0]);
 
         // 0x00 - not a syscall
@@ -137,8 +118,6 @@ contract Kernel is Factory {
         // 0x07 - write syscall
         // 0x09 - log syscall
 
-        // TODO: this was used to track some things but conflicts with some
-        // tests
         // log1(bytes32(currentProcedure), bytes32("current-procedure"));
 
         // Here we decode the system call (if there is one)
@@ -170,7 +149,9 @@ contract Kernel is Factory {
             // it knows which procedure it is executing (this is important for
             // looking up capabilities).
             currentProcedure = procedureKey;
+            // log1(bytes32(procedureKey),bytes32("calling"));
             if (cap) {
+                // log1(bytes32("permitted"),bytes32("call-cap"));
                 assembly {
                     function malloc(size) -> result {
                         // align to 32-byte words
@@ -253,6 +234,7 @@ contract Kernel is Factory {
                     }
                 }
             } else {
+                // log1(bytes32("not-permitted"),bytes32("call-cap"));
                 assembly {
                     // 33 means the capability was rejected
                     mstore(0,33)
@@ -339,23 +321,6 @@ contract Kernel is Factory {
                 mstore(0xd,152)
                 return(0xd,0x20)
             }
-        } else if (sysCallCapType == 0x03) {
-            // This is the exec system call
-            //
-            // First we need to check if we have the capability to
-            // execute this procedure. The first argument is simply an index
-            // of the procedure we want to call (in the procedure table).
-            // How do we determine if we have the capability? Perhaps this
-            // is not an address, but simply an index into the CList of the
-            // process that called this syscall. How do we access that
-            // CList? What if it is an account? If it is an account we know
-            // the sender. But if it is a procedure the sender is the
-            // the kernel and we don't know who is doing the sending.
-
-            // What process is calling this and what capabilities does it
-            // have?
-
-            // TODO: implement, this is issue #58.
         } else {
             // default; fallthrough action
             assembly {
@@ -428,7 +393,7 @@ contract Kernel is Factory {
         return procedures.get(name);
     }
 
-    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint256 retVal) {
+    function executeProcedure(bytes24 name, string fselector, bytes payload, uint256 retSize) public returns (uint256 retVal) {
         // // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             retVal = 1;
@@ -474,30 +439,71 @@ contract Kernel is Factory {
                 // available memory location.
                 mstore(0x40,add(result,rsize))
             }
-            // Retrieve the address of new available memory from address 0x40
-            let n :=  malloc(0x20)
-            // Take the keccak256 hash of that string, store at location n
-            // mstore
-            // Argument #1: The address (n) calculated above, to store the
-            //    hash.
-            // Argument #2: The hash, calculted as follows:
-            //   keccack256
-            //   Argument #1: The location of the fselector string (which
-            //     is simply the name of the variable) with an added offset
-            //     of 0x20, as the first 0x20 is reserved for the length of
-            //     the string.
-            //   Argument #2: The length of the string, which is loaded from
-            //     the first 0x20 of the string.
-            mstore(n,keccak256(add(fselector,0x20),mload(fselector)))
+            // Allocate new memory on the stack for function selector and
+            // payload data.
+            let inl := 0
+            // if we have a function selector, we start with a length of 4
+            // bytes
+            // If there is no function selector, send nothing. mload(fselector)
+            // is the length.
+            if mload(fselector) {
+                // set the input length to 4
+                inl := 4
+            }
+            // Then we add on the length of the payload
+            inl := add(inl,mload(payload))
 
-            // The input starts at where we stored the hash (n)
-            let ins := n
-            // Currently that is only the function selector hash, which is 4
-            // bytes long.
-            let inl := 0x4
+            // n is the actual size we allocate for the input buffer (which may
+            // be a little more than we actually need to send)
+            let n := inl
+            // We need at least 0x20 bytes to perform our hash in, even though
+            // we won't send it all
+            if lt(n,0x20) {
+                n := 0x20
+            }
+            let ins := malloc(n)
+
+            // next we need to create the function selector hash (if it exists)
+            if mload(fselector) {
+                // we don't need to allocate memory as we already have enough
+                // space in the input buffer (we always allocate at lest 0x20)
+                // // allocate some memory to work with
+                // let n :=  malloc(0x20)
+                // Take the keccak256 hash of that string, store at location n
+                // mstore
+                // Argument #1: The address (n) calculated above, to store the
+                //    hash.
+                // Argument #2: The hash, calculted as follows:
+                //   keccack256
+                //   Argument #1: The location of the fselector string (which
+                //     is simply the name of the variable) with an added offset
+                //     of 0x20, as the first 0x20 is reserved for the length of
+                //     the string.
+                //   Argument #2: The length of the string, which is loaded from
+                //     the first 0x20 of the string.
+                // This hash must be written first, as it write 32 bytes and
+                // would overwrite our payload data. We will store the payload
+                // data after this so the unused hash bytes get overwrittem.
+                mstore(ins,keccak256(add(fselector,0x20),mload(fselector)))
+            }
+            // Copy the payload data into the input buffer
+            // i starts as the payload length
+            let i := mload(payload)
+            // The start offset of payload data (either 0 or 4);
+            let payloadStart := add(ins,0)
+            if mload(fselector) {
+                payloadStart := add(ins,4)
+            }
+            if i {
+                // TODO: solidity assembly supports for loops
+                payloop:
+                    mstore8(add(payloadStart,sub(i,  1)),mload(add(payload,i)))
+                    i := sub(i,  1)
+                    jumpi(payloop, i)
+            }
             // There is no return value, therefore it's length is 0 bytes long
             // REVISION: lets assume a 32 byte return value for now
-            let outl := 0x20
+            let outl := retSize
             let outs := mallocZero(outl)
 
             status := callcode(gas,procedureAddress,0,ins,inl,outs,outl)
@@ -507,9 +513,11 @@ contract Kernel is Factory {
                 let errStore := malloc(0x20)
                 mstore(errStore,add(220000,mload(outs)))
                 // mstore(0x40,235)
+                // log1(errStore,0x20,"returnedErr")
                 return(errStore,0x20)
             }
             if eq(status,1) {
+                // log1(outs,outl,"returned")
                 return(outs,outl)
             }
         }

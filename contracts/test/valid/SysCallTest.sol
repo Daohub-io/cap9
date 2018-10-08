@@ -2,6 +2,7 @@ pragma solidity ^0.4.17;
 
 contract SysCallTest {
     function S() public {
+        log0(bytes32("performing S()"));
         assembly {
             // First get the original value from storage
             let orig_value := sload(0x8000)
@@ -14,6 +15,8 @@ contract SysCallTest {
             mstore(0x40,0x8000)
             // The value we want to store
             mstore(0x60,add(orig_value,1))
+            // clear the output buffer
+            mstore(0x80,0)
             // "in_offset" is at 31, because we only want the last byte of type
             // "in_size" is 97 because it is 1+32+32+32
             // we will store the result at 0x80 and it will be 32 bytes

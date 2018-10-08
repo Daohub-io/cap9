@@ -4,7 +4,7 @@ const assert = require('assert')
 const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
-const beakerlib = require("../../beakerlib");
+const beakerlib = require("../../../beakerlib");
 
 // Valid Contracts
 const Valid = {
@@ -34,8 +34,8 @@ contract('Kernel', function (accounts) {
 
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
@@ -49,8 +49,8 @@ contract('Kernel', function (accounts) {
 
                 const tx0 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -65,8 +65,8 @@ contract('Kernel', function (accounts) {
                 const tx0 = await kernel.createProcedure(procName, bytecode, capArray);
 
                 // need to have the ABI definition in JSON as per specification
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 // 4 is the error code we are after
                 assert.equal(valueX.toNumber(), 222233, "should fail with correct error code");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -86,8 +86,8 @@ contract('Kernel', function (accounts) {
 
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
                 // console.log(tx);
                 // console.log(tx.receipt.logs);
@@ -108,8 +108,8 @@ contract('Kernel', function (accounts) {
 
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx.receipt.logs.length, 0, "Nothing should be logged");
@@ -120,8 +120,8 @@ contract('Kernel', function (accounts) {
                 const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
                 const tx = await kernel.createProcedure(procName, bytecode, []);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -133,8 +133,8 @@ contract('Kernel', function (accounts) {
                 const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
 
                 // need to have the ABI definition in JSON as per specification
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -155,8 +155,8 @@ contract('Kernel', function (accounts) {
 
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
                 // console.log(tx);
                 // console.log(tx.receipt.logs);
@@ -175,8 +175,8 @@ contract('Kernel', function (accounts) {
                 const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
                 const tx = await kernel.createProcedure(procName, bytecode, []);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -187,8 +187,8 @@ contract('Kernel', function (accounts) {
                 const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -210,8 +210,8 @@ contract('Kernel', function (accounts) {
 
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
                 // console.log(tx);
                 // console.log(tx.receipt.logs);
@@ -231,8 +231,8 @@ contract('Kernel', function (accounts) {
                 const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
                 const tx = await kernel.createProcedure(procName, bytecode, []);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -243,8 +243,8 @@ contract('Kernel', function (accounts) {
                 const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -267,8 +267,8 @@ contract('Kernel', function (accounts) {
 
                 const tx1 = await kernel.createProcedure(procName, bytecode, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
                 // console.log(tx);
                 // console.log(tx.receipt.logs);
@@ -289,8 +289,8 @@ contract('Kernel', function (accounts) {
                 const [, address] = await kernel.createProcedure.call(procName, bytecode, []);
                 const tx = await kernel.createProcedure(procName, bytecode, []);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -301,8 +301,8 @@ contract('Kernel', function (accounts) {
                 const [, address] = await kernel.createProcedure.call(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.createProcedure(procName, bytecode, [3, 0x7, 0x8001, 0x0]);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
