@@ -113,7 +113,7 @@ contract('Kernel', function (accounts) {
     })
 
     describe('.registerProcedure()', function () {
-        it('should create valid procedure', async function () {
+        it.skip('should create valid procedure', async function () {
             let kernel = await Kernel.new();
             const procedureName = "TestAdder";
             const testAdder = await Valid.Adder.new();
@@ -133,18 +133,12 @@ contract('Kernel', function (accounts) {
             }
             assert.equal(result, 2)
 
-            // Check that the address returned by getProcedure is the same as
-            // the one returned by creation.
-            // const retrievedAddress = await kernel.getProcedure(procedureName);
-
             // The returned code should be the same as the sent code
             const code = web3.eth.getCode(address);
             assert.equal(Valid.Adder.deployedBytecode, code);
         });
         it('should create valid procedure (max key length)', async function () {
             const kernel = await Kernel.new();
-
-            const proceduresRaw1 = await kernel.listProcedures.call();
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
             const testAdder = await Valid.Adder.new();
