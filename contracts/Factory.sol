@@ -37,21 +37,17 @@ contract Factory {
             // This presented as a whitelist in case any new state-changing
             // opcodes are added (CREATE2 being a good example)
 
-            if(
-                (ins >= 0x00 && ins <= 0x0b) || // Stop and Arithmetic
-                (ins >= 0x10 && ins <= 0x1a) || // Comparison & Bitwise Logic Operations
-                (ins == 0x20) || // SHA3
-                (ins >= 0x30 && ins <= 0x3e) || // Environmental Informatio
-                (ins >= 0x40 && ins <= 0x45) || // Block Information
-                (ins >= 0x50 && ins <= 0x53) || // Stack, Memory, Storage and Flow Operation 
-                (ins >= 0x56 && ins <= 0x5b) || // Stack, Memory, Storage and Flow Operation
-                (ins >= 0x80 && ins <= 0x8f) || // Duplication Operations
-                (ins >= 0x90 && ins <= 0x9f) || // Exchange Operations
-                (ins == 0xf3) || // RETURN
-                (ins >= 0xfa && ins <= 0xfe)
-            ) {
-                continue;
-            } // KNOWN SAFE OPCODE
+            if((ins >= 0x00 && ins <= 0x0b)){continue;}  // Stop and Arithmetic
+            if((ins >= 0x10 && ins <= 0x1a)){continue;} // Comparison & Bitwise Logic Operations
+            if((ins == 0x20)){continue;} // SHA3
+            if((ins >= 0x30 && ins <= 0x3e)){continue;} // Environmental Informatio
+            if((ins >= 0x40 && ins <= 0x45)){continue;} // Block Information
+            if((ins >= 0x50 && ins <= 0x53)){continue;} // Stack, Memory, Storage and Flow Operation 
+            if((ins >= 0x56 && ins <= 0x5b)){continue;} // Stack, Memory, Storage and Flow Operation
+            if((ins >= 0x80 && ins <= 0x8f)){continue;} // Duplication Operations
+            if((ins >= 0x90 && ins <= 0x9f)){continue;} // Exchange Operations
+            if((ins == 0xf3)){continue;} // RETURN
+            if((ins >= 0xfa && ins <= 0xfe)){continue;}
 
             if (ins >= 0x60 && ins <= 0x7f) {
                 i += ins - 95;
