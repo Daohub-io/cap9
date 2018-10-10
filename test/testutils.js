@@ -11,6 +11,6 @@ async function installEntryProc(kernel) {
     ]);
     const deployedEntryProc = await BasicEntryProcedure.new();
     // Install the entry procedure
-    await kernel.registerAnyProcedure(entryProcName, entryProcBytecode, capArrayEntryProc);
+    await kernel.registerAnyProcedure(entryProcName, deployedEntryProc.address, capArrayEntryProc);
 }
 exports.installEntryProc = installEntryProc;
