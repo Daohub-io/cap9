@@ -36,7 +36,27 @@ contract Factory {
 
             // This presented as a whitelist in case any new state-changing
             // opcodes are added (CREATE2 being a good example)
-            
+
+            if(
+                (ins >= 0x00 && ins <= 0x0b) || // Stop and Arithmetic
+                (ins >= 0x10 && ins <= 0x1a) || // Comparison & Bitwise Logic Operations
+                (ins == 0x20) || // SHA3
+                (ins >= 0x30 && ins <= 0x3e) || // Environmental Informatio
+                (ins >= 0x40 && ins <= 0x45) || // Block Information
+                (ins >= 0x50 && ins <= 0x53) || // Stack, Memory, Storage and Flow Operation 
+                (ins >= 0x56 && ins <= 0x5b) || // Stack, Memory, Storage and Flow Operation
+                (ins >= 0x80 && ins <= 0x8f) || // Duplication Operations
+                (ins >= 0x90 && ins <= 0x9f) || // Exchange Operations
+                (ins == 0xf3) || // RETURN
+                (ins >= 0xfa && ins <= 0xfe)
+            ) {
+                continue;
+            } // KNOWN SAFE OPCODE
+
+            if (ins >= 0x60 && ins <= 0x7f) {
+                i += ins - 95;
+                continue;
+            } // PUSH
             // if (ins == 0x54) {return 1;} // SLOAD
             // TODO: we temporarily allow SLOAD for testing purposes
             if (ins == 0x54) {continue;} // SLOAD
@@ -69,23 +89,10 @@ contract Factory {
             if (ins == 0xf5) {return 12;} // CREATE2
             if (ins == 0xff) {return 13;} // SELFDESTRUCT
 
-            if(
-                (ins > 0x0b && ins < 0x10) ||
-                (ins > 0x1d && ins < 0x20) ||
-                (ins > 0x20 && ins < 0x30) ||
-                (ins > 0x3f && ins < 0x40) ||
-                (ins > 0x40 && ins < 0x50) ||
-                (ins > 0x5b && ins < 0x60) ||
-                (ins > 0xa4 && ins < 0xf0) ||
-                (ins > 0xf5 && ins < 0xfa) ||
-                (ins > 0xfa && ins < 0xfd)
-            ) {
-                return 100;
-            } // UNKOWN OPCODE
+            
 
-            if (ins >= 0x60 && ins <= 0x7f) {
-                i += ins - 95;
-            }
+            return 100; // UNKNOWN OPCODE
+            
         }
         return 0;
     }
