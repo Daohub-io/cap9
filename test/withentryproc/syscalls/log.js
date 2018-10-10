@@ -311,7 +311,7 @@ contract('Kernel', function (accounts) {
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
                     const inputData = web3.fromAscii("SysCallTestLog".padEnd(24,"\0")) + functionSelectorHash;
                     const tx3 = await kernel.sendTransaction({data: inputData});
-
+                    console.log(txt.receipt);
                     assert(tx3.receipt.logs.length >= 2, "There should be at least 2 logs produces");
                     assert.equal(tx3.receipt.logs[1].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
                     assert.equal(tx3.receipt.logs[1].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
