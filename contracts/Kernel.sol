@@ -334,13 +334,12 @@ contract Kernel is Factory {
     // used for testing and should not exist in a production kernel.
     // TODO: Currently this calls the normal createAnyProcedure function, which
     // needs to be updated to do validation.
-    function createAnyProcedure(bytes24 name, bytes oCode, uint256[] caps) public returns (uint8 err, address procedureAddress) {
-        return createProcedure(name, oCode, caps);
+    function registerAnyProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
+        return registerProcedure(name, procedureAddress, caps);
     }
 
     // Create a validated procedure.
-    // TODO: this does not currently do validation.
-    function createProcedure(bytes24 name, bytes oCode, uint256[] caps) public returns (uint8 err, address procedureAddress) {
+    function registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -354,8 +353,12 @@ contract Kernel is Factory {
             return;
         }
 
-        procedureAddress = create(oCode);
-        procedures.insert(name, procedureAddress, caps);
+        if (validateContract(procedureAddress)) {
+            procedures.insert(name, procedureAddress, caps);
+        } else {
+            revert("procedure code failed validation");
+        }
+        retAddress = procedureAddress;
     }
 
     function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {
