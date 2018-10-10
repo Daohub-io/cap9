@@ -86,7 +86,8 @@ contract('Kernel', function (accounts) {
 
             // Create "TestAdder"
             // Find the address (ephemerally)
-            let [err, creationAddress] = await kernel.createProcedure.call('TestAdder', Valid.Adder.bytecode, []);
+            const testAdder = await Valid.Adder.new();
+            let [err, creationAddress] = await kernel.registerProcedure.call('TestAdder', testAdder.address, []);
             assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`);
             assert(!isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is not null`);
 
@@ -113,8 +114,9 @@ contract('Kernel', function (accounts) {
         it('should create valid procedure', async function () {
             let kernel = await Kernel.new();
             const procedureName = "TestAdder";
-            let [err, address] = await kernel.createProcedure.call(procedureName, Valid.Adder.bytecode, []);
-            let tx1 = await kernel.createProcedure(procedureName, Valid.Adder.bytecode, []);
+            const testAdder = await Valid.Adder.new();
+            let [err, address] = await kernel.registerProcedure.call(procedureName, testAdder.addresss, []);
+            let tx1 = await kernel.registerProcedure(procedureName, testAdder.address, []);
 
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
             assert(!isNullAddress(address), 'Procedure Address is not null')
@@ -137,8 +139,9 @@ contract('Kernel', function (accounts) {
             const proceduresRaw1 = await kernel.listProcedures.call();
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
-            const [err, address] = await kernel.createProcedure.call(name, Valid.Adder.bytecode, []);
-            const tx1 = await kernel.createProcedure(name, Valid.Adder.bytecode, []);
+            const testAdder = await Valid.Adder.new();
+            const [err, address] = await kernel.createProcedure.call(name, testAdder.address, []);
+            const tx1 = await kernel.createProcedure(name, testAdder.address, []);
 
             assert(web3.isAddress(address), `Procedure Address (${address}) should be a real address`)
             assert(!isNullAddress(address), 'Procedure Address should not be null')
