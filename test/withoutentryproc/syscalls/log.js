@@ -162,7 +162,7 @@ contract('Kernel', function (accounts) {
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
                 const deployedContract = await contract.new();
-                const tx1 = await kernel.createProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
@@ -252,6 +252,7 @@ contract('Kernel', function (accounts) {
             it('D() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
+                const deployedContract = await contract.new();
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
 

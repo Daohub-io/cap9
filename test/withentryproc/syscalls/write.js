@@ -110,7 +110,7 @@ contract('Kernel', function (accounts) {
                 new beakerlib.WriteCap(0x8001,0)
             ]);
             const sysCallTest = await Valid.SysCallTest.new();
-            const simpleTest = await Invalid.Simple.bytecode.new();
+            const simpleTest = await Invalid.Simple.new();
             const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, capArraySysCallTest);
             const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 
