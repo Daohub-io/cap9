@@ -113,11 +113,11 @@ contract('Kernel', function (accounts) {
     })
 
     describe('.registerProcedure()', function () {
-        it.skip('should create valid procedure', async function () {
+        it('should create valid procedure', async function () {
             let kernel = await Kernel.new();
             const procedureName = "TestAdder";
             const testAdder = await Valid.Adder.new();
-            let [err, address] = await kernel.registerProcedure.call(procedureName, testAdder.addresss, []);
+            let [err, address] = await kernel.registerProcedure.call(procedureName, testAdder.address, []);
             let tx1 = await kernel.registerProcedure(procedureName, testAdder.address, []);
 
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
