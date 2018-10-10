@@ -135,7 +135,7 @@ contract('Kernel', function (accounts) {
 
             // Check that the address returned by getProcedure is the same as
             // the one returned by creation.
-            const retrievedAddress = await kernel.getProcedure(procedureName);
+            // const retrievedAddress = await kernel.getProcedure(procedureName);
 
             // The returned code should be the same as the sent code
             const code = web3.eth.getCode(address);
