@@ -2,6 +2,7 @@ const debug = require('debug')
 const assert = require('assert')
 
 const Kernel = artifacts.require('./Kernel.sol')
+const Factory = artifacts.require('./Factory.sol')
 const abi = require('ethereumjs-abi')
 
 const beakerlib = require("../../../beakerlib");
@@ -25,13 +26,14 @@ contract('Kernel', function (accounts) {
     describe('Write SysCall Procedure', function () {
         it('S() should succeed when given cap', async function () {
             const kernel = await Kernel.new();
+            const factory = await Factory.new();
 
             const capArraySysCallTest = beakerlib.Cap.toInput([
                 new beakerlib.WriteCap(0x8500,2),
                 new beakerlib.WriteCap(0x8000,0)
             ]);
-            const sysCallTest = await Valid.SysCallTest.new();
-            const simpleTest = await Invalid.Simple.new();
+            const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
+            const simpleTest = await testutils.deployedTrimmed(Valid.Multiply);
             const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, capArraySysCallTest);
             const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 
@@ -68,8 +70,8 @@ contract('Kernel', function (accounts) {
         it('S() should fail when not given cap', async function () {
             const kernel = await Kernel.new();
 
-            const sysCallTest = await Valid.SysCallTest.new();
-            const simpleTest = await Invalid.Simple.new();
+            const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
+            const simpleTest = await testutils.deployedTrimmed(Valid.Multiply);
             const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, []);
             const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 
@@ -109,8 +111,8 @@ contract('Kernel', function (accounts) {
                 new beakerlib.WriteCap(0x8500,2),
                 new beakerlib.WriteCap(0x8001,0)
             ]);
-            const sysCallTest = await Valid.SysCallTest.new();
-            const simpleTest = await Invalid.Simple.new();
+            const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
+            const simpleTest = await testutils.deployedTrimmed(Valid.Multiply);
             const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, capArraySysCallTest);
             const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 

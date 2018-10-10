@@ -35,7 +35,7 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
@@ -57,7 +57,7 @@ contract('Kernel', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const capArray = beakerlib.Cap.toInput([cap1]);
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
@@ -84,7 +84,7 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.LogCap([0xaabb]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
@@ -116,7 +116,7 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
@@ -141,7 +141,7 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.LogCap([topic+1]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
@@ -163,7 +163,7 @@ contract('Kernel', function (accounts) {
             it('B() should fail when not given cap', async function () {
                 const kernel = await Kernel.new();
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
@@ -186,7 +186,7 @@ contract('Kernel', function (accounts) {
             it('B() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
 
@@ -220,7 +220,7 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
@@ -241,7 +241,7 @@ contract('Kernel', function (accounts) {
             it('C() should fail when not given cap', async function () {
                 const kernel = await Kernel.new();
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
@@ -264,7 +264,7 @@ contract('Kernel', function (accounts) {
             it('C() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
 
@@ -299,7 +299,7 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
@@ -324,7 +324,7 @@ contract('Kernel', function (accounts) {
             it('D() should fail when not given cap', async function () {
                 const kernel = await Kernel.new();
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
@@ -347,7 +347,7 @@ contract('Kernel', function (accounts) {
             it('D() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
 
@@ -383,7 +383,7 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
@@ -406,7 +406,7 @@ contract('Kernel', function (accounts) {
             })
             it('E() should fail when not given cap', async function () {
                 const kernel = await Kernel.new();
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
@@ -429,7 +429,7 @@ contract('Kernel', function (accounts) {
             it('E() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
-                const deployedContract = await contract.new();
+                const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
 

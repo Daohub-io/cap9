@@ -5,6 +5,7 @@ const Kernel = artifacts.require('./Kernel.sol')
 const abi = require('ethereumjs-abi')
 
 const beakerlib = require("../../beakerlib");
+const testutils = require("../testutils.js");
 
 // Valid Contracts
 const Valid = {
@@ -12,6 +13,7 @@ const Valid = {
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
     SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
+    Simple: artifacts.require('test/valid/Simple.sol'),
     SysCallTestLog: artifacts.require('test/valid/SysCallTestLog.sol'),
 }
 
@@ -41,7 +43,7 @@ contract('Kernel', function (accounts) {
         it('should return existing procedure keys', async function () {
             let kernel = await Kernel.new();
 
-            const testAdder = await Valid.Adder.new();
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             let [err, address] = await kernel.registerProcedure.call('TestAdder', testAdder.address, []);
             let tx1 = await kernel.registerProcedure('TestAdder', testAdder.address, []);
 
@@ -57,7 +59,7 @@ contract('Kernel', function (accounts) {
             ];
 
             for (const proc of speccedProcedures) {
-                const contract = await proc[1].new();
+                const contract = await testutils.deployedTrimmed(proc[1]);
                 await kernel.registerProcedure(proc[0], contract.address, []);
             }
 
@@ -78,7 +80,7 @@ contract('Kernel', function (accounts) {
                 assert(!isNullAddress(address), `Procedure Address (${address}) is not null`);
                 // Check that the deployed code is the same as that sent
                 const code = web3.eth.getCode(address);
-                assert.equal(speccedProcedures[i][1].deployedBytecode, code);
+                assert.equal(testutils.trimSwarm(speccedProcedures[i][1].deployedBytecode), code);
             }
         });
     })
@@ -88,7 +90,7 @@ contract('Kernel', function (accounts) {
 
             // Create "TestAdder"
             // Find the address (ephemerally)
-            const testAdder = await Valid.Adder.new();
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             let [err, creationAddress] = await kernel.registerProcedure.call('TestAdder', testAdder.address, []);
             assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`);
             assert(!isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is not null`);
@@ -116,7 +118,7 @@ contract('Kernel', function (accounts) {
         it('should create valid procedure', async function () {
             let kernel = await Kernel.new();
             const procedureName = "TestAdder";
-            const testAdder = await Valid.Adder.new();
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             let [err, address] = await kernel.registerProcedure.call(procedureName, testAdder.address, []);
             let tx1 = await kernel.registerProcedure(procedureName, testAdder.address, []);
 
@@ -135,13 +137,13 @@ contract('Kernel', function (accounts) {
 
             // The returned code should be the same as the sent code
             const code = web3.eth.getCode(address);
-            assert.equal(Valid.Adder.deployedBytecode, code);
+            assert.equal(testutils.trimSwarm(Valid.Adder.deployedBytecode), code);
         });
         it('should create valid procedure (max key length)', async function () {
             const kernel = await Kernel.new();
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
-            const testAdder = await Valid.Adder.new();
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             const [err, address] = await kernel.registerProcedure.call(name, testAdder.address, []);
             const tx1 = await kernel.registerProcedure(name, testAdder.address, []);
 
@@ -153,7 +155,7 @@ contract('Kernel', function (accounts) {
 
             // The returned code should be the same as the sent code
             const code = web3.eth.getCode(address);
-            assert.equal(Valid.Adder.deployedBytecode, code);
+            assert.equal(testutils.trimSwarm(Valid.Adder.deployedBytecode), code);
 
             // The address should be gettable (TODO)
             // The correct name should be in the procedures table
@@ -168,7 +170,7 @@ contract('Kernel', function (accounts) {
             const proceduresRaw1 = await kernel.listProcedures.call();
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
-            const testAdder = await Valid.Adder.new();
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             const [err, address] = await kernel.registerProcedure.call(name, testAdder.address, []);
             const tx1 = await kernel.registerProcedure(name, testAdder.address, []);
 
@@ -180,9 +182,9 @@ contract('Kernel', function (accounts) {
 
             // The returned code should be the same as the sent code
             const code = web3.eth.getCode(address);
-            assert.equal(Valid.Adder.deployedBytecode, code);
+            assert.equal(testutils.trimSwarm(Valid.Adder.deployedBytecode), code);
             const name2 = "ByAnyOtherName";
-            const testAdder2 = await Valid.Adder.new();
+            const testAdder2 = await testutils.deployedTrimmed(Valid.Adder);
             const [err2, address2] = await kernel.registerProcedure.call(name2, testAdder2.address, []);
             const tx2 = await kernel.registerProcedure(name2, testAdder2.address, []);
 
@@ -191,7 +193,7 @@ contract('Kernel', function (accounts) {
 
             // The returned code should be the same as the sent code
             const code2 = web3.eth.getCode(address2);
-            assert.equal(Valid.Adder.deployedBytecode, code2);
+            assert.equal(testutils.trimSwarm(Valid.Adder.deployedBytecode), code2);
 
             // The address should be gettable (TODO)
             // The correct name should be in the procedures table
@@ -208,7 +210,7 @@ contract('Kernel', function (accounts) {
             it('zero length', async function () {
                 let kernel = await Kernel.new();
 
-                const testAdder = await Valid.Adder.new();
+                const testAdder = await testutils.deployedTrimmed(Valid.Adder);
                 let [err, creationAddress] = await kernel.registerProcedure.call('', testAdder.address, []);
                 assert.equal(err, 1);
                 assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`)
@@ -227,13 +229,13 @@ contract('Kernel', function (accounts) {
             it('duplicate procedure key', async function () {
                 const kernel = await Kernel.new();
                 const name = "TestAdder";
-                const testAdder = await Valid.Adder.new();
+                const testAdder = await testutils.deployedTrimmed(Valid.Adder);
                 // This is the first time the procedure is added
                 const [err1, address1] = await kernel.registerProcedure.call(name, testAdder.address, []);
                 const tx1 = await kernel.registerProcedure(name, testAdder.address, []);
 
                 // This is the second time the procedure is added
-                const testMultiply = await Valid.Multiply.new();
+                const testMultiply = await testutils.deployedTrimmed(Valid.Multiply);
                 const [err2, address2] = await kernel.registerProcedure.call(name, testMultiply.address, []);
                 const tx2 = await kernel.registerProcedure(name, testMultiply.address, []);
                 assert.equal(err2, 3);
@@ -250,7 +252,7 @@ contract('Kernel', function (accounts) {
 
                 // The returned code should be the same as the original code
                 const code = web3.eth.getCode(address);
-                assert.equal(Valid.Adder.deployedBytecode, code);
+                assert.equal(testutils.trimSwarm(Valid.Adder.deployedBytecode), code);
             });
         })
     })
@@ -263,7 +265,7 @@ contract('Kernel', function (accounts) {
         });
         it('should return deleted procedure address if procedure key is valid', async function () {
             const kernel = await Kernel.new();
-            const testAdder = await Valid.Adder.new();
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             const [err1, address] = await kernel.registerProcedure.call("test", testAdder.address, []);
             assert.equal(err1, 0);
             const tx1 = await kernel.registerProcedure('test', testAdder.address, []);
@@ -286,7 +288,7 @@ contract('Kernel', function (accounts) {
             const kernel = await Kernel.new();
 
             const procedureName = "test";
-            const testAdder = await Valid.Adder.new();
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             const [err1, address] = await kernel.registerProcedure.call(procedureName, testAdder.address, []);
             assert.equal(err1, 0);
             const tx1 = await kernel.registerProcedure(procedureName, testAdder.address, []);
@@ -315,7 +317,7 @@ contract('Kernel', function (accounts) {
         // TODO: this is not currently functional
         it.skip('should destroy the procedures contract on deletion', async function () {
             const kernel = await Kernel.new();
-            const testAdder = await Valid.Adder.new();
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             const [err1, address] = await kernel.registerProcedure.call("test", testAdder.address, []);
             assert.equal(err1, 0);
             const tx1 = await kernel.registerProcedure('test', testAdder.address, []);
@@ -361,7 +363,7 @@ contract('Kernel', function (accounts) {
             describe('Simple Procedure', function () {
                 it('X() should fail', async function () {
                     const kernel = await Kernel.new();
-                    const testSimple = await Invalid.Simple.new();
+                    const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
@@ -372,7 +374,7 @@ contract('Kernel', function (accounts) {
 
                 it('A() should succeed', async function () {
                     const kernel = await Kernel.new();
-                    const testSimple = await Invalid.Simple.new();
+                    const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
@@ -380,23 +382,9 @@ contract('Kernel', function (accounts) {
                     assert.equal(value1.toNumber(), 0, "A() should succeed");
                 })
 
-                it('B() should succeed', async function () {
-                    const kernel = await Kernel.new();
-                    const testSimple = await Invalid.Simple.new();
-                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
-                    const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
-
-                    const value2 = await kernel.executeProcedure.call("Simple", "B()", "", 32);
-                    assert.equal(value2.toNumber(), 0, "B() should succeed");
-                    assert.notEqual(web3.eth.getCode(kernel.address), "0x0", "B() should not yet destroy kernel");
-
-                    const tx2 = await kernel.executeProcedure("Simple", "B()", "", 32);
-                    assert.equal(web3.eth.getCode(kernel.address), "0x0", "B() should destroy kernel");
-                })
-
                 it('C() should fail without correctly specifying arguments', async function () {
                     const kernel = await Kernel.new();
-                    const testSimple = await Invalid.Simple.new();
+                    const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
@@ -406,7 +394,7 @@ contract('Kernel', function (accounts) {
 
                 it('C() should fail when using type synonyms such as uint, which cant be used in function selectors', async function () {
                     const kernel = await Kernel.new();
-                    const testSimple = await Invalid.Simple.new();
+                    const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
@@ -416,7 +404,7 @@ contract('Kernel', function (accounts) {
 
                 it('C(uint256) should succeed passing arguments', async function () {
                     const kernel = await Kernel.new();
-                    const testSimple = await Invalid.Simple.new();
+                    const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
@@ -434,8 +422,8 @@ contract('Kernel', function (accounts) {
                 const cap2 = new beakerlib.WriteCap(0x8000,0);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const sysCallTest = await Valid.SysCallTest.new();
-                const testSimple = await Invalid.Simple.new();
+                const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
+                const testSimple = await testutils.deployedTrimmed(Valid.Multiply);
                 const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, capArray);
                 const tx2 = await kernel.registerProcedure("Simple", testSimple.address, []);
                 const rawProcTableData = await kernel.returnRawProcedureTable.call();
@@ -474,7 +462,7 @@ contract('Kernel', function (accounts) {
             it('should return the entry procedure address', async function () {
                 const kernel = await Kernel.new();
                 const procedureName = "Entry";
-                const sysCallTest = await Valid.SysCallTest.new();
+                const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
                 const [a, address] = await kernel.registerProcedure.call(procedureName, sysCallTest.address, [3, 0x7, 0x80, 0x0]);
                 // assert.equal(a.toNumber(), 0, "S() should succeed with zero errcode the second time");
                 const tx = await kernel.registerProcedure(procedureName, sysCallTest.address, [3, 0x7, 0x80, 0x0]);
@@ -508,7 +496,7 @@ contract('Kernel', function (accounts) {
             it('throws an error', async function () {
                 let kernel = await Kernel.new();
 
-                const testDivide = await Valid.Divide.new();
+                const testDivide = await testutils.deployedTrimmed(Valid.Divide);
                 let [err, address] = await kernel.registerProcedure.call('TestDivide', testDivide.address, []);
                 let tx1 = await kernel.registerProcedure('TestDivide', testDivide.address, []);
 
@@ -521,7 +509,7 @@ contract('Kernel', function (accounts) {
 
                 // The returned code should be the same as the sent code
                 const code = web3.eth.getCode(address);
-                assert.equal(Valid.Divide.deployedBytecode, code);
+                assert.equal(testutils.trimSwarm(Valid.Divide.deployedBytecode), code);
 
                 // Try dividing by zero
                 try {
