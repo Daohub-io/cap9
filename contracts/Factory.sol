@@ -153,11 +153,11 @@ contract Factory {
             if (ins == 0xf2) {return 10;} // CALLCODE
             if (ins == 0xf3) {continue;} // RETURN
             if (ins == 0xf4) {return 11;} // DELEGATECALL
-            if (ins == 0xf4) {return 11;} // CREATE2
+            if (ins == 0xf5) {return 12;} // CREATE2
             if (ins == 0xfa) {continue;} // STATICCALL
-            if (ins == 0xfb) {continue;} // REVERT
-            if (ins == 0xfc) {continue;} // INVALID
-            if (ins == 0xfd) {return 12;} // SELFDESTRUCT
+            if (ins == 0xfd) {continue;} // REVERT
+            if (ins == 0xfe) {continue;} // INVALID
+            if (ins == 0xff) {return 13;} // SELFDESTRUCT
 
         }
         return 0;
