@@ -396,6 +396,7 @@ contract('Kernel', function (accounts) {
 
                 it('C() should fail without correctly specifying arguments', async function () {
                     const kernel = await Kernel.new();
+                    const testSimple = await Invalid.Simple.new();
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 

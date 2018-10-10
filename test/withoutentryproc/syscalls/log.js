@@ -182,7 +182,7 @@ contract('Kernel', function (accounts) {
                 const kernel = await Kernel.new();
                 const deployedContract = await contract.new();
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContrat.address, []);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);

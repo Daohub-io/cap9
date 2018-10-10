@@ -341,6 +341,7 @@ contract('Kernel', function (accounts) {
         describe('C() - with data (function selector)', function () {
             const testProcName = "SysCallTest";
             const testBytecode = Valid.SysCallTest.bytecode;
+            const testContract = Valid.SysCallTest;
             const functionSpec = "C()";
             it('C() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
