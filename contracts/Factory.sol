@@ -83,6 +83,7 @@ contract Factory {
             if (ins == 0x3c) {continue;} // EXTCODECOPY
             if (ins == 0x3d) {continue;} // RETURNDATASIZE
             if (ins == 0x3e) {continue;} // RETURNDATACOPY
+            if (ins == 0x3f) {continue;} // EXTCODEHASH // constantinople
 
             if (ins == 0x40) {continue;} // BLOCKHASH
             if (ins == 0x41) {continue;} // COINBASE
