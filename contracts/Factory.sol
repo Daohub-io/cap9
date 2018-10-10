@@ -65,6 +65,9 @@ contract Factory {
             if (ins == 0x18) {continue;} // XOR
             if (ins == 0x19) {continue;} // NOT
             if (ins == 0x1a) {continue;} // BYTE
+            if (ins == 0x1b) {continue;} // SHL // constantinople
+            if (ins == 0x1c) {continue;} // SHR // constantinople
+            if (ins == 0x1d) {continue;} // SAR // constantinople
 
             if (ins == 0x20) {continue;} // SHA3
 
