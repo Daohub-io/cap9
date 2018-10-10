@@ -353,7 +353,7 @@ contract Kernel is Factory {
             return;
         }
 
-        if (validateContract(procedureAddress)) {
+        if (!validateContract(procedureAddress)) {
             procedures.insert(name, procedureAddress, caps);
         } else {
             revert("procedure code failed validation");

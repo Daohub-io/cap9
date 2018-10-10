@@ -635,6 +635,7 @@ contract('Kernel', function (accounts) {
         })
         describe('E() - with data (function selector and arguments) and return', function () {
             const testProcName = "Adder";
+            const testContract = Valid.Adder;
             const testBytecode = Valid.Adder.bytecode;
             const functionSpec = "E()";
             it('E() should succeed when given cap', async function () {
