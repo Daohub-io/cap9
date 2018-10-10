@@ -93,7 +93,7 @@ contract Factory {
             if (ins == 0x42) {continue;} // TIMESTAMP
             if (ins == 0x43) {continue;} // NUMBER
             if (ins == 0x44) {continue;} // DIFFICULTY
-            if (ins == 0x40) {continue;} // DIFFICULTY
+            if (ins == 0x45) {continue;} // GASLIMIT
 
             if (ins == 0x50) {continue;} // POP
             if (ins == 0x51) {continue;} // MLOAD
