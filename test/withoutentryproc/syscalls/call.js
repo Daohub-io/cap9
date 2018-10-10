@@ -778,7 +778,7 @@ contract('Kernel', function (accounts) {
                 const deployedAdderContract = await Valid.Adder.new();
                 const deployedSysCallTestContract = await Valid.SysCallTest.new();
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, contract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
                 // This is the first called procedure, which doesn't really do anything
                 await kernel.registerProcedure("Adder", deployedAdderContract.address, beakerlib.Cap.toInput([]));
                 // // This is the second called procedure, which requires capabilities

@@ -125,7 +125,13 @@ contract('Kernel', function (accounts) {
 
             // Check that the code works
             let adder = Valid.Adder.at(address);
-            assert.equal(await adder.add.call(1, 1), 2)
+            let result;
+            try {
+                result = await adder.add.call(1, 1);
+            } catch (e) {
+                throw new Error("add.call failed");
+            }
+            assert.equal(result, 2)
 
             // Check that the address returned by getProcedure is the same as
             // the one returned by creation.
@@ -516,7 +522,8 @@ contract('Kernel', function (accounts) {
                 assert(!isNullAddress(address), 'Procedure Address is not null')
 
                 let divide = Valid.Divide.at(address);
-                assert.equal(await divide.divide.call(8, 2).toNumber(), 4);
+                let result = await divide.divide.call(8, 2);
+                assert.equal(result.toNumber(), 4);
 
                 // The returned code should be the same as the sent code
                 const code = web3.eth.getCode(address);
