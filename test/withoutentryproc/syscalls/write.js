@@ -28,8 +28,10 @@ contract('Kernel', function (accounts) {
             const cap2 = new beakerlib.WriteCap(0x8000,0);
             const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-            const tx1 = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, capArray);
-            const tx2 = await kernel.createProcedure("Simple", Invalid.Simple.bytecode, []);
+            const sysCallTest = await Valid.SysCallTest.new();
+            const simpleTest = await Invalid.Simple.bytecode.new();
+            const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, []);
+            const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
@@ -49,8 +51,9 @@ contract('Kernel', function (accounts) {
         })
         it('S() should fail when not given cap', async function () {
             const kernel = await Kernel.new();
-            const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, []);
-            const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, []);
+            const sysCallTest = await Valid.SysCallTest.new();
+            const [, address] = await kernel.registerProcedure.call("SysCallTest", sysCallTest.address, []);
+            const tx = await kernel.registerProcedure("SysCallTest", sysCallTest.address, []);
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
@@ -69,8 +72,10 @@ contract('Kernel', function (accounts) {
         })
         it('S() should fail when trying to write to an address below its cap', async function () {
             const kernel = await Kernel.new();
-            const [, address] = await kernel.createProcedure.call("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8001, 0x0]);
-            const tx = await kernel.createProcedure("SysCallTest", Valid.SysCallTest.bytecode, [3, 0x7, 0x8001, 0x0]);
+
+            const sysCallTest = await Valid.SysCallTest.new();
+            const [, address] = await kernel.registerProcedure.call("SysCallTest", sysCallTest.address, [3, 0x7, 0x8001, 0x0]);
+            const tx = await kernel.registerProcedure("SysCallTest", sysCallTest.address, [3, 0x7, 0x8001, 0x0]);
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
