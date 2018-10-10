@@ -808,6 +808,7 @@ contract('Kernel', function (accounts) {
         describe('E() - with data (function selector and arguments) and return', function () {
             const testProcName = "Adder";
             const testBytecode = Valid.Adder.bytecode;
+            const testContract = Valid.Adder;
             const functionSpec = "E()";
             it('E() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage

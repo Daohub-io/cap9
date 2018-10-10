@@ -243,7 +243,7 @@ contract('Kernel', function (accounts) {
 
                 const deployedContract = await contract.new();
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContrat.address, []);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -301,7 +301,7 @@ contract('Kernel', function (accounts) {
 
                 const deployedContract = await contract.new();
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContrat.address, []);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
                 {
                     await testutils.installEntryProc(kernel);

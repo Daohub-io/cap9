@@ -508,7 +508,7 @@ contract('Kernel', function (accounts) {
             it('throws an error', async function () {
                 let kernel = await Kernel.new();
 
-                const testDivide = await Valid.SysCallTest.new();
+                const testDivide = await Valid.Divide.new();
                 let [err, address] = await kernel.registerProcedure.call('TestDivide', testDivide.address, []);
                 let tx1 = await kernel.registerProcedure('TestDivide', testDivide.address, []);
 
@@ -516,7 +516,7 @@ contract('Kernel', function (accounts) {
                 assert(!isNullAddress(address), 'Procedure Address is not null')
 
                 let divide = Valid.Divide.at(address);
-                assert.equal(await divide.divide.call(8, 2), 4);
+                assert.equal(await divide.divide.call(8, 2).toNumber(), 4);
 
                 // The returned code should be the same as the sent code
                 const code = web3.eth.getCode(address);
