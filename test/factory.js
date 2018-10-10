@@ -113,36 +113,35 @@ contract('Factory', function (accounts) {
             assert.equal(0, result.toNumber());
         })
 
-        it('should reject a contract if it uses CREATECALL', async function () {
+        it('should reject a contract if it uses CREATE', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Invalid.Create.bytecode, {from: accounts[0]});
-            assert.equal(1, result.toNumber());
+            assert.equal(8, result.toNumber());
         })
 
         it('should reject a contract if it uses CALL', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Invalid.Call.bytecode, {from: accounts[0]});
-            assert.equal(2, result.toNumber());
+            assert.equal(9, result.toNumber());
         })
 
         it('should reject a contract if it uses CALLCODE', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Invalid.Callcode.bytecode, {from: accounts[0]});
-            assert.equal(3, result.toNumber());
+            assert.equal(10, result.toNumber());
         })
 
         it('should reject a contract if it uses DELEGATECALL', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Invalid.Delegatecall.bytecode, {from: accounts[0]});
-            assert.equal(4, result.toNumber());
+            assert.equal(11, result.toNumber());
         })
 
 
-        it('should reject a contract if it uses SUICIDECALL', async function () {
+        it('should reject a contract if it uses SELFDESTRUCT', async function () {
             let factory = await Factory.deployed();
             let result = await factory.validate(Invalid.Suicide.bytecode, {from: accounts[0]});
-            assert.equal(5, result.toNumber());
+            assert.equal(13, result.toNumber());
         })
     })
-
 })
