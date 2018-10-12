@@ -32,7 +32,7 @@ const testAccount = 0;
 // For use with parity test account
 // web3.eth.defaultAccount = "0x00a329c0648769a73afac7f9381e08fb43dbea72";
 // throw new Error("the test")
-contract('Kernel', function (accounts) {
+contract('Kernel without entry procedure', function (accounts) {
     describe('.listProcedures()', function () {
         it('should return nothing if zero procedures', async function () {
             let kernel = await Kernel.new();

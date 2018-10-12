@@ -21,7 +21,7 @@ const Invalid = {
     Simple: artifacts.require('test/invalid/Simple.sol')
 }
 
-contract('Kernel', function (accounts) {
+contract('Kernel with entry procedure', function (accounts) {
     describe('Log capability', function () {
         const procName = "SysCallTestLog";
         const contract = Valid.SysCallTestLog;

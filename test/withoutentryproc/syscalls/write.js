@@ -21,7 +21,7 @@ const Invalid = {
     Simple: artifacts.require('test/invalid/Simple.sol')
 }
 
-contract('Kernel', function (accounts) {
+contract('Kernel without entry procedure', function (accounts) {
     describe('Write SysCall Procedure', function () {
         it('S() should succeed when given cap', async function () {
             const kernel = await Kernel.new();
