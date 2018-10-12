@@ -19,14 +19,14 @@ library ProcedureTable {
 
     // Convert Pointer To File Pointer
     // Takes a single byte and a full 256 bit storage location
-    function _filePointer(uint8 fileId, uint248 pointer) internal returns (uint256) {
+    function _filePointer(uint8 fileId, uint248 pointer) internal pure returns (uint256) {
         // Mask to Uint256
         // Overwrite the most significant byte of pointer with fileId
         return uint256(pointer) | (uint256(fileId) << 248);
     }
 
     function _get(uint8 fileId, uint248 _pointer) internal view returns (uint256 val) {
-        var pointer = _filePointer(fileId, _pointer);
+        uint256 pointer = _filePointer(fileId, _pointer);
         assembly {
             // Load Value
             val := sload(pointer)
@@ -35,22 +35,22 @@ library ProcedureTable {
 
     function _set(uint8 fileId, uint248 _pointer, uint256 value) internal {
         // Convert Mask to Uint256
-        var pointer = _filePointer(fileId, _pointer);
+        uint256 pointer = _filePointer(fileId, _pointer);
         assembly {
             sstore(pointer, value)
         }
     }
 
-    function _getLengthPointer() internal view returns (uint248) {
-        var directory = bytes8(keccak256("keyPointer"));
+    function _getLengthPointer() internal pure returns (uint248) {
+        bytes8 directory = bytes8(keccak256("keyPointer"));
         return uint248(directory) << 240;
     }
-    function _getKeyPointerByIndex(uint8 idx) internal view returns (uint248) {
+    function _getKeyPointerByIndex(uint8 idx) internal pure returns (uint248) {
         bytes8 directory = bytes8(keccak256("keyPointer"));
         return (uint248(directory) << 240) + 1 + uint248(idx);
     }
 
-    function _getProcedurePointerByKey(uint192 key) internal view returns (uint248) {
+    function _getProcedurePointerByKey(uint192 key) internal pure returns (uint248) {
         // Procedure data is stored under the procedurePointer "directory". The
         // location of the procedure data is followed by the name/key of the
         // procedure.
@@ -104,7 +104,7 @@ library ProcedureTable {
         }
     }
 
-    function checkCallCapability(Self storage self, uint192 key, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
+    function checkCallCapability(Self storage /* self */, uint192 key, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
 
         // If the requested cap is out of the bounds of the cap table, we
@@ -132,7 +132,7 @@ library ProcedureTable {
         }
     }
 
-    function checkWriteCapability(Self storage self, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool) {
+    function checkWriteCapability(Self storage /* self */, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
 
         // If the requested cap is out of the bounds of the cap table, we
@@ -161,7 +161,7 @@ library ProcedureTable {
         }
     }
 
-    function checkLogCapability(Self storage self, uint192 key, bytes32[] reqTopics, uint256 reqCapIndex) internal view returns (bool) {
+    function checkLogCapability(Self storage /* self */, uint192 key, bytes32[] reqTopics, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
 
         // If the requested cap is out of the bounds of the cap table, we
@@ -300,7 +300,7 @@ library ProcedureTable {
         return r;
     }
 
-    function insert(Self storage self, bytes24 key, address value, uint256[] caps) internal returns (bool replaced) {
+    function insert(Self storage /* self */, bytes24 key, address value, uint256[] caps) internal returns (bool replaced) {
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
@@ -362,7 +362,7 @@ library ProcedureTable {
         }
     }
 
-    function remove(Self storage self, bytes24 key) internal returns (bool success) {
+    function remove(Self storage /* self */, bytes24 key) internal returns (bool success) {
         Procedure memory p1 = _getProcedureByKey(uint192(key));
 
         if (p1.keyIndex == 0)
@@ -401,19 +401,19 @@ library ProcedureTable {
         }
     }
 
-    function contains(Self storage self, bytes24 key) internal view returns (bool exists) {
+    function contains(Self storage /* self */, bytes24 key) internal view returns (bool exists) {
         return _get(0, _getProcedurePointerByKey(uint192(key))) > 0;
     }
 
-    function size(Self storage self) internal view returns (uint) {
+    function size(Self storage /* self */) internal view returns (uint) {
         return _get(0, _getLengthPointer());
     }
 
-    function get(Self storage self, bytes24 key) internal view returns (address) {
+    function get(Self storage /* self */, bytes24 key) internal view returns (address) {
         return address(_get(0, _getProcedurePointerByKey(uint192(key)) + 1));
     }
 
-    function getKeys(Self storage self) internal view returns (bytes24[] memory keys) {
+    function getKeys(Self storage /* self */) internal view returns (bytes24[] memory keys) {
         uint248 lenP = _getLengthPointer();
         uint256 len = _get(0, lenP);
         keys = new bytes24[](len);
@@ -425,7 +425,7 @@ library ProcedureTable {
 
     }
 
-    function getKeyByIndex(Self storage self, uint8 idx) internal view returns (uint192) {
+    function getKeyByIndex(Self storage /* self */, uint8 idx) internal view returns (uint192) {
         return uint192(_get(0, _getKeyPointerByIndex(idx)));
     }
 

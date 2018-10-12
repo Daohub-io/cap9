@@ -2,7 +2,6 @@ pragma solidity ^0.4.17;
 
 contract SysCallTest {
     function S() public {
-        log0(bytes32("performing S()"));
         assembly {
             // First get the original value from storage
             let orig_value := sload(0x8000)

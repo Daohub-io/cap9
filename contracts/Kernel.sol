@@ -23,7 +23,7 @@ contract Kernel is Factory {
         address location;
     }
 
-    function Kernel() public {
+    constructor() public {
         // kernelAddress = WhatIsMyAddress.get();
         // This is an example kernel global variable for testing.
         assembly {
@@ -85,7 +85,7 @@ contract Kernel is Factory {
     }
 
     // This is what we execute when we receive an external transaction.
-    function callGuardProcedure(address sender, bytes data) internal {
+    function callGuardProcedure(address /* sender */, bytes /* data */) internal {
         // TODO: we need to pass through the sender somehow
         uint256 retSize = 32;
         uint256 retVal = executeProcedure(entryProcedure, "", msg.data, retSize);
@@ -169,13 +169,14 @@ contract Kernel is Factory {
                         // get the current free mem location
                         result :=  mload(0x40)
                         // zero-out the memory
-                        let n := 0
-                        jumpi(loopend, eq(rsize, 0))
-                        loop:
-                            mstore(add(result,n),0)
-                            n := add(n, 32)
-                            jumpi(loop, iszero(eq(n, rsize)))
-                        loopend:
+                        // if there are some bytes to be allocated (rsize is not zero)
+                        if rsize {
+                            // loop through the address and zero them
+                            for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                                mstore(add(result,n),0)
+                            }
+
+                        }
                         // Bump the value of 0x40 so that it holds the next
                         // available memory location.
                         mstore(0x40,add(result,rsize))
@@ -334,13 +335,16 @@ contract Kernel is Factory {
     // used for testing and should not exist in a production kernel.
     // TODO: Currently this calls the normal createAnyProcedure function, which
     // needs to be updated to do validation.
-    function createAnyProcedure(bytes24 name, bytes oCode, uint256[] caps) public returns (uint8 err, address procedureAddress) {
-        return createProcedure(name, oCode, caps);
+    function registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
+        if (validateContract(procedureAddress) == 0) {
+            return registerAnyProcedure(name, procedureAddress, caps);
+        } else {
+            revert("procedure code failed validation");
+        }
     }
 
     // Create a validated procedure.
-    // TODO: this does not currently do validation.
-    function createProcedure(bytes24 name, bytes oCode, uint256[] caps) public returns (uint8 err, address procedureAddress) {
+    function registerAnyProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -353,9 +357,10 @@ contract Kernel is Factory {
             err = 3;
             return;
         }
-
-        procedureAddress = create(oCode);
+        
         procedures.insert(name, procedureAddress, caps);
+        
+        retAddress = procedureAddress;
     }
 
     function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {
@@ -389,7 +394,7 @@ contract Kernel is Factory {
     // }
 
 
-    function getProcedure(bytes24 name) public returns (address) {
+    function getProcedure(bytes24 name) public view returns (address) {
         return procedures.get(name);
     }
 
@@ -428,13 +433,14 @@ contract Kernel is Factory {
                 // get the current free mem location
                 result :=  mload(0x40)
                 // zero-out the memory
-                let n := 0
-                jumpi(loopend, eq(rsize, 0))
-                loop:
-                    mstore(add(result,n),0)
-                    n := add(n, 32)
-                    jumpi(loop, iszero(eq(n, rsize)))
-                loopend:
+                // if there are some bytes to be allocated (rsize is not zero)
+                if rsize {
+                    // loop through the address and zero them
+                    for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                        mstore(add(result,n),0)
+                    }
+
+                }
                 // Bump the value of 0x40 so that it holds the next
                 // available memory location.
                 mstore(0x40,add(result,rsize))
@@ -495,11 +501,9 @@ contract Kernel is Factory {
                 payloadStart := add(ins,4)
             }
             if i {
-                // TODO: solidity assembly supports for loops
-                payloop:
+                for { } i { i := sub(i,  1) } {
                     mstore8(add(payloadStart,sub(i,  1)),mload(add(payload,i)))
-                    i := sub(i,  1)
-                    jumpi(payloop, i)
+                }
             }
             // There is no return value, therefore it's length is 0 bytes long
             // REVISION: lets assume a 32 byte return value for now

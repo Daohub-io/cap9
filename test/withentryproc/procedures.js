@@ -29,7 +29,7 @@ const Invalid = {
     Simple: artifacts.require('test/invalid/Simple.sol')
 }
 
-contract('Kernel', function (accounts) {
+contract('Kernel with entry procedure', function (accounts) {
     describe('Install entry procedure', function () {
         const entryProcName = "EntryProcedure";
         const entryProcBytecode = Valid.BasicEntryProcedure.bytecode;
