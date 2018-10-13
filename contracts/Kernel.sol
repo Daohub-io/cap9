@@ -64,6 +64,10 @@ contract Kernel is Factory {
         entryProcedure = key;
     }
 
+    function getEntryProcedure() public returns (bytes24 key) {
+        return entryProcedure;
+    }
+
     // Check if a transaction is external.
     function isExternal() internal view returns (bool) {
         // If the current transaction is from the procedure we are executing,
@@ -357,9 +361,9 @@ contract Kernel is Factory {
             err = 3;
             return;
         }
-        
+
         procedures.insert(name, procedureAddress, caps);
-        
+
         retAddress = procedureAddress;
     }
 
