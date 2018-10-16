@@ -299,6 +299,7 @@ contract('Kernel without entry procedure', function (accounts) {
             // (here it is returned as a hex, we test the string because we
             // want to also be sure it is encoded as such)
             assert.notEqual(code, "0x0");
+            assert.notEqual(code, "0x");
 
             const [err2, deleteAddress] = await kernel.deleteProcedure.call(procedureName);
             assert.equal(err2, 0);
@@ -312,6 +313,52 @@ contract('Kernel without entry procedure', function (accounts) {
             const proceduresRaw = await kernel.listProcedures.call();
             const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
             assert(!procedures.includes(procedureName), "The procedure name should no longer be included in the procedure table")
+        })
+
+        it('should remove the procedure from the list on deletion (multiple)', async function () {
+            const kernel = await Kernel.new();
+
+            const procedureName = "test";
+            const testAdder = await testutils.deployedTrimmed(Valid.Adder);
+            const [err1, address] = await kernel.registerProcedure.call(procedureName, testAdder.address, []);
+            assert.equal(err1, 0);
+            const tx1 = await kernel.registerProcedure(procedureName, testAdder.address, []);
+            const code = web3.eth.getCode(address);
+            const codeAsNumber = web3.toBigNumber(code);
+
+            // There should be some code at this address now
+            // (here it is returned as a hex, we test the string because we
+            // want to also be sure it is encoded as such)
+            assert.notEqual(code, "0x0");
+            assert.notEqual(code, "0x");
+
+            await kernel.registerProcedure(procedureName+"1", testAdder.address, []);
+            await kernel.registerProcedure(procedureName+"2", testAdder.address, []);
+            await kernel.registerProcedure(procedureName+"3", testAdder.address, []);
+
+            const proceduresBeforeRaw = await kernel.listProcedures.call();
+            const proceduresBefore = proceduresBeforeRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+            const [err2, deleteAddress] = await kernel.deleteProcedure.call(procedureName);
+            assert.equal(err2, 0);
+            const tx2 = await kernel.deleteProcedure(procedureName);
+            const proceduresAfterRaw = await kernel.listProcedures.call();
+            const proceduresAfter = proceduresAfterRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+
+
+            assert.equal(address, deleteAddress);
+            const retrievedAddress = await kernel.getProcedure(procedureName);
+            assert(isNullAddress, "The key be able to be retrieved")
+
+            assert(!proceduresAfter.includes(procedureName), "The procedure name should no longer be included in the procedure table")
+            assert(proceduresAfter.includes(procedureName+"1"), "This procedure name should still be included in the procedure table")
+            assert(proceduresAfter.includes(procedureName+"2"), "This procedure name should still be included in the procedure table")
+            assert(proceduresAfter.includes(procedureName+"3"), "This procedure name should still be included in the procedure table")
+
+            // The last procedure should have been moved to the beginning
+            // first we find the original position of the deleted procedure
+            const origPos = proceduresBefore.findIndex((s)=>s===procedureName);
+            // then we check that the last procedure is now in that location
+            assert.equal(proceduresAfter[origPos],proceduresBefore[proceduresBefore.length-1], "The last procedure should have been moved to the beginning")
         })
 
         // TODO: this is not currently functional

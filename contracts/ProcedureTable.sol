@@ -379,7 +379,7 @@ library ProcedureTable {
             uint248 p1P = _getProcedurePointerByKey(uint192(key));
             uint248 key1P = _getKeyPointerByIndex(p1.keyIndex);
 
-            uint248 key2P = _getKeyPointerByIndex(uint8(len-1));
+            uint248 key2P = _getKeyPointerByIndex(uint8(len));
             uint192 key2 = uint192(_get(0, key2P));
 
             uint248 p2P = _getProcedurePointerByKey(key2);
@@ -398,6 +398,8 @@ library ProcedureTable {
             _set(0, lenP, len - 1);
 
             return true;
+        } else {
+            return false;
         }
     }
 
