@@ -64,7 +64,7 @@ contract Kernel is Factory {
         entryProcedure = key;
     }
 
-    function getEntryProcedure() public returns (bytes24 key) {
+    function getEntryProcedure() public view returns (bytes24 key) {
         return entryProcedure;
     }
 

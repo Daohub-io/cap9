@@ -8,7 +8,7 @@ contract Setter {
             sstore
         }
     }
-    function get(uint256 key) public returns (uint256 value) {
+    function get(uint256 key) public view returns (uint256 value) {
         assembly {
             key
             sload

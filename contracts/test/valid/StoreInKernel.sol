@@ -2,10 +2,10 @@ pragma solidity ^0.4.17;
 
 contract StoreInKernel {
 
-    function foo() {
-        uint256 foo = 1234;
+    function foo() public {
+        uint256 fooVal = 1234;
         assembly {
-            mload(foo)
+            mload(fooVal)
             0x0
 
             // This code is necessary in front of an SSTORE to pass verification

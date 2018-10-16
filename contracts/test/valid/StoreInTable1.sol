@@ -1,10 +1,10 @@
 pragma solidity ^0.4.17;
 
 contract StoreInTable1 {
-    function foo() {
-        uint256 foo = 1234;
+    function foo() public {
+        uint256 fooVal = 1234;
         assembly {
-            mload(foo)
+            mload(fooVal)
             0x0100000000000000000000000000000000000000000000000000000000000000
             // This code is necessary in front of an SSTORE to pass verification
             0x64
@@ -13,7 +13,7 @@ contract StoreInTable1 {
             sstore
         }
     }
-    function boo() {
+    function boo() public {
         uint256 loo = 1234;
         assembly {
             mload(loo)
