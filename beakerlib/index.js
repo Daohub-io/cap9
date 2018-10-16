@@ -127,3 +127,22 @@ class CallCap extends Cap {
     }
 }
 exports.CallCap = CallCap;
+
+class RegisterCap extends Cap {
+    // keys should be a list of strings
+    constructor(keys) {
+        super(11);
+        if (!keys) {
+            this.keys = [];
+        } else  {
+            this.keys = keys;
+        }
+    }
+    // Format the capability values into the values that will be stored in the
+    // kernel. Must be defined for all subclasses
+    keyValues() {
+        const val = Array.from(this.keys.map(x=>web3.fromAscii(x.padEnd(32,'\0'))));
+        return val;
+    }
+}
+exports.RegisterCap = RegisterCap;
