@@ -48,7 +48,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // console.log("procedures2:", procedures2);
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap([]);
+                const cap2 = new beakerlib.RegisterCap();
                 const cap3 = new beakerlib.CallCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 

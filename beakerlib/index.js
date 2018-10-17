@@ -129,14 +129,11 @@ class CallCap extends Cap {
 exports.CallCap = CallCap;
 
 class RegisterCap extends Cap {
-    // keys should be a list of strings
-    constructor(keys) {
+    // A RegisterCap is just a boolean value, a procedure can or cannot
+    // register new procedures
+    constructor() {
         super(11);
-        if (!keys) {
-            this.keys = [];
-        } else  {
-            this.keys = keys;
-        }
+        this.keys = [];
     }
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
