@@ -159,30 +159,39 @@ contract Kernel is Factory {
             bytes24 regName = bytes24(regNameB);
             address regProcAddress = address(parse32ByteValue(1+32+32));
             uint256[] memory regCaps = new uint256[](0);
-            (uint8 err, address addr) = registerProcedure(regName, regProcAddress, regCaps);
-            uint256 bigErr = uint256(err);
-            assembly {
-                function mallocZero(size) -> result {
-                    // align to 32-byte words
-                    let rsize := add(size,sub(32,mod(size,32)))
-                    // get the current free mem location
-                    result :=  mload(0x40)
-                    // zero-out the memory
-                    // if there are some bytes to be allocated (rsize is not zero)
-                    if rsize {
-                        // loop through the address and zero them
-                        for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                            mstore(add(result,n),0)
+            bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
+            if (cap) {
+                (uint8 err, address addr) = registerProcedure(regName, regProcAddress, regCaps);
+                uint256 bigErr = uint256(err);
+                assembly {
+                    function mallocZero(size) -> result {
+                        // align to 32-byte words
+                        let rsize := add(size,sub(32,mod(size,32)))
+                        // get the current free mem location
+                        result :=  mload(0x40)
+                        // zero-out the memory
+                        // if there are some bytes to be allocated (rsize is not zero)
+                        if rsize {
+                            // loop through the address and zero them
+                            for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                                mstore(add(result,n),0)
+                            }
                         }
+                        // Bump the value of 0x40 so that it holds the next
+                        // available memory location.
+                        mstore(0x40,add(result,rsize))
                     }
-                    // Bump the value of 0x40 so that it holds the next
-                    // available memory location.
-                    mstore(0x40,add(result,rsize))
+                    let retSize := 32
+                    let retLoc := mallocZero(retSize)
+                    mstore(retLoc,bigErr)
+                    return(retLoc,retSize)
                 }
-                let retSize := 32
-                let retLoc := mallocZero(retSize)
-                mstore(retLoc,bigErr)
-                return(retLoc,retSize)
+            } else {
+                assembly {
+                    // 33 means the capability was rejected
+                    mstore(0,33)
+                    revert(0,0x20)
+                }
             }
         } else {
             // default; fallthrough action
@@ -330,7 +339,7 @@ contract Kernel is Factory {
             }
         } else {
             assembly {
-                mstore(0,22)
+                mstore(0,33)
                 return(0,0x20)
             }
         }
