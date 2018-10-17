@@ -27,7 +27,7 @@ contract('Kernel without entry procedure', function (accounts) {
         const bytecode = Valid.SysCallTestLog.bytecode;
         describe('A() No topics', function () {
             const functionSpec = "A()";
-            it('A() should succeed when given cap', async function () {
+            it('A() should succeed when given "*" cap', async function () {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
@@ -86,7 +86,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.LogCap([topic]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -95,11 +95,6 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
-                // console.log(tx);
-                // console.log(tx.receipt.logs);
-
-                // console.log("valueX(dec):", valueX.toNumber());
-                // console.log("valueX(hex):", web3.toHex(valueX));
 
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
                 assert.equal(tx.receipt.logs[0].topics.length,1,"There should be 1 topic");
@@ -137,9 +132,12 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
+                const cap = new beakerlib.LogCap([0x8001, 0x0]);
+                const capArray = beakerlib.Cap.toInput([cap]);
+
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 // need to have the ABI definition in JSON as per specification
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
@@ -159,7 +157,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.LogCap([topic0, topic1]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -168,11 +166,6 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
-                // console.log(tx);
-                // console.log(tx.receipt.logs);
-
-                // console.log("valueX(dec):", valueX.toNumber());
-                // console.log("valueX(hex):", web3.toHex(valueX));
 
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
                 assert.equal(tx.receipt.logs[0].topics.length,2,"There should be 2 topics");
@@ -194,9 +187,12 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
+                const cap = new beakerlib.LogCap([0x8001, 0x0]);
+                const capArray = beakerlib.Cap.toInput([cap]);
+
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
@@ -216,7 +212,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.LogCap([topic0, topic1, topic2]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -225,12 +221,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
-                // console.log(tx);
-                // console.log(tx.receipt.logs);
-
-                // console.log("valueX(dec):", valueX.toNumber());
-                // console.log("valueX(hex):", web3.toHex(valueX));
-
+ 
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
                 assert.equal(tx.receipt.logs[0].topics.length,3,"There should be 3 topics");
                 assert.equal(tx.receipt.logs[0].topics[0],topic0,"The topic0 should be correct");
@@ -253,9 +244,12 @@ contract('Kernel without entry procedure', function (accounts) {
             it('D() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
+                const cap = new beakerlib.LogCap([0x8001, 0x0]);
+                const capArray = beakerlib.Cap.toInput([cap]);
+
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
@@ -276,7 +270,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.LogCap([topic0, topic1, topic2, topic3]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -285,11 +279,6 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
-                // console.log(tx);
-                // console.log(tx.receipt.logs);
-
-                // console.log("valueX(dec):", valueX.toNumber());
-                // console.log("valueX(hex):", web3.toHex(valueX));
 
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
                 assert.equal(tx.receipt.logs[0].topics.length,4,"There should be 4 topics");
@@ -314,9 +303,12 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should fail when trying to log to something outside its capability', async function () {
                 const kernel = await Kernel.new();
 
+                const cap = new beakerlib.LogCap([0x8001, 0x0]);
+                const capArray = beakerlib.Cap.toInput([cap]);
+
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
