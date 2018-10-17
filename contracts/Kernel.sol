@@ -271,6 +271,7 @@ contract Kernel is Factory {
             // Here we have established that we are processing a write call and
             // we must destructure the necessary values.
             capIndex = parse32ByteValue(1);
+            // this is parsing the number of topics from the system call
             uint256 nTopics = parse32ByteValue(1+32*1);
             bytes32[] memory topicVals = new bytes32[](nTopics);
             for (uint256 i = 0; i < nTopics; i++) {
