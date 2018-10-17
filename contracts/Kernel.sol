@@ -419,7 +419,7 @@ contract Kernel is Factory {
         // Check whether the address exists
         bool exist = procedures.contains(name);
         if (exist) {
-            err = 99;
+            err = 3;
             return;
         }
 
