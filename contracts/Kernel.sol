@@ -158,10 +158,27 @@ contract Kernel is Factory {
             bytes32 regNameB = bytes32(parse32ByteValue(1+32));
             bytes24 regName = bytes24(regNameB);
             address regProcAddress = address(parse32ByteValue(1+32+32));
-            uint256[] memory regCaps = new uint256[](0);
+            // the general format of a capability is length,type,values, where
+            // length includes the type
+            uint256 capsStartOffset =
+                /* sysCallCapType */ 1
+                /* capIndex */ + 32
+                /* name */ + 32
+                /* address */ + 32;
+            // capsLength is the length of the caps arry in bytes
+            uint256 capsLengthBytes = msg.data.length - capsStartOffset;
+            uint256 capsLengthKeys  = capsLengthBytes/32;
+            if (capsLengthBytes % 32 != 0) {
+                revert("caps are not aligned to 32 bytes");
+            }
+            uint256[] memory regCaps = new uint256[](capsLengthKeys);
+            for (uint256 q = 0; q < capsLengthKeys; q++) {
+                regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
+            }
             bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
             if (cap) {
-                (uint8 err, address addr) = registerProcedure(regName, regProcAddress, regCaps);
+
+                (uint8 err, /* address addr */) = registerProcedure(regName, regProcAddress, regCaps);
                 uint256 bigErr = uint256(err);
                 assembly {
                     function mallocZero(size) -> result {
@@ -433,7 +450,6 @@ contract Kernel is Factory {
         }
 
         procedures.insert(name, procedureAddress, caps);
-        log1(bytes32(name),"successfully inserted");
         retAddress = procedureAddress;
         err = 0;
         return (0, procedureAddress);

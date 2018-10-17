@@ -26,7 +26,6 @@ contract BasicEntryProcedure {
         // for (uint256 i = 24; i < msg.data.length; i++) {
         //     log1(bytes32(msg.data[i]), bytes32("Payload"));
         // }
-        bytes memory payload = msg.data;
         // Call the requested procedure
         // Begin our call
         bytes32 res;
