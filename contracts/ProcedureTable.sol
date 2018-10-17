@@ -194,21 +194,18 @@ library ProcedureTable {
         }
         Capability memory cap = p.caps[reqCapIndex];
         uint256 capabilityType = cap.capType;
-        // If the capability type is not WRITE (0x7) it is the wrong type of
+        // If the capability type is not LOG (0x9) it is the wrong type of
         // capability and we should reject
         if (capabilityType != 0x9) {
             return false;
         }
-        // We need at least one value for a valid log cap
-        if (cap.values.length < 1) {
-            return false;
-        }
-        // The first value is the number of topics
-        uint256 nTopics = cap.values[0];
+        // The number of topics is simply the number of keys of the cap (i.e.
+        // not including the type)
+        uint256 nTopics = cap.values.length;
         // Then we retrieve the topics
         bytes32[] memory capTopics = new bytes32[](nTopics);
         for (uint256 i = 0; i < nTopics; i++) {
-            capTopics[i] = bytes32(cap.values[i+1]);
+            capTopics[i] = bytes32(cap.values[i]);
         }
 
         // Check that all of the topics required by the cap are satisfied. That

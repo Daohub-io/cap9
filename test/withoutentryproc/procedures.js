@@ -308,7 +308,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
             assert.equal(address, deleteAddress);
             const retrievedAddress = await kernel.getProcedure(procedureName);
-            assert(isNullAddress, "The key be able to be retrieved")
+            assert(isNullAddress(retrievedAddress), "The key be able to be retrieved")
 
             const proceduresRaw = await kernel.listProcedures.call();
             const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
@@ -347,7 +347,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
             assert.equal(address, deleteAddress);
             const retrievedAddress = await kernel.getProcedure(procedureName);
-            assert(isNullAddress, "The key be able to be retrieved")
+            assert(isNullAddress(retrievedAddress), "The key be able to be retrieved")
 
             assert(!proceduresAfter.includes(procedureName), "The procedure name should no longer be included in the procedure table")
             assert(proceduresAfter.includes(procedureName+"1"), "This procedure name should still be included in the procedure table")
@@ -361,6 +361,77 @@ contract('Kernel without entry procedure', function (accounts) {
             assert.equal(proceduresAfter[origPos],proceduresBefore[proceduresBefore.length-1], "The last procedure should have been moved to the beginning")
         })
 
+        describe('should not have side-effects', function() {
+
+            it('removing then registering a new proc with same name + capabilities', async function() {
+                const kernel = await Kernel.new();
+                const table0 = await kernel.returnRawProcedureTable.call()
+
+                const cap1 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.LogCap([0xdeadbeef]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                
+                const procedureName = "test";
+                const testAdder = await testutils.deployedTrimmed(Valid.Adder);
+
+                await kernel.registerProcedure.call(procedureName, testAdder.address, capArray);
+                await kernel.registerProcedure(procedureName, testAdder.address, capArray);
+                const table1 = await kernel.returnRawProcedureTable.call()
+
+                // Delete Procedure
+                await kernel.deleteProcedure.call(procedureName);
+                await kernel.deleteProcedure(procedureName);
+                const table2 = await kernel.returnRawProcedureTable.call()
+                assert.deepEqual(table0, table2, 'Procedure Tables should be equal after deletion')
+
+                const retrievedAddress = await kernel.getProcedure(procedureName);
+                assert(isNullAddress(retrievedAddress), "Procedure is deleted")
+
+                await kernel.registerProcedure.call(procedureName, testAdder.address, capArray);
+                await kernel.registerProcedure(procedureName, testAdder.address, capArray);
+                const table3 = await kernel.returnRawProcedureTable.call()
+                
+                assert.deepEqual(table1, table3, 'Procedure Tables should be equal')
+                
+            })
+
+            it('removing then registering a superset with same name', async function() {
+
+                const kernel = await Kernel.new();
+                const table_empty = await kernel.returnRawProcedureTable.call()
+
+                const cap1 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.LogCap([0xdeadbeef]);
+                const capArray1 = beakerlib.Cap.toInput([cap1]);
+                const capArray2 = beakerlib.Cap.toInput([cap1, cap2]);
+                
+                const procedureName = "test";
+                const testAdder = await testutils.deployedTrimmed(Valid.Adder);
+
+                // First Create A Superset for initial state, so we have a referenc point
+                await kernel.registerProcedure(procedureName, testAdder.address, capArray2);
+                const table_sup = await kernel.returnRawProcedureTable.call()
+                // Delete It
+                await kernel.deleteProcedure(procedureName);
+                const table_sup_del = await kernel.returnRawProcedureTable.call()
+                assert.deepEqual(table_sup_del, table_empty, 'Procedure Tables should be equal after deletion')
+
+                // Next Register a subset for initial state
+                await kernel.registerProcedure(procedureName, testAdder.address, capArray1);
+                await kernel.returnRawProcedureTable.call()
+                // Delete It
+                await kernel.deleteProcedure(procedureName);
+                const table_sub_del = await kernel.returnRawProcedureTable.call()
+                assert.deepEqual(table_sub_del, table_empty, 'Procedure Tables should be equal after deletion')
+
+                 // Create A Superset - again
+                 await kernel.registerProcedure(procedureName, testAdder.address, capArray2);
+                 const table_sup_new = await kernel.returnRawProcedureTable.call()
+                 // Check if matches the reference
+                 assert.deepEqual(table_sup_new, table_sup, 'Procedure Tables should be equal')
+            })
+        })
+ 
         // TODO: this is not currently functional
         it.skip('should destroy the procedures contract on deletion', async function () {
             const kernel = await Kernel.new();

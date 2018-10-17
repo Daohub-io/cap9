@@ -102,7 +102,7 @@ class LogCap extends Cap {
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        return Array.from([this.topics.length].concat(this.topics));
+        return Array.from(this.topics);
     }
 }
 exports.LogCap = LogCap;
