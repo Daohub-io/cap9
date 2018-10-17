@@ -339,7 +339,7 @@ contract Kernel is Factory {
             }
         } else {
             assembly {
-                mstore(0,33)
+                mstore(0,22)
                 return(0,0x20)
             }
         }
