@@ -257,7 +257,7 @@ contract('Kernel without entry procedure', function (accounts) {
         })
     })
 
-    describe.only('.deleteProcedure()', function () {
+    describe('.deleteProcedure()', function () {
         it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
             const [err, deleteAddress] = await kernel.deleteProcedure.call('test');
