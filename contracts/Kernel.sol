@@ -60,6 +60,24 @@ contract Kernel is Factory {
         return value;
     }
 
+    function parse24ByteValue(uint256 startOffset) pure internal returns (uint192) {
+        uint192 value = 0;
+        for (uint192 i = 0; i < 24; i++) {
+            value = value << 8;
+            value = value | uint192(msg.data[startOffset+i]);
+        }
+        return value;
+    }
+
+    function parse20ByteValue(uint256 startOffset) pure internal returns (uint160) {
+        uint160 value = 0;
+        for (uint160 i = 0; i < 20; i++) {
+            value = value << 8;
+            value = value | uint160(msg.data[startOffset+i]);
+        }
+        return value;
+    }
+
     function setEntryProcedure(bytes24 key) public {
         entryProcedure = key;
     }
@@ -102,8 +120,6 @@ contract Kernel is Factory {
     // This is the fallback function which is used to handle system calls. This
     // is only called if the other functions fail.
     function() public {
-        bool cap;
-        uint256 capIndex;
         // This is the entry point for the kernel
 
         // If it is an external account, we forward it straight to the init
@@ -121,6 +137,7 @@ contract Kernel is Factory {
         // 0x03 - exec syscall
         // 0x07 - write syscall
         // 0x09 - log syscall
+        // 11 - register procedure
 
         // log1(bytes32(currentProcedure), bytes32("current-procedure"));
 
@@ -128,45 +145,42 @@ contract Kernel is Factory {
         if (sysCallCapType == 0) {
             // non-syscall case
         } else if (sysCallCapType == 0x03) {
-            // This is a call system call
-            // parse a 32-byte value at offset 1 (offset 0 is the capType byte)
-            capIndex = parse32ByteValue(1);
-            // parse a 32-byte value at offset 1 (offset 0 is the capType byte,
-            // offset 1 is the capIndex (32 bytes)
-            // We also perform a shift as this is 24 byte value, not a 32 byte
-            // value
-            bytes24 procedureKey = bytes24(parse32ByteValue(1+32)/0x10000000000000000);
-            uint256 returnLength = uint256(parse32ByteValue(1+32*2));
-            uint256 dataLength;
-            // log1(bytes32(msg.data.length), bytes32("msg.data.length"));
-            if (msg.data.length > (1+3*32)) {
-                dataLength = msg.data.length - (1+3*32);
-            } else {
-                dataLength = 0;
+            callSystemCall();
+        } else if (sysCallCapType == 0x07) {
+            storeSystemCall();
+        } else if (sysCallCapType == 0x09) {
+            logSystemCall();
+        } else if (sysCallCapType == 11) {
+            // this is the system call to register a contract as a procedure
+            // currently we enforce no caps
+            uint256 capIndex = parse32ByteValue(1);
+            // TODO: fix this double name variable work-around
+            bytes32 regNameB = bytes32(parse32ByteValue(1+32));
+            bytes24 regName = bytes24(regNameB);
+            address regProcAddress = address(parse32ByteValue(1+32+32));
+            // the general format of a capability is length,type,values, where
+            // length includes the type
+            uint256 capsStartOffset =
+                /* sysCallCapType */ 1
+                /* capIndex */ + 32
+                /* name */ + 32
+                /* address */ + 32;
+            // capsLength is the length of the caps arry in bytes
+            uint256 capsLengthBytes = msg.data.length - capsStartOffset;
+            uint256 capsLengthKeys  = capsLengthBytes/32;
+            if (capsLengthBytes % 32 != 0) {
+                revert("caps are not aligned to 32 bytes");
             }
-            cap = procedures.checkCallCapability(uint192(currentProcedure), procedureKey, capIndex);
-            address procedureAddress = procedures.get(procedureKey);
-            // Note the procedure we are currently running, we will put this
-            // back into the "currentProcedure" after we have finished the call.
-            bytes24 previousProcedure = currentProcedure;
-            // We set the value for the current procedure in the kernel so that
-            // it knows which procedure it is executing (this is important for
-            // looking up capabilities).
-            currentProcedure = procedureKey;
-            // log1(bytes32(procedureKey),bytes32("calling"));
+            uint256[] memory regCaps = new uint256[](capsLengthKeys);
+            for (uint256 q = 0; q < capsLengthKeys; q++) {
+                regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
+            }
+            bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
             if (cap) {
-                // log1(bytes32("permitted"),bytes32("call-cap"));
-                assembly {
-                    function malloc(size) -> result {
-                        // align to 32-byte words
-                        let rsize := add(size,sub(32,mod(size,32)))
-                        // get the current free mem location
-                        result :=  mload(0x40)
-                        // Bump the value of 0x40 so that it holds the next
-                        // available memory location.
-                        mstore(0x40,add(result,rsize))
-                    }
 
+                (uint8 err, /* address addr */) = registerProcedure(regName, regProcAddress, regCaps);
+                uint256 bigErr = uint256(err);
+                assembly {
                     function mallocZero(size) -> result {
                         // align to 32-byte words
                         let rsize := add(size,sub(32,mod(size,32)))
@@ -179,98 +193,180 @@ contract Kernel is Factory {
                             for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
                                 mstore(add(result,n),0)
                             }
-
                         }
                         // Bump the value of 0x40 so that it holds the next
                         // available memory location.
                         mstore(0x40,add(result,rsize))
                     }
-
-                    // Retrieve the address of new available memory from address 0x40
-                    // we will use this as the start of the input (ins)
-                    let ins
-                    let inl
-                    if dataLength {
-                        // If there is any data associated with this procedure
-                        // call (this inlcudes the data such as a function
-                        // selector) we need to set that as the input data to
-                        // the delegatecall.
-                        // First we must allocate some memory.
-                        ins :=  malloc(dataLength)
-                        // Then we store that data at this allocated memory
-                        // location
-                        calldatacopy(ins, 97, dataLength)
-                        inl := dataLength
-                    }
-                    if iszero(dataLength) {
-                        // If there is not data to be sent we just set the
-                        // location and length of the input data to zero. The
-                        // location doesn't actually matter as long the length
-                        // is zero.
-                        ins := 0
-                        inl := 0
-                    }
-                    let retLoc := mallocZero(returnLength)
-                    let status := delegatecall(
-                        // The gas we are budgeting, which is always all the
-                        // available gas
-                        gas,
-                        // The address for the chosen procedure which we
-                        // obtained earlier
-                        procedureAddress,
-                        // The starting memory offset of the innput data
-                        ins,
-                        // The length of the input data
-                        inl,
-                        // The starting memory offset to place the output data
-                        retLoc,
-                        // The length of the output data
-                        returnLength)
-                    // We need to restore the previous procedure as the current
-                    // procedure, this can simply be on the stack
-                    sstore(currentProcedure_slot,div(previousProcedure,exp(0x100,8)))
-                    if iszero(status) {
-                        let errStore := malloc(0x20)
-                        mstore(errStore,add(22,mload(retLoc)))
-                        revert(errStore,0x20)
-                    }
-                    if eq(status,1) {
-                        return(retLoc,returnLength)
-                    }
+                    let retSize := 32
+                    let retLoc := mallocZero(retSize)
+                    mstore(retLoc,bigErr)
+                    return(retLoc,retSize)
                 }
             } else {
-                // log1(bytes32("not-permitted"),bytes32("call-cap"));
                 assembly {
                     // 33 means the capability was rejected
                     mstore(0,33)
                     revert(0,0x20)
                 }
             }
-        } else if (sysCallCapType == 0x07) {
-            // This is a store system call
-            // Here we have established that we are processing a write call and
-            // we must destructure the necessary values.
-            capIndex = parse32ByteValue(1);
-            uint256 writeAddress = parse32ByteValue(1+32*1);
-            uint256 writeValue = parse32ByteValue(1+32*2);
-            cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
-            if (cap) {
-                assembly {
-                    sstore(writeAddress, writeValue)
-                    // We don't need to return anything
-                    return(0,0)
+        } else {
+            // default; fallthrough action
+            assembly {
+                mstore8(0xb0,5)
+                log0(0xb0, 1)
+            }
+        }
+    }
+
+    function callSystemCall() internal {
+        // This is a call system call
+        // parse a 32-byte value at offset 1 (offset 0 is the capType byte)
+        uint256 capIndex = parse32ByteValue(1);
+        // parse a 32-byte value at offset 1 (offset 0 is the capType byte,
+        // offset 1 is the capIndex (32 bytes)
+        // We also perform a shift as this is 24 byte value, not a 32 byte
+        // value
+        bytes24 procedureKey = bytes24(parse32ByteValue(1+32)/0x10000000000000000);
+        uint256 returnLength = uint256(parse32ByteValue(1+32*2));
+        uint256 dataLength;
+        // log1(bytes32(msg.data.length), bytes32("msg.data.length"));
+        if (msg.data.length > (1+3*32)) {
+            dataLength = msg.data.length - (1+3*32);
+        } else {
+            dataLength = 0;
+        }
+        bool cap = procedures.checkCallCapability(uint192(currentProcedure), procedureKey, capIndex);
+        address procedureAddress = procedures.get(procedureKey);
+        // Note the procedure we are currently running, we will put this
+        // back into the "currentProcedure" after we have finished the call.
+        bytes24 previousProcedure = currentProcedure;
+        // We set the value for the current procedure in the kernel so that
+        // it knows which procedure it is executing (this is important for
+        // looking up capabilities).
+        currentProcedure = procedureKey;
+        // log1(bytes32(procedureKey),bytes32("calling"));
+        if (cap) {
+            // log1(bytes32("permitted"),bytes32("call-cap"));
+            assembly {
+                function malloc(size) -> result {
+                    // align to 32-byte words
+                    let rsize := add(size,sub(32,mod(size,32)))
+                    // get the current free mem location
+                    result :=  mload(0x40)
+                    // Bump the value of 0x40 so that it holds the next
+                    // available memory location.
+                    mstore(0x40,add(result,rsize))
                 }
-            } else {
-                assembly {
-                    mstore(0,22)
-                    return(0,0x20)
+
+                function mallocZero(size) -> result {
+                    // align to 32-byte words
+                    let rsize := add(size,sub(32,mod(size,32)))
+                    // get the current free mem location
+                    result :=  mload(0x40)
+                    // zero-out the memory
+                    // if there are some bytes to be allocated (rsize is not zero)
+                    if rsize {
+                        // loop through the address and zero them
+                        for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                            mstore(add(result,n),0)
+                        }
+
+                    }
+                    // Bump the value of 0x40 so that it holds the next
+                    // available memory location.
+                    mstore(0x40,add(result,rsize))
+                }
+
+                // Retrieve the address of new available memory from address 0x40
+                // we will use this as the start of the input (ins)
+                let ins
+                let inl
+                if dataLength {
+                    // If there is any data associated with this procedure
+                    // call (this inlcudes the data such as a function
+                    // selector) we need to set that as the input data to
+                    // the delegatecall.
+                    // First we must allocate some memory.
+                    ins :=  malloc(dataLength)
+                    // Then we store that data at this allocated memory
+                    // location
+                    calldatacopy(ins, 97, dataLength)
+                    inl := dataLength
+                }
+                if iszero(dataLength) {
+                    // If there is not data to be sent we just set the
+                    // location and length of the input data to zero. The
+                    // location doesn't actually matter as long the length
+                    // is zero.
+                    ins := 0
+                    inl := 0
+                }
+                let retLoc := mallocZero(returnLength)
+                let status := delegatecall(
+                    // The gas we are budgeting, which is always all the
+                    // available gas
+                    gas,
+                    // The address for the chosen procedure which we
+                    // obtained earlier
+                    procedureAddress,
+                    // The starting memory offset of the innput data
+                    ins,
+                    // The length of the input data
+                    inl,
+                    // The starting memory offset to place the output data
+                    retLoc,
+                    // The length of the output data
+                    returnLength)
+                // We need to restore the previous procedure as the current
+                // procedure, this can simply be on the stack
+                sstore(currentProcedure_slot,div(previousProcedure,exp(0x100,8)))
+                if iszero(status) {
+                    let errStore := malloc(0x20)
+                    mstore(errStore,add(22,mload(retLoc)))
+                    revert(errStore,0x20)
+                }
+                if eq(status,1) {
+                    return(retLoc,returnLength)
                 }
             }
-        } else if (sysCallCapType == 0x09) {
-            // This is a log system call
+        } else {
+            // log1(bytes32("not-permitted"),bytes32("call-cap"));
+            assembly {
+                // 33 means the capability was rejected
+                mstore(0,33)
+                revert(0,0x20)
+            }
+        }
+    }
+
+    function storeSystemCall() internal {
+        // This is a store system call
+        // Here we have established that we are processing a write call and
+        // we must destructure the necessary values.
+        uint256 capIndex = parse32ByteValue(1);
+        uint256 writeAddress = parse32ByteValue(1+32*1);
+        uint256 writeValue = parse32ByteValue(1+32*2);
+        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
+        if (cap) {
+            assembly {
+                sstore(writeAddress, writeValue)
+                // We don't need to return anything
+                return(0,0)
+            }
+        } else {
+            assembly {
+                mstore(0,22)
+                return(0,0x20)
+            }
+        }
+    }
+
+    function logSystemCall() internal {
+        // This is a log system call
             // Here we have established that we are processing a write call and
             // we must destructure the necessary values.
-            capIndex = parse32ByteValue(1);
+            uint256 capIndex = parse32ByteValue(1);
             // this is parsing the number of topics from the system call
             uint256 nTopics = parse32ByteValue(1+32*1);
             bytes32[] memory topicVals = new bytes32[](nTopics);
@@ -278,7 +374,7 @@ contract Kernel is Factory {
                 topicVals[i] = bytes32(parse32ByteValue(1+32*(2+i)));
             }
             bytes32 logValue = bytes32(parse32ByteValue(1+32*(2+nTopics)));
-            cap = procedures.checkLogCapability(uint192(currentProcedure), topicVals, capIndex);
+            bool cap = procedures.checkLogCapability(uint192(currentProcedure), topicVals, capIndex);
             if (cap) {
                 if (nTopics == 0) {
                     log0(logValue);
@@ -327,19 +423,10 @@ contract Kernel is Factory {
                 mstore(0xd,152)
                 return(0xd,0x20)
             }
-        } else {
-            // default; fallthrough action
-            assembly {
-                mstore8(0xb0,5)
-                log0(0xb0, 1)
-            }
-        }
     }
 
     // Create a procedure without  going through any validation. This is mainly
     // used for testing and should not exist in a production kernel.
-    // TODO: Currently this calls the normal createAnyProcedure function, which
-    // needs to be updated to do validation.
     function registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
         if (validateContract(procedureAddress) == 0) {
             return registerAnyProcedure(name, procedureAddress, caps);
@@ -364,8 +451,9 @@ contract Kernel is Factory {
         }
 
         procedures.insert(name, procedureAddress, caps);
-
         retAddress = procedureAddress;
+        err = 0;
+        return (0, procedureAddress);
     }
 
     function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {

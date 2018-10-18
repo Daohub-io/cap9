@@ -24,8 +24,6 @@ Each capability list contains a seperate list of capabilities for each possible 
 Each capability type is referenced by a byte identifier. In this case, from 0 to 10.
 ```rust
 enum CapabilityType {
-    /// Create procedure with given identifier.
-    ProcedureCreate = 0,
     /// Add capability to procedure with given identifier
     ProcedurePushCap = 1,
     /// Delete capability from procedure with given identifier and index
@@ -45,7 +43,9 @@ enum CapabilityType {
     /// The total amount of gas received from user.
     GasRecieved = 9,
     /// Send gas to an external address
-    GasSend = 10
+    GasSend = 10,
+    /// Create procedure with given identifier.
+    ProcedureCreate = 11
 }
 ```
 

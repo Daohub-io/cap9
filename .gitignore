@@ -4,3 +4,5 @@ build
 .DS_Store
 *.log
 *.code-workspace
+
+chain
