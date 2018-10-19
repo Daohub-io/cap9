@@ -350,6 +350,11 @@ library ProcedureTable {
             uint248 lenP = _getLengthPointer();
             // We then dereference that value.
             uint256 len = _get(0, lenP);
+            // If the length of the procedure table is 255, then we have reached
+            // the maximum number of procedures permitted, and must revert.
+            if (len == 255) {
+                revert();
+            }
             // We assign this procedure the next keyIndex, i.e. len+1
             p.keyIndex = uint8(len + 1);
             // We increment the Procedure Table Length value
