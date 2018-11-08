@@ -19,9 +19,10 @@
     "ethereumjs-abi": "^0.6.5",
     "ganache-cli": "^6.0.3",
     "remix-ide": "^0.6.4",
-    "truffle": "^4.1.14"
+    "truffle": "^5.0.0-beta.1"
   },
   "dependencies": {
+    "node-json-rpc": "0.0.1",
     "sleep": "^5.2.3",
     "web3": "^1.0.0-beta.36"
   }

@@ -408,7 +408,8 @@ contract Kernel is Factory {
                     }
                 } else {
                     assembly {
-                        // Revert with an error code
+                        // Revert with an error code due to an incorrect number
+                        // of topics
                         mstore(0,44)
                         revert(0,0x20)
                     }

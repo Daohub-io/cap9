@@ -19,8 +19,8 @@ contract SysCallTest is BeakerContract {
     function() public {
         write(0x8000,356);
         assembly {
-            mstore(0x9999999,123)
-            revert(0x9999999,0x20)
+            mstore(0x99,0)
+            return(0x99,0)
         }
     }
 }

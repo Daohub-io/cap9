@@ -7,6 +7,22 @@ const abi = require('ethereumjs-abi')
 const beakerlib = require("../../../beakerlib");
 const testutils = require("../../testutils.js");
 
+const rpc = require('node-json-rpc');
+
+const options = {
+  // int port of rpc server, default 5080 for http or 5433 for https
+  port: 8545,
+  // string domain name or ip of rpc server, default '127.0.0.1'
+  host: '127.0.0.1',
+  // string with default path, default '/'
+  path: '/',
+  // boolean false to turn rpc checks off, default true
+  strict: true
+};
+
+// Create a server object with options
+const client = new rpc.Client(options);
+
 // Valid Contracts
 const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
@@ -43,21 +59,77 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
                 const kernel = await Kernel.new();
+                const addresses = new Map();
 
+                addresses.set(kernel.address, "kernel");
+                const originalValue =  await kernel.testGetter.call();
+                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                console.log("originalValue", originalValue)
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
+                addresses.set(deployedContract.address, procName);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
+                addresses.set(deployedTestContract.address, testProcName);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const n = web3.utils.asciiToHex(procName.padEnd(24, "\0"))
+                console.log("n", n);
+                let tx1;
+                try {
+                    // this transaction is failing
+                    tx1 = await kernel.registerProcedure(n, deployedContract.address, capArray);
+                } catch (e) {
+                    console.log(e)
+                    tx1=e;
+                }
+                console.log(tx1)
+                const trace = await new Promise((resolve,reject) => {
+                    const input = {"jsonrpc": "2.0", "method": "trace_replayTransaction", "params": [tx1.receipt.transactionHash,["trace"]], "id": 0};
+                    console.log(input)
+                    client.call(
+                        input,
+                        function (err, res) {
+                            if (err) {
+                                reject(err)
+                            } else {
+                                resolve(res);
+                            }
+                        }
+                    );
+                });
+
+                function printTrace(addresses, result) {
+                    console.log(`output: ${result.output}`);
+                    console.log(`stateDiff: ${result.stateDiff}`);
+                    for (const obj of result.trace) {
+                        // console.log(result.trace[i]);
+                        let str = "";
+                        for (const n of obj.traceAddress) {
+                            str += "  ";
+                        }
+                        const name = addresses.get(obj.action.to);
+                        if (name) {
+                            str += name;
+                        } else {
+                            str += obj.action.to;
+                        }
+                        str += ` (${obj.action.callType})`;
+                        if (obj.error) {
+                            str += " " + obj.error
+                        }
+                        console.log(str);
+                        // console.log(result.trace[i]);
+                    }
+                    return trace;
+                }
+                console.log(trace.result.trace);
+                printTrace(addresses, trace.result);
+                console.log("kernel.address", kernel.address)
                 // This is the called procedure
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
-
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
                 // console.log(web3.toHex(valueX))
@@ -197,6 +269,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
                 const kernel = await Kernel.new();
+                const addresses = new Map();
+                addresses.set(kernel.address, "kernel");
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -208,15 +282,62 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                addresses.set(deployedContract.address, procName);
                 // This is the called procedure
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                addresses.set(deployedTestContract.address, testProcName);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
+                console.log("calling")
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                // console.log(tx.receipt.logs)
+                console.log("sending")
+                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32, {gas:8721975});
+                console.log(tx)
+                console.log(tx.receipt.logs)
+
+                const trace = await new Promise((resolve,reject) => {
+                    const input = {"jsonrpc": "2.0", "method": "trace_replayTransaction", "params": [tx.receipt.transactionHash,["trace"]], "id": 0};
+                    console.log(input)
+                    client.call(
+                        input,
+                        function (err, res) {
+                            if (err) {
+                                reject(err)
+                            } else {
+                                resolve(res);
+                            }
+                        }
+                    );
+                });
+
+                function printTrace(addresses, result) {
+                    console.log(`output: ${result.output}`);
+                    console.log(`stateDiff: ${result.stateDiff}`);
+                    for (const obj of result.trace) {
+                        // console.log(result.trace[i]);
+                        let str = "";
+                        for (const n of obj.traceAddress) {
+                            str += "  ";
+                        }
+                        const name = addresses.get(obj.action.to);
+                        if (name) {
+                            str += name;
+                        } else {
+                            str += obj.action.to;
+                        }
+                        str += ` (${obj.action.callType})`;
+                        if (obj.error) {
+                            str += " " + obj.error
+                        }
+                        console.log(str);
+                        // console.log(result.trace[i]);
+                    }
+                    return trace;
+                }
+                console.log(trace.result.trace);
+                printTrace(addresses, trace.result);
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
