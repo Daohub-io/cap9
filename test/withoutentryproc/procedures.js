@@ -370,7 +370,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const cap1 = new beakerlib.LogCap([]);
                 const cap2 = new beakerlib.LogCap([0xdeadbeef]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
-                
+
                 const procedureName = "test";
                 const testAdder = await testutils.deployedTrimmed(Valid.Adder);
 
@@ -390,9 +390,9 @@ contract('Kernel without entry procedure', function (accounts) {
                 await kernel.registerProcedure.call(procedureName, testAdder.address, capArray);
                 await kernel.registerProcedure(procedureName, testAdder.address, capArray);
                 const table3 = await kernel.returnRawProcedureTable.call()
-                
+
                 assert.deepEqual(table1, table3, 'Procedure Tables should be equal')
-                
+
             })
 
             it('removing then registering a superset with same name', async function() {
@@ -404,7 +404,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const cap2 = new beakerlib.LogCap([0xdeadbeef]);
                 const capArray1 = beakerlib.Cap.toInput([cap1]);
                 const capArray2 = beakerlib.Cap.toInput([cap1, cap2]);
-                
+
                 const procedureName = "test";
                 const testAdder = await testutils.deployedTrimmed(Valid.Adder);
 
@@ -431,7 +431,7 @@ contract('Kernel without entry procedure', function (accounts) {
                  assert.deepEqual(table_sup_new, table_sup, 'Procedure Tables should be equal')
             })
         })
- 
+
         // TODO: this is not currently functional
         it.skip('should destroy the procedures contract on deletion', async function () {
             const kernel = await Kernel.new();
@@ -473,7 +473,7 @@ contract('Kernel without entry procedure', function (accounts) {
     describe('.executeProcedure(bytes24 key, bytes payload)', function () {
         it('should return error if procedure key does not exist(3)', async function () {
             const kernel = await Kernel.new();
-            const retVal = await kernel.executeProcedure.call('test', '', "", 32);
+            const retVal = await kernel.executeProcedure.call('test', '', "");
             assert.equal(retVal, 3);
         });
 
@@ -486,7 +486,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
                     // need to have the ABI definition in JSON as per specification
-                    const valueX = await kernel.executeProcedure.call("Simple", "X()", "", 32);
+                    const valueX = await kernel.executeProcedure.call("Simple", "X()", "");
                     assert.equal(valueX.toNumber(), 220000, "X() should fail");
                 })
 
@@ -496,7 +496,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
-                    const value1 = await kernel.executeProcedure.call("Simple", "A()", "", 32);
+                    const value1 = await kernel.executeProcedure.call("Simple", "A()", "");
                     assert.equal(value1.toNumber(), 0, "A() should succeed");
                 })
 
@@ -506,7 +506,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
-                    const value = await kernel.executeProcedure.call("Simple", "C()", "", 32);
+                    const value = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(value.toNumber(), 220000, "C() should not succeed");
                 })
 
@@ -516,7 +516,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
-                    const value = await kernel.executeProcedure.call("Simple", "C()", "", 32);
+                    const value = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(value.toNumber(), 220000, "C() should not succeed");
                 })
 
@@ -526,7 +526,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
                     const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
 
-                    const value = await kernel.executeProcedure.call("Simple", "C(uint256)", "", 32);
+                    const value = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
                     assert.equal(value.toNumber(), 0, "C(uint256) should succeed");
                 })
             })
@@ -591,13 +591,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 // console.log("valueA:", valueA)
 
                 // // need to have the ABI definition in JSON as per specification
-                // const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
-                // await kernel.executeProcedure("SysCallTest", "S()", "", 32);
+                // const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                // await kernel.executeProcedure("SysCallTest", "S()", "");
                 // assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
 
                 // // do it again
-                // const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
-                // await kernel.executeProcedure("SysCallTest", "S()", "", 32);
+                // const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+                // await kernel.executeProcedure("SysCallTest", "S()", "");
                 // assert.equal(err2.toNumber(), 0, "S() should succeed with zero errcode the second time");
                 // assert.equal(value2.toNumber(), 5, "S() should succeed with correct value the second time");
             })
@@ -605,7 +605,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
         it('should return an error if key does not exist (3)', async function () {
             const kernel = await Kernel.new();
-            const retVal = await kernel.executeProcedure.call('test', '', "", 32);
+            const retVal = await kernel.executeProcedure.call('test', '', "");
             assert.equal(retVal, 3);
         });
 
@@ -642,7 +642,7 @@ contract('Kernel without entry procedure', function (accounts) {
             it('zero length (1)', async function () {
                 const kernel = await Kernel.new();
 
-                const retVal = await kernel.executeProcedure.call('', '', '', 32);
+                const retVal = await kernel.executeProcedure.call('', '', '');
                 assert.equal(retVal.toNumber(), 1);
             });
         })
