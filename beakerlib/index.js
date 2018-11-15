@@ -122,7 +122,7 @@ class CallCap extends Cap {
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        const val = Array.from(this.keys.map(x=>web3.fromAscii(x.padEnd(32,'\0'))));
+        const val = this.keys.map(x=> web3.utils.utf8ToHex(x.padEnd(32,'\0')))
         return val;
     }
 }
@@ -138,7 +138,7 @@ class RegisterCap extends Cap {
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        const val = Array.from(this.keys.map(x=>web3.fromAscii(x.padEnd(32,'\0'))));
+        const val = this.keys.map(x=> web3.utils.utf8ToHex(x.padEnd(32,'\0')))
         return val;
     }
 }

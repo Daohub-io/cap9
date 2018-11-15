@@ -46,116 +46,58 @@ const Invalid = {
 
 contract('Kernel without entry procedure', function (accounts) {
     describe('Call capability', function () {
-        const procName = "SysCallTestCall";
+        const procName = web3.utils.utf8ToHex("SysCallTestCall");
         const contract = Valid.SysCallTestCall;
         const bytecode = Valid.SysCallTestCall.bytecode;
 
         describe('A() - call procedure which needs no caps', function () {
-            const testProcName = "TestWrite";
+            const testProcName = web3.utils.utf8ToHex("TestWrite");
             const testBytecode = TestWrite.bytecode;
             const testContract = TestWrite;
             const functionSpec = "A()";
             it('A() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
+
                 const addresses = new Map();
 
                 addresses.set(kernel.address, "kernel");
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
-                console.log("originalValue", originalValue)
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
+
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                addresses.set(deployedContract.address, procName);
+                addresses.set(deployedContract.options.address, procName);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                addresses.set(deployedTestContract.address, testProcName);
+                addresses.set(deployedTestContract.options.address, testProcName);
+
                 // This is the procedure that will do the calling
-                const n = web3.utils.asciiToHex(procName.padEnd(24, "\0"))
-                console.log("n", n);
-                let tx1;
-                try {
-                    // this transaction is failing
-                    tx1 = await kernel.registerProcedure(n, deployedContract.address, capArray);
-                } catch (e) {
-                    console.log(e)
-                    tx1=e;
-                }
-                console.log(tx1)
-                const trace = await new Promise((resolve,reject) => {
-                    const input = {"jsonrpc": "2.0", "method": "trace_replayTransaction", "params": [tx1.receipt.transactionHash,["trace"]], "id": 0};
-                    console.log(input)
-                    client.call(
-                        input,
-                        function (err, res) {
-                            if (err) {
-                                reject(err)
-                            } else {
-                                resolve(res);
-                            }
-                        }
-                    );
-                });
+                let tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();           
 
-                function printTrace(addresses, result) {
-                    console.log(`output: ${result.output}`);
-                    console.log(`stateDiff: ${result.stateDiff}`);
-                    for (const obj of result.trace) {
-                        // console.log(result.trace[i]);
-                        let str = "";
-                        for (const n of obj.traceAddress) {
-                            str += "  ";
-                        }
-                        const name = addresses.get(obj.action.to);
-                        if (name) {
-                            str += name;
-                        } else {
-                            str += obj.action.to;
-                        }
-                        str += ` (${obj.action.callType})`;
-                        if (obj.error) {
-                            str += " " + obj.error
-                        }
-                        console.log(str);
-                        // console.log(result.trace[i]);
-                    }
-                    return trace;
-                }
-                console.log(trace.result.trace);
-                printTrace(addresses, trace.result);
-                console.log("kernel.address", kernel.address)
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                
+                const tx3 = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send()
+                
+                assert.equal(valueX, 0, "should succeed with zero errcode the first time");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                // console.log(web3.toHex(valueX))
-                // try {
-                //     console.log(web3.toAscii(web3.toHex(valueX)))
-                // } catch (e) {
-
-                // }
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                // console.log(tx)
-                // for (const log of tx.receipt.logs) {
-                //     if (log.topics.length > 0) {
-                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                //     } else {
-                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                //     }
-                // }
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
-
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),356, "new value should be 356");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,356, "new value should be 356");
             })
             it('A() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -163,25 +105,28 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
+
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233);
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),3, "new value should still be 3");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue, 3, "new value should still be 3");
             })
             it('A() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -191,24 +136,26 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),3, "new value should still be 3");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,3, "new value should still be 3");
             })
             it('A() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -217,25 +164,28 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
+
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 0);
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),356, "new value should be 356");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,356, "new value should be 356");
             })
             it('A() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -245,108 +195,67 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233);
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),3, "new value should still be 3");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,3, "new value should still be 3");
             })
         })
         describe('B() - without data', function () {
-            const testProcName = "SysCallTest";
+            const testProcName = web3.utils.utf8ToHex("SysCallTest");
             const testContract = Valid.SysCallTest;
             const testBytecode = Valid.SysCallTest.bytecode;
             const functionSpec = "B()";
             it('B() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
+
                 const addresses = new Map();
-                addresses.set(kernel.address, "kernel");
+                addresses.set(kernel.options.address, "kernel");
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
-
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
-                addresses.set(deployedContract.address, procName);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
+                addresses.set(deployedContract.options.address, procName);
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
-                addresses.set(deployedTestContract.address, testProcName);
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1]));
+                addresses.set(deployedTestContract.options.address, testProcName);
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                console.log("calling")
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                console.log("sending")
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32, {gas:8721975});
-                console.log(tx)
-                console.log(tx.receipt.logs)
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
 
-                const trace = await new Promise((resolve,reject) => {
-                    const input = {"jsonrpc": "2.0", "method": "trace_replayTransaction", "params": [tx.receipt.transactionHash,["trace"]], "id": 0};
-                    console.log(input)
-                    client.call(
-                        input,
-                        function (err, res) {
-                            if (err) {
-                                reject(err)
-                            } else {
-                                resolve(res);
-                            }
-                        }
-                    );
-                });
+                assert.equal(valueX, 0, "should succeed with zero errcode the first time");
 
-                function printTrace(addresses, result) {
-                    console.log(`output: ${result.output}`);
-                    console.log(`stateDiff: ${result.stateDiff}`);
-                    for (const obj of result.trace) {
-                        // console.log(result.trace[i]);
-                        let str = "";
-                        for (const n of obj.traceAddress) {
-                            str += "  ";
-                        }
-                        const name = addresses.get(obj.action.to);
-                        if (name) {
-                            str += name;
-                        } else {
-                            str += obj.action.to;
-                        }
-                        str += ` (${obj.action.callType})`;
-                        if (obj.error) {
-                            str += " " + obj.error
-                        }
-                        console.log(str);
-                        // console.log(result.trace[i]);
-                    }
-                    return trace;
-                }
-                console.log(trace.result.trace);
-                printTrace(addresses, trace.result);
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
-
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),356, "new value should be 356");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,356, "new value should be 356");
             })
             it('B() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -356,24 +265,26 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),3, "new value should still be 3");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,3, "new value should still be 3");
             })
             it('B() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -383,24 +294,26 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),3, "new value should still be 3");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,3, "new value should still be 3");
             })
             it('B() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -410,24 +323,26 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 0, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),356, "new value should be 356");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,356, "new value should be 356");
             })
             it('B() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -437,30 +352,32 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),3, "new value should still be 3");
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,3, "new value should still be 3");
             })
         })
         describe('C() - with data (function selector)', function () {
-            const testProcName = "SysCallTest";
+            const testProcName = web3.utils.utf8ToHex("SysCallTest");
             const testBytecode = Valid.SysCallTest.bytecode;
             const testContract = Valid.SysCallTest;
             const functionSpec = "C()";
             it('C() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -470,25 +387,27 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
 
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                assert.equal(valueX, 0, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,(originalValue + 1), `new value should be ${originalValue+1}`);
             })
             it('C() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -497,24 +416,26 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,originalValue, `new value should still be ${originalValue}`);
             })
             it('C() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -524,24 +445,26 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,originalValue, `new value should still be ${originalValue}`);
             })
             it('C() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -551,24 +474,26 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 0, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),(originalValue.toNumber() + 1), `new value should be ${originalValue.toNumber()+1}`);
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,(originalValue + 1), `new value should be ${originalValue+1}`);
             })
             it('C() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -578,30 +503,32 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const originalValue =  await kernel.testGetter.call();
-                assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
+                const originalValue =  await kernel.methods.testGetter().call();
+                assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
 
-                const newValue =  await kernel.testGetter.call();
-                assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
+                const newValue =  await kernel.methods.testGetter().call();
+                assert.equal(newValue,originalValue, `new value should still be ${originalValue}`);
             })
         })
         describe('E() - with data (function selector and arguments) and return', function () {
-            const testProcName = "Adder";
+            const testProcName = web3.utils.utf8ToHex("Adder");
             const testContract = Valid.Adder;
             const testBytecode = Valid.Adder.bytecode;
             const functionSpec = "E()";
             it('E() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -611,19 +538,21 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const newValue = await kernel.methods.executeProcedure(procName, functionSpec, "", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "", 32).send();
 
-                assert.equal(newValue.toNumber(),8, `new value should be 8`);
+                assert.equal(newValue,8, `new value should be 8`);
             })
             it('E() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -632,18 +561,20 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
             })
             it('E() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -653,18 +584,20 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
             })
             it('E() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -674,18 +607,20 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(newValue.toNumber(),8, `new value should be 8`);
+                const newValue = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(newValue,8, `new value should be 8`);
             })
             it('E() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -695,23 +630,25 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(valueX, 222233, "should succeed with zero errcode the first time");
             })
         })
         describe('F() - successive calls single depth', function () {
-            const testProcName = "Adder";
+            const testProcName = web3.utils.utf8ToHex("Adder");
             const testBytecode = Valid.Adder.bytecode;
             const functionSpec = "F()";
             it('F() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -722,39 +659,30 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedAdderContract = await testutils.deployedTrimmed(Valid.Adder);
                 const deployedSysCallTestContract = await testutils.deployedTrimmed(Valid.SysCallTest);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the first called procedure, which doesn't really do anything
-                await kernel.registerProcedure("Adder", deployedAdderContract.address, beakerlib.Cap.toInput([]));
+                await kernel.methods.registerProcedure(testProcName, deployedAdderContract.address, beakerlib.Cap.toInput([])).send();
                 // // This is the second called procedure, which requires capabilities
-                await kernel.registerProcedure("SysCallTest", deployedSysCallTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.methods.registerProcedure(web3.utils.utf8ToHex("SysCallTest"), deployedSysCallTestContract.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                // Execute
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
-                // console.log(tx);
+                const newValue = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
+                const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
+                assert.equal(newValue,8, `new value should be 8`);
 
-                // console.log(tx.receipt.logs)
-                // for (const log of tx.receipt.logs) {
-                //     if (log.topics.length > 0) {
-                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                //     } else {
-                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                //     }
-                // }
-                // console.log(web3.toHex(newValue))
-                assert.equal(newValue.toNumber(),8, `new value should be 8`);
-                const newValue2 =  await kernel.testGetter.call();
-                assert.equal(newValue2.toNumber(),4, "new value should be 4");
+                const newValue2 =  await kernel.methods.testGetter().call();
+                assert.equal(newValue2,4, "new value should be 4");
             })
         })
         describe('G() - deeper stacks', function () {
-            const testProcName = "FirstNestedCall";
+            const testProcName = web3.utils.utf8ToHex("FirstNestedCall");
             const testBytecode = Valid.FirstNestedCall.bytecode;
             const functionSpec = "G()";
             it('G() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+                const kernel = (await Kernel.new()).contract;
+                kernel.options.from = Kernel.class_defaults.from;
+                kernel.options.gas = 10**6
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -769,36 +697,37 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedFourthNestedContract = await testutils.deployedTrimmed(Valid.FourthNestedCall);
                 const deployedFifthNestedContract = await testutils.deployedTrimmed(Valid.FifthNestedCall);
                 const deployedSixthNestedContract = await testutils.deployedTrimmed(Valid.SixthNestedCall);
+                
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                await kernel.registerProcedure("Adder", deployedAdderContract.address, beakerlib.Cap.toInput([]));
-                await kernel.registerProcedure("FirstNestedCall",  deployedFirstNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8001,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("SecondNestedCall", deployedSecondNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8002,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("ThirdNestedCall",  deployedThirdNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8003,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("FourthNestedCall", deployedFourthNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8004,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("FifthNestedCall",  deployedFifthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("SixthNestedCall",  deployedSixthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()]));
+                await kernel.methods.registerProcedure(testProcName, deployedAdderContract.address, beakerlib.Cap.toInput([])).send();
+                await kernel.methods.registerProcedure(web3.utils.utf8ToHex("FirstNestedCall"),  deployedFirstNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8001,0), new beakerlib.CallCap()])).send();
+                await kernel.methods.registerProcedure(web3.utils.utf8ToHex("SecondNestedCall"), deployedSecondNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8002,0), new beakerlib.CallCap()])).send();
+                await kernel.methods.registerProcedure(web3.utils.utf8ToHex("ThirdNestedCall"),  deployedThirdNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8003,0), new beakerlib.CallCap()])).send();
+                await kernel.methods.registerProcedure(web3.utils.utf8ToHex("FourthNestedCall"), deployedFourthNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8004,0), new beakerlib.CallCap()])).send();
+                await kernel.methods.registerProcedure(web3.utils.utf8ToHex("FifthNestedCall"),  deployedFifthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()])).send();
+                await kernel.methods.registerProcedure(web3.utils.utf8ToHex("SixthNestedCall"),  deployedSixthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()])).send();
 
-                await kernel.executeProcedure("FirstNestedCall", "G()", "", 32);
+                await kernel.methods.executeProcedure(web3.utils.utf8ToHex("FirstNestedCall"), "G()", "0x", 32).send();
 
-                const firstVal = await kernel.anyTestGetter(0x8001);
-                assert.equal(firstVal.toNumber(),75, `new value should be 75`);
+                const firstVal = await kernel.methods.anyTestGetter(0x8001).call();
+                assert.equal(firstVal,75, `new value should be 75`);
 
-                const secondVal = await kernel.anyTestGetter(0x8002);
-                assert.equal(secondVal.toNumber(),76, `new value should be 76`);
+                const secondVal = await kernel.methods.anyTestGetter(0x8002).call();
+                assert.equal(secondVal,76, `new value should be 76`);
 
-                const thirdVal = await kernel.anyTestGetter(0x8003);
-                assert.equal(thirdVal.toNumber(),77, `new value should be 77`);
+                const thirdVal = await kernel.methods.anyTestGetter(0x8003).call();
+                assert.equal(thirdVal,77, `new value should be 77`);
 
-                const fourthVal = await kernel.anyTestGetter(0x8004);
-                assert.equal(fourthVal.toNumber(),78, `new value should be 78`);
+                const fourthVal = await kernel.methods.anyTestGetter(0x8004).call();
+                assert.equal(fourthVal,78, `new value should be 78`);
 
-                const fifthVal = await kernel.anyTestGetter(0x8005);
-                assert.equal(fifthVal.toNumber(),79, `new value should be 79`);
+                const fifthVal = await kernel.methods.anyTestGetter(0x8005).call();
+                assert.equal(fifthVal,79, `new value should be 79`);
 
-                const sixthVal = await kernel.anyTestGetter(0x8006);
-                assert.equal(sixthVal.toNumber(),80, `new value should be 80`);
+                const sixthVal = await kernel.methods.anyTestGetter(0x8006).call();
+                assert.equal(sixthVal,80, `new value should be 80`);
             })
         })
     })

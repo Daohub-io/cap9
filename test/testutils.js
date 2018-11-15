@@ -25,6 +25,6 @@ exports.trimSwarm = trimSwarm;
 
 async function deployedTrimmed(contract) {
     const bytecode = trimSwarm(contract.bytecode);
-    return await contract.new({data:bytecode});
+    return new contract.web3.eth.Contract(contract.abi).deploy({data: bytecode}).send(contract.class_defaults)
 }
 exports.deployedTrimmed = deployedTrimmed;
