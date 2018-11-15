@@ -59,14 +59,14 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 // console.log(web3.toHex(valueX))
                 // try {
                 //     console.log(web3.toAscii(web3.toHex(valueX)))
                 // } catch (e) {
 
                 // }
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 // console.log(tx)
                 // for (const log of tx.receipt.logs) {
                 //     if (log.topics.length > 0) {
@@ -99,8 +99,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -126,8 +126,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -153,8 +153,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -180,8 +180,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -214,8 +214,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 // console.log(tx.receipt.logs)
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
@@ -242,8 +242,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -269,8 +269,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -296,8 +296,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -323,8 +323,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -356,8 +356,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
@@ -383,8 +383,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -410,8 +410,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -437,8 +437,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -464,8 +464,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -494,8 +494,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
@@ -515,8 +515,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
             })
             it('E() should fail when given the wrong cap', async function () {
@@ -536,8 +536,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
             })
             it('E() should succeed with a more restricted cap', async function () {
@@ -557,8 +557,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('E() should fail when the given cap is insufficient', async function () {
@@ -578,8 +578,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the called procedure
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
             })
         })
@@ -607,9 +607,9 @@ contract('Kernel without entry procedure', function (accounts) {
                 // // This is the second called procedure, which requires capabilities
                 await kernel.registerProcedure("SysCallTest", deployedSysCallTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
 
-                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
+                const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
                 // Execute
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 // console.log(tx);
 
                 // console.log(tx.receipt.logs)
@@ -659,7 +659,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 await kernel.registerProcedure("FifthNestedCall",  deployedFifthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()]));
                 await kernel.registerProcedure("SixthNestedCall",  deployedSixthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()]));
 
-                await kernel.executeProcedure("FirstNestedCall", "G()", "", 32);
+                await kernel.executeProcedure("FirstNestedCall", "G()", "");
 
                 const firstVal = await kernel.anyTestGetter(0x8001);
                 assert.equal(firstVal.toNumber(),75, `new value should be 75`);

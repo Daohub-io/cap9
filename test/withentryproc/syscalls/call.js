@@ -842,7 +842,9 @@ contract('Kernel with entry procedure', function (accounts) {
                 await kernel.registerProcedure("FifthNestedCall",  deployedFifthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()]));
                 await kernel.registerProcedure("SixthNestedCall",  deployedSixthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()]));
 
-                await kernel.executeProcedure("FirstNestedCall", "G()", "", 32);
+                // TODO: this should be using the entry procedure, no
+                // kernel.executeProcedure
+                await kernel.executeProcedure("FirstNestedCall", "G()", "");
 
                 const firstVal = await kernel.anyTestGetter(0x8001);
                 assert.equal(firstVal.toNumber(),75, `new value should be 75`);

@@ -38,15 +38,15 @@ contract('Kernel without entry procedure', function (accounts) {
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
 
-            const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
-            await kernel.executeProcedure("SysCallTest", "S()", "", 32);
+            const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+            await kernel.executeProcedure("SysCallTest", "S()", "");
             assert.equal(valueX.toNumber(), 0, "S() should succeed with correct value the first time");
             const newValue2 = await kernel.testGetter.call();
             assert.equal(newValue2.toNumber(), 4, "The value should be 4 after the first execution");
 
             // do it again to check that the value has been correctly incremented
-            const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
-            await kernel.executeProcedure("SysCallTest", "S()", "", 32);
+            const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+            await kernel.executeProcedure("SysCallTest", "S()", "");
             assert.equal(value2.toNumber(), 0, "S() should succeed with correct value the second time");
             const newValue3 = await kernel.testGetter.call();
             assert.equal(newValue3.toNumber(), 5, "The value should be 5 after the second execution");
@@ -59,15 +59,15 @@ contract('Kernel without entry procedure', function (accounts) {
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
-            const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
-            await kernel.executeProcedure("SysCallTest", "S()", "", 32);
+            const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+            await kernel.executeProcedure("SysCallTest", "S()", "");
             assert.equal(valueX.toNumber(), 222222, "S() should fail with correct value the first time");
             const newValue2 = await kernel.testGetter.call();
             assert.equal(newValue2.toNumber(), 3, "The value should still be 3 before the first execution");
 
             // do it again
-            const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
-            await kernel.executeProcedure("SysCallTest", "S()", "", 32);
+            const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+            await kernel.executeProcedure("SysCallTest", "S()", "");
             assert.equal(value2.toNumber(), 222222, "S() should succeedfail with correct value the second time");
             const newValue3 = await kernel.testGetter.call();
             assert.equal(newValue3.toNumber(), 3, "The value should still be 3 before the second execution");
@@ -81,15 +81,15 @@ contract('Kernel without entry procedure', function (accounts) {
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
-            const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
-            await kernel.executeProcedure("SysCallTest", "S()", "", 32);
+            const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+            await kernel.executeProcedure("SysCallTest", "S()", "");
             assert.equal(valueX.toNumber(), 222222, "S() should fail with correct value the first time");
             const newValue2 = await kernel.testGetter.call();
             assert.equal(newValue2.toNumber(), 3, "The value should remain the same the first time");
 
             // do it again
-            const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "", 32);
-            await kernel.executeProcedure("SysCallTest", "S()", "", 32);
+            const value2 = await kernel.executeProcedure.call("SysCallTest", "S()", "");
+            await kernel.executeProcedure("SysCallTest", "S()", "");
             assert.equal(value2.toNumber(), 222222, "S() should fail with correct value the second time");
             const newValue3 = await kernel.testGetter.call();
             assert.equal(newValue3.toNumber(), 3, "The value should remain the same the second time");

@@ -109,12 +109,9 @@ contract Kernel is Factory {
     // This is what we execute when we receive an external transaction.
     function callGuardProcedure(address /* sender */, bytes /* data */) internal {
         // TODO: we need to pass through the sender somehow
-        uint256 retSize = 32;
-        uint256 retVal = executeProcedure(entryProcedure, "", msg.data, retSize);
-        assembly {
-            mstore(0,retVal)
-            return(0,retSize)
-        }
+        // executeProcedure will call RETURN or REVERT, ending the transaction,
+        // so control should never return here
+        executeProcedure(entryProcedure, "", msg.data);
     }
 
     // This is the fallback function which is used to handle system calls. This
@@ -228,7 +225,6 @@ contract Kernel is Factory {
         // We also perform a shift as this is 24 byte value, not a 32 byte
         // value
         bytes24 procedureKey = bytes24(parse32ByteValue(1+32)/0x10000000000000000);
-        uint256 returnLength = uint256(parse32ByteValue(1+32*2));
         uint256 dataLength;
         // log1(bytes32(msg.data.length), bytes32("msg.data.length"));
         if (msg.data.length > (1+3*32)) {
@@ -302,7 +298,6 @@ contract Kernel is Factory {
                     ins := 0
                     inl := 0
                 }
-                let retLoc := mallocZero(returnLength)
                 let status := delegatecall(
                     // The gas we are budgeting, which is always all the
                     // available gas
@@ -315,9 +310,16 @@ contract Kernel is Factory {
                     // The length of the input data
                     inl,
                     // The starting memory offset to place the output data
-                    retLoc,
+                    // We are using returndatasize and returndata copy so we set
+                    // it to zero
+                    0,
                     // The length of the output data
-                    returnLength)
+                    // We are using returndatasize and returndata copy so we set
+                    // it to zero
+                    0)
+                let returnLength := returndatasize
+                let retLoc := malloc(returnLength)
+                returndatacopy(retLoc, 0, returnLength)
                 // We need to restore the previous procedure as the current
                 // procedure, this can simply be on the stack
                 sstore(currentProcedure_slot,div(previousProcedure,exp(0x100,8)))
@@ -491,7 +493,7 @@ contract Kernel is Factory {
         return procedures.get(name);
     }
 
-    function executeProcedure(bytes24 name, string fselector, bytes payload, uint256 retSize) public returns (uint256 retVal) {
+    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint256 retVal) {
         // // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             retVal = 1;
@@ -598,24 +600,24 @@ contract Kernel is Factory {
                     mstore8(add(payloadStart,sub(i,  1)),mload(add(payload,i)))
                 }
             }
-            // There is no return value, therefore it's length is 0 bytes long
-            // REVISION: lets assume a 32 byte return value for now
-            let outl := retSize
-            let outs := mallocZero(outl)
 
-            status := callcode(gas,procedureAddress,0,ins,inl,outs,outl)
+            status := callcode(gas,procedureAddress,0,ins,inl,0,0)
+            // copy the return data to memory based on its size
+            let retSize := returndatasize
+            let retLoc := malloc(retSize)
+            returndatacopy(retLoc, 0, retSize)
             // Zero-out the currentProcedure
             sstore(currentProcedure_slot,0)
             if eq(status,0) {
                 let errStore := malloc(0x20)
-                mstore(errStore,add(220000,mload(outs)))
+                mstore(errStore,add(220000,mload(retLoc)))
                 // mstore(0x40,235)
                 // log1(errStore,0x20,"returnedErr")
                 return(errStore,0x20)
             }
             if eq(status,1) {
                 // log1(outs,outl,"returned")
-                return(outs,outl)
+                return(retLoc,retSize)
             }
         }
         if (!status) {

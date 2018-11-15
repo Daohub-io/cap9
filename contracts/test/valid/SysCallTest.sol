@@ -52,6 +52,8 @@ contract SysCallTest {
                 mstore(0xd,add(2500,mload(0x80)))
                 revert(0xd,0x20)
             }
+            // On success we simply want to return zero
+            mstore(0x80, 0)
             return(0x80, 0x20)
         }
     }
