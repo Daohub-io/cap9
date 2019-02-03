@@ -37,8 +37,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
@@ -53,8 +53,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -70,8 +70,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 // need to have the ABI definition in JSON as per specification
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
                 // 4 is the error code we are after
                 assert.equal(valueX.toNumber(), 222233, "should fail with correct error code");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -92,8 +92,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
 
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
@@ -110,8 +110,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx.receipt.logs.length, 0, "Nothing should be logged");
@@ -123,8 +123,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -140,8 +140,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 // need to have the ABI definition in JSON as per specification
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -163,8 +163,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
 
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
@@ -178,8 +178,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -194,8 +194,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -218,10 +218,10 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
- 
+
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
                 assert.equal(tx.receipt.logs[0].topics.length,3,"There should be 3 topics");
                 assert.equal(tx.receipt.logs[0].topics[0],topic0,"The topic0 should be correct");
@@ -235,8 +235,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -251,8 +251,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -276,8 +276,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx = await kernel.executeProcedure(procName, functionSpec, "");
                 assert.equal(valueX.toNumber(), 0, "errcode should be correct");
 
                 assert.equal(tx.receipt.logs[0].data, "0x0000000000000000000000000000000000000000000000000000001234567890", "should succeed with correct value the first time");
@@ -294,8 +294,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
@@ -310,8 +310,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
-                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "", 32);
-                const tx1 = await kernel.executeProcedure(procName, functionSpec, "", 32);
+                const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
+                const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
                 assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
