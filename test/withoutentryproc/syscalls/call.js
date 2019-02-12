@@ -51,7 +51,8 @@ contract('Kernel without entry procedure', function (accounts) {
         const bytecode = Valid.SysCallTestCall.bytecode;
 
         describe('A() - call procedure which needs no caps', function () {
-            const testProcName = web3.utils.utf8ToHex("TestWrite");
+            const testProcName = "TestWrite"
+            const testProcNameHex = web3.utils.utf8ToHex(testProcName);
             const testBytecode = TestWrite.bytecode;
             const testContract = TestWrite;
             const functionSpec = "A()";
@@ -76,13 +77,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 addresses.set(deployedContract.options.address, procName);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                addresses.set(deployedTestContract.options.address, testProcName);
+                addresses.set(deployedTestContract.options.address, testProcNameHex);
 
                 // This is the procedure that will do the calling
                 let tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();           
 
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, []).send();
                 const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
                 
                 const tx3 = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send()
@@ -109,7 +110,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, []).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -138,7 +139,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, []).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -168,7 +169,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, []).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -197,7 +198,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, []).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, []).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -211,7 +212,7 @@ contract('Kernel without entry procedure', function (accounts) {
             })
         })
         describe('B() - without data', function () {
-            const testProcName = web3.utils.utf8ToHex("SysCallTest");
+            const testProcNameHex = web3.utils.utf8ToHex("SysCallTest");
             const testContract = Valid.SysCallTest;
             const testBytecode = Valid.SysCallTest.bytecode;
             const functionSpec = "B()";
@@ -236,8 +237,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 addresses.set(deployedContract.options.address, procName);
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1]));
-                addresses.set(deployedTestContract.options.address, testProcName);
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1]));
+                addresses.set(deployedTestContract.options.address, testProcNameHex);
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -267,7 +268,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -296,7 +297,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -317,7 +318,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(["another-proc", testProcName]);
+                const cap3 = new beakerlib.CallCap(["another-proc", testProcNameHex]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -325,7 +326,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -354,7 +355,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -368,7 +369,7 @@ contract('Kernel without entry procedure', function (accounts) {
             })
         })
         describe('C() - with data (function selector)', function () {
-            const testProcName = web3.utils.utf8ToHex("SysCallTest");
+            const testProcNameHex = web3.utils.utf8ToHex("SysCallTest");
             const testBytecode = Valid.SysCallTest.bytecode;
             const testContract = Valid.SysCallTest;
             const functionSpec = "C()";
@@ -389,7 +390,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -418,7 +419,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -447,7 +448,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -468,7 +469,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(["another-proc", testProcName]);
+                const cap3 = new beakerlib.CallCap(["another-proc", testProcNameHex]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -476,7 +477,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -505,7 +506,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const originalValue =  await kernel.methods.testGetter().call();
                 assert.equal(originalValue, 3, "test incorrectly set up: initial value should be 3");
@@ -519,7 +520,7 @@ contract('Kernel without entry procedure', function (accounts) {
             })
         })
         describe('E() - with data (function selector and arguments) and return', function () {
-            const testProcName = web3.utils.utf8ToHex("Adder");
+            const testProcNameHex = web3.utils.utf8ToHex("Adder");
             const testContract = Valid.Adder;
             const testBytecode = Valid.Adder.bytecode;
             const functionSpec = "E()";
@@ -540,7 +541,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
                 const newValue = await kernel.methods.executeProcedure(procName, functionSpec, "", 32).call();
                 const tx = await kernel.methods.executeProcedure(procName, functionSpec, "", 32).send();
@@ -563,7 +564,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
                 const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
@@ -586,7 +587,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
                 const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
@@ -601,7 +602,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(["another-proc", testProcName]);
+                const cap3 = new beakerlib.CallCap(["another-proc", testProcNameHex]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -609,7 +610,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
                 const newValue = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
                 const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
@@ -632,7 +633,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                const tx2 = await kernel.methods.registerAnyProcedure(testProcName, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
+                const tx2 = await kernel.methods.registerAnyProcedure(testProcNameHex, deployedTestContract.options.address, beakerlib.Cap.toInput([cap1])).send();
 
                 const valueX = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).call();
                 const tx = await kernel.methods.executeProcedure(procName, functionSpec, "0x", 32).send();
@@ -640,7 +641,7 @@ contract('Kernel without entry procedure', function (accounts) {
             })
         })
         describe('F() - successive calls single depth', function () {
-            const testProcName = web3.utils.utf8ToHex("Adder");
+            const testProcNameHex = web3.utils.utf8ToHex("Adder");
             const testBytecode = Valid.Adder.bytecode;
             const functionSpec = "F()";
             it('F() should succeed when given cap', async function () {
@@ -661,7 +662,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the first called procedure, which doesn't really do anything
-                await kernel.methods.registerProcedure(testProcName, deployedAdderContract.address, beakerlib.Cap.toInput([])).send();
+                await kernel.methods.registerProcedure(testProcNameHex, deployedAdderContract.address, beakerlib.Cap.toInput([])).send();
                 // // This is the second called procedure, which requires capabilities
                 await kernel.methods.registerProcedure(web3.utils.utf8ToHex("SysCallTest"), deployedSysCallTestContract.address, beakerlib.Cap.toInput([cap2, cap1])).send();
 
@@ -674,7 +675,7 @@ contract('Kernel without entry procedure', function (accounts) {
             })
         })
         describe('G() - deeper stacks', function () {
-            const testProcName = web3.utils.utf8ToHex("FirstNestedCall");
+            const testProcNameHex = web3.utils.utf8ToHex("FirstNestedCall");
             const testBytecode = Valid.FirstNestedCall.bytecode;
             const functionSpec = "G()";
             it('G() should succeed when given cap', async function () {
@@ -701,7 +702,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.methods.registerProcedure(procName, deployedContract.options.address, capArray).send();
                 // This is the called procedure
-                await kernel.methods.registerProcedure(testProcName, deployedAdderContract.address, beakerlib.Cap.toInput([])).send();
+                await kernel.methods.registerProcedure(testProcNameHex, deployedAdderContract.address, beakerlib.Cap.toInput([])).send();
                 await kernel.methods.registerProcedure(web3.utils.utf8ToHex("FirstNestedCall"),  deployedFirstNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8001,0), new beakerlib.CallCap()])).send();
                 await kernel.methods.registerProcedure(web3.utils.utf8ToHex("SecondNestedCall"), deployedSecondNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8002,0), new beakerlib.CallCap()])).send();
                 await kernel.methods.registerProcedure(web3.utils.utf8ToHex("ThirdNestedCall"),  deployedThirdNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8003,0), new beakerlib.CallCap()])).send();
