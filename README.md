@@ -7,11 +7,10 @@ The whitepaper for BeakerOS is contained in a separate repository:
 
 ## Installation
 
-You will need Nodejs and Yarn Installed.
+You will need Nodejs Installed.
 
-* Get yarn: `npm -g i yarn`
-* Install: `yarn`
+* Install: `npm i`
 
 ## Testing
 
-Run `yarn test`.
+Run `npm test`.
