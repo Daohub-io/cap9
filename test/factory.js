@@ -8,7 +8,7 @@ const testutils = require("./testutils.js");
 // Valid Contracts
 const Valid =  {
     Adder: artifacts.require('test/valid/Adder.sol'),
-    SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
+    SysCallTestWrite: artifacts.require('test/valid/SysCallTestWrite.sol'),
     SysCallTestCall: artifacts.require('test/valid/SysCallTestCall.sol'),
     SysCallTestLog: artifacts.require('test/valid/SysCallTestLog.sol'),
 }
@@ -85,7 +85,7 @@ contract('Factory', function (accounts) {
 
         it('should accept valid contract with system calls (write)', async function () {
             let factory = await Factory.deployed();
-            const deployedContract = await testutils.deployedTrimmed(Valid.SysCallTest);
+            const deployedContract = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
             let result = await factory.validateContract(deployedContract.address, {from: accounts[0]});
             assert.equal(result.toNumber(), 0);
         })

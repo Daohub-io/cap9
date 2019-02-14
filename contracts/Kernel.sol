@@ -23,6 +23,12 @@ contract Kernel is Factory {
         address location;
     }
 
+    uint8 constant SyscallSuccess = 0;
+    uint8 constant SyscallReadError = 11;
+    uint8 constant SyscallWriteError = 22;
+    uint8 constant SyscallLogError = 33;
+    uint8 constant SyscallCallError = 44;
+
     constructor() public {
         // kernelAddress = WhatIsMyAddress.get();
         // This is an example kernel global variable for testing.
@@ -354,11 +360,13 @@ contract Kernel is Factory {
             assembly {
                 sstore(writeAddress, writeValue)
                 // We don't need to return anything
+                // Return SyscallSuccess = 0
                 return(0,0)
             }
         } else {
             assembly {
-                mstore(0,22)
+                // Return SyscallWriteError = 22
+                mstore(0, 22)
                 return(0,0x20)
             }
         }

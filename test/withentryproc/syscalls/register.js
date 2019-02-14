@@ -12,7 +12,7 @@ const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
-    SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
+    SysCallTestWrite: artifacts.require('test/valid/SysCallTestWrite.sol'),
     SysCallTestCall: artifacts.require('test/valid/SysCallTestCall.sol'),
     SysCallTestCreate: artifacts.require('test/valid/SysCallTestCreate.sol'),
     BasicEntryProcedure: artifacts.require('BasicEntryProcedure.sol'),

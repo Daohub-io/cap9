@@ -2,9 +2,8 @@ pragma solidity ^0.4.17;
 
 contract BeakerContract {
 
-    function read(uint256 location) public view returns (uint256) {
+    function read(uint256 location) public view returns (uint256 result) {
         // TODO: this doesn't actually use caps, just reads raw
-        uint256 result;
         assembly {
             function mallocZero(size) -> result {
                 // align to 32-byte words
@@ -30,9 +29,9 @@ contract BeakerContract {
         }
         return result;
     }
-
-  function write(uint256 location, uint256 value) public returns (bool) {
-      bool result;
+  
+  /// Returns 0 on success, 1 on error
+  function write(uint256 location, uint256 value) public returns (uint8 err) {
       assembly {
         function mallocZero(size) -> result {
             // align to 32-byte words
@@ -72,8 +71,8 @@ contract BeakerContract {
             mstore(retLoc,0)
             revert(retLoc,retSize)
         }
-        result := 1
+        err := mload(retLoc)
     }
-    return result;
+    return err;
   }
 }
