@@ -31,7 +31,7 @@ contract BeakerContract {
     }
   
   /// Returns 0 on success, 1 on error
-  function write(uint256 location, uint256 value) public returns (uint8 err) {
+  function write(uint8 capIndex, uint256 location, uint256 value) public returns (uint8 err) {
       assembly {
         function mallocZero(size) -> result {
             // align to 32-byte words
@@ -56,7 +56,7 @@ contract BeakerContract {
         // The write call is 0x-07
         mstore(add(ins,0x0),0x07)
         // The capability index is 0x-01
-        mstore(add(ins,0x20),0x01)
+        mstore(add(ins,0x20),capIndex)
         // The storage location we want is 0x8000
         mstore(add(ins,0x40),location)
         // The value we want to store
