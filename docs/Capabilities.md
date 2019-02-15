@@ -13,7 +13,6 @@
 |8  |                     | Write           | Write to the memory by the given address.                                                   |
 |9  | Log                 | Write           | Append log record with given topics.                                                        |
 |10 | Gas                 | Send            | Send Gas to address                                                                         |
-|11 |                     | Received        | Read the total amount of gas received from user.                                            |
 
 Capabilites are split into three categories based on what objects they access: the Procedure Table, Storage, Logs, and Gas.
 

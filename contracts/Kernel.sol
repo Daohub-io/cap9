@@ -42,7 +42,6 @@ contract Kernel is Factory {
     uint8 constant CAP_STORE_WRITE          = 8;
     uint8 constant CAP_LOG                  = 9;
     uint8 constant CAP_GAS_SEND             = 10;
-    uint8 constant CAP_GAS_RECV             = 11;
 
     constructor() public {
         // kernelAddress = WhatIsMyAddress.get();
