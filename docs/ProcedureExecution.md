@@ -24,28 +24,30 @@ Each capability list contains a seperate list of capabilities for each possible 
 Each capability type is referenced by a byte identifier. In this case, from 0 to 10.
 ```rust
 enum CapabilityType {
+    /// Null Capability
+    NullCap             = 0,
     /// Add capability to procedure with given identifier
-    ProcedurePushCap = 1,
+    ProcedurePushCap    = 1,
     /// Delete capability from procedure with given identifier and index
-    ProcedureDeleteCap = 2,
+    ProcedureDeleteCap  = 2,
     /// Call procedure by given id and arguments.
-    ProcedureCall = 3,
+    ProcedureCall       = 3,
+    /// Register procedure with given identifier.
+    ProcedureRegister   = 4
     /// Delete procedure by identifier.
-    ProcedureDelete = 4,
+    ProcedureDelete     = 5,
     /// Set the procedure with given identifier as the entry procedure.
-    ProcedureEntry = 5,
+    ProcedureEntry      = 6,
     /// Read from the memory by the given address.
-    StorageRead = 6,
+    StorageRead         = 7,
     /// Write to the memory by the given address.
-    StorageWrite = 7,
+    StorageWrite        = 8,
     /// Append log record with given topics.
-    LogWrite = 8,
-    /// The total amount of gas received from user.
-    GasRecieved = 9,
+    LogWrite            = 9,
     /// Send gas to an external address
-    GasSend = 10,
-    /// Create procedure with given identifier.
-    ProcedureCreate = 11
+    GasSend             = 10,
+    /// The total amount of gas received from user.
+    GasRecieved         = 11,
 }
 ```
 
