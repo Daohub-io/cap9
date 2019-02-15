@@ -17,6 +17,19 @@ library ProcedureTable {
 
     struct Self {}
 
+    // CAPABILITY_TYPES
+    uint8 constant CAP_NULL                 = 0;
+    uint8 constant CAP_PROC_CAP_PUSH        = 1;
+    uint8 constant CAP_PROC_CAP_DELETE      = 2;    
+    uint8 constant CAP_PROC_CALL            = 3;
+    uint8 constant CAP_PROC_REGISTER        = 4;
+    uint8 constant CAP_PROC_DELETE          = 5;
+    uint8 constant CAP_PROC_ENTRY           = 6;
+    uint8 constant CAP_STORE_READ           = 7;
+    uint8 constant CAP_STORE_WRITE          = 8;
+    uint8 constant CAP_LOG                  = 9;
+    uint8 constant CAP_GAS_SEND             = 10;
+
     // Convert Pointer To File Pointer
     // Takes a single byte and a full 256 bit storage location
     function _filePointer(uint8 fileId, uint248 pointer) internal pure returns (uint256) {
@@ -115,7 +128,7 @@ library ProcedureTable {
         Capability memory cap = p.caps[reqCapIndex];
         // If the capability type is not REGISTER (11) it is the wrong type of
         // capability and we should reject
-        if (cap.capType != 11) {
+        if (cap.capType != CAP_PROC_REGISTER) {
             return false;
         }
         // If the cap is empty it implies all procedures are ok
@@ -138,7 +151,7 @@ library ProcedureTable {
         Capability memory cap = p.caps[reqCapIndex];
         // If the capability type is not CALL (0x3) it is the wrong type of
         // capability and we should reject
-        if (cap.capType != 0x3) {
+        if (cap.capType != CAP_PROC_CALL) {
             return false;
         }
         // If the cap is empty it implies all procedures are ok
@@ -167,7 +180,7 @@ library ProcedureTable {
         uint256 capabilityType = cap.capType;
         // If the capability type is not WRITE (0x7) it is the wrong type of
         // capability and we should reject
-        if (capabilityType != 0x7) {
+        if (capabilityType != CAP_STORE_WRITE) {
             return false;
         }
         // We need two values for a valid write cap
@@ -177,7 +190,7 @@ library ProcedureTable {
         uint256 capabilityKey = cap.values[0];
         uint256 capabilitySize = cap.values[1];
 
-        if (capabilityType == 0x7
+        if (capabilityType == CAP_STORE_WRITE
                 && toStoreAddress >= capabilityKey
                 && toStoreAddress <= (capabilityKey + capabilitySize)) {
             return true;
@@ -196,7 +209,7 @@ library ProcedureTable {
         uint256 capabilityType = cap.capType;
         // If the capability type is not LOG (0x9) it is the wrong type of
         // capability and we should reject
-        if (capabilityType != 0x9) {
+        if (capabilityType != CAP_LOG) {
             return false;
         }
         // The number of topics is simply the number of keys of the cap (i.e.

@@ -1,3 +1,21 @@
+
+const CAP_TYPE = {
+    NULL                 : 0,
+    PROC_CAP_PUSH        : 1,
+    PROC_CAP_DELETE      : 2,    
+    PROC_CALL            : 3,
+    PROC_REGISTER        : 4,
+    PROC_DELETE          : 5,
+    PROC_ENTRY           : 6,
+    STORE_READ           : 7,
+    STORE_WRITE          : 8,
+    LOG                  : 9,
+    GAS_SEND             : 10
+}
+
+exports.CAP_TYPE = CAP_TYPE;
+
+
 class ProcedureTable {
     constructor(procTable) {
         this.procedures = procTable;
@@ -82,7 +100,7 @@ exports.Cap = Cap;
 
 class WriteCap extends Cap {
     constructor(address, size) {
-        super(0x7);
+        super(CAP_TYPE.STORE_WRITE);
         this.address = address;
         this.size = size;
     }
@@ -96,7 +114,7 @@ exports.WriteCap = WriteCap;
 
 class LogCap extends Cap {
     constructor(topics) {
-        super(0x9);
+        super(CAP_TYPE.LOG);
         this.topics = topics;
     }
     // Format the capability values into the values that will be stored in the
@@ -112,7 +130,7 @@ exports.LogCap = LogCap;
 class CallCap extends Cap {
     // keys should be a list of strings
     constructor(keys) {
-        super(0x3);
+        super(CAP_TYPE.PROC_CALL);
         if (!keys) {
             this.keys = [];
         } else {
@@ -132,7 +150,7 @@ class RegisterCap extends Cap {
     // A RegisterCap is just a boolean value, a procedure can or cannot
     // register new procedures
     constructor() {
-        super(11);
+        super(CAP_TYPE.PROC_REGISTER);
         this.keys = [];
     }
     // Format the capability values into the values that will be stored in the

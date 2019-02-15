@@ -7,6 +7,8 @@ const abi = require('ethereumjs-abi')
 const beakerlib = require("../../beakerlib");
 const testutils = require("../testutils.js");
 
+const CAP_TYPE = beakerlib.CAP_TYPE;
+
 // Valid Contracts
 const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
@@ -564,11 +566,11 @@ contract('Kernel without entry procedure', function (accounts) {
                 const proc1 = procTable.procedures[procedures[0]];
                 const proc2 = procTable.procedures[procedures[1]];
 
-                assert.equal(proc1.caps[0].type,0x7, "proc1: First cap should have the right type");
+                assert.equal(proc1.caps[0].type, CAP_TYPE.STORE_WRITE, "proc1: First cap should have the right type");
                 assert.equal(proc1.caps[0].values[0],0x8500, "proc1: First cap first value should be correct");
                 assert.equal(proc1.caps[0].values[1],0x2, "proc1: First cap second value should be correct");
 
-                assert.equal(proc1.caps[1].type,0x7, "proc1: Second cap should have the right type");
+                assert.equal(proc1.caps[1].type, CAP_TYPE.STORE_WRITE, "proc1: Second cap should have the right type");
                 assert.equal(proc1.caps[1].values[0],0x8000, "proc1: Second cap first value should be correct");
                 assert.equal(proc1.caps[1].values[1],0x0, "proc1: Second cap second value should be correct");
 
