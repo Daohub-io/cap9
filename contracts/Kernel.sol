@@ -23,6 +23,7 @@ contract Kernel is Factory {
         address location;
     }
 
+    // SYSCALL_RESPONSE_TYPES
     uint8 constant SyscallSuccess = 0;
     uint8 constant SyscallReadError = 11;
     uint8 constant SyscallWriteError = 22;
@@ -34,15 +35,14 @@ contract Kernel is Factory {
     uint8 constant CAP_PROC_CAP_PUSH        = 1;
     uint8 constant CAP_PROC_CAP_DELETE      = 2;    
     uint8 constant CAP_PROC_CALL            = 3;
-    uint8 constant CAP_PROC_DELETE          = 4;
-    uint8 constant CAP_PROC_ENTRY           = 5;
-    uint8 constant CAP_STORE_READ           = 6;
-    uint8 constant CAP_STORE_WRITE          = 7;
-    //////
+    uint8 constant CAP_PROC_REGISTER        = 4;
+    uint8 constant CAP_PROC_DELETE          = 5;
+    uint8 constant CAP_PROC_ENTRY           = 6;
+    uint8 constant CAP_STORE_READ           = 7;
+    uint8 constant CAP_STORE_WRITE          = 8;
     uint8 constant CAP_LOG                  = 9;
-    // uint8 constant CAP_GAS_RECV             = 9;
     uint8 constant CAP_GAS_SEND             = 10;
-    uint8 constant CAP_PROC_REGISTER        = 11;
+    uint8 constant CAP_GAS_RECV             = 11;
 
     constructor() public {
         // kernelAddress = WhatIsMyAddress.get();

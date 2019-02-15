@@ -53,8 +53,8 @@ contract BeakerContract {
         let inSize := 0x80
         let ins := mallocZero(inSize)
         // First set up the input data (at memory location 0x0)
-        // The write call is 0x-07
-        mstore(add(ins,0x0),0x07)
+        // The write call is 0x-08
+        mstore(add(ins,0x0),0x08)
         // The capability index is 0x-01
         mstore(add(ins,0x20),capIndex)
         // The storage location we want is 0x8000

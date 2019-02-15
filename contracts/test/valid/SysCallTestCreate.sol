@@ -24,8 +24,8 @@ contract SysCallTestCreate {
             let inSize := add(97,0)
             let ins := mallocZero(inSize)
             // First set up the input data (at memory location 0x0)
-            // The register syscall is 11
-            mstore(add(ins,0x0),11)
+            // The register syscall is 4
+            mstore(add(ins,0x0),4)
             // The capability index is 0x-01
             mstore(add(ins,0x20),0x01)
             // The name of the procedure (24 bytes)
@@ -76,8 +76,8 @@ contract SysCallTestCreate {
             let inSize := add(97,nCapBytes)
             let ins := mallocZero(inSize)
             // First set up the input data (at memory location 0x0)
-            // The register syscall is 11
-            mstore(add(ins,0x0),11)
+            // The register syscall is 4
+            mstore(add(ins,0x0),4)
             // The capability index is 0x-01
             mstore(add(ins,0x20),0x01)
             // The name of the procedure (24 bytes)
