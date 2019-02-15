@@ -12,7 +12,7 @@ const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
-    SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
+    SysCallTestWrite: artifacts.require('test/valid/SysCallTestWrite.sol'),
     SysCallTestCall: artifacts.require('test/valid/SysCallTestCall.sol'),
     FirstNestedCall: artifacts.require('test/valid/NestedCalls/FirstNestedCall.sol'),
     SecondNestedCall: artifacts.require('test/valid/NestedCalls/SecondNestedCall.sol'),
@@ -227,9 +227,9 @@ contract('Kernel with entry procedure', function (accounts) {
             })
         })
         describe('B() - without data', function () {
-            const testProcName = "SysCallTest";
-            const testContract = Valid.SysCallTest;
-            const testBytecode = Valid.SysCallTest.bytecode;
+            const testProcName = "SysCallTestWrite";
+            const testContract = Valid.SysCallTestWrite;
+            const testBytecode = Valid.SysCallTestWrite.bytecode;
             const functionSpec = "B()";
             it('B() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -418,9 +418,9 @@ contract('Kernel with entry procedure', function (accounts) {
             })
         })
         describe('C() - with data (function selector)', function () {
-            const testProcName = "SysCallTest";
-            const testBytecode = Valid.SysCallTest.bytecode;
-            const testContract = Valid.SysCallTest;
+            const testProcName = "SysCallTestWrite";
+            const testBytecode = Valid.SysCallTestWrite.bytecode;
+            const testContract = Valid.SysCallTestWrite;
             const functionSpec = "C()";
             it('C() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -783,13 +783,13 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedAdderContract = await testutils.deployedTrimmed(Valid.Adder);
-                const deployedSysCallTestContract = await testutils.deployedTrimmed(Valid.SysCallTest);
+                const deployedSysCallTestContract = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
                 // This is the procedure that will do the calling
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
                 // This is the first called procedure, which doesn't really do anything
                 await kernel.registerProcedure("Adder", deployedAdderContract.address, beakerlib.Cap.toInput([]));
                 // // This is the second called procedure, which requires capabilities
-                await kernel.registerProcedure("SysCallTest", deployedSysCallTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.registerProcedure("SysCallTestWrite", deployedSysCallTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
                 // await kernel.createProcedure("SysCallTestCall", Valid.SysCallTestCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
 
                 {

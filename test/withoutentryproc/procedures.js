@@ -12,7 +12,7 @@ const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
-    SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
+    SysCallTestWrite: artifacts.require('test/valid/SysCallTestWrite.sol'),
     Simple: artifacts.require('test/valid/Simple.sol'),
     SysCallTestLog: artifacts.require('test/valid/SysCallTestLog.sol'),
 }
@@ -540,9 +540,9 @@ contract('Kernel without entry procedure', function (accounts) {
                 const cap2 = new beakerlib.WriteCap(0x8000,0);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
-                const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
+                const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
                 const testSimple = await testutils.deployedTrimmed(Valid.Multiply);
-                const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, capArray);
+                const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, capArray);
                 const tx2 = await kernel.registerProcedure("Simple", testSimple.address, []);
                 const rawProcTableData = await kernel.returnRawProcedureTable.call();
                 const procTableData = await kernel.returnProcedureTable.call();
@@ -580,10 +580,10 @@ contract('Kernel without entry procedure', function (accounts) {
             it('should return the entry procedure address', async function () {
                 const kernel = await Kernel.new();
                 const procedureName = "Entry";
-                const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
-                const [a, address] = await kernel.registerProcedure.call(procedureName, sysCallTest.address, [3, 0x7, 0x80, 0x0]);
+                const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
+                const [a, address] = await kernel.registerProcedure.call(procedureName, SysCallTestWrite.address, [3, 0x7, 0x80, 0x0]);
                 // assert.equal(a.toNumber(), 0, "S() should succeed with zero errcode the second time");
-                const tx = await kernel.registerProcedure(procedureName, sysCallTest.address, [3, 0x7, 0x80, 0x0]);
+                const tx = await kernel.registerProcedure(procedureName, SysCallTestWrite.address, [3, 0x7, 0x80, 0x0]);
                 const valueA = await kernel.getProcedure.call(procedureName);
                 // const
                 // console.log(errA, valueA);
@@ -591,13 +591,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 // console.log("valueA:", valueA)
 
                 // // need to have the ABI definition in JSON as per specification
-                // const valueX = await kernel.executeProcedure.call("SysCallTest", "S()", "");
-                // await kernel.executeProcedure("SysCallTest", "S()", "");
+                // const valueX = await kernel.executeProcedure.call("SysCallTestWrite", "S()", "");
+                // await kernel.executeProcedure("SysCallTestWrite", "S()", "");
                 // assert.equal(valueX.toNumber(), 4, "S() should succeed with correct value the first time");
 
                 // // do it again
-                // const [err2, value2] = await kernel.executeProcedure.call("SysCallTest", "S()", "");
-                // await kernel.executeProcedure("SysCallTest", "S()", "");
+                // const [err2, value2] = await kernel.executeProcedure.call("SysCallTestWrite", "S()", "");
+                // await kernel.executeProcedure("SysCallTestWrite", "S()", "");
                 // assert.equal(err2.toNumber(), 0, "S() should succeed with zero errcode the second time");
                 // assert.equal(value2.toNumber(), 5, "S() should succeed with correct value the second time");
             })

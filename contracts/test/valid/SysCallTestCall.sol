@@ -58,9 +58,9 @@ contract SysCallTestCall {
         }
     }
 
-    // Call SysCallTes
+    // Call SysCallTestWrite
     function B() public {
-        bytes24 reqProc = bytes24("SysCallTest");
+        bytes24 reqProc = bytes24("SysCallTestWrite");
         assembly {
             function malloc(size) -> result {
                 // align to 32-byte words
@@ -117,7 +117,7 @@ contract SysCallTestCall {
 
     // Call SysTestCall:S()
     function C() public {
-        bytes24 reqProc = bytes24("SysCallTest");
+        bytes24 reqProc = bytes24("SysCallTestWrite");
         string memory fselector = "S()";
         assembly {
             function malloc(size) -> result {
@@ -298,7 +298,7 @@ contract SysCallTestCall {
             addResult := mload(retLoc)
 
         }
-        reqProc = bytes24("SysCallTest");
+        reqProc = bytes24("SysCallTestWrite");
         string memory newfselector = "S()";
         assembly {
             function malloc(size) -> result {

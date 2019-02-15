@@ -23,6 +23,27 @@ contract Kernel is Factory {
         address location;
     }
 
+    // SYSCALL_RESPONSE_TYPES
+    uint8 constant SyscallSuccess = 0;
+    uint8 constant SyscallReadError = 11;
+    uint8 constant SyscallWriteError = 22;
+    uint8 constant SyscallLogError = 33;
+    uint8 constant SyscallCallError = 44;
+    
+    // CAPABILITY_TYPES
+    uint8 constant CAP_NULL                 = 0;
+    uint8 constant CAP_PROC_CAP_PUSH        = 1;
+    uint8 constant CAP_PROC_CAP_DELETE      = 2;    
+    uint8 constant CAP_PROC_CALL            = 3;
+    uint8 constant CAP_PROC_REGISTER        = 4;
+    uint8 constant CAP_PROC_DELETE          = 5;
+    uint8 constant CAP_PROC_ENTRY           = 6;
+    uint8 constant CAP_STORE_READ           = 7;
+    uint8 constant CAP_STORE_WRITE          = 8;
+    uint8 constant CAP_LOG                  = 9;
+    uint8 constant CAP_GAS_SEND             = 10;
+    uint8 constant CAP_GAS_RECV             = 11;
+
     constructor() public {
         // kernelAddress = WhatIsMyAddress.get();
         // This is an example kernel global variable for testing.
@@ -141,13 +162,13 @@ contract Kernel is Factory {
         // Here we decode the system call (if there is one)
         if (sysCallCapType == 0) {
             // non-syscall case
-        } else if (sysCallCapType == 0x03) {
+        } else if (sysCallCapType == CAP_PROC_CALL) {
             callSystemCall();
-        } else if (sysCallCapType == 0x07) {
+        } else if (sysCallCapType == CAP_STORE_WRITE) {
             storeSystemCall();
-        } else if (sysCallCapType == 0x09) {
+        } else if (sysCallCapType == CAP_LOG) {
             logSystemCall();
-        } else if (sysCallCapType == 11) {
+        } else if (sysCallCapType == CAP_PROC_REGISTER) {
             // this is the system call to register a contract as a procedure
             // currently we enforce no caps
             uint256 capIndex = parse32ByteValue(1);
@@ -354,11 +375,13 @@ contract Kernel is Factory {
             assembly {
                 sstore(writeAddress, writeValue)
                 // We don't need to return anything
+                // Return SyscallSuccess = 0
                 return(0,0)
             }
         } else {
             assembly {
-                mstore(0,22)
+                // Return SyscallWriteError = 22
+                mstore(0, 22)
                 return(0,0x20)
             }
         }

@@ -25,7 +25,7 @@ class ProcedureTable {
                 cap.type = web3.toHex(val[i]); i++;
                 // (length - 1) as the first value is the length
                 cap.values = [];
-                for (let k = 0; k < (length-1); k++) {
+                for (let k = 0; k < (length - 1); k++) {
                     cap.values.push(web3.toHex(val[i])); i++;
                 }
                 proc.caps.push(cap);
@@ -67,7 +67,7 @@ class Cap {
     toIntegerArray() {
         const keyValArray = this.keyValues();
         // The plus one is to account for the type value
-        const headerArray = Array.from([keyValArray.length+1, this.type]);
+        const headerArray = Array.from([keyValArray.length + 1, this.type]);
         return headerArray.concat(keyValArray);
     }
     static toInput(caps) {
@@ -89,7 +89,7 @@ class WriteCap extends Cap {
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        return Array.from([this.address,this.size]);
+        return Array.from([this.address, this.size]);
     }
 }
 exports.WriteCap = WriteCap;
@@ -115,14 +115,14 @@ class CallCap extends Cap {
         super(0x3);
         if (!keys) {
             this.keys = [];
-        } else  {
+        } else {
             this.keys = keys;
         }
     }
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        const val = Array.from(this.keys.map(x=>web3.fromAscii(x.padEnd(32,'\0'))));
+        const val = Array.from(this.keys.map(x => web3.fromAscii(x.padEnd(32, '\0'))));
         return val;
     }
 }
@@ -138,8 +138,16 @@ class RegisterCap extends Cap {
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        const val = Array.from(this.keys.map(x=>web3.fromAscii(x.padEnd(32,'\0'))));
+        const val = Array.from(this.keys.map(x => web3.fromAscii(x.padEnd(32, '\0'))));
         return val;
     }
 }
 exports.RegisterCap = RegisterCap;
+
+exports.SysCallResponse = {
+    SUCCESS: 0,
+    READFAILURE: 11,
+    WRITEFAILURE: 22,
+    LOGFAILURE: 33,
+    CALLFAILURE: 44,
+}

@@ -13,7 +13,7 @@ const Valid = {
     Adder: artifacts.require('test/valid/Adder.sol'),
     Multiply: artifacts.require('test/valid/Multiply.sol'),
     Divide: artifacts.require('test/valid/Divide.sol'),
-    SysCallTest: artifacts.require('test/valid/SysCallTest.sol'),
+    SysCallTestWrite: artifacts.require('test/valid/SysCallTestWrite.sol'),
     SysCallTestLog: artifacts.require('test/valid/SysCallTestLog.sol'),
     BasicEntryProcedure: artifacts.require('BasicEntryProcedure.sol'),
 }
@@ -32,9 +32,9 @@ contract('Kernel with entry procedure', function (accounts) {
                 new beakerlib.WriteCap(0x8500,2),
                 new beakerlib.WriteCap(0x8000,0)
             ]);
-            const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
+            const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
             const simpleTest = await testutils.deployedTrimmed(Valid.Multiply);
-            const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, capArraySysCallTest);
+            const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, capArraySysCallTest);
             const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 
             const newValue1 = await kernel.testGetter.call();
@@ -46,7 +46,7 @@ contract('Kernel with entry procedure', function (accounts) {
             // padded
             const functionSelector = "S()";
             const functionSelectorHash = web3.sha3(functionSelector).slice(2,10);
-            const inputData = web3.fromAscii("SysCallTest".padEnd(24,"\0")) + functionSelectorHash;
+            const inputData = web3.fromAscii("SysCallTestWrite".padEnd(24,"\0")) + functionSelectorHash;
             const tx3 = await kernel.sendTransaction({data: inputData});
 
             // for (const log of tx3.receipt.logs) {
@@ -70,9 +70,9 @@ contract('Kernel with entry procedure', function (accounts) {
         it('S() should fail when not given cap', async function () {
             const kernel = await Kernel.new();
 
-            const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
+            const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
             const simpleTest = await testutils.deployedTrimmed(Valid.Multiply);
-            const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, []);
+            const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, []);
             const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 
             const newValue1 = await kernel.testGetter.call();
@@ -85,7 +85,7 @@ contract('Kernel with entry procedure', function (accounts) {
             const functionSelector = "S()";
             // const functionSelectorHash = web3.sha3(functionSelector);
             const functionSelectorHash = "4be1c796"
-            const inputData = web3.fromAscii("SysCallTest".padEnd(24,"\0")) + functionSelectorHash;
+            const inputData = web3.fromAscii("SysCallTestWrite".padEnd(24,"\0")) + functionSelectorHash;
             const tx3 = await kernel.sendTransaction({data: inputData});
 
             // for (const log of tx3.receipt.logs) {
@@ -111,9 +111,9 @@ contract('Kernel with entry procedure', function (accounts) {
                 new beakerlib.WriteCap(0x8500,2),
                 new beakerlib.WriteCap(0x8001,0)
             ]);
-            const sysCallTest = await testutils.deployedTrimmed(Valid.SysCallTest);
+            const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
             const simpleTest = await testutils.deployedTrimmed(Valid.Multiply);
-            const tx1 = await kernel.registerProcedure("SysCallTest", sysCallTest.address, capArraySysCallTest);
+            const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, capArraySysCallTest);
             const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 
             const newValue1 = await kernel.testGetter.call();
@@ -126,7 +126,7 @@ contract('Kernel with entry procedure', function (accounts) {
             const functionSelector = "S()";
             // const functionSelectorHash = web3.sha3(functionSelector);
             const functionSelectorHash = "4be1c796"
-            const inputData = web3.fromAscii("SysCallTest".padEnd(24,"\0")) + functionSelectorHash;
+            const inputData = web3.fromAscii("SysCallTestWrite".padEnd(24,"\0")) + functionSelectorHash;
             const tx3 = await kernel.sendTransaction({data: inputData});
 
             // for (const log of tx3.receipt.logs) {
