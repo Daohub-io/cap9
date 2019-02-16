@@ -9,20 +9,7 @@ library WhatIsMyAddress {
     }
 }
 
-contract Kernel is Factory {
-    event KernelLog(string message);
-    using ProcedureTable for ProcedureTable.Self;
-    ProcedureTable.Self procedures;
-    address kernelAddress;
-    bytes24 currentProcedure;
-    bytes24 entryProcedure;
-
-    struct Process {
-        // Equal to the index of the key of this item in keys, plus 1.
-        uint8 keyIndex;
-        address location;
-    }
-
+contract IKernel {
     // SYSCALL_RESPONSE_TYPES
     uint8 constant SyscallSuccess = 0;
     uint8 constant SyscallReadError = 11;
@@ -42,6 +29,21 @@ contract Kernel is Factory {
     uint8 constant CAP_STORE_WRITE          = 8;
     uint8 constant CAP_LOG                  = 9;
     uint8 constant CAP_GAS_SEND             = 10;
+}
+
+contract Kernel is Factory, IKernel {
+    event KernelLog(string message);
+    using ProcedureTable for ProcedureTable.Self;
+    ProcedureTable.Self procedures;
+    address kernelAddress;
+    bytes24 currentProcedure;
+    bytes24 entryProcedure;
+
+    struct Process {
+        // Equal to the index of the key of this item in keys, plus 1.
+        uint8 keyIndex;
+        address location;
+    }
 
     constructor() public {
         // kernelAddress = WhatIsMyAddress.get();
