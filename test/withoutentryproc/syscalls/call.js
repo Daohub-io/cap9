@@ -356,7 +356,14 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-
+                // console.log(tx)
+                // for (const log of tx.receipt.logs) {
+                //     if (log.topics.length > 0) {
+                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                //     } else {
+                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
+                //     }
+                // }
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -484,6 +491,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                
+                kernel.allEvents().watch(console.log)
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -494,7 +503,15 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-
+                // console.log(tx)
+                // for (const log of tx.receipt.logs) {
+                //     if (log.topics.length > 0) {
+                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
+                //     } else {
+                //         console.log(`Log: ${log.topics[0]} - ${log.data}`);
+                //     }
+                // }
+                // console.log(newValue)
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('E() should fail when not given cap', async function () {
@@ -624,7 +641,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 assert.equal(newValue2.toNumber(),4, "new value should be 4");
             })
         })
-        describe('G() - deeper stacks', function () {
+        describe.only('G() - deeper stacks', function () {
             const testProcName = "FirstNestedCall";
             const testBytecode = Valid.FirstNestedCall.bytecode;
             const functionSpec = "G()";
