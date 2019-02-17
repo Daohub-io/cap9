@@ -356,7 +356,6 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -484,7 +483,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
-
+                
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
@@ -494,7 +493,6 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
             })
             it('E() should fail when not given cap', async function () {
