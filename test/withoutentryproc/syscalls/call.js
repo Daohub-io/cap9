@@ -641,7 +641,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 assert.equal(newValue2.toNumber(),4, "new value should be 4");
             })
         })
-        describe.only('G() - deeper stacks', function () {
+        describe('G() - deeper stacks', function () {
             const testProcName = "FirstNestedCall";
             const testBytecode = Valid.FirstNestedCall.bytecode;
             const functionSpec = "G()";
