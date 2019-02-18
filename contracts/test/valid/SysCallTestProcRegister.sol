@@ -1,6 +1,6 @@
 pragma solidity ^0.4.17;
 
-contract SysCallTestCreate {
+contract SysCallTestProcRegister {
     // Register a procedure
     function A(bytes24 name, address procAddress) public {
         assembly {
