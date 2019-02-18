@@ -14,7 +14,7 @@ const Valid = {
     Divide: artifacts.require('test/valid/Divide.sol'),
     SysCallTestWrite: artifacts.require('test/valid/SysCallTestWrite.sol'),
     SysCallTestCall: artifacts.require('test/valid/SysCallTestCall.sol'),
-    SysCallTestCreate: artifacts.require('test/valid/SysCallTestCreate.sol'),
+    SysCallTestProcRegister: artifacts.require('test/valid/SysCallTestProcRegister.sol'),
     BasicEntryProcedure: artifacts.require('BasicEntryProcedure.sol'),
 }
 
@@ -26,8 +26,8 @@ const Invalid = {
 
 contract('Kernel with entry procedure', function (accounts) {
     describe('Register capability', function () {
-        const procName = "SysCallTestCreate";
-        const contract = Valid.SysCallTestCreate;
+        const procName = "SysCallTestProcRegister";
+        const contract = Valid.SysCallTestProcRegister;
 
         describe('A(bytes24,address) - register a procedure', function () {
             const testProcName = "Adder";

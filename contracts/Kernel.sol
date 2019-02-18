@@ -151,15 +151,6 @@ contract Kernel is Factory, IKernel {
         // Parse the system call
         uint8 sysCallCapType = uint8(msg.data[0]);
 
-        // 0x00 - not a syscall
-        // 0x01 - read syscall
-        // 0x03 - exec syscall
-        // 0x07 - write syscall
-        // 0x09 - log syscall
-        // 11 - register procedure
-
-        // log1(bytes32(currentProcedure), bytes32("current-procedure"));
-
         // Here we decode the system call (if there is one)
         if (sysCallCapType == 0) {
             // non-syscall case
@@ -170,65 +161,7 @@ contract Kernel is Factory, IKernel {
         } else if (sysCallCapType == CAP_LOG) {
             logSystemCall();
         } else if (sysCallCapType == CAP_PROC_REGISTER) {
-            // this is the system call to register a contract as a procedure
-            // currently we enforce no caps
-            uint256 capIndex = parse32ByteValue(1);
-            // TODO: fix this double name variable work-around
-            bytes32 regNameB = bytes32(parse32ByteValue(1+32));
-            bytes24 regName = bytes24(regNameB);
-            address regProcAddress = address(parse32ByteValue(1+32+32));
-            // the general format of a capability is length,type,values, where
-            // length includes the type
-            uint256 capsStartOffset =
-                /* sysCallCapType */ 1
-                /* capIndex */ + 32
-                /* name */ + 32
-                /* address */ + 32;
-            // capsLength is the length of the caps arry in bytes
-            uint256 capsLengthBytes = msg.data.length - capsStartOffset;
-            uint256 capsLengthKeys  = capsLengthBytes/32;
-            if (capsLengthBytes % 32 != 0) {
-                revert("caps are not aligned to 32 bytes");
-            }
-            uint256[] memory regCaps = new uint256[](capsLengthKeys);
-            for (uint256 q = 0; q < capsLengthKeys; q++) {
-                regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
-            }
-            bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
-            if (cap) {
-
-                (uint8 err, /* address addr */) = registerProcedure(regName, regProcAddress, regCaps);
-                uint256 bigErr = uint256(err);
-                assembly {
-                    function mallocZero(size) -> result {
-                        // align to 32-byte words
-                        let rsize := add(size,sub(32,mod(size,32)))
-                        // get the current free mem location
-                        result :=  mload(0x40)
-                        // zero-out the memory
-                        // if there are some bytes to be allocated (rsize is not zero)
-                        if rsize {
-                            // loop through the address and zero them
-                            for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                                mstore(add(result,n),0)
-                            }
-                        }
-                        // Bump the value of 0x40 so that it holds the next
-                        // available memory location.
-                        mstore(0x40,add(result,rsize))
-                    }
-                    let retSize := 32
-                    let retLoc := mallocZero(retSize)
-                    mstore(retLoc,bigErr)
-                    return(retLoc,retSize)
-                }
-            } else {
-                assembly {
-                    // 33 means the capability was rejected
-                    mstore(0,33)
-                    revert(0,0x20)
-                }
-            }
+            procRegSystemCall();
         } else {
             // default; fallthrough action
             assembly {
@@ -356,6 +289,70 @@ contract Kernel is Factory, IKernel {
             }
         } else {
             // log1(bytes32("not-permitted"),bytes32("call-cap"));
+            assembly {
+                // 33 means the capability was rejected
+                mstore(0,33)
+                revert(0,0x20)
+            }
+        }
+    }
+
+    function procRegSystemCall() internal {
+        // This is a procedure-register system call
+        // this is the system call to register a contract as a procedure
+        // currently we enforce no caps
+
+        uint256 capIndex = parse32ByteValue(1);
+        // TODO: fix this double name variable work-around
+        bytes32 regNameB = bytes32(parse32ByteValue(1+32));
+        bytes24 regName = bytes24(regNameB);
+        address regProcAddress = address(parse32ByteValue(1+32+32));
+        // the general format of a capability is length,type,values, where
+        // length includes the type
+        uint256 capsStartOffset =
+            /* sysCallCapType */ 1
+            /* capIndex */ + 32
+            /* name */ + 32
+            /* address */ + 32;
+        // capsLength is the length of the caps arry in bytes
+        uint256 capsLengthBytes = msg.data.length - capsStartOffset;
+        uint256 capsLengthKeys  = capsLengthBytes/32;
+        if (capsLengthBytes % 32 != 0) {
+            revert("caps are not aligned to 32 bytes");
+        }
+        uint256[] memory regCaps = new uint256[](capsLengthKeys);
+        for (uint256 q = 0; q < capsLengthKeys; q++) {
+            regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
+        }
+        bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
+        if (cap) {
+
+            (uint8 err, /* address addr */) = registerProcedure(regName, regProcAddress, regCaps);
+            uint256 bigErr = uint256(err);
+            assembly {
+                function mallocZero(size) -> result {
+                    // align to 32-byte words
+                    let rsize := add(size,sub(32,mod(size,32)))
+                    // get the current free mem location
+                    result :=  mload(0x40)
+                    // zero-out the memory
+                    // if there are some bytes to be allocated (rsize is not zero)
+                    if rsize {
+                        // loop through the address and zero them
+                        for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                            mstore(add(result,n),0)
+                        }
+                    }
+                    // Bump the value of 0x40 so that it holds the next
+                    // available memory location.
+                    mstore(0x40,add(result,rsize))
+                }
+                let retSize := 32
+                let retLoc := mallocZero(retSize)
+                mstore(retLoc,bigErr)
+                return(retLoc,retSize)
+            }
+        } else {
             assembly {
                 // 33 means the capability was rejected
                 mstore(0,33)
