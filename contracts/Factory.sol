@@ -2,9 +2,6 @@ pragma solidity ^0.4.17;
 
 contract Factory {
 
-    /*opCode -> jump size*/
-    mapping(byte => uint8) public opCodes;
-
     function validateContract(address procedureAddress) public view returns (uint8) {
         uint256 codeSize = 0;
         assembly {
@@ -91,21 +88,5 @@ contract Factory {
             
         }
         return 0;
-    }
-
-    function codeLength(bytes oCode) public pure returns (uint len) {
-        assembly {
-            // Get Length
-            len := mload(oCode)
-        }
-    }
-
-    function codePosition(bytes oCode) public pure returns (uint code) {
-        assembly {
-            // Get Length
-            let len := mload(oCode)
-            // Get Code
-            code := add(oCode, 0x00)
-        }
     }
 }

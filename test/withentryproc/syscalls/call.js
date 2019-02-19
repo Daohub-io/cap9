@@ -1,7 +1,7 @@
 const debug = require('debug')
 const assert = require('assert')
 
-const Kernel = artifacts.require('./Kernel.sol')
+const Kernel = artifacts.require('./TestKernel.sol')
 const abi = require('ethereumjs-abi')
 
 const beakerlib = require("../../../beakerlib");
