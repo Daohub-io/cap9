@@ -5,13 +5,9 @@ This is the BeakerOS repo. It contains an implementation of the Beaker kernel.
 The whitepaper for BeakerOS is contained in a separate repository:
 [https://github.com/Daolab/beaker-whitepaper](https://github.com/Daolab/beaker-whitepaper).
 
-## Installation
-
-You will need Nodejs and Yarn Installed.
-
-* Get yarn: `npm -g i yarn`
-* Install: `yarn`
-
 ## Testing
-
-Run `yarn test`.
+You will need Nodejs Installed:
+```bash
+npm install
+npm test 
+```
