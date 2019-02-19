@@ -3,7 +3,7 @@ pragma solidity ^0.4.17;
 import "./Kernel.sol";
 
 contract BeakerContract is IKernel {
-    
+
     // TODO: this doesn't actually use caps, just reads raw
     function read(uint256 location) public view returns (uint256 result) {
         assembly {
@@ -31,7 +31,7 @@ contract BeakerContract is IKernel {
         }
         return result;
     }
-  
+
   /// Returns 0 on success, 1 on error
   function write(uint8 capIndex, uint256 location, uint256 value) internal returns (uint8 err) {
       assembly {
@@ -110,7 +110,7 @@ contract BeakerContract is IKernel {
                 mstore(0x40,add(result,rsize))
             }
 
-            // We Get The start of the Proc Input 
+            // We Get The start of the Proc Input
             // Then allocate data to include it
             // let pInputs := add(input, 0x20)
             // let inSize := add(mload(input), 96)
@@ -131,12 +131,12 @@ contract BeakerContract is IKernel {
             mstore(add(buf,0x20),capIndex)
             // The key of the procedure
             mstore(add(buf,0x40),procId)
-            
+
             // The data from 0x80 onwards is the data we want to send to
             // this procedure
             let inputStart := add(input, 0x20)
             let bufStart := add(buf, 0x80)
-            
+
             // If selector is non-empty, add it
             if fselSize {
                 mstore(bufStart, keccak256(add(fselector, 0x20), fselSize))
@@ -208,7 +208,51 @@ contract BeakerContract is IKernel {
             mstore(0xd, err)
             revert(0xd,retSize)
         }
-    }      
+    }
+    return err;
+  }
+
+  function proc_del(uint8 capIndex, bytes32 procId) internal returns (uint32 err) {
+    assembly {
+        function mallocZero(size) -> result {
+            // align to 32-byte words
+            let rsize := add(size,sub(32,mod(size,32)))
+            // get the current free mem location
+            result :=  mload(0x40)
+            // zero-out the memory
+            // if there are some bytes to be allocated (rsize is not zero)
+            if rsize {
+                // loop through the address and zero them
+                for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                    mstore(add(result,n),0)
+                }
+            }
+            // Bump the value of 0x40 so that it holds the next
+            // available memory location.
+            mstore(0x40,add(result,rsize))
+        }
+
+        let ins := mallocZero(0x60)
+        // First set up the input data (at memory location 0x0)
+        // The delete syscall is 5
+        mstore(add(ins,0x0),5)
+        // The capability index
+        mstore(add(ins,0x20),capIndex)
+        // The name of the procedure (24 bytes)
+        mstore(add(ins,0x40),procId)
+        // "in_offset" is at 31, because we only want the last byte of type
+        // "in_size" is 65 because it is 1+32+32
+        // we will store the result at 0x80 and it will be 32 bytes
+        let retSize := 0x20
+        let retLoc := mallocZero(retSize)
+        err := 0
+        if iszero(delegatecall(gas, caller, add(ins,31), 65, retLoc, retSize)) {
+            err := add(2200, mload(retLoc))
+            mstore(0xd, err)
+            revert(0xd,retSize)
+        }
+        return(retLoc, retSize)
+    }
     return err;
   }
 
@@ -332,7 +376,7 @@ contract BeakerContract is IKernel {
             let ins := mallocZero(mul(6,32))
             let retSize := 0x20
             let retLoc := mallocZero(retSize)
-          
+
             // First set up the input data (at memory location 0x0)
             // The log call is 0x-08
             mstore(add(ins,0x0),0x08)

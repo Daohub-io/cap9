@@ -20,7 +20,7 @@ library ProcedureTable {
     // CAPABILITY_TYPES
     uint8 constant CAP_NULL                 = 0;
     uint8 constant CAP_PROC_CAP_PUSH        = 1;
-    uint8 constant CAP_PROC_CAP_DELETE      = 2;    
+    uint8 constant CAP_PROC_CAP_DELETE      = 2;
     uint8 constant CAP_PROC_CALL            = 3;
     uint8 constant CAP_PROC_REGISTER        = 4;
     uint8 constant CAP_PROC_DELETE          = 5;
@@ -128,6 +128,29 @@ library ProcedureTable {
         // If the capability type is not REGISTER (11) it is the wrong type of
         // capability and we should reject
         if (cap.capType != CAP_PROC_REGISTER) {
+            return false;
+        }
+        // If the cap is empty it implies all procedures are ok
+        if (cap.values.length == 0) {
+            return true;
+        } else {
+            // the register cap should always be empty, otherwise it is invalid
+            return false;
+        }
+    }
+
+    function checkDeleteCapability(Self storage /* self */, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
+        Procedure memory p = _getProcedureByKey(uint192(key));
+
+        // If the requested cap is out of the bounds of the cap table, we
+        // clearly don't have the capability;
+        if ((p.caps.length == 0) || (reqCapIndex > (p.caps.length - 1))) {
+            return false;
+        }
+        Capability memory cap = p.caps[reqCapIndex];
+        // If the capability type is not DELETE it is the wrong type of
+        // capability and we should reject
+        if (cap.capType != CAP_PROC_DELETE) {
             return false;
         }
         // If the cap is empty it implies all procedures are ok
