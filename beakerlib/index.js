@@ -2,7 +2,7 @@
 const CAP_TYPE = {
     NULL                 : 0,
     PROC_CAP_PUSH        : 1,
-    PROC_CAP_DELETE      : 2,    
+    PROC_CAP_DELETE      : 2,
     PROC_CALL            : 3,
     PROC_REGISTER        : 4,
     PROC_DELETE          : 5,
@@ -160,6 +160,22 @@ class RegisterCap extends Cap {
     }
 }
 exports.RegisterCap = RegisterCap;
+
+class DeleteCap extends Cap {
+    // A DeleteCap is just a boolean value, a procedure can or cannot
+    // register new procedures
+    constructor() {
+        super(CAP_TYPE.PROC_DELETE);
+        this.keys = [];
+    }
+    // Format the capability values into the values that will be stored in the
+    // kernel. Must be defined for all subclasses
+    keyValues() {
+        const val = Array.from(this.keys.map(x => web3.fromAscii(x.padEnd(32, '\0'))));
+        return val;
+    }
+}
+exports.DeleteCap = DeleteCap;
 
 exports.SysCallResponse = {
     SUCCESS: 0,
