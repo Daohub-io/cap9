@@ -7,10 +7,9 @@ const CAP_TYPE = {
     PROC_REGISTER        : 4,
     PROC_DELETE          : 5,
     PROC_ENTRY           : 6,
-    STORE_READ           : 7,
-    STORE_WRITE          : 8,
-    LOG                  : 9,
-    GAS_SEND             : 10
+    STORE_WRITE          : 7,
+    LOG                  : 8,
+    GAS_SEND             : 9
 }
 
 exports.CAP_TYPE = CAP_TYPE;

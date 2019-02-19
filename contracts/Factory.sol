@@ -50,8 +50,8 @@ contract Factory {
                 i += ins - 95;
                 continue;
             } // PUSH
-            // if (ins == 0x54) {return 1;} // SLOAD
-            // TODO: we temporarily allow SLOAD for testing purposes
+
+            // SLOAD is allowed
             if (ins == 0x54) {continue;} // SLOAD
             if (ins == 0x55) {return 2;} // SSTORE
 
