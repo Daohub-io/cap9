@@ -55,8 +55,8 @@ contract BeakerContract is IKernel {
         let inSize := 0x80
         let ins := mallocZero(inSize)
         // First set up the input data (at memory location 0x0)
-        // The write call is 0x-08
-        mstore(add(ins,0x0),0x08)
+        // The write call is 0x-07
+        mstore(add(ins,0x0),0x07)
         // The capability index is 0x-01
         mstore(add(ins,0x20),capIndex)
         // The storage location we want is 0x8000
@@ -236,8 +236,8 @@ contract BeakerContract is IKernel {
             let retSize := 0x20
             let retLoc := mallocZero(retSize)
             // First set up the input data (at memory location ins)
-            // The log call is 0x-09
-            mstore(add(ins,0x0),0x09)
+            // The log call is 0x-08
+            mstore(add(ins,0x0),0x08)
             // The capability index is 0x-01
             mstore(add(ins,0x20),capIndex)
             // The number of topics we will use
@@ -283,8 +283,8 @@ contract BeakerContract is IKernel {
             let retLoc := mallocZero(retSize)
 
             // First set up the input data (at memory location 0x0)
-            // The log call is 0x-09
-            mstore(add(ins,0x0),0x09)
+            // The log call is 0x-08
+            mstore(add(ins,0x0),0x08)
             // The capability index is 0x-01
             mstore(add(ins,0x20),capIndex)
             // The number of topics we will use
@@ -334,8 +334,8 @@ contract BeakerContract is IKernel {
             let retLoc := mallocZero(retSize)
           
             // First set up the input data (at memory location 0x0)
-            // The log call is 0x-09
-            mstore(add(ins,0x0),0x09)
+            // The log call is 0x-08
+            mstore(add(ins,0x0),0x08)
             // The capability index is 0x-01
             mstore(add(ins,0x20),capIndex)
             // The number of topics we will use
@@ -385,8 +385,8 @@ contract BeakerContract is IKernel {
             let retLoc := mallocZero(retSize)
 
             // First set up the input data (at memory location 0x0)
-            // The log call is 0x-09
-            mstore(add(ins,0x0),0x09)
+            // The log call is 0x-08
+            mstore(add(ins,0x0),0x08)
             // The capability index is 0x-01
             mstore(add(ins,0x20),capIndex)
             // The number of topics we will use
@@ -439,8 +439,8 @@ contract BeakerContract is IKernel {
             let retLoc := mallocZero(retSize)
 
             // First set up the input data (at memory location 0x0)
-            // The log call is 0x-09
-            mstore(add(ins,0x0),0x09)
+            // The log call is 0x-08
+            mstore(add(ins,0x0),0x08)
             // The capability index is 0x-01
             mstore(add(ins,0x20),0x01)
             // The number of topics we will use

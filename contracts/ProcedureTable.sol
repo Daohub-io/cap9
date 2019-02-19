@@ -25,10 +25,9 @@ library ProcedureTable {
     uint8 constant CAP_PROC_REGISTER        = 4;
     uint8 constant CAP_PROC_DELETE          = 5;
     uint8 constant CAP_PROC_ENTRY           = 6;
-    uint8 constant CAP_STORE_READ           = 7;
-    uint8 constant CAP_STORE_WRITE          = 8;
-    uint8 constant CAP_LOG                  = 9;
-    uint8 constant CAP_GAS_SEND             = 10;
+    uint8 constant CAP_STORE_WRITE          = 7;
+    uint8 constant CAP_LOG                  = 8;
+    uint8 constant CAP_GAS_SEND             = 9;
 
     // Convert Pointer To File Pointer
     // Takes a single byte and a full 256 bit storage location
