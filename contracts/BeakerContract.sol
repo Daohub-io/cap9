@@ -251,6 +251,7 @@ contract BeakerContract is IKernel {
             mstore(0xd, err)
             revert(0xd,retSize)
         }
+        return(retLoc, retSize)
     }
     return err;
   }
