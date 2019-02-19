@@ -256,7 +256,7 @@ contract BeakerContract is IKernel {
     return err;
   }
 
-  function log0(uint8 capIndex, uint32 value) internal returns (uint32 err) {
+  function proc_log0(uint8 capIndex, uint32 value) internal returns (uint32 err) {
       assembly {
             function mallocZero(size) -> result {
                 // align to 32-byte words
@@ -302,7 +302,7 @@ contract BeakerContract is IKernel {
         }
         return err;
   }
-  function log1(uint8 capIndex, uint32 t1, uint32 value) internal returns (uint32 err) {
+  function proc_log1(uint8 capIndex, uint32 t1, uint32 value) internal returns (uint32 err) {
       assembly {
             function mallocZero(size) -> result {
                 // align to 32-byte words
@@ -353,7 +353,7 @@ contract BeakerContract is IKernel {
         return err;
   }
 
-  function log2(uint8 capIndex, uint32 t1, uint32 t2, uint32 value) internal returns (uint32 err) {
+  function proc_log2(uint8 capIndex, uint32 t1, uint32 t2, uint32 value) internal returns (uint32 err) {
       assembly {
             function mallocZero(size) -> result {
                 // align to 32-byte words
@@ -404,7 +404,7 @@ contract BeakerContract is IKernel {
         }
     return err;
   }
-  function log3(uint8 capIndex, uint32 t1, uint32 t2, uint32 t3, uint32 value) internal returns (uint32 err) {
+  function proc_log3(uint8 capIndex, uint32 t1, uint32 t2, uint32 t3, uint32 value) internal returns (uint32 err) {
       assembly {
             function mallocZero(size) -> result {
                 // align to 32-byte words
@@ -458,7 +458,7 @@ contract BeakerContract is IKernel {
         return err;
   }
 
-  function log4(uint8 capIndex, uint32 t1, uint32 t2, uint32 t3, uint32 t4, uint32 value) internal returns (uint32 err) {
+  function proc_log4(uint8 capIndex, uint32 t1, uint32 t2, uint32 t3, uint32 t4, uint32 value) internal returns (uint32 err) {
       assembly {
             function mallocZero(size) -> result {
                 // align to 32-byte words
