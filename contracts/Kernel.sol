@@ -25,11 +25,11 @@ contract IKernel {
     uint8 constant SyscallWriteError = 22;
     uint8 constant SyscallLogError = 33;
     uint8 constant SyscallCallError = 44;
-    
+
     // CAPABILITY_TYPES
     uint8 constant CAP_NULL                 = 0;
     uint8 constant CAP_PROC_CAP_PUSH        = 1;
-    uint8 constant CAP_PROC_CAP_DELETE      = 2;    
+    uint8 constant CAP_PROC_CAP_DELETE      = 2;
     uint8 constant CAP_PROC_CALL            = 3;
     uint8 constant CAP_PROC_REGISTER        = 4;
     uint8 constant CAP_PROC_DELETE          = 5;
@@ -37,7 +37,7 @@ contract IKernel {
     uint8 constant CAP_STORE_WRITE          = 7;
     uint8 constant CAP_LOG                  = 8;
     uint8 constant CAP_GAS_SEND             = 9;
-    
+
     function getEntryProcedure() public view returns (bytes24 key) {
         return entryProcedure;
     }
@@ -157,6 +157,8 @@ contract Kernel is Factory, IKernel {
             assembly {
                 mstore8(0xb0,5)
                 log0(0xb0, 1)
+                mstore8(0xb0,5)
+                return(0xb0, 1)
             }
         }
     }
