@@ -9,7 +9,16 @@ library WhatIsMyAddress {
     }
 }
 
+// Public Kernel Interface
 contract IKernel {
+    event KernelLog(string message);
+
+    using ProcedureTable for ProcedureTable.Self;
+    ProcedureTable.Self procedures;
+
+    // Current Entry Procedure
+    bytes24 public entryProcedure;
+
     // SYSCALL_RESPONSE_TYPES
     uint8 constant SyscallSuccess = 0;
     uint8 constant SyscallReadError = 11;
@@ -29,49 +38,38 @@ contract IKernel {
     uint8 constant CAP_STORE_WRITE          = 8;
     uint8 constant CAP_LOG                  = 9;
     uint8 constant CAP_GAS_SEND             = 10;
+    
+    function getEntryProcedure() public view returns (bytes24 key) {
+        return entryProcedure;
+    }
+
+    function listProcedures() public view returns (bytes24[] memory) {
+        return procedures.getKeys();
+    }
+
+    function returnRawProcedureTable() public view returns (uint256[]) {
+        return procedures.returnRawProcedureTable();
+    }
+
+    function returnProcedureTable() public view returns (uint256[]) {
+        return procedures.returnProcedureTable();
+    }
+
+    function getProcedure(bytes24 name) public view returns (address) {
+        return procedures.get(name);
+    }
+
 }
 
+// Internal Kernel Interface
 contract Kernel is Factory, IKernel {
-    event KernelLog(string message);
-    using ProcedureTable for ProcedureTable.Self;
-    ProcedureTable.Self procedures;
+
+    // Current Instance Address
     address kernelAddress;
+    // Current Running Procedure
     bytes24 currentProcedure;
-    bytes24 entryProcedure;
 
-    struct Process {
-        // Equal to the index of the key of this item in keys, plus 1.
-        uint8 keyIndex;
-        address location;
-    }
-
-    constructor() public {
-        // kernelAddress = WhatIsMyAddress.get();
-        // This is an example kernel global variable for testing.
-        assembly {
-            sstore(0x8000,3)
-        }
-    }
-
-    function testGetter() public view returns(uint256) {
-        assembly {
-            mstore(0,sload(0x8000))
-            return(0,0x20)
-        }
-    }
-
-    function anyTestGetter(uint256 addr) public view returns(uint256) {
-        assembly {
-            mstore(0,sload(addr))
-            return(0,0x20)
-        }
-    }
-
-    function testSetter(uint256 value) public {
-        assembly {
-            sstore(0x8000,value)
-        }
-    }
+    constructor() public {}
 
     function parse32ByteValue(uint256 startOffset) pure internal returns (uint256) {
         uint256 value = 0;
@@ -100,16 +98,9 @@ contract Kernel is Factory, IKernel {
         return value;
     }
 
-    function setEntryProcedure(bytes24 key) public {
-        entryProcedure = key;
-    }
-
-    function getEntryProcedure() public view returns (bytes24 key) {
-        return entryProcedure;
-    }
 
     // Check if a transaction is external.
-    function isExternal() internal view returns (bool) {
+    function _isExternal() internal view returns (bool) {
         // If the current transaction is from the procedure we are executing,
         // then it is a systemcall. Otherwise it is an external transaction.
         // We have in storage a value (currentProcedure) which states which
@@ -129,11 +120,11 @@ contract Kernel is Factory, IKernel {
     }
 
     // This is what we execute when we receive an external transaction.
-    function callGuardProcedure(address /* sender */, bytes /* data */) internal {
+    function _callGuardProcedure(address /* sender */, bytes /* data */) internal {
         // TODO: we need to pass through the sender somehow
-        // executeProcedure will call RETURN or REVERT, ending the transaction,
+        // _executeProcedure will call RETURN or REVERT, ending the transaction,
         // so control should never return here
-        executeProcedure(entryProcedure, "", msg.data);
+        _executeProcedure(entryProcedure, "", msg.data);
     }
 
     // This is the fallback function which is used to handle system calls. This
@@ -143,9 +134,9 @@ contract Kernel is Factory, IKernel {
 
         // If it is an external account, we forward it straight to the init
         // procedure. We currently shouldn't reach this point, as we usually use
-        // "executeProcedure"
-        if (isExternal()) {
-            callGuardProcedure(msg.sender, msg.data);
+        // "_executeProcedure"
+        if (_isExternal()) {
+            _callGuardProcedure(msg.sender, msg.data);
         }
 
         // Parse the system call
@@ -155,13 +146,13 @@ contract Kernel is Factory, IKernel {
         if (sysCallCapType == 0) {
             // non-syscall case
         } else if (sysCallCapType == CAP_PROC_CALL) {
-            callSystemCall();
+            _callSystemCall();
         } else if (sysCallCapType == CAP_STORE_WRITE) {
-            storeSystemCall();
+            _storeSystemCall();
         } else if (sysCallCapType == CAP_LOG) {
-            logSystemCall();
+            _logSystemCall();
         } else if (sysCallCapType == CAP_PROC_REGISTER) {
-            procRegSystemCall();
+            _procRegSystemCall();
         } else {
             // default; fallthrough action
             assembly {
@@ -171,7 +162,7 @@ contract Kernel is Factory, IKernel {
         }
     }
 
-    function callSystemCall() internal {
+    function _callSystemCall() internal {
         // This is a call system call
         // parse a 32-byte value at offset 1 (offset 0 is the capType byte)
         uint256 capIndex = parse32ByteValue(1);
@@ -297,7 +288,7 @@ contract Kernel is Factory, IKernel {
         }
     }
 
-    function procRegSystemCall() internal {
+    function _procRegSystemCall() internal {
         // This is a procedure-register system call
         // this is the system call to register a contract as a procedure
         // currently we enforce no caps
@@ -327,7 +318,7 @@ contract Kernel is Factory, IKernel {
         bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
         if (cap) {
 
-            (uint8 err, /* address addr */) = registerProcedure(regName, regProcAddress, regCaps);
+            (uint8 err, /* address addr */) = _registerProcedure(regName, regProcAddress, regCaps);
             uint256 bigErr = uint256(err);
             assembly {
                 function mallocZero(size) -> result {
@@ -361,7 +352,7 @@ contract Kernel is Factory, IKernel {
         }
     }
 
-    function storeSystemCall() internal {
+    function _storeSystemCall() internal {
         // This is a store system call
         // Here we have established that we are processing a write call and
         // we must destructure the necessary values.
@@ -385,7 +376,7 @@ contract Kernel is Factory, IKernel {
         }
     }
 
-    function logSystemCall() internal {
+    function _logSystemCall() internal {
         // This is a log system call
             // Here we have established that we are processing a write call and
             // we must destructure the necessary values.
@@ -448,18 +439,18 @@ contract Kernel is Factory, IKernel {
             }
     }
 
-    // Create a procedure without  going through any validation. This is mainly
-    // used for testing and should not exist in a production kernel.
-    function registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
+    // Create a validated procedure.
+    function _registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) internal returns (uint8 err, address retAddress) {
         if (validateContract(procedureAddress) == 0) {
-            return registerAnyProcedure(name, procedureAddress, caps);
+            return _registerAnyProcedure(name, procedureAddress, caps);
         } else {
             revert("procedure code failed validation");
         }
     }
 
-    // Create a validated procedure.
-    function registerAnyProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
+    // Create a procedure without  going through any validation. This is mainly
+    // used for testing and should not exist in a production kernel.
+    function _registerAnyProcedure(bytes24 name, address procedureAddress, uint256[] caps) internal returns (uint8 err, address retAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -479,7 +470,7 @@ contract Kernel is Factory, IKernel {
         return (0, procedureAddress);
     }
 
-    function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {
+    function _deleteProcedure(bytes24 name) internal returns (uint8 err, address procedureAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             err = 1;
@@ -493,28 +484,8 @@ contract Kernel is Factory, IKernel {
         if (!success) {err = 2;}
     }
 
-    function listProcedures() public view returns (bytes24[] memory) {
-        return procedures.getKeys();
-    }
 
-    function returnRawProcedureTable() public view returns (uint256[]) {
-        return procedures.returnRawProcedureTable();
-    }
-
-    function returnProcedureTable() public view returns (uint256[]) {
-        return procedures.returnProcedureTable();
-    }
-
-    // function nProcedures() public view returns (uint256) {
-    //     return procedures.size();
-    // }
-
-
-    function getProcedure(bytes24 name) public view returns (address) {
-        return procedures.get(name);
-    }
-
-    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint256 retVal) {
+    function _executeProcedure(bytes24 name, string fselector, bytes payload) internal returns (uint256 retVal) {
         // // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             retVal = 1;

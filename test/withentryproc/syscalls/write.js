@@ -1,7 +1,7 @@
 const debug = require('debug')
 const assert = require('assert')
 
-const Kernel = artifacts.require('./Kernel.sol')
+const Kernel = artifacts.require('./TestKernel.sol')
 const Factory = artifacts.require('./Factory.sol')
 const abi = require('ethereumjs-abi')
 
