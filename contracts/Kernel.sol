@@ -568,9 +568,12 @@ contract Kernel is Factory, IKernel {
     }
 
     function _setEntryProcedure(bytes24 name) internal returns (uint8 err) {
-        // TODO: check that the procedure exists
-        entryProcedure = name;
-        err = 0;
+        if (procedures.contains(name)) {
+            entryProcedure = name;
+            err = 0;
+        } else {
+            err = 1;
+        }
     }
 
     function _deleteProcedure(bytes24 name) internal returns (uint8 err, address procedureAddress) {
