@@ -177,6 +177,22 @@ class DeleteCap extends Cap {
 }
 exports.DeleteCap = DeleteCap;
 
+class SetEntryCap extends Cap {
+    // A DeleteCap is just a boolean value, a procedure can or cannot
+    // register new procedures
+    constructor() {
+        super(CAP_TYPE.PROC_ENTRY);
+        this.keys = [];
+    }
+    // Format the capability values into the values that will be stored in the
+    // kernel. Must be defined for all subclasses
+    keyValues() {
+        const val = Array.from(this.keys.map(x => web3.fromAscii(x.padEnd(32, '\0'))));
+        return val;
+    }
+}
+exports.SetEntryCap = SetEntryCap;
+
 exports.SysCallResponse = {
     SUCCESS: 0,
     READFAILURE: 11,
