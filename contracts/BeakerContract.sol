@@ -297,7 +297,10 @@ contract BeakerContract is IKernel {
             mstore(0xd, err)
             revert(0xd,retSize)
         }
-        return(retLoc, retSize)
+        err := mload(retLoc)
+
+        // Free Memory
+        mstore(0x40,ins)
     }
     return err;
   }
