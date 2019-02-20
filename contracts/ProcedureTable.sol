@@ -421,7 +421,7 @@ library ProcedureTable {
     // TODO: This should only add a single capability, currently it can add an
     // arbitrary number of caps.
     // TODO: Currently this just overwrites the caps.
-    function addCap(Self storage /* self */, bytes24 key, uint256[] caps) internal returns (bool replaced) {
+    function addCap(Self storage /* self */, bytes24 key, uint256[] caps) internal returns (bool success) {
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
@@ -436,28 +436,8 @@ library ProcedureTable {
         // The capabilities are parsed here. We neeed to pass in the Procedure
         // struct as solidity can't return complex data structures.
         _parseCaps(p,caps);
-
-        // If the keyIndex is not zero then that indicates that the procedure
-        // already exists. In this case *WE HAVE NOT OVERWRITTEN * the values,
-        // as we have not called _storeProcdure.
-        if (p.keyIndex > 0) {
-            return true;
-        // If the keyIndex is zero (it is unsigned and cannot be negative) then
-        // it means the procedure is new. We must therefore assign it a key
-        // index.
-        } else {
-            // First we retrieve a pointer to the Procedure Table Length value.
-            uint248 lenP = _getLengthPointer();
-            // We then dereference that value.
-            uint256 len = _get(0, lenP);
-            // We assign this procedure the next keyIndex, i.e. len+1
-            p.keyIndex = uint8(len + 1);
-            // We increment the Procedure Table Length value
-            _set(0, lenP, len + 1);
-            // We actually commit the values in p to storage
-            _storeProcedure(p, uint192(key));
-            return false;
-        }
+        _storeProcedure(p, uint192(key));
+        success = true;
     }
 
     function _parseCaps(Procedure memory p, uint256[] caps) internal pure {

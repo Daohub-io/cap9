@@ -11,7 +11,7 @@ contract TestKernel is Kernel {
             sstore(0x8000,3)
         }
     }
-    
+
     function testGetter() public view returns(uint256) {
         assembly {
             mstore(0,sload(0x8000))
@@ -52,5 +52,9 @@ contract TestKernel is Kernel {
 
     function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint256 retVal) {
         return _executeProcedure(name, fselector, payload);
+    }
+
+    function addCap(bytes24 name, uint256[] caps) public returns (uint256 retVal) {
+        return _addCap(name, caps);
     }
 }

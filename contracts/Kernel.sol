@@ -720,7 +720,7 @@ contract Kernel is Factory, IKernel {
         }
     }
 
-    function _addCap(bytes24 name, uint256[] caps) internal returns (uint8 err, address procedureAddress) {
+    function _addCap(bytes24 name, uint256[] caps) internal returns (uint8 err) {
         // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             err = 1;
