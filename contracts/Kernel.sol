@@ -719,4 +719,17 @@ contract Kernel is Factory, IKernel {
             retVal = 85;
         }
     }
+
+    function _addCap(bytes24 name, uint256[] caps) internal returns (uint8 err, address procedureAddress) {
+        // Check whether the first byte is null and set err to 1 if so
+        if (name[0] == 0) {
+            err = 1;
+            return;
+        }
+
+        bool success = procedures.addCap(name, caps);
+
+        // Check whether the address exists
+        if (!success) {err = 2;}
+    }
 }
