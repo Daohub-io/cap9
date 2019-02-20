@@ -427,16 +427,41 @@ library ProcedureTable {
         // zero-filled.
         Procedure memory p = _getProcedureByKey(uint192(key));
 
+
         // we just copy in the table in verbatim as long as its length is less
         // than 128 (arbitrary, but less than 256 minus room for other parameters)
         if (caps.length > 128) {
             revert();
         }
 
-        // The capabilities are parsed here. We neeed to pass in the Procedure
-        // struct as solidity can't return complex data structures.
-        _parseCaps(p,caps);
-        _storeProcedure(p, uint192(key));
+        uint248 pPointer = _getProcedurePointerByKey(uint192(key));
+        uint8 storagePage = 0;
+        // n is the storage key index
+        uint248 n = 0;
+        uint248 j;
+        // i is the index of the cap
+        // Cycle throught the caps until we come to the first free storage
+        // location, which should be at the end of the list.
+        for (uint248 i = 0; ; i++) {
+            uint256 capSize = _get(storagePage, pPointer + 3 + n);
+            if (capSize == 0) {
+                break;
+            }
+            n++;
+            // Skip over the vales of the capability
+            n += uint248(capSize);
+        }
+        uint248 freeCapPointer = pPointer + 3 + n;
+
+        n = 0;
+        for (j = 0; j < caps.length; j++) {
+            _set(storagePage, freeCapPointer + j, caps[j]); n++;
+        }
+
+        // Increment the number of caps
+        uint256 nCaps = _get(storagePage, pPointer + 2);
+        _set(storagePage, pPointer + 2, nCaps+1);
+
         success = true;
     }
 
