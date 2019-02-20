@@ -50,12 +50,15 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.RegisterCap();
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, []);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // for (const log of tx1.receipt.logs) {
                 //     // console.log(`${log.topics} - ${log.data}`);
                 //     console.log(`${log.topics} - ${log.data}`);
@@ -203,12 +206,15 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, []);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // for (const log of tx1.receipt.logs) {
                 //     // console.log(`${log.topics} - ${log.data}`);
                 //     console.log(`${log.topics} - ${log.data}`);
@@ -289,12 +295,15 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.RegisterCap();
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps= [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, []);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // for (const log of tx1.receipt.logs) {
                 //     // console.log(`${log.topics} - ${log.data}`);
                 //     console.log(`${log.topics} - ${log.data}`);
@@ -388,12 +397,15 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.RegisterCap();
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, []);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // for (const log of tx1.receipt.logs) {
                 //     // console.log(`${log.topics} - ${log.data}`);
                 //     console.log(`${log.topics} - ${log.data}`);
@@ -494,12 +506,15 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.RegisterCap();
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, []);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // for (const log of tx1.receipt.logs) {
                 //     // console.log(`${log.topics} - ${log.data}`);
                 //     console.log(`${log.topics} - ${log.data}`);
@@ -719,12 +734,15 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, []);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // for (const log of tx1.receipt.logs) {
                 //     // console.log(`${log.topics} - ${log.data}`);
                 //     console.log(`${log.topics} - ${log.data}`);

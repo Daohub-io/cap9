@@ -27,7 +27,7 @@ const Invalid = {
 }
 
 contract('Kernel with entry procedure', function (accounts) {
-    describe.only('Set the entry procedure', function () {
+    describe('Set the entry procedure', function () {
         const entryProcName = "EntryProcedure";
         describe('When sufficient caps given', function () {
             const contractA = Valid.SysCallTestSetEntry;
