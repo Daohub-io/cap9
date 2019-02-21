@@ -29,7 +29,153 @@ const Invalid = {
 contract('Kernel with entry procedure', function (accounts) {
     describe('Delete capability', function () {
         const entryProcName = "EntryProcedure";
-        describe('When sufficient caps given', function () {
+        
+        describe('When given cap to delete a specific procedure Id', function () {
+            // * Introduces Procedure A and Procedure B into the procedure table.
+            // * Procedure A is designated a procedure delete capability (type `0x3`) 
+            //   that allows it to delete any procedure iff it has id `X`.
+            // * Procedure B is not given any capabilities.
+            // * Procedure A removes Procedure B from the procedure table by 
+            //   invoking it's capability **iff** Procedure B has a procedure id `X`.
+            
+            // Procedure A is a contract with code that deletes a requested
+            // procedure.
+            const contractA = Valid.SysCallTestProcDelete;
+            // We use Valid.Simple for Procedure B as we never need to actually
+            // execute it.
+            const contractB = Valid.Simple;
+
+            it('Delete procedure with matching id', async function() {
+                // Deploy the kernel
+                const kernel = await Kernel.new();
+
+                // Save the initial state of the procedure table
+                const procedures1Raw = await kernel.listProcedures.call();
+                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+
+                // Install the default entry procedure
+                await testutils.installEntryProc(kernel);
+
+                // Install Procedure A as the entry procedure
+                const procAName = "ProcedureA";
+                const procBName = "ProcedureB";
+                const deployedContractB = await testutils.deployedTrimmed(contractB);
+                const deployedEntryProc = await testutils.deployedTrimmed(contractA);
+
+                // Give ProcedureA a delete capability to remove only ProcedureB
+                const capArrayEntryProc = beakerlib.Cap.toInput([
+                    new beakerlib.DeleteCap([procBName])
+                ]);
+
+                // This uses a direct call to the kernel
+                await kernel.registerAnyProcedure(procAName, deployedEntryProc.address, capArrayEntryProc);
+                await kernel.registerAnyProcedure(procBName, deployedContractB.address, []);
+
+                // Call the delete function to delete Procedure B
+                {
+                    const functionSelectorHash = web3.sha3("Delete(bytes24)").slice(2,10);
+                    const inputData = web3.fromAscii(procAName.padEnd(24,"\0")) + functionSelectorHash;
+
+                    const manualInputData = web3.fromAscii(procAName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
+                        + functionSelectorHash // the function selector hash (4 bytes)
+                        + web3.fromAscii(procBName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
+                    // console.log(manualInputData)
+                    // when using web3 1.0 this will be good
+                    // try {
+                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
+                    // } catch (e) {
+                    //     console.log(e)
+                    // }
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: manualInputData});
+                    const tx3 = await kernel.sendTransaction({data: manualInputData});
+
+                    const valueX = web3.toBigNumber(valueXRaw);
+                    // we execute a test function to ensure the procedure is
+                    // functioning properly
+                    assert.equal(valueX.toNumber(), 0, "Should return a zero error code");
+                }
+
+
+                // Get the current state of the procedure list and check that
+                // Procedure B has been successfully deleted.
+                {
+                    const proceduresRaw = await kernel.listProcedures.call();
+                    const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+                    assert(!procedures.includes(procBName), "Procedure B should no longer be included in the procedure list")
+                    assert(procedures.includes(procAName), "Procedure A should still be included in the procedure list")
+                    assert(procedures.includes(entryProcName), "Entry procedure should still be included in the procedure list")
+                    assert.equal(procedures.length, 2, "There should be exactly 2 procedures");
+                }
+
+            })
+            it('Fails to delete procedure if non-matching id', async function() {
+                // Deploy the kernel
+                const kernel = await Kernel.new();
+
+                // Save the initial state of the procedure table
+                const procedures1Raw = await kernel.listProcedures.call();
+                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+
+                // Install the default entry procedure
+                await testutils.installEntryProc(kernel);
+
+                // Install Procedure A as the entry procedure
+                const procAName = "ProcedureA";
+                const procBName = "ProcedureB";
+                const procCName = "ProcedureC";
+
+                const deployedContractC = await testutils.deployedTrimmed(contractA);
+                const deployedContractB = await testutils.deployedTrimmed(contractB);
+                const deployedEntryProc = await testutils.deployedTrimmed(contractA);
+
+                // Give ProcedureA a delete capability to remove a procedure Id different from ProcedureB
+                const capArrayEntryProc = beakerlib.Cap.toInput([
+                    new beakerlib.DeleteCap([procCName])
+                ]);
+
+                // This uses a direct call to the kernel
+                await kernel.registerAnyProcedure(procAName, deployedEntryProc.address, capArrayEntryProc);
+                await kernel.registerAnyProcedure(procBName, deployedContractB.address, []);
+                await kernel.registerAnyProcedure(procCName, deployedContractB.address, []);       
+
+                // Call the delete function to delete Procedure B, not Procedure C
+                {
+                    const functionSelectorHash = web3.sha3("Delete(bytes24)").slice(2,10);
+                    const inputData = web3.fromAscii(procAName.padEnd(24,"\0")) + functionSelectorHash;
+
+                    const manualInputData = web3.fromAscii(procAName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
+                        + functionSelectorHash // the function selector hash (4 bytes)
+                        + web3.fromAscii(procBName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
+                    // console.log(manualInputData)
+                    // when using web3 1.0 this will be good
+                    // try {
+                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
+                    // } catch (e) {
+                    //     console.log(e)
+                    // }
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: manualInputData});
+                    const tx3 = await kernel.sendTransaction({data: manualInputData});
+
+                    const valueX = web3.toBigNumber(valueXRaw);
+                    // we execute a test function to ensure the procedure is
+                    // functioning properly
+                    assert.equal(valueX.toNumber(), 1, "Should return a non-zero error code");
+                }
+
+                // Get the current state of the procedure list and check that
+                // Both Procedure B and C should not have been deleted.
+                {
+                    const proceduresRaw = await kernel.listProcedures.call();
+                    const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+                    assert(procedures.includes(procCName), "Procedure C should still be included in the procedure list")
+                    assert(procedures.includes(procBName), "Procedure B should still be included in the procedure list")
+                    assert(procedures.includes(procAName), "Procedure A should still be included in the procedure list")
+                    assert(procedures.includes(entryProcName), "Entry procedure should still be included in the procedure list")
+                    assert.equal(procedures.length, 4, "There should still be exactly 4 procedures");
+                }
+            })
+        })
+        describe('When given cap to delete all (*)', function () {
             // * Introduces Procedure A and Procedure B into the procedure
             //   table.
             // * Procedure A is designated a procedure delete capability (type
@@ -127,7 +273,6 @@ contract('Kernel with entry procedure', function (accounts) {
                     assert.equal(valueX.toNumber(), 0, "Should return a zero error code");
                 }
 
-
                 // Get the current state of the procedure list and check that
                 // Procedure B has been successfully deleted.
                 {
@@ -139,7 +284,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     assert.equal(procedures.length, 2, "There should be exactly 2 procedures");
                 }
             })
-            it('Delete itself when sufficient caps given', async function () {
+            it('Delete itself', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 
@@ -232,7 +377,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     assert.equal(procedures.length, 2, "There should be exactly 2 procedures");
                 }
             })
-            it('Delete the entry procedure', async function () {
+            it('Fail to delete the entry procedure', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 
@@ -310,9 +455,8 @@ contract('Kernel with entry procedure', function (accounts) {
                     const valueX = web3.toBigNumber(valueXRaw);
                     // we execute a test function to ensure the procedure is
                     // functioning properly
-                    assert.equal(valueX.toNumber(), 0, "Should return a zero error code");
+                    assert.equal(valueX.toNumber(), 1, "Should not return a zero error code");
                 }
-
 
                 // Get the current state of the procedure list and check that
                 // Procedure B has been successfully deleted.
@@ -321,8 +465,8 @@ contract('Kernel with entry procedure', function (accounts) {
                     const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
                     assert(procedures.includes(procBName), "Procedure B should still be included in the procedure list")
                     assert(procedures.includes(procAName), "Procedure A should still be included in the procedure list")
-                    assert(!procedures.includes(entryProcName), "Entry procedure should no longer be included in the procedure list")
-                    assert.equal(procedures.length, 2, "There should be exactly 2 procedures");
+                    assert(procedures.includes(entryProcName), "Entry procedure should still be included in the procedure list")
+                    assert.equal(procedures.length, 3, "There should still be exactly 3 procedures");
                 }
             })
             it('Fail to delete non-existent procedure', async function () {
