@@ -158,6 +158,8 @@ contract Kernel is Factory, IKernel {
             _procDelSystemCall();
         } else if (sysCallCapType == CAP_PROC_ENTRY) {
             _setEntrySystemCall();
+        } else if (sysCallCapType == CAP_PROC_CAP_PUSH) {
+            _pushCapSystemCall();
         } else {
             // default; fallthrough action
             assembly {
@@ -416,6 +418,67 @@ contract Kernel is Factory, IKernel {
         bool cap = procedures.checkSetEntryCapability(uint192(currentProcedure), capIndex);
         if (cap) {
             (uint8 err) = _setEntryProcedure(regName);
+            uint256 bigErr = uint256(err);
+            assembly {
+                function mallocZero(size) -> result {
+                    // align to 32-byte words
+                    let rsize := add(size,sub(32,mod(size,32)))
+                    // get the current free mem location
+                    result :=  mload(0x40)
+                    // zero-out the memory
+                    // if there are some bytes to be allocated (rsize is not zero)
+                    if rsize {
+                        // loop through the address and zero them
+                        for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                            mstore(add(result,n),0)
+                        }
+                    }
+                    // Bump the value of 0x40 so that it holds the next
+                    // available memory location.
+                    mstore(0x40,add(result,rsize))
+                }
+                let retSize := 32
+                let retLoc := mallocZero(retSize)
+                mstore(retLoc,bigErr)
+                return(retLoc,retSize)
+            }
+        } else {
+            assembly {
+                // 33 means the capability was rejected
+                mstore(0,33)
+                revert(0,0x20)
+            }
+        }
+    }
+
+    function _pushCapSystemCall() internal {
+        // This is a push capability system call
+        // this is the system call to add a capability to an existing procedure
+
+        uint256 capIndex = parse32ByteValue(1);
+        // TODO: fix this double name variable work-around
+        bytes32 regNameB = bytes32(parse32ByteValue(1+32));
+        bytes24 regName = bytes24(regNameB);
+        // the general format of a capability is length,type,values, where
+        // length includes the type
+        uint256 capsStartOffset =
+            /* sysCallCapType */ 1
+            /* capIndex */ + 32
+            /* name */ + 32;
+        // capsLength is the length of the caps arry in bytes
+        uint256 capsLengthBytes = msg.data.length - capsStartOffset;
+        uint256 capsLengthKeys  = capsLengthBytes/32;
+        if (capsLengthBytes % 32 != 0) {
+            revert("caps are not aligned to 32 bytes");
+        }
+        uint256[] memory regCaps = new uint256[](capsLengthKeys);
+        for (uint256 q = 0; q < capsLengthKeys; q++) {
+            regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
+        }
+        bool cap = procedures.checkPushCapCapability(uint192(currentProcedure), capIndex);
+        if (cap) {
+
+            (uint8 err) = _addCap(regName, regCaps);
             uint256 bigErr = uint256(err);
             assembly {
                 function mallocZero(size) -> result {

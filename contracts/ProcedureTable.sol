@@ -139,6 +139,29 @@ library ProcedureTable {
         }
     }
 
+    function checkPushCapCapability(Self storage /* self */, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
+        Procedure memory p = _getProcedureByKey(uint192(key));
+
+        // If the requested cap is out of the bounds of the cap table, we
+        // clearly don't have the capability;
+        if ((p.caps.length == 0) || (reqCapIndex > (p.caps.length - 1))) {
+            return false;
+        }
+        Capability memory cap = p.caps[reqCapIndex];
+        // If the capability type is not PUSH_CAP it is the wrong type of
+        // capability and we should reject
+        if (cap.capType != CAP_PROC_CAP_PUSH) {
+            return false;
+        }
+        // If the cap is empty it implies all procedures are ok
+        if (cap.values.length == 0) {
+            return true;
+        } else {
+            // the register cap should always be empty, otherwise it is invalid
+            return false;
+        }
+    }
+
     function checkDeleteCapability(Self storage /* self */, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
 

@@ -151,7 +151,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // Install the default entry procedure
                 await testutils.installEntryProc(kernel);
 
-                // Install Procedure A as the entry procedure
+                // Install Procedure A
                 const procAName = "ProcedureA";
                 const caps = [
                     new beakerlib.SetEntryCap()
