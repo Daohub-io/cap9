@@ -37,13 +37,13 @@ contract TestKernel is Kernel {
     }
 
     // Create a validated procedure.
-    function registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
-        return _registerProcedure(name, procedureAddress, caps);
+    function registerProcedure(bytes24 name, address procedureAddress) public returns (uint8 err, address retAddress) {
+        return _registerProcedure(name, procedureAddress);
     }
 
     // Create a procedure without  going through any validation.
-    function registerAnyProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
-        return _registerAnyProcedure(name, procedureAddress, caps);
+    function registerAnyProcedure(bytes24 name, address procedureAddress) public returns (uint8 err, address retAddress) {
+        return _registerAnyProcedure(name, procedureAddress);
     }
 
     function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {

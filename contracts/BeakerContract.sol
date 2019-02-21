@@ -216,15 +216,30 @@ contract BeakerContract is IKernel {
         }
   }
 
-  function proc_reg(uint8 capIndex, bytes32 procId, address procAddr, uint256[] caps) internal returns (uint32 err) {
-    uint256 nCapKeys = caps.length;
-    bytes memory input = new bytes(97 + nCapKeys*32);
-    uint256 inSize = input.length;
+  function proc_reg(uint8 capIndex, bytes32 procId, address procAddr) internal returns (uint32 err) {
     bytes memory retInput = new bytes(32);
     uint256 retSize = retInput.length;
 
     assembly {
-        let ins := add(input, 0x20)
+        function mallocZero(size) -> result {
+                // align to 32-byte words
+                let rsize := add(size,sub(32,mod(size,32)))
+                // get the current free mem location
+                result :=  mload(0x40)
+                // zero-out the memory
+                // if there are some bytes to be allocated (rsize is not zero)
+                if rsize {
+                    // loop through the address and zero them
+                    for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                        mstore(add(result,n),0)
+                    }
+                }
+                // Bump the value of 0x40 so that it holds the next
+                // available memory location.
+                mstore(0x40,add(result,rsize))
+            }
+        let insize := 100
+        let ins := mallocZero(100)
         // First set up the input data (at memory location 0x0)
         // The register syscall is 4
         mstore(add(ins,0x0),4)
@@ -234,21 +249,13 @@ contract BeakerContract is IKernel {
         mstore(add(ins,0x40),procId)
         // The address (20 bytes)
         mstore(add(ins,0x60),procAddr)
-        // The caps are just listed one after another, not in the dyn array
-        // format specified by Solidity
-        for { let n := 0 } iszero(eq(n, mul(nCapKeys,0x20))) { n := add(n, 0x20) } {
-            mstore(add(add(ins,0x80),n),mload(add(caps,add(0x20,n))))
-        }
         // "in_offset" is at 31, because we only want the last byte of type
         // "in_size" is 97 because it is 1+32+32+32
         // we will store the result at 0x80 and it will be 32 bytes
         let retLoc := add(retInput, 0x20)
         err := 0
-        if iszero(delegatecall(gas, caller, add(ins,31), inSize, retLoc, retSize)) {
+        if iszero(delegatecall(gas, caller, add(ins,31), insize, retLoc, retSize)) {
             err := add(2200, mload(retLoc))
-            if nCapKeys {
-                err := add(77,mul(100,mload(retLoc)))
-            }
             mstore(0xd, err)
             revert(0xd,retSize)
         }

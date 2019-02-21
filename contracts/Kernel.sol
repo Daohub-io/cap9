@@ -307,27 +307,11 @@ contract Kernel is Factory, IKernel {
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
         address regProcAddress = address(parse32ByteValue(1+32+32));
-        // the general format of a capability is length,type,values, where
-        // length includes the type
-        uint256 capsStartOffset =
-            /* sysCallCapType */ 1
-            /* capIndex */ + 32
-            /* name */ + 32
-            /* address */ + 32;
-        // capsLength is the length of the caps arry in bytes
-        uint256 capsLengthBytes = msg.data.length - capsStartOffset;
-        uint256 capsLengthKeys  = capsLengthBytes/32;
-        if (capsLengthBytes % 32 != 0) {
-            revert("caps are not aligned to 32 bytes");
-        }
-        uint256[] memory regCaps = new uint256[](capsLengthKeys);
-        for (uint256 q = 0; q < capsLengthKeys; q++) {
-            regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
-        }
+
         bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
         if (cap) {
 
-            (uint8 err, /* address addr */) = _registerProcedure(regName, regProcAddress, regCaps);
+            (uint8 err, /* address addr */) = _registerProcedure(regName, regProcAddress);
             uint256 bigErr = uint256(err);
             assembly {
                 function mallocZero(size) -> result {
@@ -600,9 +584,9 @@ contract Kernel is Factory, IKernel {
     }
 
     // Create a validated procedure.
-    function _registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) internal returns (uint8 err, address retAddress) {
+    function _registerProcedure(bytes24 name, address procedureAddress) internal returns (uint8 err, address retAddress) {
         if (validateContract(procedureAddress) == 0) {
-            return _registerAnyProcedure(name, procedureAddress, caps);
+            return _registerAnyProcedure(name, procedureAddress);
         } else {
             revert("procedure code failed validation");
         }
@@ -610,7 +594,7 @@ contract Kernel is Factory, IKernel {
 
     // Create a procedure without  going through any validation. This is mainly
     // used for testing and should not exist in a production kernel.
-    function _registerAnyProcedure(bytes24 name, address procedureAddress, uint256[] caps) internal returns (uint8 err, address retAddress) {
+    function _registerAnyProcedure(bytes24 name, address procedureAddress) internal returns (uint8 err, address retAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -624,7 +608,7 @@ contract Kernel is Factory, IKernel {
             return;
         }
 
-        procedures.insert(name, procedureAddress, caps);
+        procedures.insert(name, procedureAddress);
         retAddress = procedureAddress;
         err = 0;
         return (0, procedureAddress);

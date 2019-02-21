@@ -11,7 +11,7 @@ async function installEntryProc(kernel) {
     ];
     const deployedEntryProc = await deployedTrimmed(BasicEntryProcedure);
     // Install the entry procedure
-    await kernel.registerAnyProcedure(entryProcName, deployedEntryProc.address, []);
+    await kernel.registerAnyProcedure(entryProcName, deployedEntryProc.address);
     for (const cap of caps) {
         await kernel.addCap(entryProcName, beakerlib.Cap.toInput([cap]))
     }

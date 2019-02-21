@@ -329,6 +329,7 @@ library ProcedureTable {
 
         // The first value of the array is the number of capabilities
         _set(storagePage, pPointer + 2, p.caps.length);
+        log1(bytes32(p.caps.length), "nCaps:");
         _serialiseCapArray(p, storagePage, pPointer);
     }
 
@@ -401,28 +402,21 @@ library ProcedureTable {
         return r;
     }
 
-    function insert(Self storage /* self */, bytes24 key, address value, uint256[] caps) internal returns (bool replaced) {
+    function insert(Self storage /* self */, bytes24 key, address value) internal returns (bool replaced) {
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
         Procedure memory p = _getProcedureByKey(uint192(key));
         // We then write or overwrite the various properties
         p.location = value;
-        // we just copy in the table in verbatim as long as its length is less
-        // than 128 (arbitrary, but less than 256 minus room for other parameters)
-        if (caps.length > 128) {
-            revert();
-        }
-
-        // The capabilities are parsed here. We neeed to pass in the Procedure
-        // struct as solidity can't return complex data structures.
-        _parseCaps(p,caps);
+        // TODO: change this
+        p.caps = new Capability[](0);
 
         // If the keyIndex is not zero then that indicates that the procedure
         // already exists. In this case *WE HAVE NOT OVERWRITTEN * the values,
         // as we have not called _storeProcdure.
         if (p.keyIndex > 0) {
-            return true;
+            revert();
         // If the keyIndex is zero (it is unsigned and cannot be negative) then
         // it means the procedure is new. We must therefore assign it a key
         // index.
@@ -458,6 +452,7 @@ library ProcedureTable {
         }
 
         uint248 pPointer = _getProcedurePointerByKey(uint192(key));
+        uint248 nCaps = uint248(_get(storagePage, pPointer + 2));
         uint8 storagePage = 0;
         // n is the storage key index
         uint248 n = 0;
@@ -465,7 +460,7 @@ library ProcedureTable {
         // i is the index of the cap
         // Cycle throught the caps until we come to the first free storage
         // location, which should be at the end of the list.
-        for (uint248 i = 0; ; i++) {
+        for (uint248 i = 0; i < nCaps; i++) {
             uint256 capSize = _get(storagePage, pPointer + 3 + n);
             if (capSize == 0) {
                 break;
@@ -482,7 +477,6 @@ library ProcedureTable {
         }
 
         // Increment the number of caps
-        uint256 nCaps = _get(storagePage, pPointer + 2);
         _set(storagePage, pPointer + 2, nCaps+1);
 
         success = true;
