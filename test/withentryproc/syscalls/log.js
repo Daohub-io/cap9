@@ -33,10 +33,13 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -55,10 +58,13 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
-                const capArray = beakerlib.Cap.toInput([cap1]);
+                const caps = [cap1];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx0 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -82,10 +88,13 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([0xaabb]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx0 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -114,10 +123,13 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -139,10 +151,13 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic+1]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -164,8 +179,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -187,11 +202,14 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap = new beakerlib.LogCap([0x8001, 0x0]);
-                const capArray = beakerlib.Cap.toInput([cap]);
+                const caps = [cap];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -221,10 +239,13 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -245,8 +266,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -268,8 +289,9 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                await kernel.addCap(procName, [3, 0x7, 0x8001, 0x0]);
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -300,12 +322,14 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1, topic2]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
-
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 {
                     await testutils.installEntryProc(kernel);
 
@@ -328,8 +352,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -351,12 +375,14 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap = new beakerlib.LogCap([0x8001, 0x0]);
-                const capArray = beakerlib.Cap.toInput([cap]);
+                const caps = [cap];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
-
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 {
                     await testutils.installEntryProc(kernel);
 
@@ -387,11 +413,13 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1, topic2, topic3]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
-
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 {
                     await testutils.installEntryProc(kernel);
 
@@ -413,8 +441,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('E() should fail when not given cap', async function () {
                 const kernel = await Kernel.new();
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
 
                 {
                     await testutils.installEntryProc(kernel);
@@ -436,12 +464,14 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap = new beakerlib.LogCap([0x8001, 0x0]);
-                const capArray = beakerlib.Cap.toInput([cap]);
+                const caps = [cap];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
-
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 {
                     await testutils.installEntryProc(kernel);
 

@@ -46,8 +46,8 @@ contract('Kernel without entry procedure', function (accounts) {
             let kernel = await Kernel.new();
 
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            let [err, address] = await kernel.registerProcedure.call('TestAdder', testAdder.address, []);
-            let tx1 = await kernel.registerProcedure('TestAdder', testAdder.address, []);
+            let [err, address] = await kernel.registerProcedure.call('TestAdder', testAdder.address);
+            let tx1 = await kernel.registerProcedure('TestAdder', testAdder.address);
 
             let procedures = await kernel.listProcedures.call();
             assert.equal(procedures.length, 1);
@@ -62,7 +62,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
             for (const proc of speccedProcedures) {
                 const contract = await testutils.deployedTrimmed(proc[1]);
-                await kernel.registerProcedure(proc[0], contract.address, []);
+                await kernel.registerProcedure(proc[0], contract.address,);
             }
 
             const proceduresRaw = await kernel.listProcedures.call();
@@ -93,12 +93,12 @@ contract('Kernel without entry procedure', function (accounts) {
             // Create "TestAdder"
             // Find the address (ephemerally)
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            let [err, creationAddress] = await kernel.registerProcedure.call('TestAdder', testAdder.address, []);
+            let [err, creationAddress] = await kernel.registerProcedure.call('TestAdder', testAdder.address);
             assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`);
             assert(!isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is not null`);
 
             // Carry out the creation
-            let tx1 = await kernel.registerProcedure('TestAdder', testAdder.address, []);
+            let tx1 = await kernel.registerProcedure('TestAdder', testAdder.address);
 
             // Get the procedure
             let address = await kernel.getProcedure.call("TestAdder");
@@ -121,8 +121,8 @@ contract('Kernel without entry procedure', function (accounts) {
             let kernel = await Kernel.new();
             const procedureName = "TestAdder";
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            let [err, address] = await kernel.registerProcedure.call(procedureName, testAdder.address, []);
-            let tx1 = await kernel.registerProcedure(procedureName, testAdder.address, []);
+            let [err, address] = await kernel.registerProcedure.call(procedureName, testAdder.address);
+            let tx1 = await kernel.registerProcedure(procedureName, testAdder.address);
 
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
             assert(!isNullAddress(address), 'Procedure Address is not null')
@@ -146,8 +146,8 @@ contract('Kernel without entry procedure', function (accounts) {
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            const [err, address] = await kernel.registerProcedure.call(name, testAdder.address, []);
-            const tx1 = await kernel.registerProcedure(name, testAdder.address, []);
+            const [err, address] = await kernel.registerProcedure.call(name, testAdder.address);
+            const tx1 = await kernel.registerProcedure(name, testAdder.address);
 
             assert(web3.isAddress(address), `Procedure Address (${address}) should be a real address`)
             assert(!isNullAddress(address), 'Procedure Address should not be null')
@@ -173,8 +173,8 @@ contract('Kernel without entry procedure', function (accounts) {
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            const [err, address] = await kernel.registerProcedure.call(name, testAdder.address, []);
-            const tx1 = await kernel.registerProcedure(name, testAdder.address, []);
+            const [err, address] = await kernel.registerProcedure.call(name, testAdder.address);
+            const tx1 = await kernel.registerProcedure(name, testAdder.address);
 
             assert(web3.isAddress(address), `Procedure Address (#1) (${address}) should be a real address`)
             assert(!isNullAddress(address), 'Procedure Address (#1) should not be null')
@@ -187,8 +187,8 @@ contract('Kernel without entry procedure', function (accounts) {
             assert.equal(testutils.trimSwarm(Valid.Adder.deployedBytecode), code);
             const name2 = "ByAnyOtherName";
             const testAdder2 = await testutils.deployedTrimmed(Valid.Adder);
-            const [err2, address2] = await kernel.registerProcedure.call(name2, testAdder2.address, []);
-            const tx2 = await kernel.registerProcedure(name2, testAdder2.address, []);
+            const [err2, address2] = await kernel.registerProcedure.call(name2, testAdder2.address);
+            const tx2 = await kernel.registerProcedure(name2, testAdder2.address);
 
             assert(web3.isAddress(address2), `Procedure Address (#2) (${address2}) should be a real address`)
             assert(!isNullAddress(address2), 'Procedure Address (#2) should not be null')
@@ -213,7 +213,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 let kernel = await Kernel.new();
 
                 const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-                let [err, creationAddress] = await kernel.registerProcedure.call('', testAdder.address, []);
+                let [err, creationAddress] = await kernel.registerProcedure.call('', testAdder.address);
                 assert.equal(err, 1);
                 assert(web3.isAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is a real address`)
                 assert(isNullAddress(creationAddress), `Procedure Creation Address (${creationAddress}) is null`)
@@ -233,13 +233,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 const name = "TestAdder";
                 const testAdder = await testutils.deployedTrimmed(Valid.Adder);
                 // This is the first time the procedure is added
-                const [err1, address1] = await kernel.registerProcedure.call(name, testAdder.address, []);
-                const tx1 = await kernel.registerProcedure(name, testAdder.address, []);
+                const [err1, address1] = await kernel.registerProcedure.call(name, testAdder.address);
+                const tx1 = await kernel.registerProcedure(name, testAdder.address);
 
                 // This is the second time the procedure is added
                 const testMultiply = await testutils.deployedTrimmed(Valid.Multiply);
-                const [err2, address2] = await kernel.registerProcedure.call(name, testMultiply.address, []);
-                const tx2 = await kernel.registerProcedure(name, testMultiply.address, []);
+                const [err2, address2] = await kernel.registerProcedure.call(name, testMultiply.address);
+                const tx2 = await kernel.registerProcedure(name, testMultiply.address);
                 assert.equal(err2, 3);
 
                 const proceduresRaw = await kernel.listProcedures.call();
@@ -268,9 +268,9 @@ contract('Kernel without entry procedure', function (accounts) {
         it('should return deleted procedure address if procedure key is valid', async function () {
             const kernel = await Kernel.new();
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            const [err1, address] = await kernel.registerProcedure.call("test", testAdder.address, []);
+            const [err1, address] = await kernel.registerProcedure.call("test", testAdder.address);
             assert.equal(err1, 0);
-            const tx1 = await kernel.registerProcedure('test', testAdder.address, []);
+            const tx1 = await kernel.registerProcedure('test', testAdder.address);
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
             // There should be some code at this address now
@@ -291,9 +291,9 @@ contract('Kernel without entry procedure', function (accounts) {
 
             const procedureName = "test";
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            const [err1, address] = await kernel.registerProcedure.call(procedureName, testAdder.address, []);
+            const [err1, address] = await kernel.registerProcedure.call(procedureName, testAdder.address);
             assert.equal(err1, 0);
-            const tx1 = await kernel.registerProcedure(procedureName, testAdder.address, []);
+            const tx1 = await kernel.registerProcedure(procedureName, testAdder.address);
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
 
@@ -322,9 +322,9 @@ contract('Kernel without entry procedure', function (accounts) {
 
             const procedureName = "test";
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            const [err1, address] = await kernel.registerProcedure.call(procedureName, testAdder.address, []);
+            const [err1, address] = await kernel.registerProcedure.call(procedureName, testAdder.address);
             assert.equal(err1, 0);
-            const tx1 = await kernel.registerProcedure(procedureName, testAdder.address, []);
+            const tx1 = await kernel.registerProcedure(procedureName, testAdder.address);
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
 
@@ -334,9 +334,9 @@ contract('Kernel without entry procedure', function (accounts) {
             assert.notEqual(code, "0x0");
             assert.notEqual(code, "0x");
 
-            await kernel.registerProcedure(procedureName+"1", testAdder.address, []);
-            await kernel.registerProcedure(procedureName+"2", testAdder.address, []);
-            await kernel.registerProcedure(procedureName+"3", testAdder.address, []);
+            await kernel.registerProcedure(procedureName+"1", testAdder.address);
+            await kernel.registerProcedure(procedureName+"2", testAdder.address);
+            await kernel.registerProcedure(procedureName+"3", testAdder.address);
 
             const proceduresBeforeRaw = await kernel.listProcedures.call();
             const proceduresBefore = proceduresBeforeRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
@@ -371,13 +371,16 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.LogCap([]);
                 const cap2 = new beakerlib.LogCap([0xdeadbeef]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const procedureName = "test";
                 const testAdder = await testutils.deployedTrimmed(Valid.Adder);
 
-                await kernel.registerProcedure.call(procedureName, testAdder.address, capArray);
-                await kernel.registerProcedure(procedureName, testAdder.address, capArray);
+                // Register the procedure the first time
+                await kernel.registerProcedure(procedureName, testAdder.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procedureName, beakerlib.Cap.toInput([cap]))
+                }
                 const table1 = await kernel.returnRawProcedureTable.call()
 
                 // Delete Procedure
@@ -389,10 +392,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 const retrievedAddress = await kernel.getProcedure(procedureName);
                 assert(isNullAddress(retrievedAddress), "Procedure is deleted")
 
-                await kernel.registerProcedure.call(procedureName, testAdder.address, capArray);
-                await kernel.registerProcedure(procedureName, testAdder.address, capArray);
-                const table3 = await kernel.returnRawProcedureTable.call()
+                // Register the same procedure again
+                const tx1 = await kernel.registerProcedure(procedureName, testAdder.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procedureName, beakerlib.Cap.toInput([cap]))
+                }
 
+                const table3 = await kernel.returnRawProcedureTable.call()
                 assert.deepEqual(table1, table3, 'Procedure Tables should be equal')
 
             })
@@ -404,14 +410,17 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.LogCap([]);
                 const cap2 = new beakerlib.LogCap([0xdeadbeef]);
-                const capArray1 = beakerlib.Cap.toInput([cap1]);
-                const capArray2 = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray1 = [cap1];
+                const capArray2 = [cap1, cap2];
 
                 const procedureName = "test";
                 const testAdder = await testutils.deployedTrimmed(Valid.Adder);
 
                 // First Create A Superset for initial state, so we have a referenc point
-                await kernel.registerProcedure(procedureName, testAdder.address, capArray2);
+                await kernel.registerProcedure(procedureName, testAdder.address);
+                for (const cap of capArray2) {
+                    await kernel.addCap(procedureName, beakerlib.Cap.toInput([cap]))
+                }
                 const table_sup = await kernel.returnRawProcedureTable.call()
                 // Delete It
                 await kernel.deleteProcedure(procedureName);
@@ -419,7 +428,10 @@ contract('Kernel without entry procedure', function (accounts) {
                 assert.deepEqual(table_sup_del, table_empty, 'Procedure Tables should be equal after deletion')
 
                 // Next Register a subset for initial state
-                await kernel.registerProcedure(procedureName, testAdder.address, capArray1);
+                await kernel.registerProcedure(procedureName, testAdder.address);
+                for (const cap of capArray1) {
+                    await kernel.addCap(procedureName, beakerlib.Cap.toInput([cap]))
+                }
                 await kernel.returnRawProcedureTable.call()
                 // Delete It
                 await kernel.deleteProcedure(procedureName);
@@ -427,7 +439,10 @@ contract('Kernel without entry procedure', function (accounts) {
                 assert.deepEqual(table_sub_del, table_empty, 'Procedure Tables should be equal after deletion')
 
                  // Create A Superset - again
-                 await kernel.registerProcedure(procedureName, testAdder.address, capArray2);
+                 await kernel.registerProcedure(procedureName, testAdder.address);
+                 for (const cap of capArray2) {
+                    await kernel.addCap(procedureName, beakerlib.Cap.toInput([cap]))
+                }
                  const table_sup_new = await kernel.returnRawProcedureTable.call()
                  // Check if matches the reference
                  assert.deepEqual(table_sup_new, table_sup, 'Procedure Tables should be equal')
@@ -438,9 +453,9 @@ contract('Kernel without entry procedure', function (accounts) {
         it.skip('should destroy the procedures contract on deletion', async function () {
             const kernel = await Kernel.new();
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
-            const [err1, address] = await kernel.registerProcedure.call("test", testAdder.address, []);
+            const [err1, address] = await kernel.registerProcedure.call("test", testAdder.address);
             assert.equal(err1, 0);
-            const tx1 = await kernel.registerProcedure('test', testAdder.address, []);
+            const tx1 = await kernel.registerProcedure('test', testAdder.address);
             const code = web3.eth.getCode(address);
             const codeAsNumber = web3.toBigNumber(code);
             // There should be some code at this address now
@@ -484,8 +499,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 it('X() should fail', async function () {
                     const kernel = await Kernel.new();
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
-                    const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
+                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address);
+                    const tx = await kernel.registerProcedure("Simple", testSimple.address);
 
                     // need to have the ABI definition in JSON as per specification
                     const valueX = await kernel.executeProcedure.call("Simple", "X()", "");
@@ -495,8 +510,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 it('A() should succeed', async function () {
                     const kernel = await Kernel.new();
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
-                    const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
+                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address);
+                    const tx = await kernel.registerProcedure("Simple", testSimple.address);
 
                     const value1 = await kernel.executeProcedure.call("Simple", "A()", "");
                     assert.equal(value1.toNumber(), 0, "A() should succeed");
@@ -505,8 +520,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 it('C() should fail without correctly specifying arguments', async function () {
                     const kernel = await Kernel.new();
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
-                    const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
+                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address);
+                    const tx = await kernel.registerProcedure("Simple", testSimple.address);
 
                     const value = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(value.toNumber(), 220000, "C() should not succeed");
@@ -515,8 +530,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 it('C() should fail when using type synonyms such as uint, which cant be used in function selectors', async function () {
                     const kernel = await Kernel.new();
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
-                    const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
+                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address);
+                    const tx = await kernel.registerProcedure("Simple", testSimple.address);
 
                     const value = await kernel.executeProcedure.call("Simple", "C()", "");
                     assert.equal(value.toNumber(), 220000, "C() should not succeed");
@@ -525,8 +540,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 it('C(uint256) should succeed passing arguments', async function () {
                     const kernel = await Kernel.new();
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address, []);
-                    const tx = await kernel.registerProcedure("Simple", testSimple.address, []);
+                    const [, address] = await kernel.registerProcedure.call("Simple", testSimple.address);
+                    const tx = await kernel.registerProcedure("Simple", testSimple.address);
 
                     const value = await kernel.executeProcedure.call("Simple", "C(uint256)", "");
                     assert.equal(value.toNumber(), 0, "C(uint256) should succeed");
@@ -540,12 +555,15 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,0);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray = [cap1, cap2];
 
                 const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
                 const testSimple = await testutils.deployedTrimmed(Valid.Multiply);
-                const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, capArray);
-                const tx2 = await kernel.registerProcedure("Simple", testSimple.address, []);
+                const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address);
+                for (const cap of capArray) {
+                    await kernel.addCap("SysCallTestWrite", beakerlib.Cap.toInput([cap]))
+                }
+                const tx2 = await kernel.registerProcedure("Simple", testSimple.address);
                 const rawProcTableData = await kernel.returnRawProcedureTable.call();
                 const procTableData = await kernel.returnProcedureTable.call();
 
@@ -583,9 +601,10 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
                 const procedureName = "Entry";
                 const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
-                const [a, address] = await kernel.registerProcedure.call(procedureName, SysCallTestWrite.address, [3, 0x7, 0x80, 0x0]);
+                // const [a, address] = await kernel.registerProcedure.call(procedureName, SysCallTestWrite.address, [3, 0x7, 0x80, 0x0]);
                 // assert.equal(a.toNumber(), 0, "S() should succeed with zero errcode the second time");
-                const tx = await kernel.registerProcedure(procedureName, SysCallTestWrite.address, [3, 0x7, 0x80, 0x0]);
+                const tx = await kernel.registerProcedure(procedureName, SysCallTestWrite.address);
+                await kernel.addCap(procedureName, [3, 0x7, 0x80, 0x0])
                 const valueA = await kernel.getProcedure.call(procedureName);
                 // const
                 // console.log(errA, valueA);
@@ -617,8 +636,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 let kernel = await Kernel.new();
 
                 const testDivide = await testutils.deployedTrimmed(Valid.Divide);
-                let [err, address] = await kernel.registerProcedure.call('TestDivide', testDivide.address, []);
-                let tx1 = await kernel.registerProcedure('TestDivide', testDivide.address, []);
+                let [err, address] = await kernel.registerProcedure.call('TestDivide', testDivide.address);
+                let tx1 = await kernel.registerProcedure('TestDivide', testDivide.address);
 
                 assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
                 assert(!isNullAddress(address), 'Procedure Address is not null')
@@ -635,7 +654,11 @@ contract('Kernel without entry procedure', function (accounts) {
                 try {
                     const divideByZero = await divide.divide.call(8, 0);
                 } catch (e) {
-                    assert.equal(e, "Error: VM Exception while processing transaction: invalid opcode");
+                    // If using ganache
+                    const correctGanacheError = e == "Error: VM Exception while processing transaction: invalid opcode"
+                    // If using parity
+                    const correctParityError = e == "Error: VM execution error."
+                    assert(correctGanacheError || correctParityError, (`Correct error should be found, but "${e}" was found`));
                 }
             });
         })

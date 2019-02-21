@@ -56,7 +56,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel
                 {
-                    await kernel.registerAnyProcedure(procAName, deployedEntryProc.address, []);
+                    await kernel.registerAnyProcedure(procAName, deployedEntryProc.address);
                     for (const cap of caps) {
                         await kernel.addCap(procAName, beakerlib.Cap.toInput([cap]))
                     }
@@ -93,7 +93,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContractB = await testutils.deployedTrimmed(contractB);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procBName, deployedContractB.address, []);
+                const tx1 = await kernel.registerAnyProcedure(procBName, deployedContractB.address);
 
                 // Test that Procedure A executes correctly by calling the
                 // testNum() function of that contract.
@@ -158,7 +158,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 ];
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel
-                await kernel.registerAnyProcedure(procAName, deployedEntryProc.address, []);
+                await kernel.registerAnyProcedure(procAName, deployedEntryProc.address);
                 for (const cap of caps) {
                     await kernel.addCap(procAName, beakerlib.Cap.toInput([cap]))
                 }
@@ -175,7 +175,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContractB = await testutils.deployedTrimmed(contractB);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procBName, deployedContractB.address, []);
+                const tx1 = await kernel.registerAnyProcedure(procBName, deployedContractB.address);
 
                 // Test that Procedure A executes correctly by calling the
                 // testNum() function of that contract.
@@ -246,7 +246,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 ];
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel
-                await kernel.registerAnyProcedure(procAName, deployedEntryProc.address, []);
+                await kernel.registerAnyProcedure(procAName, deployedEntryProc.address);
                 for (const cap of caps) {
                     await kernel.addCap(procAName, beakerlib.Cap.toInput([cap]))
                 }
@@ -263,7 +263,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContractB = await testutils.deployedTrimmed(contractB);
                 // This is the procedure that will do the registering
                 // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procBName, deployedContractB.address, []);
+                const tx1 = await kernel.registerAnyProcedure(procBName, deployedContractB.address);
 
                 // Test that Procedure A executes correctly by calling the
                 // testNum() function of that contract.

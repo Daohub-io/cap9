@@ -48,14 +48,17 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -85,14 +88,17 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const caps = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -122,14 +128,17 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -159,14 +168,17 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap(["another-proc", testProcName]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -196,14 +208,17 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap([procName+"abc"]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
 
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
@@ -245,12 +260,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap2, cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -286,12 +301,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -328,12 +343,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -370,12 +385,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap2,cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -412,12 +427,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -460,12 +475,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap2,cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -501,12 +516,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -543,12 +558,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -585,12 +600,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap2,cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -627,12 +642,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -675,12 +690,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap2, cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -710,12 +725,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -746,12 +761,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -782,12 +797,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap2, cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -818,12 +833,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
                 for (const cap of caps) {
                     await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
                 }
                 // This is the called procedure
-                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
+                const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address);
                 for (const cap of [cap1]) {
                     await kernel.addCap(testProcName, beakerlib.Cap.toInput([cap]))
                 }
@@ -854,17 +869,23 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedAdderContract = await testutils.deployedTrimmed(Valid.Adder);
                 const deployedSysCallTestContract = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // This is the first called procedure, which doesn't really do anything
-                await kernel.registerProcedure("Adder", deployedAdderContract.address, beakerlib.Cap.toInput([]));
+                await kernel.registerProcedure("Adder", deployedAdderContract.address);
                 // // This is the second called procedure, which requires capabilities
-                await kernel.registerProcedure("SysCallTestWrite", deployedSysCallTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
+                await kernel.registerProcedure("SysCallTestWrite", deployedSysCallTestContract.address);
+                for (const cap of [cap2, cap1]) {
+                    await kernel.addCap("SysCallTestWrite", beakerlib.Cap.toInput([cap]))
+                }
                 // await kernel.createProcedure("SysCallTestCall", Valid.SysCallTestCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
 
                 {
@@ -896,7 +917,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const caps = [cap1, cap2, cap3];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedAdderContract = await testutils.deployedTrimmed(Valid.Adder);
@@ -907,15 +928,36 @@ contract('Kernel with entry procedure', function (accounts) {
                 const deployedFifthNestedContract = await testutils.deployedTrimmed(Valid.FifthNestedCall);
                 const deployedSixthNestedContract = await testutils.deployedTrimmed(Valid.SixthNestedCall);
                 // This is the procedure that will do the calling
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of caps) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
                 // This is the called procedure
-                await kernel.registerProcedure("Adder", deployedAdderContract.address, beakerlib.Cap.toInput([]));
-                await kernel.registerProcedure("FirstNestedCall",  deployedFirstNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8001,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("SecondNestedCall", deployedSecondNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8002,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("ThirdNestedCall",  deployedThirdNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8003,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("FourthNestedCall", deployedFourthNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8004,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("FifthNestedCall",  deployedFifthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("SixthNestedCall",  deployedSixthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()]));
+                await kernel.registerProcedure("Adder", deployedAdderContract.address);
+                await kernel.registerProcedure("FirstNestedCall",  deployedFirstNestedContract.address);
+                for (const cap of [cap2, new beakerlib.WriteCap(0x8001,0), new beakerlib.CallCap()]) {
+                    await kernel.addCap("FirstNestedCall", beakerlib.Cap.toInput([cap]))
+                }
+                await kernel.registerProcedure("SecondNestedCall", deployedSecondNestedContract.address);
+                for (const cap of [cap2, new beakerlib.WriteCap(0x8002,0), new beakerlib.CallCap()]) {
+                    await kernel.addCap("SecondNestedCall", beakerlib.Cap.toInput([cap]))
+                }
+                await kernel.registerProcedure("ThirdNestedCall",  deployedThirdNestedContract.address);
+                for (const cap of [cap2, new beakerlib.WriteCap(0x8003,0), new beakerlib.CallCap()]) {
+                    await kernel.addCap("ThirdNestedCall", beakerlib.Cap.toInput([cap]))
+                }
+                await kernel.registerProcedure("FourthNestedCall", deployedFourthNestedContract.address);
+                for (const cap of [cap2, new beakerlib.WriteCap(0x8004,0), new beakerlib.CallCap()]) {
+                    await kernel.addCap("FourthNestedCall", beakerlib.Cap.toInput([cap]))
+                }
+                await kernel.registerProcedure("FifthNestedCall",  deployedFifthNestedContract.address);
+                for (const cap of [cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()]) {
+                    await kernel.addCap("FifthNestedCall", beakerlib.Cap.toInput([cap]))
+                }
+                await kernel.registerProcedure("SixthNestedCall",  deployedSixthNestedContract.address);
+                for (const cap of [cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()]) {
+                    await kernel.addCap("SixthNestedCall", beakerlib.Cap.toInput([cap]))
+                }
 
                 // TODO: this should be using the entry procedure, no
                 // kernel.executeProcedure
