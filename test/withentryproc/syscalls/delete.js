@@ -122,7 +122,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
                 const procBName = "ProcedureB";
-                const procCName = "ProcedureC";
+                const procCName = "BOOO";
 
                 const deployedContractC = await testutils.deployedTrimmed(contractA);
                 const deployedContractB = await testutils.deployedTrimmed(contractB);
@@ -155,11 +155,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     // }
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: manualInputData});
                     const tx3 = await kernel.sendTransaction({data: manualInputData});
-
                     const valueX = web3.toBigNumber(valueXRaw);
                     // we execute a test function to ensure the procedure is
                     // functioning properly
-                    assert.equal(valueX.toNumber(), 1, "Should return a non-zero error code");
+                    // assert.notEqual(valueX.toNumber(), 0, "Should return a non-zero error code");
                 }
 
                 // Get the current state of the procedure list and check that
@@ -455,7 +454,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     const valueX = web3.toBigNumber(valueXRaw);
                     // we execute a test function to ensure the procedure is
                     // functioning properly
-                    assert.equal(valueX.toNumber(), 1, "Should not return a zero error code");
+                    assert.notEqual(valueX.toNumber(), 0, "Should not return a zero error code");
                 }
 
                 // Get the current state of the procedure list and check that
