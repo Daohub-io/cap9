@@ -368,8 +368,12 @@ contract Kernel is Factory, IKernel {
         // TODO: fix this double name variable work-around
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
-        bool cap = procedures.checkDeleteCapability(uint192(currentProcedure), capIndex);
-        if (cap) {
+        
+        // Check that target is not the Entry Procedure
+        bool not_entry = entryProcedure != regName;
+        // Check if Valid Capability
+        bool cap = procedures.checkDeleteCapability(uint192(currentProcedure), regName, capIndex);
+        if (cap && not_entry) {
             (uint8 err, /* address addr */) = _deleteProcedure(regName);
             uint256 bigErr = uint256(err);
             assembly {

@@ -164,9 +164,9 @@ exports.RegisterCap = RegisterCap;
 class DeleteCap extends Cap {
     // A DeleteCap is just a boolean value, a procedure can or cannot
     // register new procedures
-    constructor() {
+    constructor(keys = []) {
         super(CAP_TYPE.PROC_DELETE);
-        this.keys = [];
+        this.keys = keys;
     }
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses

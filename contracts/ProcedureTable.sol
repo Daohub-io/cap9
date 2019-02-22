@@ -139,7 +139,7 @@ library ProcedureTable {
         }
     }
 
-    function checkDeleteCapability(Self storage /* self */, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
+    function checkDeleteCapability(Self storage /* self */, uint192 key, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
 
         // If the requested cap is out of the bounds of the cap table, we
@@ -148,6 +148,9 @@ library ProcedureTable {
             return false;
         }
         Capability memory cap = p.caps[reqCapIndex];
+        assembly {
+            log0(add(cap, 0x20), mload(cap))
+        }
         // If the capability type is not DELETE it is the wrong type of
         // capability and we should reject
         if (cap.capType != CAP_PROC_DELETE) {
@@ -157,9 +160,15 @@ library ProcedureTable {
         if (cap.values.length == 0) {
             return true;
         } else {
-            // the register cap should always be empty, otherwise it is invalid
-            return false;
+            // otherwise we cycle through the permitted procedure keys and see
+            // if we can find the requested on
+            for (uint256 i = 0; i < cap.values.length; i++) {
+                if (bytes24(cap.values[i]/0x10000000000000000) == procedureKey) {
+                    return true;
+                }
+            }
         }
+        return false;
     }
 
     function checkSetEntryCapability(Self storage /* self */, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
@@ -211,6 +220,7 @@ library ProcedureTable {
                 }
             }
         }
+        return false;
     }
 
     function checkWriteCapability(Self storage /* self */, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool) {
