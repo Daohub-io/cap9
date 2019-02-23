@@ -18,6 +18,10 @@ contract IKernel {
 
     // Current Entry Procedure
     bytes24 public entryProcedure;
+    // Current Instance Address
+    address kernelAddress;
+    // Current Running Procedure
+    bytes24 currentProcedure;
 
     // SYSCALL_RESPONSE_TYPES
     uint8 constant SyscallSuccess = 0;
@@ -64,11 +68,6 @@ contract IKernel {
 
 // Internal Kernel Interface
 contract Kernel is Factory, IKernel {
-
-    // Current Instance Address
-    address kernelAddress;
-    // Current Running Procedure
-    bytes24 currentProcedure;
 
     constructor() public {}
 
