@@ -541,7 +541,7 @@ contract Kernel is Factory, IKernel {
             assembly {
                 // 33 means the capability was rejected
                 mstore(0,33)
-                return(0,0x20)
+                revert(0,0x20)
             }
         }
     }
