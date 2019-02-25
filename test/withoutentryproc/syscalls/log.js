@@ -32,10 +32,13 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
@@ -48,10 +51,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
-                const capArray = beakerlib.Cap.toInput([cap1]);
+                const capArray = [cap1];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx0 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
@@ -64,10 +70,13 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([0xaabb]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx0 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 // need to have the ABI definition in JSON as per specification
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
@@ -87,10 +96,13 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
@@ -105,10 +117,13 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic+1]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
@@ -120,8 +135,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
@@ -133,11 +148,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap = new beakerlib.LogCap([0x8001, 0x0]);
-                const capArray = beakerlib.Cap.toInput([cap]);
+                const capArray = [cap];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 // need to have the ABI definition in JSON as per specification
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
@@ -158,10 +175,13 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
@@ -175,8 +195,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should fail when not given cap', async function () {
                 const kernel = await Kernel.new();
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
@@ -188,11 +208,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap = new beakerlib.LogCap([0x8001, 0x0]);
-                const capArray = beakerlib.Cap.toInput([cap]);
+                const capArray = [cap];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
@@ -213,10 +235,13 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1, topic2]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
@@ -232,8 +257,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
@@ -245,11 +270,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap = new beakerlib.LogCap([0x8001, 0x0]);
-                const capArray = beakerlib.Cap.toInput([cap]);
+                const capArray = [cap];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
@@ -271,10 +298,13 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1, topic2, topic3]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const capArray = [cap1, cap2];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx1 = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
@@ -291,8 +321,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
+                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
@@ -304,11 +334,13 @@ contract('Kernel without entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap = new beakerlib.LogCap([0x8001, 0x0]);
-                const capArray = beakerlib.Cap.toInput([cap]);
+                const capArray = [cap];
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
-                const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, capArray);
-                const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
+                const tx = await kernel.registerProcedure(procName, deployedContract.address);
+                for (const cap of capArray) {
+                    await kernel.addCap(procName, beakerlib.Cap.toInput([cap]))
+                }
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");

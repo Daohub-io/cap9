@@ -139,6 +139,52 @@ library ProcedureTable {
         }
     }
 
+    function checkPushCapCapability(Self storage /* self */, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
+        Procedure memory p = _getProcedureByKey(uint192(key));
+
+        // If the requested cap is out of the bounds of the cap table, we
+        // clearly don't have the capability;
+        if ((p.caps.length == 0) || (reqCapIndex > (p.caps.length - 1))) {
+            return false;
+        }
+        Capability memory cap = p.caps[reqCapIndex];
+        // If the capability type is not PUSH_CAP it is the wrong type of
+        // capability and we should reject
+        if (cap.capType != CAP_PROC_CAP_PUSH) {
+            return false;
+        }
+        // If the cap is empty it implies all procedures are ok
+        if (cap.values.length == 0) {
+            return true;
+        } else {
+            // the register cap should always be empty, otherwise it is invalid
+            return false;
+        }
+    }
+
+    function checkDelCapCapability(Self storage /* self */, uint192 key, uint256 reqCapIndex) internal view returns (bool) {
+        Procedure memory p = _getProcedureByKey(uint192(key));
+        // If the requested cap is out of the bounds of the cap table, we
+        // clearly don't have the capability;
+        if ((p.caps.length == 0) || (reqCapIndex > (p.caps.length - 1))) {
+            return false;
+        }
+        Capability memory cap = p.caps[reqCapIndex];
+        // If the capability type is not PUSH_CAP it is the wrong type of
+        // capability and we should reject
+        log1(bytes32(cap.capType),"checking del cap");
+        if (cap.capType != CAP_PROC_CAP_DELETE) {
+            return false;
+        }
+        // If the cap is empty it implies all procedures are ok
+        if (cap.values.length == 0) {
+            return true;
+        } else {
+            // the register cap should always be empty, otherwise it is invalid
+            return false;
+        }
+    }
+
     function checkDeleteCapability(Self storage /* self */, uint192 key, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
         Procedure memory p = _getProcedureByKey(uint192(key));
 
@@ -316,6 +362,7 @@ library ProcedureTable {
 
         // The first value of the array is the number of capabilities
         _set(storagePage, pPointer + 2, p.caps.length);
+        log1(bytes32(p.caps.length), "nCaps:");
         _serialiseCapArray(p, storagePage, pPointer);
     }
 
@@ -388,28 +435,21 @@ library ProcedureTable {
         return r;
     }
 
-    function insert(Self storage /* self */, bytes24 key, address value, uint256[] caps) internal returns (bool replaced) {
+    function insert(Self storage /* self */, bytes24 key, address value) internal returns (bool replaced) {
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
         Procedure memory p = _getProcedureByKey(uint192(key));
         // We then write or overwrite the various properties
         p.location = value;
-        // we just copy in the table in verbatim as long as its length is less
-        // than 128 (arbitrary, but less than 256 minus room for other parameters)
-        if (caps.length > 128) {
-            revert();
-        }
-
-        // The capabilities are parsed here. We neeed to pass in the Procedure
-        // struct as solidity can't return complex data structures.
-        _parseCaps(p,caps);
+        // TODO: change this
+        p.caps = new Capability[](0);
 
         // If the keyIndex is not zero then that indicates that the procedure
         // already exists. In this case *WE HAVE NOT OVERWRITTEN * the values,
         // as we have not called _storeProcdure.
         if (p.keyIndex > 0) {
-            return true;
+            revert();
         // If the keyIndex is zero (it is unsigned and cannot be negative) then
         // it means the procedure is new. We must therefore assign it a key
         // index.
@@ -427,6 +467,92 @@ library ProcedureTable {
             return false;
         }
     }
+
+    function addCap(Self storage /* self */, bytes24 key, uint256[] caps) internal returns (bool success) {
+        // First we get retrieve the procedure that is specified by this key, if
+        // it exists, otherwise the struct we create in memory is just
+        // zero-filled.
+        Procedure memory p = _getProcedureByKey(uint192(key));
+
+
+        // we just copy in the table in verbatim as long as its length is less
+        // than 128 (arbitrary, but less than 256 minus room for other parameters)
+        if (caps.length > 128) {
+            revert();
+        }
+
+        uint248 pPointer = _getProcedurePointerByKey(uint192(key));
+        uint248 nCaps = uint248(_get(storagePage, pPointer + 2));
+        uint8 storagePage = 0;
+        // n is the storage key index
+        uint248 n = 0;
+        uint248 j;
+        // i is the index of the cap
+        // Cycle throught the caps until we come to the first free storage
+        // location, which should be at the end of the list.
+        for (uint248 i = 0; i < nCaps; i++) {
+            uint256 capSize = _get(storagePage, pPointer + 3 + n);
+            if (capSize == 0) {
+                break;
+            }
+            n++;
+            // Skip over the vales of the capability
+            n += uint248(capSize);
+        }
+        uint248 freeCapPointer = pPointer + 3 + n;
+
+        n = 0;
+        for (j = 0; j < caps.length; j++) {
+            _set(storagePage, freeCapPointer + j, caps[j]); n++;
+        }
+
+        // Increment the number of caps
+        _set(storagePage, pPointer + 2, nCaps+1);
+
+        success = true;
+    }
+
+    function deleteCap(Self storage /* self */, bytes24 key, uint256 capIndex) internal returns (bool success) {
+        // First we get retrieve the procedure that is specified by this key, if
+        // it exists, otherwise the struct we create in memory is just
+        // zero-filled.
+        Procedure memory p = _getProcedureByKey(uint192(key));
+
+        uint248 pPointer = _getProcedurePointerByKey(uint192(key));
+        uint248 nCaps = uint248(_get(storagePage, pPointer + 2));
+        uint8 storagePage = 0;
+        // n is the storage key index
+        uint248 n = 0;
+        uint248 j;
+        // i is the index of the cap
+        // Cycle throught the caps until we come to the target cap.
+        for (uint248 i = 0; i < nCaps; i++) {
+            uint256 capSize = _get(storagePage, pPointer + 3 + n);
+            if (i == capIndex) {
+                uint256 capType = _get(storagePage, pPointer + 3 + n + 1);
+                // If the capType is null (0x0) then this cap has already been
+                // deleted, so we should indicate a failure.
+                if (capType == 0) {
+                    return false;
+                }
+                // Maintain the value of the capability size.
+                // Change the type to zero
+                _set(storagePage, pPointer + 3 + n + 1, 0);
+                // Overwrite all the values.
+                for (j = 0; j < capSize; j++) {
+                    _set(storagePage, pPointer + 3 + n + 1 + j, 0);
+                }
+                return true;
+            }
+            n++;
+            // Skip over the vales of the capability
+            n += uint248(capSize);
+        }
+        return false;
+        // We don't need to decrement the number of caps as keep them as null
+        // caps.
+    }
+
 
     function _parseCaps(Procedure memory p, uint256[] caps) internal pure {
         // count caps
