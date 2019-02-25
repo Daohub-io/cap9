@@ -160,6 +160,8 @@ contract Kernel is Factory, IKernel {
             _setEntrySystemCall();
         } else if (sysCallCapType == CAP_PROC_CAP_PUSH) {
             _pushCapSystemCall();
+        } else if (sysCallCapType == CAP_PROC_CAP_DELETE) {
+            _delCapSystemCall();
         } else {
             // default; fallthrough action
             assembly {
@@ -496,6 +498,54 @@ contract Kernel is Factory, IKernel {
         }
     }
 
+    function _delCapSystemCall() internal {
+        // This is a delte capability system call
+        // this is the system call to remove a capability from an existing procedure
+
+        uint256 capIndex = parse32ByteValue(1);
+        // TODO: fix this double name variable work-around
+        bytes32 regNameB = bytes32(parse32ByteValue(1+32));
+        bytes24 regName = bytes24(regNameB);
+
+        uint256 delCapIndex = parse32ByteValue(1+32+32);
+        log0("delete cap");
+        bool cap = procedures.checkDelCapCapability(uint192(currentProcedure), capIndex);
+        if (cap) {
+
+            (uint8 err) = _deleteCap(regName, delCapIndex);
+            uint256 bigErr = uint256(err);
+            assembly {
+                function mallocZero(size) -> result {
+                    // align to 32-byte words
+                    let rsize := add(size,sub(32,mod(size,32)))
+                    // get the current free mem location
+                    result :=  mload(0x40)
+                    // zero-out the memory
+                    // if there are some bytes to be allocated (rsize is not zero)
+                    if rsize {
+                        // loop through the address and zero them
+                        for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                            mstore(add(result,n),0)
+                        }
+                    }
+                    // Bump the value of 0x40 so that it holds the next
+                    // available memory location.
+                    mstore(0x40,add(result,rsize))
+                }
+                let retSize := 32
+                let retLoc := mallocZero(retSize)
+                mstore(retLoc,bigErr)
+                return(retLoc,retSize)
+            }
+        } else {
+            assembly {
+                // 33 means the capability was rejected
+                mstore(0,33)
+                return(0,0x20)
+            }
+        }
+    }
+
     function _storeSystemCall() internal {
         // This is a store system call
         // Here we have established that we are processing a write call and
@@ -775,6 +825,19 @@ contract Kernel is Factory, IKernel {
         }
 
         bool success = procedures.addCap(name, caps);
+
+        // Check whether the address exists
+        if (!success) {err = 2;}
+    }
+
+    function _deleteCap(bytes24 name, uint256 capIndex) internal returns (uint8 err) {
+        // Check whether the first byte is null and set err to 1 if so
+        if (name[0] == 0) {
+            err = 1;
+            return;
+        }
+
+        bool success = procedures.deleteCap(name, capIndex);
 
         // Check whether the address exists
         if (!success) {err = 2;}

@@ -301,6 +301,52 @@ contract BeakerContract is IKernel {
     return err;
   }
 
+  function cap_del(uint8 capIndex, bytes32 procId, uint256 delCapIndex) internal returns (uint32 err) {
+    log0("cap_del");
+    assembly {
+        function mallocZero(size) -> result {
+            // align to 32-byte words
+            let rsize := add(size,sub(32,mod(size,32)))
+            // get the current free mem location
+            result :=  mload(0x40)
+            // zero-out the memory
+            // if there are some bytes to be allocated (rsize is not zero)
+            if rsize {
+                // loop through the address and zero them
+                for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                    mstore(add(result,n),0)
+                }
+            }
+            // Bump the value of 0x40 so that it holds the next
+            // available memory location.
+            mstore(0x40,add(result,rsize))
+        }
+        let inSize := 0x80
+        let ins := mallocZero(96)
+        // First set up the input data (at memory location 0x0)
+        // The delcap syscall is 2
+        mstore(add(ins,0x0),2)
+        // The capability index is 0x-01
+        mstore(add(ins,0x20),capIndex)
+        // The name of the procedure (24 bytes)
+        mstore(add(ins,0x40),procId)
+        // The index of the capability to be deleted
+        mstore(add(ins,0x60),delCapIndex)
+        // "in_offset" is at 31, because we only want the last byte of type
+        // "in_size" is 97 because it is 1+32+32
+        // we will store the result at 0x80 and it will be 32 bytes
+        let retSize := 32
+        let retLoc := mallocZero(retSize)
+        err := 0
+        if iszero(delegatecall(gas, caller, add(ins,31), inSize, retLoc, retSize)) {
+            err := add(2200, mload(retLoc))
+            mstore(0xd, err)
+            return(0xd,retSize)
+        }
+    }
+    return err;
+  }
+
   function proc_del(uint8 capIndex, bytes32 procId) internal returns (uint32 err) {
     assembly {
         function mallocZero(size) -> result {

@@ -57,4 +57,8 @@ contract TestKernel is Kernel {
     function addCap(bytes24 name, uint256[] caps) public returns (uint256 retVal) {
         return _addCap(name, caps);
     }
+
+    function deleteCap(bytes24 name, uint256 capIndex) public returns (uint256 retVal) {
+        return _deleteCap(name, capIndex);
+    }
 }
