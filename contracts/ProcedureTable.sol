@@ -519,6 +519,12 @@ library ProcedureTable {
         for (uint248 i = 0; i < nCaps; i++) {
             uint256 capSize = _get(storagePage, pPointer + 3 + n);
             if (i == capIndex) {
+                uint256 capType = _get(storagePage, pPointer + 3 + n + 1);
+                // If the capType is null (0x0) then this cap has already been
+                // deleted, so we should indicate a failure.
+                if (capType == 0) {
+                    return false;
+                }
                 // Maintain the value of the capability size.
                 // Change the type to zero
                 _set(storagePage, pPointer + 3 + n + 1, 0);
