@@ -18,6 +18,10 @@ contract IKernel {
 
     // Current Entry Procedure
     bytes24 public entryProcedure;
+    // Current Instance Address
+    address kernelAddress;
+    // Current Running Procedure
+    bytes24 currentProcedure;
 
     // SYSCALL_RESPONSE_TYPES
     uint8 constant SyscallSuccess = 0;
@@ -64,11 +68,6 @@ contract IKernel {
 
 // Internal Kernel Interface
 contract Kernel is Factory, IKernel {
-
-    // Current Instance Address
-    address kernelAddress;
-    // Current Running Procedure
-    bytes24 currentProcedure;
 
     constructor() public {}
 
@@ -356,8 +355,12 @@ contract Kernel is Factory, IKernel {
         // TODO: fix this double name variable work-around
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
-        bool cap = procedures.checkDeleteCapability(uint192(currentProcedure), capIndex);
-        if (cap) {
+        
+        // Check that target is not the Entry Procedure
+        bool not_entry = entryProcedure != regName;
+        // Check if Valid Capability
+        bool cap = procedures.checkDeleteCapability(uint192(currentProcedure), regName, capIndex);
+        if (cap && not_entry) {
             (uint8 err, /* address addr */) = _deleteProcedure(regName);
             uint256 bigErr = uint256(err);
             assembly {
@@ -665,9 +668,12 @@ contract Kernel is Factory, IKernel {
     }
 
     function _setEntryProcedure(bytes24 name) internal returns (uint8 err) {
-        // TODO: check that the procedure exists
-        entryProcedure = name;
-        err = 0;
+        if (procedures.contains(name)) {
+            entryProcedure = name;
+            err = 0;
+        } else {
+            err = 1;
+        }
     }
 
     function _deleteProcedure(bytes24 name) internal returns (uint8 err, address procedureAddress) {

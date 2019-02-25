@@ -27,7 +27,7 @@ const Invalid = {
 }
 
 contract('Kernel with entry procedure', function (accounts) {
-    describe('Add caps to Procedure B using Procedure A', function () {
+    describe('Add caps to a procedure', function () {
         describe('When sufficient caps given', function () {
             // Procedure A is contract which can add caps to another contract
             const contractA = Valid.SysCallTestCaps;
@@ -35,7 +35,7 @@ contract('Kernel with entry procedure', function (accounts) {
             // check that caps can be used properly.
             const contractB = Valid.SysCallTestWrite;
 
-            it('Give write cap to Procedure B', async function () {
+            it('Should successfully give write cap to Procedure B', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 
@@ -172,7 +172,7 @@ contract('Kernel with entry procedure', function (accounts) {
             // check that caps can be used properly.
             const contractB = Valid.SysCallTestWrite;
 
-            it('Fail to give write cap to Procedure B', async function () {
+            it('Should fail to give write cap to Procedure B', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 
@@ -303,7 +303,7 @@ contract('Kernel with entry procedure', function (accounts) {
             })
         })
     })
-    describe('Add 2 caps to Procedure B using Procedure A, then remove the first cap', function () {
+    describe('Add then remove caps from a procedure', function () {
         describe('When sufficient caps given', function () {
             // Procedure A is contract which can add caps to another contract
             const contractA = Valid.SysCallTestCaps;
@@ -311,7 +311,7 @@ contract('Kernel with entry procedure', function (accounts) {
             // check that caps can be used properly.
             const contractB = Valid.SysCallTestWrite;
 
-            it('Give 2 write caps and log cap to Procedure B, then remove the second write cap', async function () {
+            it('Should successfully give 2 write caps and log cap to Procedure B, then remove the second write cap', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 
@@ -608,7 +608,7 @@ contract('Kernel with entry procedure', function (accounts) {
             // check that caps can be used properly.
             const contractB = Valid.SysCallTestWrite;
 
-            it('Give 2 write caps and log cap to Procedure B, then remove the second write cap', async function () {
+            it('Should successfully give 2 write caps and log cap to Procedure B, then remove the second write cap', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 
@@ -1284,7 +1284,7 @@ contract('Kernel with entry procedure', function (accounts) {
             // check that caps can be used properly.
             const contractB = Valid.SysCallTestWrite;
 
-            it('Give 2 write caps and log cap to Procedure B, then attempt to remove the second write cap', async function () {
+            it('Should successfully give 2 write caps and log cap to Procedure B, then attempt to remove the second write cap', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 

@@ -63,21 +63,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
-                // console.log(web3.toHex(valueX))
-                // try {
-                //     console.log(web3.toAscii(web3.toHex(valueX)))
-                // } catch (e) {
-
-                // }
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx)
-                // for (const log of tx.receipt.logs) {
-                //     if (log.topics.length > 0) {
-                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                //     } else {
-                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                //     }
-                // }
                 assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
@@ -704,17 +690,6 @@ contract('Kernel without entry procedure', function (accounts) {
                 const newValue = await kernel.executeProcedure.call(procName, functionSpec, "");
                 // Execute
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                // console.log(tx);
-
-                // console.log(tx.receipt.logs)
-                // for (const log of tx.receipt.logs) {
-                //     if (log.topics.length > 0) {
-                //         console.log(`Log: ${web3.toAscii(log.topics[0])} - ${log.data} - ${web3.toAscii(log.data)}`);
-                //     } else {
-                //         console.log(`Log: ${log.topics[0]} - ${web3.toAscii(log.data)} - ${log.data}`);
-                //     }
-                // }
-                // console.log(web3.toHex(newValue))
                 assert.equal(newValue.toNumber(),8, `new value should be 8`);
                 const newValue2 =  await kernel.testGetter.call();
                 assert.equal(newValue2.toNumber(),4, "new value should be 4");

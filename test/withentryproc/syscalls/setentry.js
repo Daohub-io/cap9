@@ -28,14 +28,13 @@ const Invalid = {
 
 contract('Kernel with entry procedure', function (accounts) {
     describe('Set the entry procedure', function () {
-        const entryProcName = "EntryProcedure";
         describe('When sufficient caps given', function () {
             const contractA = Valid.SysCallTestSetEntry;
             // We use Valid.Simple for Procedure B as we never need to actually
             // execute it.
             const contractB = Valid.Simple;
 
-            it('Set the entry procedure to Procedure B', async function () {
+            it('Should successfully set the entry procedure to Procedure B', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 
@@ -139,7 +138,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     assert.equal(entryProcName, "ProcedureB", "Initially the entry procedure should be ProcedureB");
                 }
             })
-            it('Set the entry procedure to a non-existent', async function () {
+            it('Should fail to set the entry procedure to a non-existent procedure', async function () {
                 const nonExistentName = "NonExistent";
                 // Deploy the kernel
                 const kernel = await Kernel.new();
@@ -196,8 +195,8 @@ contract('Kernel with entry procedure', function (accounts) {
                     const entryProcName = web3.toAscii(entryProc).split('\0')[0];
                     assert.equal(entryProcName, "EntryProcedure", "Initially the entry procedure should be EntryProcedure");
                 }
-                // Call the SetEntry function to set the entry procedure to
-                // Procedure B.
+                // Attempt to call the SetEntry function to set the entry
+                // procedure to a non-existent procedure.
                 {
                     const functionSelectorHash = web3.sha3("SetEntry(bytes24)").slice(2,10);
                     const inputData = web3.fromAscii(procAName.padEnd(24,"\0")) + functionSelectorHash;
@@ -210,15 +209,15 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: manualInputData});
 
                     const valueX = web3.toBigNumber(valueXRaw);
-                    assert.equal(valueX.toNumber(), 0, "Should return a zero error code");
+                    assert(valueX.toNumber() !== 0, "Should return a non-zero error code");
                 }
 
-                // Check that the entry procedure has been changed to
-                // "ProcedureB."
+                // Check that the entry procedure is still the default entry
+                // procedure.
                 {
                     const entryProc = await kernel.getEntryProcedure();
                     const entryProcName = web3.toAscii(entryProc).split('\0')[0];
-                    assert.equal(entryProcName, nonExistentName, `The entry procedure should be ${nonExistentName}`);
+                    assert.equal(entryProcName, "EntryProcedure", `The entry procedure should still be "EntryProcedure"`);
                 }
             })
         })
@@ -228,7 +227,7 @@ contract('Kernel with entry procedure', function (accounts) {
             // execute it.
             const contractB = Valid.Simple;
 
-            it('Fail to set the entry procedure to Procedure B', async function () {
+            it('Should fail to set the entry procedure to Procedure B', async function () {
                 // Deploy the kernel
                 const kernel = await Kernel.new();
 
