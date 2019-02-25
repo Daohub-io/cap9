@@ -18,26 +18,11 @@ contract BeakerContract is IKernel {
 
   /// Returns 0 on success, 1 on error
   function write(uint8 capIndex, uint256 location, uint256 value) internal returns (uint8 err) {
+      bytes memory input = new bytes(0x80);
+      bytes memory ret = new bytes(0x20);
+
       assembly {
-        function mallocZero(size) -> result {
-            // align to 32-byte words
-            let rsize := add(size,sub(32,mod(size,32)))
-            // get the current free mem location
-            result :=  mload(0x40)
-            // zero-out the memory
-            // if there are some bytes to be allocated (rsize is not zero)
-            if rsize {
-                // loop through the address and zero them
-                for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                    mstore(add(result,n),0)
-                }
-            }
-            // Bump the value of 0x40 so that it holds the next
-            // available memory location.
-            mstore(0x40,add(result,rsize))
-        }
-        let inSize := 0x80
-        let ins := mallocZero(inSize)
+        let ins := add(input, 0x20)
         // First set up the input data (at memory location 0x0)
         // The write call is 0x-07
         mstore(add(ins,0x0),0x07)
@@ -49,7 +34,7 @@ contract BeakerContract is IKernel {
         mstore(add(ins,0x60),value)
         // clear the output buffer
         let retSize := 0x20
-        let retLoc := mallocZero(retSize)
+        let retLoc := add(ret, retSize)
         // "in_offset" is at 31, because we only want the last byte of type
         // "in_size" is 97 because it is 1+32+32+32
         // we will store the result at retLoc and it will be 32 bytes
@@ -58,34 +43,15 @@ contract BeakerContract is IKernel {
             revert(retLoc,retSize)
         }
         err := mload(retLoc)
-
-        // Free Memory
-        mstore(0x40, ins)
     }
-    return err;
   }
 
   function set_entry(uint8 capIndex, bytes32 procId) internal returns (uint32 err) {
-    assembly {
-        function mallocZero(size) -> result {
-            // align to 32-byte words
-            let rsize := add(size,sub(32,mod(size,32)))
-            // get the current free mem location
-            result :=  mload(0x40)
-            // zero-out the memory
-            // if there are some bytes to be allocated (rsize is not zero)
-            if rsize {
-                // loop through the address and zero them
-                for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                    mstore(add(result,n),0)
-                }
-            }
-            // Bump the value of 0x40 so that it holds the next
-            // available memory location.
-            mstore(0x40,add(result,rsize))
-        }
+    bytes memory input = new bytes(0x60);
+    bytes memory ret = new bytes(0x20);
 
-        let ins := mallocZero(0x60)
+    assembly {
+        let ins := add(input, 0x20)
         // First set up the input data (at memory location 0x0)
         // The delete syscall is 6
         mstore(add(ins,0x0),6)
@@ -97,7 +63,7 @@ contract BeakerContract is IKernel {
         // "in_size" is 65 because it is 1+32+32
         // we will store the result at 0x80 and it will be 32 bytes
         let retSize := 0x20
-        let retLoc := mallocZero(retSize)
+        let retLoc := add(ret, 0x20)
         err := 0
         if iszero(delegatecall(gas, caller, add(ins,31), 65, retLoc, retSize)) {
             err := add(2200, mload(retLoc))
@@ -105,8 +71,6 @@ contract BeakerContract is IKernel {
             revert(0xd,retSize)
         }
         err := mload(retLoc)
-        // Free Memory
-        mstore(0x40, ins)
     }
     return err;
   }
@@ -118,23 +82,6 @@ contract BeakerContract is IKernel {
                 let rsize := add(size,sub(32,mod(size,32)))
                 // get the current free mem location
                 result :=  mload(0x40)
-                // Bump the value of 0x40 so that it holds the next
-                // available memory location.
-                mstore(0x40,add(result,rsize))
-            }
-            function mallocZero(size) -> result {
-                // align to 32-byte words
-                let rsize := add(size,sub(32,mod(size,32)))
-                // get the current free mem location
-                result :=  mload(0x40)
-                // zero-out the memory
-                // if there are some bytes to be allocated (rsize is not zero)
-                if rsize {
-                    // loop through the address and zero them
-                    for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                        mstore(add(result,n),0)
-                    }
-                }
                 // Bump the value of 0x40 so that it holds the next
                 // available memory location.
                 mstore(0x40,add(result,rsize))
@@ -152,7 +99,7 @@ contract BeakerContract is IKernel {
             let fselSize := mload(fselector)
             if fselSize { bufSize := add(bufSize, 0x20)}
 
-            let buf := mallocZero(bufSize)
+            let buf := malloc(bufSize)
 
             // First set up the input data (at memory location 0x0)
             // The call call is 0x-03
@@ -335,26 +282,13 @@ contract BeakerContract is IKernel {
   }
 
   function proc_del(uint8 capIndex, bytes32 procId) internal returns (uint32 err) {
-    assembly {
-        function mallocZero(size) -> result {
-            // align to 32-byte words
-            let rsize := add(size,sub(32,mod(size,32)))
-            // get the current free mem location
-            result :=  mload(0x40)
-            // zero-out the memory
-            // if there are some bytes to be allocated (rsize is not zero)
-            if rsize {
-                // loop through the address and zero them
-                for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                    mstore(add(result,n),0)
-                }
-            }
-            // Bump the value of 0x40 so that it holds the next
-            // available memory location.
-            mstore(0x40,add(result,rsize))
-        }
 
-        let ins := mallocZero(0x60)
+    bytes memory input = new bytes(0x60);
+    bytes memory ret = new bytes(0x20);
+    uint256 retSize = ret.length;
+
+    assembly {
+        let ins := add(input, 0x20)
         // First set up the input data (at memory location 0x0)
         // The delete syscall is 5
         mstore(add(ins,0x0),5)
@@ -365,8 +299,7 @@ contract BeakerContract is IKernel {
         // "in_offset" is at 31, because we only want the last byte of type
         // "in_size" is 65 because it is 1+32+32
         // we will store the result at 0x80 and it will be 32 bytes
-        let retSize := 0x20
-        let retLoc := mallocZero(retSize)
+        let retLoc := add(ret, 0x20)
         err := 0
         if iszero(delegatecall(gas, caller, add(ins,31), 65, retLoc, retSize)) {
             err := add(2200, mload(retLoc))
@@ -374,269 +307,179 @@ contract BeakerContract is IKernel {
             revert(0xd,retSize)
         }
         err := mload(retLoc)
-
-        // Free Memory
-        mstore(0x40,ins)
     }
     return err;
   }
 
   function proc_log0(uint8 capIndex, uint32 value) internal returns (uint32 err) {
-      assembly {
-            function mallocZero(size) -> result {
-                // align to 32-byte words
-                let rsize := add(size,sub(32,mod(size,32)))
-                // get the current free mem location
-                result :=  mload(0x40)
-                // zero-out the memory
-                // if there are some bytes to be allocated (rsize is not zero)
-                if rsize {
-                    // loop through the address and zero them
-                    for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                        mstore(add(result,n),0)
-                    }
 
-                }
-                // Bump the value of 0x40 so that it holds the next
-                // available memory location.
-                mstore(0x40,add(result,rsize))
-            }
-            let ins := mallocZero(mul(4,32))
-            let retSize := 0x20
-            let retLoc := mallocZero(retSize)
-            // First set up the input data (at memory location ins)
-            // The log call is 0x-08
-            mstore(add(ins,0x0),0x08)
-            // The capability index is 0x-01
-            mstore(add(ins,0x20),capIndex)
-            // The number of topics we will use
-            mstore(add(ins,0x40),0x0)
-            // The value we want to log
-            mstore(add(ins,0x60),value)
-            // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 97 because it is 1+32+32+32
-            // we will store the result at 0x80 and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, add(ins,31), 97, retLoc, retSize)) {
-                mstore(retLoc,add(2200,mload(retLoc)))
-                revert(retLoc,retSize)
-            }
-            err := mload(retLoc)
+    bytes memory input = new bytes(4 * 0x20);
+    bytes memory ret = new bytes(0x20);
+    uint256 retSize = ret.length;
 
-            // Free Memory
-            mstore(0x40, ins)
+    assembly {
+        let ins := add(input, 0x20)
+        let retLoc := add(ret, 0x20)
+        // First set up the input data (at memory location ins)
+        // The log call is 0x-08
+        mstore(add(ins,0x0),0x08)
+        // The capability index is 0x-01
+        mstore(add(ins,0x20),capIndex)
+        // The number of topics we will use
+        mstore(add(ins,0x40),0x0)
+        // The value we want to log
+        mstore(add(ins,0x60),value)
+        // "in_offset" is at 31, because we only want the last byte of type
+        // "in_size" is 97 because it is 1+32+32+32
+        // we will store the result at 0x80 and it will be 32 bytes
+        if iszero(delegatecall(gas, caller, add(ins,31), 97, retLoc, retSize)) {
+            mstore(retLoc,add(2200,mload(retLoc)))
+            revert(retLoc,retSize)
         }
-        return err;
+        err := mload(retLoc)
+    }
+    return err;
   }
   function proc_log1(uint8 capIndex, uint32 t1, uint32 value) internal returns (uint32 err) {
-      assembly {
-            function mallocZero(size) -> result {
-                // align to 32-byte words
-                let rsize := add(size,sub(32,mod(size,32)))
-                // get the current free mem location
-                result :=  mload(0x40)
-                // zero-out the memory
-                // if there are some bytes to be allocated (rsize is not zero)
-                if rsize {
-                    // loop through the address and zero them
-                    for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                        mstore(add(result,n),0)
-                    }
 
-                }
-                // Bump the value of 0x40 so that it holds the next
-                // available memory location.
-                mstore(0x40,add(result,rsize))
-            }
-            let ins := mallocZero(mul(5,32))
-            let retSize := 0x20
-            let retLoc := mallocZero(retSize)
+    bytes memory input = new bytes(5 * 0x20);
+    bytes memory ret = new bytes(0x20);
+    uint256 retSize = ret.length;
+    
+    assembly {
+        let ins := add(input, 0x20)
+        let retLoc := add(ret, 0x20)
 
-            // First set up the input data (at memory location 0x0)
-            // The log call is 0x-08
-            mstore(add(ins,0x0),0x08)
-            // The capability index is 0x-01
-            mstore(add(ins,0x20),capIndex)
-            // The number of topics we will use
-            mstore(add(ins,0x40),0x1)
-            // The first topic
-            mstore(add(ins,0x60),t1)
-            // The value we want to log
-            mstore(add(ins,0x80),value)
+        // First set up the input data (at memory location 0x0)
+        // The log call is 0x-08
+        mstore(add(ins,0x0),0x08)
+        // The capability index is 0x-01
+        mstore(add(ins,0x20),capIndex)
+        // The number of topics we will use
+        mstore(add(ins,0x40),0x1)
+        // The first topic
+        mstore(add(ins,0x60),t1)
+        // The value we want to log
+        mstore(add(ins,0x80),value)
 
-            // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 129 because it is 1+32+32+32+32
-            // we will store the result at retLoc and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, add(ins,31), 129, retLoc, retSize)) {
-                mstore(retLoc,add(2200,mload(retLoc)))
-                revert(retLoc,retSize)
-            }
-            err := mload(retLoc)
-
-            // Free Memory
-            mstore(0x40, ins)
+        // "in_offset" is at 31, because we only want the last byte of type
+        // "in_size" is 129 because it is 1+32+32+32+32
+        // we will store the result at retLoc and it will be 32 bytes
+        if iszero(delegatecall(gas, caller, add(ins,31), 129, retLoc, retSize)) {
+            mstore(retLoc,add(2200,mload(retLoc)))
+            revert(retLoc,retSize)
         }
-        return err;
+        err := mload(retLoc)
+    }
+    return err;
   }
 
   function proc_log2(uint8 capIndex, uint32 t1, uint32 t2, uint32 value) internal returns (uint32 err) {
-      assembly {
-            function mallocZero(size) -> result {
-                // align to 32-byte words
-                let rsize := add(size,sub(32,mod(size,32)))
-                // get the current free mem location
-                result :=  mload(0x40)
-                // zero-out the memory
-                // if there are some bytes to be allocated (rsize is not zero)
-                if rsize {
-                    // loop through the address and zero them
-                    for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                        mstore(add(result,n),0)
-                    }
+    bytes memory input = new bytes(6 * 0x20);
+    bytes memory ret = new bytes(0x20);
+    uint256 retSize = ret.length;
+    
+    assembly {
+        let ins := add(input, 0x20)
+        let retLoc := add(ret, 0x20)
 
-                }
-                // Bump the value of 0x40 so that it holds the next
-                // available memory location.
-                mstore(0x40,add(result,rsize))
-            }
-            let ins := mallocZero(mul(6,32))
-            let retSize := 0x20
-            let retLoc := mallocZero(retSize)
-
-            // First set up the input data (at memory location 0x0)
-            // The log call is 0x-08
-            mstore(add(ins,0x0),0x08)
-            // The capability index is 0x-01
-            mstore(add(ins,0x20),capIndex)
-            // The number of topics we will use
-            mstore(add(ins,0x40),0x2)
-            // The first topic
-            mstore(add(ins,0x60),t1)
-            // The second topic
-            mstore(add(ins, 0x80),t2)
-            // The value we want to log
-            mstore(add(ins, 0xa0),value)
-            // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 161 because it is 1+32+32+32+32+32
-            // we will store the result at retLoc and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, add(ins,31), 161, retLoc, retSize)) {
-                mstore(retLoc,add(2200,mload(retLoc)))
-                revert(retLoc,retSize)
-            }
-            err := mload(retLoc)
-
-            // Free Memory
-            mstore(0x40, ins)
+        // First set up the input data (at memory location 0x0)
+        // The log call is 0x-08
+        mstore(add(ins,0x0),0x08)
+        // The capability index is 0x-01
+        mstore(add(ins,0x20),capIndex)
+        // The number of topics we will use
+        mstore(add(ins,0x40),0x2)
+        // The first topic
+        mstore(add(ins,0x60),t1)
+        // The second topic
+        mstore(add(ins, 0x80),t2)
+        // The value we want to log
+        mstore(add(ins, 0xa0),value)
+        // "in_offset" is at 31, because we only want the last byte of type
+        // "in_size" is 161 because it is 1+32+32+32+32+32
+        // we will store the result at retLoc and it will be 32 bytes
+        if iszero(delegatecall(gas, caller, add(ins,31), 161, retLoc, retSize)) {
+            mstore(retLoc,add(2200,mload(retLoc)))
+            revert(retLoc,retSize)
         }
+        err := mload(retLoc)
+    }
     return err;
   }
+  
   function proc_log3(uint8 capIndex, uint32 t1, uint32 t2, uint32 t3, uint32 value) internal returns (uint32 err) {
-      assembly {
-            function mallocZero(size) -> result {
-                // align to 32-byte words
-                let rsize := add(size,sub(32,mod(size,32)))
-                // get the current free mem location
-                result :=  mload(0x40)
-                // zero-out the memory
-                // if there are some bytes to be allocated (rsize is not zero)
-                if rsize {
-                    // loop through the address and zero them
-                    for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                        mstore(add(result,n),0)
-                    }
+    bytes memory input = new bytes(7 * 0x20);
+    bytes memory ret = new bytes(0x20);
+    uint256 retSize = ret.length;
+    
+    assembly {
+        let ins := add(input, 0x20)
+        let retLoc := add(ret, 0x20)
 
-                }
-                // Bump the value of 0x40 so that it holds the next
-                // available memory location.
-                mstore(0x40,add(result,rsize))
-            }
-            let ins := mallocZero(mul(7,32))
-            let retSize := 0x20
-            let retLoc := mallocZero(retSize)
-
-            // First set up the input data (at memory location 0x0)
-            // The log call is 0x-08
-            mstore(add(ins,0x0),0x08)
-            // The capability index is 0x-01
-            mstore(add(ins,0x20),capIndex)
-            // The number of topics we will use
-            mstore(add(ins,0x40),0x3)
-            // The first topic
-            mstore(add(ins,0x60),t1)
-            // The second topic
-            mstore(add(ins,0x80),t2)
-            // The third topic
-            mstore(add(ins,0xa0),t3)
-            // The value we want to log
-            mstore(add(ins,0xc0),0x1234567890)
-            // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 193 because it is 1+32+32+32+32+32+32
-            // we will store the result at retLoc and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, add(ins,31), 193, retLoc, retSize)) {
-                mstore(retLoc,add(2200,mload(retLoc)))
-                revert(retLoc,retSize)
-            }
-            err := mload(retLoc)
-
-            // Free Memory
-            mstore(0x40, ins)
+        // First set up the input data (at memory location 0x0)
+        // The log call is 0x-08
+        mstore(add(ins,0x0),0x08)
+        // The capability index is 0x-01
+        mstore(add(ins,0x20),capIndex)
+        // The number of topics we will use
+        mstore(add(ins,0x40),0x3)
+        // The first topic
+        mstore(add(ins,0x60),t1)
+        // The second topic
+        mstore(add(ins,0x80),t2)
+        // The third topic
+        mstore(add(ins,0xa0),t3)
+        // The value we want to log
+        mstore(add(ins,0xc0),0x1234567890)
+        // "in_offset" is at 31, because we only want the last byte of type
+        // "in_size" is 193 because it is 1+32+32+32+32+32+32
+        // we will store the result at retLoc and it will be 32 bytes
+        if iszero(delegatecall(gas, caller, add(ins,31), 193, retLoc, retSize)) {
+            mstore(retLoc,add(2200,mload(retLoc)))
+            revert(retLoc,retSize)
         }
-        return err;
+        err := mload(retLoc)
+    }
+    return err;
   }
 
   function proc_log4(uint8 capIndex, uint32 t1, uint32 t2, uint32 t3, uint32 t4, uint32 value) internal returns (uint32 err) {
-      assembly {
-            function mallocZero(size) -> result {
-                // align to 32-byte words
-                let rsize := add(size,sub(32,mod(size,32)))
-                // get the current free mem location
-                result :=  mload(0x40)
-                // zero-out the memory
-                // if there are some bytes to be allocated (rsize is not zero)
-                if rsize {
-                    // loop through the address and zero them
-                    for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                        mstore(add(result,n),0)
-                    }
+    bytes memory input = new bytes(8 * 0x20);
+    bytes memory ret = new bytes(0x20);
+    uint256 retSize = ret.length;
+    
+    assembly {
+        let ins := add(input, 0x20)
+        let retLoc := add(ret, 0x20)
 
-                }
-                // Bump the value of 0x40 so that it holds the next
-                // available memory location.
-                mstore(0x40,add(result,rsize))
-            }
-            let ins := mallocZero(mul(8,32))
-            let retSize := 0x20
-            let retLoc := mallocZero(retSize)
-
-            // First set up the input data (at memory location 0x0)
-            // The log call is 0x-08
-            mstore(add(ins,0x0),0x08)
-            // The capability index is 0x-01
-            mstore(add(ins,0x20),0x01)
-            // The number of topics we will use
-            mstore(add(ins,0x40),0x4)
-            // The first topic
-            mstore(add(ins,0x60),t1)
-            // The second topic
-            mstore(add(ins,0x80),t2)
-            // The third topic
-            mstore(add(ins,0xa0),t3)
-            // The fourth topic
-            mstore(add(ins,0xc0),t4)
-            // The value we want to log
-            mstore(add(ins,0xe0),value)
-            // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 225 because it is 1+32+32+32+32+32+32+32
-            // we will store the result at retLoc and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, add(ins,31), 225, retLoc, retSize)) {
-                mstore(retLoc,add(2200,mload(retLoc)))
-                revert(retLoc,retSize)
-            }
-            err := mload(retLoc)
-
-            // Free Memory
-            mstore(0x40, ins)
+        // First set up the input data (at memory location 0x0)
+        // The log call is 0x-08
+        mstore(add(ins,0x0),0x08)
+        // The capability index is 0x-01
+        mstore(add(ins,0x20),0x01)
+        // The number of topics we will use
+        mstore(add(ins,0x40),0x4)
+        // The first topic
+        mstore(add(ins,0x60),t1)
+        // The second topic
+        mstore(add(ins,0x80),t2)
+        // The third topic
+        mstore(add(ins,0xa0),t3)
+        // The fourth topic
+        mstore(add(ins,0xc0),t4)
+        // The value we want to log
+        mstore(add(ins,0xe0),value)
+        // "in_offset" is at 31, because we only want the last byte of type
+        // "in_size" is 225 because it is 1+32+32+32+32+32+32+32
+        // we will store the result at retLoc and it will be 32 bytes
+        if iszero(delegatecall(gas, caller, add(ins,31), 225, retLoc, retSize)) {
+            mstore(retLoc,add(2200,mload(retLoc)))
+            revert(retLoc,retSize)
         }
-        return err;
+        err := mload(retLoc)
+    }
+    return err;
   }
 
 
