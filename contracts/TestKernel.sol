@@ -11,7 +11,7 @@ contract TestKernel is Kernel {
             sstore(0x8000,3)
         }
     }
-
+    
     function testGetter() public view returns(uint256) {
         assembly {
             mstore(0,sload(0x8000))
@@ -37,13 +37,13 @@ contract TestKernel is Kernel {
     }
 
     // Create a validated procedure.
-    function registerProcedure(bytes24 name, address procedureAddress) public returns (uint8 err, address retAddress) {
-        return _registerProcedure(name, procedureAddress);
+    function registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
+        return _registerProcedure(name, procedureAddress, caps);
     }
 
     // Create a procedure without  going through any validation.
-    function registerAnyProcedure(bytes24 name, address procedureAddress) public returns (uint8 err, address retAddress) {
-        return _registerAnyProcedure(name, procedureAddress);
+    function registerAnyProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
+        return _registerAnyProcedure(name, procedureAddress, caps);
     }
 
     function deleteProcedure(bytes24 name) public returns (uint8 err, address procedureAddress) {
@@ -52,13 +52,5 @@ contract TestKernel is Kernel {
 
     function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint256 retVal) {
         return _executeProcedure(name, fselector, payload);
-    }
-
-    function addCap(bytes24 name, uint256[] caps) public returns (uint256 retVal) {
-        return _addCap(name, caps);
-    }
-
-    function deleteCap(bytes24 name, uint256 capIndex) public returns (uint256 retVal) {
-        return _deleteCap(name, capIndex);
     }
 }

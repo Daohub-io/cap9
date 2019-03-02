@@ -15,8 +15,4 @@ contract SysCallTestWrite is BeakerContract {
             return(0x80,0x20)
         }
     }
-
-    function testNum() public pure returns (uint256) {
-        return 986;
-    }
 }
