@@ -439,22 +439,26 @@ This registers a new procedure which already exists as a contract at a certain
 address, giving it a name an a list of capabilities. It does a number of things:
 
 \begin{itemize}
-  \item Validate the code at the given address to show that it complies with the requirements of procedure code (TODO: add section on this).
+  \item Validate the code at the given address to show that it complies with the
+  requirements of procedure code as described in
+  Section~\ref{bytecode-validation}.
   \item Add the procedure name to the procedure list.
-  \item Store the specified capabilities with the procedure, but only if each of the capabilities is found to be a subset of one of the capabilities of the procedure performing this system call.
+  \item Store the specified capabilities with the procedure, but only if each of
+  the capabilities is found to be a subset of one of the capabilities of the
+  procedure performing this system call.
 \end{itemize}
 
 There are two highly critical functions here upon which the safety of the kernel
 relies. The first is the validation of the procedure bytecode, which is covered
-in a later section, but it is also necessary to ensure that the capabilities
-that are being asked to be given to the new procedure can be provided by the
-current procecedure. In order to satisfy this constraint it must be shown that
-for every requested procedure, there exists a capability in the capability list
-of the current procedure. It is currently not able to ``combine'' capabilities.
-That is, if the procedure has a capability of Write(0x80,5) and Write(0x85,5) it
-cannot provide a capability Write(0x80,10) even though it theoretically still
-able to perform the same writes (TODO: this is an interesting topic for
-consideration).
+in Section~\ref{bytecode-validation}, but it is also necessary to ensure that
+the capabilities that are being asked to be given to the new procedure can be
+provided by the current procecedure. In order to satisfy this constraint it must
+be shown that for every requested procedure, there exists a capability in the
+capability list of the current procedure. It is currently not able to
+``combine'' capabilities. That is, if the procedure has a capability of
+Write(0x80,5) and Write(0x85,5) it cannot provide a capability Write(0x80,10)
+even though it theoretically still able to perform the same writes (TODO: this
+is an interesting topic for consideration).
 
 The algorithm is as follows:
 
@@ -744,5 +748,21 @@ This section defines return and error codes where they are needed.
     \hline
   \end{tabular}
 \end{table}
+
+\section{Procedure Bytecode Validation}\label{bytecode-validation}
+In order to pass bytecode validation each opcode in the contract must either be
+on the whitelist, or part of a recognised system call. The whitelist comprises
+all non-state-changing opcodes, and a system call is in the form:
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=c,commentstyle=\color{mygreen},basicstyle=\ttfamily,
+  identifierstyle=\color{blue},
+  caption=Sequence of steps to perform a system call.]
+CALLER       // Get Caller
+GAS          // Put all the available gas on the stack
+DELEGATECALL // Delegate Call to Caller
+\end{lstlisting}
+\end{minipage}
 
 \end{document}
