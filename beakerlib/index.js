@@ -14,17 +14,10 @@ const CAP_TYPE = {
 
 exports.CAP_TYPE = CAP_TYPE;
 
-function stringToKey(name) {
-    return web3.fromAscii(name.padEnd(24,'\0'));
-}
-exports.stringToKey = stringToKey;
 
 class ProcedureTable {
     constructor(procTable) {
         this.procedures = procTable;
-    }
-    byName(name) {
-        return this.procedures[stringToKey(name)];
     }
     // get procedures() {
     //     return this.procTable;
@@ -199,38 +192,6 @@ class SetEntryCap extends Cap {
     }
 }
 exports.SetEntryCap = SetEntryCap;
-
-class PushCap extends Cap {
-    // A PushCap is just a boolean value that indicates whether a procedure
-    // can push caps
-    constructor() {
-        super(CAP_TYPE.PROC_CAP_PUSH);
-        this.keys = [];
-    }
-    // Format the capability values into the values that will be stored in the
-    // kernel. Must be defined for all subclasses
-    keyValues() {
-        const val = Array.from(this.keys.map(x => web3.fromAscii(x.padEnd(32, '\0'))));
-        return val;
-    }
-}
-exports.PushCap = PushCap;
-
-class CapDeleteCap extends Cap {
-    // A PushCap is just a boolean value that indicates whether a procedure
-    // can push caps
-    constructor() {
-        super(CAP_TYPE.PROC_CAP_DELETE);
-        this.keys = [];
-    }
-    // Format the capability values into the values that will be stored in the
-    // kernel. Must be defined for all subclasses
-    keyValues() {
-        const val = Array.from(this.keys.map(x => web3.fromAscii(x.padEnd(32, '\0'))));
-        return val;
-    }
-}
-exports.CapDeleteCap = CapDeleteCap;
 
 exports.SysCallResponse = {
     SUCCESS: 0,
