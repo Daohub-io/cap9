@@ -431,7 +431,7 @@ As defined in Section~\ref{cap-subsets}, each capability has subsets and
 supersets. As the Register Procedure capability is a trivial value, there is
 only one value for Register Procedure capabilities and they are all equal.
 
-Given a Delete Register capability $A$ and any other Register Procedure
+Given a Register Procedure capability $A$ and any other Register Procedure
 capability $B$, not only is $B \subseteq A$ but also $B = A$.
 
 \subsection{Delete Procedure System Call}
@@ -633,10 +633,10 @@ Data: min(96 bytes) max(224 bytes)
     \hline
     0x0 & Capability index; 32 bytes \tabularnewline
     0x20 & Number of topics (nTopics) \tabularnewline
-    ... & Potentially log value \#1; 32 bytes \tabularnewline
-    ... & Potentially log value \#2; 32 bytes \tabularnewline
-    ... & Potentially log value \#3; 32 bytes \tabularnewline
-    ... & Potentially log value \#4; 32 bytes \tabularnewline
+    ... & Potentially topic value \#1; 32 bytes \tabularnewline
+    ... & Potentially topic value \#2; 32 bytes \tabularnewline
+    ... & Potentially topic value \#3; 32 bytes \tabularnewline
+    ... & Potentially topic value \#4; 32 bytes \tabularnewline
     0x40+(nTopics x 0x20) & Log value 32 bytes \tabularnewline
     \hline
     End &  \tabularnewline
@@ -644,13 +644,54 @@ Data: min(96 bytes) max(224 bytes)
   \end{tabular}
 \end{table}
 
+\subsubsection{Capability Format}
+The store capability includes between 0 and 4 values. Each value forces the use
+of a particular value. For example: if the capability has 1 value, then that
+means that the first topic in the log call must equal that. If it has 2 values
+then the first log topic must be the first of those values and the second topic
+must be the second of those values and so on. If there are no topics listed then
+there are no restrictions on what can be logged.
+
+\begin{table}[H]
+  \caption{Log capability format.}
+  \centering{}%
+  \begin{tabular}{l|l|p{0.5\textwidth}}
+    \hline
+    Key Offset & Value & Description\tabularnewline
+    \hline
+    \hline
+    0x0 & [0x01, 0x5] & Capability size; 32 bytes \tabularnewline
+    0x1 & 0x08 & The type of the capability \tabularnewline
+    0x2 & $t_1$ & Potentially an enforced value for the first topic\tabularnewline
+    0x3 & $t_2$ & Potentially an enforced value for the second topic\tabularnewline
+    0x4 & $t_3$ & Potentially an enforced value for the third topic\tabularnewline
+    0x5 & $t_4$ & Potentially an enforced value for the fourth topic\tabularnewline
+    \hline
+    End &  \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsubsection{Capability Subsets}
+As defined in Section~\ref{cap-subsets}, each capability has subsets and
+supersets.
+
+Given a Log capability $A$ and a proposed subset $B$, $B \subseteq A$ if and
+only if for each log topic of $A$ the topic is either undefined or equal to that
+of $B$.
+
+If $C_{t_i}$, where $i$ is $1$, $2$, $3$, or $4$, is the log topic $i$ of
+capability $C$, and $C_n$ is the number of defined topics:
+
+$$ \forall i \in \left\{1,2,\dots ,A_n\right\}. B_{t_i} = A_{t_i} $$
+
 \section{Return and Error Codes}
 This section defines return and error codes where they are needed.
 
 \begin{table}[H]
   \caption{Return and error codes.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.45\textwidth}}
+  \begin{tabular}{l|l|p{0.4\textwidth}}
     \hline
     Type & Value & Description\tabularnewline
     \hline
