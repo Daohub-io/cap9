@@ -30,15 +30,12 @@ contract('Kernel without entry procedure', function (accounts) {
 
             const cap1 = new beakerlib.WriteCap(0x8500,2);
             const cap2 = new beakerlib.WriteCap(0x8000,0);
-            const capArray = [cap1, cap2];
+            const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
             const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
             const simpleTest = await testutils.deployedTrimmed(Valid.Multiply);
-            const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address);
-            for (const cap of capArray) {
-                await kernel.addCap("SysCallTestWrite", beakerlib.Cap.toInput([cap]))
-            }
-            const tx2 = await kernel.registerProcedure("Simple", simpleTest.address);
+            const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, capArray);
+            const tx2 = await kernel.registerProcedure("Simple", simpleTest.address, []);
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
@@ -59,8 +56,8 @@ contract('Kernel without entry procedure', function (accounts) {
         it('S() should fail when not given cap', async function () {
             const kernel = await Kernel.new();
             const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
-            const [, address] = await kernel.registerProcedure.call("SysCallTestWrite", SysCallTestWrite.address);
-            const tx = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address);
+            const [, address] = await kernel.registerProcedure.call("SysCallTestWrite", SysCallTestWrite.address, []);
+            const tx = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, []);
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
@@ -81,8 +78,8 @@ contract('Kernel without entry procedure', function (accounts) {
             const kernel = await Kernel.new();
 
             const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
-            const tx = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address);
-            await kernel.addCap("SysCallTestWrite", [3, 0x7, 0x8001, 0x0])
+            const [, address] = await kernel.registerProcedure.call("SysCallTestWrite", SysCallTestWrite.address, [3, 0x7, 0x8001, 0x0]);
+            const tx = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, [3, 0x7, 0x8001, 0x0]);
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");

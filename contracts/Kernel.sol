@@ -157,10 +157,6 @@ contract Kernel is Factory, IKernel {
             _procDelSystemCall();
         } else if (sysCallCapType == CAP_PROC_ENTRY) {
             _setEntrySystemCall();
-        } else if (sysCallCapType == CAP_PROC_CAP_PUSH) {
-            _pushCapSystemCall();
-        } else if (sysCallCapType == CAP_PROC_CAP_DELETE) {
-            _delCapSystemCall();
         } else {
             // default; fallthrough action
             assembly {
@@ -308,11 +304,27 @@ contract Kernel is Factory, IKernel {
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
         address regProcAddress = address(parse32ByteValue(1+32+32));
-
+        // the general format of a capability is length,type,values, where
+        // length includes the type
+        uint256 capsStartOffset =
+            /* sysCallCapType */ 1
+            /* capIndex */ + 32
+            /* name */ + 32
+            /* address */ + 32;
+        // capsLength is the length of the caps arry in bytes
+        uint256 capsLengthBytes = msg.data.length - capsStartOffset;
+        uint256 capsLengthKeys  = capsLengthBytes/32;
+        if (capsLengthBytes % 32 != 0) {
+            revert("caps are not aligned to 32 bytes");
+        }
+        uint256[] memory regCaps = new uint256[](capsLengthKeys);
+        for (uint256 q = 0; q < capsLengthKeys; q++) {
+            regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
+        }
         bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
         if (cap) {
 
-            (uint8 err, /* address addr */) = _registerProcedure(regName, regProcAddress);
+            (uint8 err, /* address addr */) = _registerProcedure(regName, regProcAddress, regCaps);
             uint256 bigErr = uint256(err);
             assembly {
                 function mallocZero(size) -> result {
@@ -440,115 +452,6 @@ contract Kernel is Factory, IKernel {
         }
     }
 
-    function _pushCapSystemCall() internal {
-        // This is a push capability system call
-        // this is the system call to add a capability to an existing procedure
-
-        uint256 capIndex = parse32ByteValue(1);
-        // TODO: fix this double name variable work-around
-        bytes32 regNameB = bytes32(parse32ByteValue(1+32));
-        bytes24 regName = bytes24(regNameB);
-        // the general format of a capability is length,type,values, where
-        // length includes the type
-        uint256 capsStartOffset =
-            /* sysCallCapType */ 1
-            /* capIndex */ + 32
-            /* name */ + 32;
-        // capsLength is the length of the caps arry in bytes
-        uint256 capsLengthBytes = msg.data.length - capsStartOffset;
-        uint256 capsLengthKeys  = capsLengthBytes/32;
-        if (capsLengthBytes % 32 != 0) {
-            revert("caps are not aligned to 32 bytes");
-        }
-        uint256[] memory regCaps = new uint256[](capsLengthKeys);
-        for (uint256 q = 0; q < capsLengthKeys; q++) {
-            regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
-        }
-        bool cap = procedures.checkPushCapCapability(uint192(currentProcedure), capIndex);
-        if (cap) {
-
-            (uint8 err) = _addCap(regName, regCaps);
-            uint256 bigErr = uint256(err);
-            assembly {
-                function mallocZero(size) -> result {
-                    // align to 32-byte words
-                    let rsize := add(size,sub(32,mod(size,32)))
-                    // get the current free mem location
-                    result :=  mload(0x40)
-                    // zero-out the memory
-                    // if there are some bytes to be allocated (rsize is not zero)
-                    if rsize {
-                        // loop through the address and zero them
-                        for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                            mstore(add(result,n),0)
-                        }
-                    }
-                    // Bump the value of 0x40 so that it holds the next
-                    // available memory location.
-                    mstore(0x40,add(result,rsize))
-                }
-                let retSize := 32
-                let retLoc := mallocZero(retSize)
-                mstore(retLoc,bigErr)
-                return(retLoc,retSize)
-            }
-        } else {
-            assembly {
-                // 33 means the capability was rejected
-                mstore(0,33)
-                revert(0,0x20)
-            }
-        }
-    }
-
-    function _delCapSystemCall() internal {
-        // This is a delte capability system call
-        // this is the system call to remove a capability from an existing procedure
-
-        uint256 capIndex = parse32ByteValue(1);
-        // TODO: fix this double name variable work-around
-        bytes32 regNameB = bytes32(parse32ByteValue(1+32));
-        bytes24 regName = bytes24(regNameB);
-
-        uint256 delCapIndex = parse32ByteValue(1+32+32);
-        log0("delete cap");
-        bool cap = procedures.checkDelCapCapability(uint192(currentProcedure), capIndex);
-        if (cap) {
-
-            (uint8 err) = _deleteCap(regName, delCapIndex);
-            uint256 bigErr = uint256(err);
-            assembly {
-                function mallocZero(size) -> result {
-                    // align to 32-byte words
-                    let rsize := add(size,sub(32,mod(size,32)))
-                    // get the current free mem location
-                    result :=  mload(0x40)
-                    // zero-out the memory
-                    // if there are some bytes to be allocated (rsize is not zero)
-                    if rsize {
-                        // loop through the address and zero them
-                        for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
-                            mstore(add(result,n),0)
-                        }
-                    }
-                    // Bump the value of 0x40 so that it holds the next
-                    // available memory location.
-                    mstore(0x40,add(result,rsize))
-                }
-                let retSize := 32
-                let retLoc := mallocZero(retSize)
-                mstore(retLoc,bigErr)
-                return(retLoc,retSize)
-            }
-        } else {
-            assembly {
-                // 33 means the capability was rejected
-                mstore(0,33)
-                revert(0,0x20)
-            }
-        }
-    }
-
     function _storeSystemCall() internal {
         // This is a store system call
         // Here we have established that we are processing a write call and
@@ -637,9 +540,9 @@ contract Kernel is Factory, IKernel {
     }
 
     // Create a validated procedure.
-    function _registerProcedure(bytes24 name, address procedureAddress) internal returns (uint8 err, address retAddress) {
+    function _registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) internal returns (uint8 err, address retAddress) {
         if (validateContract(procedureAddress) == 0) {
-            return _registerAnyProcedure(name, procedureAddress);
+            return _registerAnyProcedure(name, procedureAddress, caps);
         } else {
             revert("procedure code failed validation");
         }
@@ -647,7 +550,7 @@ contract Kernel is Factory, IKernel {
 
     // Create a procedure without  going through any validation. This is mainly
     // used for testing and should not exist in a production kernel.
-    function _registerAnyProcedure(bytes24 name, address procedureAddress) internal returns (uint8 err, address retAddress) {
+    function _registerAnyProcedure(bytes24 name, address procedureAddress, uint256[] caps) internal returns (uint8 err, address retAddress) {
         // Check whether the first byte is null and set err to 1 if so
         if (name == 0) {
             err = 1;
@@ -661,7 +564,7 @@ contract Kernel is Factory, IKernel {
             return;
         }
 
-        procedures.insert(name, procedureAddress);
+        procedures.insert(name, procedureAddress, caps);
         retAddress = procedureAddress;
         err = 0;
         return (0, procedureAddress);
@@ -821,31 +724,5 @@ contract Kernel is Factory, IKernel {
         if (!status) {
             retVal = 85;
         }
-    }
-
-    function _addCap(bytes24 name, uint256[] caps) internal returns (uint8 err) {
-        // Check whether the first byte is null and set err to 1 if so
-        if (name[0] == 0) {
-            err = 1;
-            return;
-        }
-
-        bool success = procedures.addCap(name, caps);
-
-        // Check whether the address exists
-        if (!success) {err = 2;}
-    }
-
-    function _deleteCap(bytes24 name, uint256 capIndex) internal returns (uint8 err) {
-        // Check whether the first byte is null and set err to 1 if so
-        if (name[0] == 0) {
-            err = 1;
-            return;
-        }
-
-        bool success = procedures.deleteCap(name, capIndex);
-
-        // Check whether the address exists
-        if (!success) {err = 2;}
     }
 }
