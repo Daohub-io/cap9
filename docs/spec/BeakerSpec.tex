@@ -1,0 +1,377 @@
+\documentclass[english,a4paper]{article}
+\usepackage{lmodern}
+\usepackage{float}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+
+\usepackage{microtype}
+\usepackage[unicode=true]{hyperref}
+\usepackage[usenames,dvipsnames]{color}
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            pdfauthor={},
+            pdftitle={},
+            colorlinks=true,
+            citecolor=blue,
+            urlcolor=blue,
+            %linkcolor=magenta,
+            pdfborder={0 0 0}}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{listings}
+
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+
+
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\subsubsection\undefined\else
+\let\oldparagraph\subsubsection
+\renewcommand{\subsubsection}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+\title{Beaker Specification}\label{beaker-specification}
+
+\author{Jacob Payne \and Jake O'Shannessy \and Alexey Troitskiy}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}\label{abstract}
+
+We describe a secure and extensible operating system for smart contracts. Using
+a capability-based exokernel protocol, we can facilitate secure isolation,
+perform upgrades in a secure and robust manner, and prevent privilege escalation
+at any point in the development process. The protocol is intended to serve as an open
+standard and building block upon which more advanced and tailored security
+models can be built.
+
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Procedures}\label{procedures}
+Procedure data is stored under the key 0xd8dd4195f87d. The storage page (in this
+case kernel storage) is prepended to this, and the procedure key is appended to
+this, resulting in:
+
+\begin{verbatim}
+  0x00d8dd4195f87d + 24 bytes procedure key
+\end{verbatim}
+
+There is currently not mechanism by which procedures are prevented from
+overlapping.
+
+I propose to remove 1 byte from 0xd8dd4195f87d, reducing to 5 bytes
+(0xd8dd4195f8). This leaves a full byte at the least significant end. This
+guarantees a 256 storage values for each procedure, or maybe 2 bytes for 65,535
+values, which is an enormous amount. This will guarantee a certain space for
+each procedure.
+
+\begin{table}[H]
+  \caption{Procedure table.}
+  \centering{}%
+  % \begin{tabular}{>{\centering}p{0.25\textwidth}|>{\centering}p{0.475\textwidth}|>{\centering}p{0.2\textwidth}}
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Key Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0       & key: 24 bytes, aligned right in the 32 bytes, the given
+      name \tabularnewline
+    0x1       & keyIndex: ?? bytes, aligned right in the 32 bytes
+      \tabularnewline
+    0x2       & address: 20 bytes, aligned right in the 32 bytes \tabularnewline
+    0x3       & numCaps: ?? bytes, aligned right in the 32 bytes \tabularnewline
+    0x4\ldots & capabilities in series \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Operations on Procedure Table}
+This only considers state-changing operations:
+
+\begin{enumerate}
+  \item addProcedure
+  \item removeProcedure
+\end{enumerate}
+
+\subsubsection{addProcedure}
+\begin{itemize}
+  \item Will increment the number procedures.
+  \item Will update the keyIndex value to the new key. TODO: specify this.
+  \item Will store the procedure at the location determined by its key.
+\end{itemize}
+
+\subsubsection{removeProcedure}
+\begin{itemize}
+  \item \emph{May} zero out the storage location of the procedure data,
+  depending on efficiency.
+  \item Will decrement the number of procedures.
+  \item Will move the procedure in the last position to the keyIndex of the
+  procedure just deleted.
+  \item Will throw an error if it attempts to delete the entry proc.
+\end{itemize}
+
+THis all assumes that caps are registered together.
+
+\section{Capabilities}\label{capabilities}
+\begin{table}[H]
+  \caption{Capability.}
+  \centering{}%
+  % \begin{tabular}{>{\centering}p{0.25\textwidth}|>{\centering}p{0.475\textwidth}|>{\centering}p{0.2\textwidth}}
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Key Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0       & CapSize: ?? bytes, aligned right in the 32 bytes, the given
+      name \tabularnewline
+    0x1       & CapType: 1 byte, aligned right in the 32 bytes \tabularnewline
+    0x2       & key value \#1: 32 bytes \tabularnewline
+    ~~~$\vdots$ & capabilities in series \tabularnewline
+    CapSize & final key value \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Kernel Storage}\label{capabilities}
+This is a critical feature. \emph{All} data stored by the kernel is stored in a
+region of \emph{storage} called \emph{kernel storage}. \emph{No} other data can
+be stored in \emph{kernel storage}.
+
+This kernel storage is defined as all storage locations within a certain storage
+range. All values in kernel storage share the same storage key prefix. This
+prefix is currently 0x00, and so currently includes all values in the interval
+$[0\text{x}0000 \cdots 0000, 0\text{x}0100 \cdots 0000)$ (some zeros have been
+elided for typographic reasons, but each values is 32 bytes).
+
+Note: This is currently defined using storage pages which we don't use anywhere
+else.
+
+\subsection{Procedure Table}\label{procedure-table}
+This defines the table that locates all of the procedures.
+
+The procedure table is stored of x = bytes8(keccack256("keyPointer")) = 64 bits
+= \verb{0x 5b ac 19 8c 37 7b 92}. This is shifted to only take the last byte
+(0x92). Along with the storage page this creates a prefix of ${0x 00 92 \cdots
+}$. We probably don't need to shift this much as it gives us an enormous amount
+of space.
+
+\begin{verbatim}
+  0x 00 92 + 28 more bytes
+\end{verbatim}
+
+keyIndices start at 1 therefore 0x0092+1 is always undefined.
+
+The procedure table does not actually contain of the procedure data, simply a
+list of keys (procedure names). Data for each procedure is found elsewhere.
+
+\begin{table}[H]
+  \caption{Procedure table.}
+  \centering{}%
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Storage Location & Description\tabularnewline
+    \hline
+    \hline
+    0x0092     & length/number of procedures \tabularnewline
+    0x0092 + 1 & undefined (as keyIndex is never 0) \tabularnewline
+    0x0092 + 1 + keyIndex & procedure key/name: 24 bytes \tabularnewline
+    ~~~$\vdots$ & capabilities in series \tabularnewline
+    0x0092 + 1 + n & procedure key/name for procedure $n$ \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{System Calls}
+All system calls are transactions to the kernel. The transaction data is defined
+as follows:
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Byte Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0 & 1 byte, system call value \tabularnewline
+    0x8 & The system call data as defined by each system call \tabularnewline
+    ~~~$\vdots$ &  \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+System call numbers match capability numbers.
+
+
+\subsection{Call System Call}
+Type Value: 3
+
+Data: Note that here the offset is from after system call type.
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Byte Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0 & Capability index; 32 bytes \tabularnewline
+    0x20 & Procedure key, 24 bytes in 32 bytes (which alignment) \tabularnewline
+    \hline
+    End &  \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Store System Call}
+Type Value: 7
+
+Data:
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Byte Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0 & Capability index; 32 bytes \tabularnewline
+    0x20 & Write address; 32 bytes \tabularnewline
+    0x40 & Write values; 32 bytes \tabularnewline
+    \hline
+    End &  \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Log System Call}
+Type Value: 8
+
+Data: min(96 bytes) max(224 bytes)
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Byte Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0 & Capability index; 32 bytes \tabularnewline
+    0x20 & Number of topics (nTopics) \tabularnewline
+    ... & Potentially log value \#1; 32 bytes \tabularnewline
+    ... & Potentially log value \#2; 32 bytes \tabularnewline
+    ... & Potentially log value \#3; 32 bytes \tabularnewline
+    ... & Potentially log value \#4; 32 bytes \tabularnewline
+    0x40+(nTopics x 0x20) & Log value 32 bytes \tabularnewline
+    \hline
+    End &  \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Register Procedure System Call}
+Type Value: 4
+
+Data: min(96 bytes) max(96 bytes)
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Byte Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0 & Capability index; 32 bytes \tabularnewline
+    0x20 & Procedure key; 24 bytes in 32 bytes \tabularnewline
+    0x40 & Procedure address; 20 bytes in 32 bytes \tabularnewline
+    \hline
+    End &  \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+TODO: update this to register capabilities as well.
+
+
+\subsection{Delete Procedure System Call}
+Type Value: 5
+
+Data: min(64 bytes) max(64 bytes)
+
+\begin{table}[H]
+  \caption{Delete procedure system call.}
+  \centering{}%
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Byte Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0 & Capability index; 32 bytes \tabularnewline
+    0x20 & Procedure key; 24 bytes in 32 bytes \tabularnewline
+    \hline
+    End &  \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+
+\subsection{Set Entry Procedure System Call}
+TODO: this is currently non-compliant as it is not stored in the kernel.
+
+Type Value: 6
+
+Data: min(64 bytes) max(64 bytes)
+
+\begin{table}[H]
+  \caption{Delete procedure system call.}
+  \centering{}%
+  \begin{tabular}{l|p{0.7\textwidth}}
+    \hline
+    Byte Offset & Description\tabularnewline
+    \hline
+    \hline
+    0x0 & Capability index; 32 bytes \tabularnewline
+    0x20 & Procedure key; 24 bytes in 32 bytes \tabularnewline
+    \hline
+    End &  \tabularnewline
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsubsection{What happens?}
+The only possible state change is the "entryProcedure" value. TODO: we must
+define this location. No other state changes should occur.
+
+\end{document}
