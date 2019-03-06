@@ -381,7 +381,7 @@ Type Value: 4
 Data: min(96 bytes) max(96 bytes)
 
 \begin{table}[H]
-  \caption{System call structure.}
+  \caption{Register procedure system call structure.}
   \centering{}%
   \begin{tabular}{l|p{0.7\textwidth}}
     \hline
@@ -391,6 +391,9 @@ Data: min(96 bytes) max(96 bytes)
     0x0 & Capability index; 32 bytes \tabularnewline
     0x20 & Procedure key; 24 bytes in 32 bytes \tabularnewline
     0x40 & Procedure address; 20 bytes in 32 bytes \tabularnewline
+    ~~~$\vdots$ & Capabilities; A series of 32 byte values which correspond
+    exactly to the keys as defined in Section~\ref{capabilities}. The length of
+    this list is not provided. \tabularnewline
     \hline
     End &  \tabularnewline
     \hline
@@ -430,6 +433,40 @@ only one value for Register Procedure capabilities and they are all equal.
 
 Given a Register Procedure capability $A$ and any other Register Procedure
 capability $B$, not only is $B \subseteq A$ but also $B = A$.
+
+\subsubsection{Function}
+This registers a new procedure which already exists as a contract at a certain
+address, giving it a name an a list of capabilities. It does a number of things:
+
+\begin{itemize}
+  \item Validate the code at the given address to show that it complies with the requirements of procedure code (TODO: add section on this).
+  \item Add the procedure name to the procedure list.
+  \item Store the specified capabilities with the procedure, but only if each of the capabilities is found to be a subset of one of the capabilities of the procedure performing this system call.
+\end{itemize}
+
+There are two highly critical functions here upon which the safety of the kernel
+relies. The first is the validation of the procedure bytecode, which is covered
+in a later section, but it is also necessary to ensure that the capabilities
+that are being asked to be given to the new procedure can be provided by the
+current procecedure. In order to satisfy this constraint it must be shown that
+for every requested procedure, there exists a capability in the capability list
+of the current procedure. It is currently not able to ``combine'' capabilities.
+That is, if the procedure has a capability of Write(0x80,5) and Write(0x85,5) it
+cannot provide a capability Write(0x80,10) even though it theoretically still
+able to perform the same writes (TODO: this is an interesting topic for
+consideration).
+
+The algorithm is as follows:
+
+\begin{enumerate}
+  \item For each of the capabilities in the list of requested capabilities,
+  search though the list of the current procedures capabilities until a superset
+  of the requested capability is found.
+  \item If for any of the requested capabilities a superset is not found, abort
+  the entire process.
+  \item If for all of the requested capabilities a superset is found, register
+  the capability.
+\end{enumerate}
 
 \subsection{Delete Procedure System Call}
 
