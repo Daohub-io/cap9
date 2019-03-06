@@ -66,8 +66,8 @@
 We describe a secure and extensible operating system for smart contracts. Using
 a capability-based exokernel protocol, we can facilitate secure isolation,
 perform upgrades in a secure and robust manner, and prevent privilege escalation
-at any point in the development process. The protocol is intended to serve as an open
-standard and building block upon which more advanced and tailored security
+at any point in the development process. The protocol is intended to serve as an
+open standard and building block upon which more advanced and tailored security
 models can be built.
 
 \end{abstract}
@@ -179,10 +179,10 @@ else.
 This defines the table that locates all of the procedures.
 
 The procedure table is stored of x = bytes8(keccack256("keyPointer")) = 64 bits
-= 0x-5b-ac-19-8c-37-7b-92. This is shifted to only take the last byte
-(0x92). Along with the storage page this creates a prefix of ${0\text{x} 00 92 \cdots
-}$. We probably don't need to shift this much as it gives us an enormous amount
-of space.
+= 0x-5b-ac-19-8c-37-7b-92. This is shifted to only take the last byte (0x92).
+Along with the storage page this creates a prefix of ${0\text{x} 00 92 \cdots}$.
+We probably don't need to shift this much as it gives us an enormous amount of
+space.
 
 \begin{verbatim}
   0x 00 92 + 28 more bytes
@@ -274,9 +274,6 @@ follows:
   \item This code will execute and return whatever value it deems appropriate.
 \end{enumerate}
 
-% \subsection{Implementation Restriction of Syscalls}
-% The following sections decribe the formats and behaviours of the various syscalls.
-
 \subsection{Capability Subsets}\label{cap-subsets}
 
 Capability $B$ is a subset\footnote{$A$ subset, not a \emph{strict} or
@@ -285,7 +282,7 @@ Capability $B$ can be done using Capabilty $A$. The following rules apply:
 
 \begin{itemize}
   \item $A$ is always a subset of itself. $A \subseteq A$
-  \item Transitivity applies: $A \subseteq B \land B \subseteq C \implies A
+  \item Transitivity: $A \subseteq B \land B \subseteq C \implies A
   \subseteq C$
 \end{itemize}
 
@@ -662,10 +659,14 @@ there are no restrictions on what can be logged.
     \hline
     0x0 & [0x01, 0x5] & Capability size; 32 bytes \tabularnewline
     0x1 & 0x08 & The type of the capability \tabularnewline
-    0x2 & $t_1$ & Potentially an enforced value for the first topic\tabularnewline
-    0x3 & $t_2$ & Potentially an enforced value for the second topic\tabularnewline
-    0x4 & $t_3$ & Potentially an enforced value for the third topic\tabularnewline
-    0x5 & $t_4$ & Potentially an enforced value for the fourth topic\tabularnewline
+    0x2 & $t_1$ & Potentially an enforced value for the first topic
+      \tabularnewline
+    0x3 & $t_2$ & Potentially an enforced value for the second topic
+      \tabularnewline
+    0x4 & $t_3$ & Potentially an enforced value for the third topic
+      \tabularnewline
+    0x5 & $t_4$ & Potentially an enforced value for the fourth topic
+      \tabularnewline
     \hline
     End &  \tabularnewline
     \hline
@@ -696,7 +697,7 @@ This section defines return and error codes where they are needed.
     Type & Value & Description\tabularnewline
     \hline
     \hline
-    SYSCALL\_SUCCESS      & 0 & Syscall was executed successfully \tabularnewline
+    SYSCALL\_SUCCESS      & 0 & Syscall was executed successfully\tabularnewline
     SYSCALL\_READ\_ERR    & 11 & ?? \tabularnewline
     SYSCALL\_WRITE\_ERR   & 22 & ?? \tabularnewline
     SYSCALL\_LOG\_ERR     & 33 & ?? \tabularnewline
