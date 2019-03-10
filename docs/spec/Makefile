@@ -1,6 +1,6 @@
 TEX = latexmk -pdf
 
-IMGS =
+IMGS = media/ProcedureKeyBytes.pdf media/ProcedureKeyLocation.pdf
 
 .PHONY: all clean
 
