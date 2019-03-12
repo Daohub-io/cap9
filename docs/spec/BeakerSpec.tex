@@ -3,6 +3,7 @@
 \usepackage{float}
 \usepackage{amssymb,amsmath}
 \usepackage{ifxetex,ifluatex}
+\usepackage{multirow,tabularx}
 \usepackage{fixltx2e} % provides \textsubscript
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -78,6 +79,14 @@ models can be built.
 \tableofcontents
 \newpage
 
+\section{Definitions}\label{definitions}
+
+\subsection{Kernel Instance}
+A kernel instance is an Ethereum contract which using the Beaker kernel. It is
+this contract that holds the storage data etc. of the system.
+
+\textbf{TODO:} Make a table here to list \emph{every} kernel storage object.
+
 \section{Kernel Storage}\label{kernel-storage}
 This is a critical feature. \emph{All} data stored by the kernel is stored in a
 region of \emph{storage} called \emph{kernel storage}. \emph{No} other data can
@@ -89,8 +98,8 @@ prefix is currently 0x00, and so currently includes all values in the interval
 $[0\text{x}0000 \cdots 0000, 0\text{x}0100 \cdots 0000)$ (some zeros have been
 elided for typographic reasons, but each values is 32 bytes).
 
-\textbf{TODO:} This is currently defined using storage pages which we don't use anywhere
-else. I think we should remove the concept of storage pages.
+\textbf{TODO:} This is currently defined using storage pages which we don't use
+anywhere else. I think we should remove the concept of storage pages.
 
 \section{Procedures}\label{procedures}
 Data about procedure is store in 2 locations: the procedure table, and the
@@ -195,61 +204,64 @@ kernel storage) is prepended to this, and the procedure key is appended to this,
 resulting in:
 
 \begin{verbatim}
-  0x0085a94e7072 + 24 bytes procedure key + 2 bytes data offset
+  0x00 00 00 00 05 + 24 bytes procedure key + 3 bytes data offset
 \end{verbatim}
 
-This leaves 2 bytes at the end of the storage location key. The values of these
-2 bytes from \texttt{0x0000} to \texttt{0xffff} are reserved for the data
-associated with this procedure. This allows for 65,536 storage key values. As
-each key value can be associated with 32~bytes of data, this allows for
-approximately 2~MB of data for each procedure, which is predominantly occupied
-by the capabilities.
+This leaves 3 bytes at the end of the storage location key. If the first of
+these bytes is 0x00, the storage key refers to various metadata of the
+procedure, including the location of its contract. If the first byte is any
+other value, then the storage key corresponds to the list of capabilities of
+that type. For example, the type of the write procedure is 7, so if the first of
+the last 3 bytes is 0x07, then that storage key refers to a capability of the
+write type.
+
+The second value is the index into the capability list. For example, if the
+third last and second last values are 0x0703, this refers to the third write
+capability held by this procedure.
+
+The very last value is an offset into the capability data. The first value
+(0x00) is always a boolean value. If it is 0, there is no capbility at this
+index, and if it 1, then there is. The remaining offsets depend on the type of
+the capability, as the format for each is different.
 
 \includegraphics[width=\textwidth]{media/ProcedureKeyLocation.pdf}
 
+The following table outlines what data is found at each of the different
+locations specified by the \emph{Data Offset}.
+
 \begin{table}[H]
-  \caption{Procedure table.}
+  \caption{Procedure data.}
   \centering{}%
   % \begin{tabular}{>{\centering}p{0.25\textwidth}|>{\centering}p{0.475\textwidth}|>{\centering}p{0.2\textwidth}}
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c | c | c | c | X }
     \hline
-    Key Offset & Description\tabularnewline
+    \multicolumn{4}{c|}{Data Offset} & Description \\
     \hline
     \hline
-    \texttt{0x0000}       & key: 24 bytes, aligned right in the 32 bytes, the
-      given (\textbf{TODO:} this value is unnecessary, it is found in the
-      addressed) name \tabularnewline
-    \texttt{0x0001}       & keyIndex: 32 bytes, unsigned integer (\textbf{TODO:}
-      I don't think this is necessary, we never use it, it is only useful to the
-      procedure table itself)
-      \tabularnewline
-    \texttt{0x0002}       & address: 20 bytes, aligned right in the 32 bytes
-      \tabularnewline
-    \texttt{0x0003}       & numCaps: 2 bytes, aligned right in the 32 bytes
-      \tabularnewline
-    \texttt{0x0004}\ldots & capabilities in series \tabularnewline
+    \texttt{0x} & \texttt{00} & \texttt{00} & \texttt{00} & address: 20 bytes, aligned right in the 32 bytes
+      \\
+    \texttt{0x} & \texttt{$ty$} & \texttt{$in$} & \texttt{$of$} & Capability of type
+        \texttt{0x$ty$}, with index
+        \texttt{0x$in$}, and offset \texttt{0x$of$} into that capability.
+      \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
-\section{Capabilities}\label{capabilities}
 \begin{table}[H]
-  \caption{Capability.}
+  \caption{Capability data as held in Procedure Heap.}
   \centering{}%
   % \begin{tabular}{>{\centering}p{0.25\textwidth}|>{\centering}p{0.475\textwidth}|>{\centering}p{0.2\textwidth}}
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{l|X}
     \hline
-    Key Offset & Description\tabularnewline
+    Key Offset & Description \\
     \hline
     \hline
-    0x0       & CapSize: 2 bytes, aligned right in the 32 bytes, the given
-      name \tabularnewline
-    0x1       & CapType: 1 byte, aligned right in the 32 bytes \tabularnewline
-    0x2       & key value \#1: 32 bytes \tabularnewline
-    ~~~$\vdots$ & capabilities in series \tabularnewline
-    CapSize & final key value \tabularnewline
+    0x00       & Cap Exists: 1 if the capability exists, 0 otherwise \\
+    0x01       & key value \#1: 32 bytes \\
+    ~~~$\vdots$ & capability values as defined by each capability type \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \section{System Calls and Capabilities}
@@ -413,6 +425,8 @@ procedure key $b$ and a prefix $s$. Given this capability, a procedure may call
 any procedure where the first $s$ bits of the key of that procedure key are the
 same as the first $s$ bits of procedure key $b$.
 
+The values of this capability are packed into a single 32-byte value.
+
 \begin{table}[H]
   \caption{Call procedure capability format.}
   \centering{}%
@@ -421,9 +435,7 @@ same as the first $s$ bits of procedure key $b$.
     Key Offset & Value & Description\tabularnewline
     \hline
     \hline
-    0x0 & 0x01 & Capability size; 32 bytes \tabularnewline
-    0x1 & 0x03 & The type of the capability \tabularnewline
-    0x2 & -    & The prefix and base procedure key, the first byte is the prefix
+    0x00 & -    & The prefix and base procedure key, the first byte is the prefix
                  size which is in the interval [0,24], bytes [0x1,0x7] are
                  unused and undefined, bytes [0x8,0x32] are the 24 bytes of the
                  base procedure key. \tabularnewline
@@ -493,12 +505,31 @@ Data: min(96 bytes) max(96 bytes)
     0x20 & Procedure key; 24 bytes in 32 bytes \tabularnewline
     0x40 & Procedure address; 20 bytes in 32 bytes \tabularnewline
     ~~~$\vdots$ & Capabilities; A series of 32 byte values which correspond
-    exactly to the keys as defined in Section~\ref{capabilities}. The length of
+    exactly to the keys as defined in Table~\ref{reg-cap-format}. The length of
     this list is not provided. \tabularnewline
     \hline
     End &  \tabularnewline
     \hline
   \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \caption{Capability data as sent in the Register Procedure system call.\label{reg-cap-format}}
+  \centering{}%
+  % \begin{tabular}{>{\centering}p{0.25\textwidth}|>{\centering}p{0.475\textwidth}|>{\centering}p{0.2\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Key Offset & Description \\
+    \hline
+    \hline
+    0x00       & CapSize: 2 bytes, aligned right in the 32 bytes, the given
+      name \\
+    0x01       & CapType: 1 byte, aligned right in the 32 bytes \\
+    0x02       & key value \#1: 32 bytes \\
+    ~~~$\vdots$ & capabilities in series \\
+    CapSize & final key value \\
+    \hline
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Format}
@@ -520,9 +551,7 @@ have.
     Key Offset & Value & Description\tabularnewline
     \hline
     \hline
-    0x0 & 0x01 & Capability size; 32 bytes \tabularnewline
-    0x1 & 0x04 & The type of the capability \tabularnewline
-    0x2 & -    & The prefix and base procedure key, the first byte is the prefix
+    0x00 & -    & The prefix and base procedure key, the first byte is the prefix
                  size which is in the interval [0,24], bytes [0x1,0x7] are
                  unused and undefined, bytes [0x8,0x32] are the 24 bytes of the
                  base procedure key. \tabularnewline
@@ -646,9 +675,7 @@ it can delete any procedure, which is likely to change in the future.
     Key Offset & Value & Description\tabularnewline
     \hline
     \hline
-    0x0 & 0x01 & Capability size; 32 bytes \tabularnewline
-    0x1 & 0x05 & The type of the capability \tabularnewline
-    0x2 & -    & The prefix and base procedure key, the first byte is the prefix
+    0x00 & -    & The prefix and base procedure key, the first byte is the prefix
                  size which is in the interval [0,24], bytes [0x1,0x7] are
                  unused and undefined, bytes [0x8,0x32] are the 24 bytes of the
                  base procedure key. \tabularnewline
@@ -732,25 +759,7 @@ Data: min(64 bytes) max(64 bytes)
 \end{table}
 
 \subsubsection{Capability Format}
-The capability format for the Set Entry Procedure system call is trivial as it
-contains not data. Its presence alone is enough to confer the ability to set the
-entry procedure. This means it is always exactly 0x0106.
-
-\begin{table}[H]
-  \caption{Set entry procedure capability format.}
-  \centering{}%
-  \begin{tabular}{l|l|p{0.5\textwidth}}
-    \hline
-    Key Offset & Value & Description\tabularnewline
-    \hline
-    \hline
-    0x0 & 0x01 & Capability size; 32 bytes \tabularnewline
-    0x1 & 0x06 & The type of the capability \tabularnewline
-    \hline
-    End &  \tabularnewline
-    \hline
-  \end{tabular}
-\end{table}
+This capability has no associated data and is therefore of size zero.
 
 \subsubsection{Capability Subsets}
 As defined in Section~\ref{cap-subsets}, each capability has subsets and
@@ -784,11 +793,14 @@ the following codes.
   \end{tabular}
 \end{table}
 
-\marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Set Entry Procedure system call was executed with a
-procedure key that does not exist then the DELEGATECALL will leave a 0 on the
-stack and return two bytes (\texttt{0x6633}).
+\marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Set Entry
+Procedure system call was executed with a procedure key that does not exist then
+the DELEGATECALL will leave a 0 on the stack and return two bytes
+(\texttt{0x6633}).
 
-\subsection{Store System Call}
+\subsection{Write System Call}
+This system call will write a single 32-byte value under a single 32-byte key in
+the storage of the kernel instance.
 
 \subsubsection{System Call Format}
 Type Value: 7
@@ -812,25 +824,23 @@ Data:
   \end{tabular}
 \end{table}
 
-\subsubsection{Store Capability Format}
-The store capability includes 2 values: the first is the base address where we
+\subsubsection{Capability Format}
+The write capability includes 2 values: the first is the base address where we
 can write to storage. The second is the number of \emph{additional} addresses we
 can write to. For example, if the first value is 0x8000, and the second value is
 0, we can write only to location 0x8000. If the second value was 5, we could
 write to 0x8000, 0x8000+1, 0x8000+2, 0x8000+3, 0x8000+4, and 0x8000+5.
 
 \begin{table}[H]
-  \caption{Store capability format.}
+  \caption{Write capability format.}
   \centering{}%
   \begin{tabular}{l|l|p{0.5\textwidth}}
     \hline
     Key Offset & Value & Description\tabularnewline
     \hline
     \hline
-    0x0 & 0x03 & Capability size; 32 bytes \tabularnewline
-    0x1 & 0x07 & The type of the capability \tabularnewline
-    0x1 & $a$ & The base storage address\tabularnewline
-    0x3 & $n$ & The number of additional keys we can write to\tabularnewline
+    0x00 & $a$ & The base storage address\tabularnewline
+    0x01 & $n$ & The number of additional keys we can write to\tabularnewline
     \hline
     End &  \tabularnewline
     \hline
@@ -841,7 +851,7 @@ write to 0x8000, 0x8000+1, 0x8000+2, 0x8000+3, 0x8000+4, and 0x8000+5.
 As defined in Section~\ref{cap-subsets}, each capability has subsets and
 supersets.
 
-Given a Store capability $A$ and a proposed subset $B$, where $C_a$ is the base
+Given a Write capability $A$ and a proposed subset $B$, where $C_a$ is the base
 address of capability $C$ and $C_n$ is the number of additional keys writable
 with capability $C$, $B \subseteq A \iff \left(B_a \geq A_a\right) \land
 \left(B_a + B_n \leq A_a + A_n\right)$.
@@ -888,12 +898,15 @@ Data: min(96 bytes) max(224 bytes)
 \end{table}
 
 \subsubsection{Capability Format}
-The store capability includes between 0 and 4 values. Each value forces the use
+The Write capability includes between 0 and 4 values. Each value forces the use
 of a particular value. For example: if the capability has 1 value, then that
 means that the first topic in the log call must equal that. If it has 2 values
 then the first log topic must be the first of those values and the second topic
 must be the second of those values and so on. If there are no topics listed then
 there are no restrictions on what can be logged.
+
+This capability is 5 values. If the number of enforced topics is less than 4,
+then the unused values are undefined.
 
 \begin{table}[H]
   \caption{Log capability format.}
@@ -903,15 +916,14 @@ there are no restrictions on what can be logged.
     Key Offset & Value & Description\tabularnewline
     \hline
     \hline
-    0x0 & [0x01, 0x5] & Capability size; 32 bytes \tabularnewline
-    0x1 & 0x08 & The type of the capability \tabularnewline
-    0x2 & $t_1$ & Potentially an enforced value for the first topic
+    0x00 & [0x00, 0x4] & Number of enforced topics; 32 bytes \tabularnewline
+    0x01 & $t_1$ & Potentially an enforced value for the first topic
       \tabularnewline
-    0x3 & $t_2$ & Potentially an enforced value for the second topic
+    0x02 & $t_2$ & Potentially an enforced value for the second topic
       \tabularnewline
-    0x4 & $t_3$ & Potentially an enforced value for the third topic
+    0x03 & $t_3$ & Potentially an enforced value for the third topic
       \tabularnewline
-    0x5 & $t_4$ & Potentially an enforced value for the fourth topic
+    0x04 & $t_4$ & Potentially an enforced value for the fourth topic
       \tabularnewline
     \hline
     End &  \tabularnewline
@@ -961,25 +973,8 @@ Data:
   \end{tabular}
 \end{table}
 
-\subsubsection{Value Send Capability Format}
-The value send capability does not include any values, and therefore is just a
-constant 0x0109.
-
-\begin{table}[H]
-  \caption{Value send capability format.}
-  \centering{}%
-  \begin{tabular}{l|l|p{0.5\textwidth}}
-    \hline
-    Key Offset & Value & Description\tabularnewline
-    \hline
-    \hline
-    0x0 & 0x01 & Capability size; 32 bytes \tabularnewline
-    0x1 & 0x09 & The type of the capability \tabularnewline
-    \hline
-    End &  \tabularnewline
-    \hline
-  \end{tabular}
-\end{table}
+\subsubsection{Capability Format}
+This value contains no data other than its presence, therfore has no format.
 
 \subsubsection{Capability Subsets}
 As defined in Section~\ref{cap-subsets}, each capability has subsets and
