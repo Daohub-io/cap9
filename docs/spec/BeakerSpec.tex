@@ -118,8 +118,9 @@ identifies a procedure in the procedure table. This is not used anywhere except
 the procedure table itself. It is 1-based, that is the first value is 1, and the
 value 0 is a null value.
 
-\textbf{TODO:} What is the maxium value of this index and what is the maximum
-number of procedures.
+As shown below, the maximum number of procedures is $2^{24} - 1 = 16,777,215$,
+therefore the maxium value of the key index is $16,777,215$, therefore the key
+index lies in the range $\left[1,1677215\right]$.
 
 \subsection{Procedure Table}\label{procedure-table}
 The procedure table (or procedure list) is simply an array of storage values.
@@ -224,7 +225,7 @@ by the capabilities.
       \tabularnewline
     \texttt{0x0002}       & address: 20 bytes, aligned right in the 32 bytes
       \tabularnewline
-    \texttt{0x0003}       & numCaps: ?? bytes, aligned right in the 32 bytes
+    \texttt{0x0003}       & numCaps: 2 bytes, aligned right in the 32 bytes
       \tabularnewline
     \texttt{0x0004}\ldots & capabilities in series \tabularnewline
     \hline
@@ -241,7 +242,7 @@ by the capabilities.
     Key Offset & Description\tabularnewline
     \hline
     \hline
-    0x0       & CapSize: ?? bytes, aligned right in the 32 bytes, the given
+    0x0       & CapSize: 2 bytes, aligned right in the 32 bytes, the given
       name \tabularnewline
     0x1       & CapType: 1 byte, aligned right in the 32 bytes \tabularnewline
     0x2       & key value \#1: 32 bytes \tabularnewline
