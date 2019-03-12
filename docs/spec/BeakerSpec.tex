@@ -85,8 +85,6 @@ models can be built.
 A kernel instance is an Ethereum contract which using the Beaker kernel. It is
 this contract that holds the storage data etc. of the system.
 
-\textbf{TODO:} Make a table here to list \emph{every} kernel storage object.
-
 \section{Kernel Storage}\label{kernel-storage}
 This is a critical feature. \emph{All} data stored by the kernel is stored in a
 region of \emph{storage} called \emph{kernel storage}. \emph{No} other data can
@@ -98,8 +96,23 @@ prefix is currently 0x00, and so currently includes all values in the interval
 $[0\text{x}0000 \cdots 0000, 0\text{x}0100 \cdots 0000)$ (some zeros have been
 elided for typographic reasons, but each values is 32 bytes).
 
-\textbf{TODO:} This is currently defined using storage pages which we don't use
-anywhere else. I think we should remove the concept of storage pages.
+\begin{table}[H]
+  \caption{Overview of kernel storage layout.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c | c | c | c | c | X }
+    \hline
+    \texttt{0x} & \texttt{00} & \texttt{01 - 04} & \texttt{05 - 1f} & \texttt{1e - 20} & Description \\
+    \hline
+    \hline
+    \texttt{0x} & \texttt{00} & \texttt{00 00 00 00} & Proc Key & $\cdots$ & Procedure Heap \\
+    \texttt{0x} & \texttt{00} & \texttt{00 00 00 01} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & \# of Procedures\\
+    \texttt{0x} & \texttt{00} & \texttt{00 00 00 01} & Key Index & \texttt{00 00 00} & Procedure List \\
+    \texttt{0x} & \texttt{00} & \texttt{00 00 00 02} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Kernel Address \\
+    \texttt{0x} & \texttt{00} & \texttt{00 00 00 03} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Current Procedure \\
+    \texttt{0x} & \texttt{00} & \texttt{00 00 00 04} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Entry Procedure \\
+    \hline
+  \end{tabularx}
+\end{table}
 
 \section{Procedures}\label{procedures}
 Data about procedure is store in 2 locations: the procedure table, and the
@@ -131,10 +144,12 @@ As shown below, the maximum number of procedures is $2^{24} - 1 = 16,777,215$,
 therefore the maxium value of the key index is $16,777,215$, therefore the key
 index lies in the range $\left[1,1677215\right]$.
 
-\subsection{Procedure Table}\label{procedure-table}
-The procedure table (or procedure list) is simply an array of storage values.
-The first value is the length of this list, and the subsequent values are the
-procedure keys of the list.
+For this reason the key index is specified as 24 bytes.
+
+\subsection{Procedure List}\label{procedure-table}
+The procedure list is simply an array of storage values. The first value is the
+length of this list, and the subsequent values are the procedure keys of the
+list.
 
 When a procedure is added to the kernel:
 
@@ -162,16 +177,14 @@ It is important to note that none of these steps consider deletion (zeroing) of
 data. This is optional for efficiency and can be performed any time after the
 length value has been decremented.
 
-The procedure table is stored using the key \texttt{0x5bac198c377b7d}, which is
-the first 7 bytes of keccack256("keyPointer"). Along with the storage page
-(which is prepended to this value) this creates a prefix of
-\texttt{0x005bac198c377b7d}. The maximum number of keys held under this
-configuration is $2^{24} - 1 = 16,777,215$ (1 is subtracted to account for the
-length value occupying a single space). This is one less than the total number
-of procedures that can be held by the kernel (which is $2^{24} = 16,777,216$).
+The procedure table is stored under the prefix \texttt{0x00 00 00 00 01}. The
+maximum number of keys held under this configuration is $2^{24} - 1 =
+16,777,215$ (1 is subtracted to account for the length value occupying a single
+space). This is one less than the total number of procedures that can be held by
+the kernel (which is $2^{24} = 16,777,216$).
 
 \begin{verbatim}
-  0x005bac198c377b7d + 24 more bytes
+  0x00 00 00 00 01 + 24 more bytes + 3 zero bytes
 \end{verbatim}
 
 \begin{table}[H]
@@ -182,12 +195,12 @@ of procedures that can be held by the kernel (which is $2^{24} = 16,777,216$).
     Storage Location & Description\tabularnewline
     \hline
     \hline
-    \texttt{0x005bac198c377b7d}     & length/number of procedures
+    \texttt{0x00 00 00 00 01}     & length/number of procedures
       \tabularnewline
-    \texttt{0x005bac198c377b7d} + keyIndex & procedure key/name: 24 bytes
+    \texttt{0x00 00 00 00 01} + keyIndex & procedure key/name: 24 bytes
       \tabularnewline
     ~~~$\vdots$ & capabilities in series \tabularnewline
-    \texttt{0x005bac198c377b7d} + n & procedure key/name for procedure $n$
+    \texttt{0x00 00 00 00 01} + n & procedure key/name for procedure $n$
       \tabularnewline
     \hline
   \end{tabular}
@@ -195,16 +208,11 @@ of procedures that can be held by the kernel (which is $2^{24} = 16,777,216$).
 
 \subsection{Procedure Heap}\label{procedure-heap}
 
-\textbf{TODO:} This storage key value has been updated to use similar logic as
-other locations. This is not reflected in the code.
-
-Procedure data is stored using the key \texttt{0x85a94e7072} (which is the first
-5 bytes of keccack256("procedurePointer")). The storage page (in this case
-kernel storage) is prepended to this, and the procedure key is appended to this,
-resulting in:
+Procedure data is stored using the key \texttt{0x00 00 00 00 00}. This is
+combined with the procedure key to produce the following:
 
 \begin{verbatim}
-  0x00 00 00 00 05 + 24 bytes procedure key + 3 bytes data offset
+  0x00 00 00 00 00 + 24 bytes procedure key + 3 bytes data offset
 \end{verbatim}
 
 This leaves 3 bytes at the end of the storage location key. If the first of
@@ -215,14 +223,15 @@ that type. For example, the type of the write procedure is 7, so if the first of
 the last 3 bytes is 0x07, then that storage key refers to a capability of the
 write type.
 
-The second value is the index into the capability list. For example, if the
-third last and second last values are 0x0703, this refers to the third write
-capability held by this procedure.
+The second value is the index into the capability list. If the second value is
+0x00, this indicates the number of capabilities in this list. Therefore the
+capabilities start at 0x01. For example, if the third last and second last
+values are 0x0703, this refers to the third write capability (capability at
+index 0x02) held by this procedure.
 
-The very last value is an offset into the capability data. The first value
-(0x00) is always a boolean value. If it is 0, there is no capbility at this
-index, and if it 1, then there is. The remaining offsets depend on the type of
-the capability, as the format for each is different.
+The very last value is an offset into the capability data. The meaning of this
+is different for each capability as they each have different formats. The format
+of each capability is specified in Section~\ref{syscalls-and-caps}
 
 \includegraphics[width=\textwidth]{media/ProcedureKeyLocation.pdf}
 
@@ -238,33 +247,18 @@ locations specified by the \emph{Data Offset}.
     \multicolumn{4}{c|}{Data Offset} & Description \\
     \hline
     \hline
-    \texttt{0x} & \texttt{00} & \texttt{00} & \texttt{00} & address: 20 bytes, aligned right in the 32 bytes
-      \\
-    \texttt{0x} & \texttt{$ty$} & \texttt{$in$} & \texttt{$of$} & Capability of type
-        \texttt{0x$ty$}, with index
-        \texttt{0x$in$}, and offset \texttt{0x$of$} into that capability.
-      \\
+    \texttt{0x} & \texttt{00} & \texttt{00} & \texttt{00} & address: 20 bytes,
+      aligned right in the 32 bytes \\
+    \texttt{0x} & \texttt{$ty$} & \texttt{00} & \texttt{00} & The number of
+      capabilities of type \texttt{0x$ty$}. \\
+    \texttt{0x} & \texttt{$ty$} & \texttt{$in$} & \texttt{$of$} & Capability of
+      type \texttt{0x$ty$}, with index \texttt{0x$in-1$}, and offset
+      \texttt{0x$of$} into that capability. \\
     \hline
   \end{tabularx}
 \end{table}
 
-\begin{table}[H]
-  \caption{Capability data as held in Procedure Heap.}
-  \centering{}%
-  % \begin{tabular}{>{\centering}p{0.25\textwidth}|>{\centering}p{0.475\textwidth}|>{\centering}p{0.2\textwidth}}
-  \begin{tabularx}{\textwidth}{l|X}
-    \hline
-    Key Offset & Description \\
-    \hline
-    \hline
-    0x00       & Cap Exists: 1 if the capability exists, 0 otherwise \\
-    0x01       & key value \#1: 32 bytes \\
-    ~~~$\vdots$ & capability values as defined by each capability type \\
-    \hline
-  \end{tabularx}
-\end{table}
-
-\section{System Calls and Capabilities}
+\section{System Calls and Capabilities}\label{syscalls-and-caps}
 All system calls are transactions to the kernel. The transaction data is defined
 as follows:
 
@@ -600,8 +594,7 @@ be shown that for every requested procedure, there exists a capability in the
 capability list of the current procedure. It is currently not able to
 ``combine'' capabilities. That is, if the procedure has a capability of
 Write(0x80,5) and Write(0x85,5) it cannot provide a capability Write(0x80,10)
-even though it theoretically still able to perform the same writes (TODO: this
-is an interesting topic for consideration).
+even though it theoretically still able to perform the same writes.
 
 The algorithm is as follows:
 
@@ -662,10 +655,11 @@ Data: min(64 bytes) max(64 bytes)
 \end{table}
 
 \subsubsection{Capability Format}
-The capability format for the Delete Procedure system call is trivial as it
-contains not data. Its presence alone is enough to confer the ability to set the
-entry procedure. This means it is always exactly 0x0105. TODO: this is because
-it can delete any procedure, which is likely to change in the future.
+The capability format for the Delete Procedure system call defines the a range
+of procedure keys what the capability allows one to delete. This is defined as a
+base procedure key $b$ and a prefix $s$. Given this capability, a procedure may
+delete any procedure where the first $s$ bits of the key of that procedure key are
+the same as the first $s$ bits of procedure key $b$.
 
 \begin{table}[H]
   \caption{Delete procedure capability format.}
@@ -675,7 +669,7 @@ it can delete any procedure, which is likely to change in the future.
     Key Offset & Value & Description\tabularnewline
     \hline
     \hline
-    0x00 & -    & The prefix and base procedure key, the first byte is the prefix
+    0x00 & -  & The prefix and base procedure key, the first byte is the prefix
                  size which is in the interval [0,24], bytes [0x1,0x7] are
                  unused and undefined, bytes [0x8,0x32] are the 24 bytes of the
                  base procedure key. \tabularnewline
@@ -706,10 +700,7 @@ The value of the Entry Procedure is 24-byte procedure key which identified which
 procedure should be first called upon receiving a transaction. This is currently
 store at the storage location:
 
-0x00ac949d7c2a616cb3ec3ee17eff195232626e4026e3430fb3ce7b4d69e6fb1c
-
-Which is keccack256("entryProcedure") with the first byte set to 0x00 to place
-the key within kernel-storage.
+\texttt{0x00 00 00 00 {\color{blue} 04} 00 $\cdots$ 00 00 00 00}
 
 \subsubsection{Error Codes}
 If the Delete Procedure system call fails for any reason other than those
@@ -770,8 +761,8 @@ Given a Set Entry Procedure capability $A$ and any other Set Entry Procedure
 capability $B$, not only is $B \subseteq A$ but also $B = A$.
 
 \subsubsection{Function}
-The only possible state change is the "entryProcedure" value. TODO: we must
-define this location. No other state changes should occur.
+The only possible state change is the "entryProcedure" value. No other state
+changes should occur.
 
 \subsubsection{Error Codes}
 If the Set Entry Procedure system call fails for any reason other than those
