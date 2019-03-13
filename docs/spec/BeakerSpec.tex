@@ -865,18 +865,18 @@ Data: min(96 bytes) max(224 bytes)
 \begin{table}[H]
   \caption{System call structure.}
   \centering{}%
-  \begin{tabularx}{\textwidth}{c|X}
+  \begin{tabularx}{\textwidth}{l|X}
     \hline
     Byte Offset & Description \\
     \hline
     \hline
-    0x0 & Capability index; 32 bytes \\
-    0x20 & Number of topics (nTopics) \\
+    \texttt{0x00} & Capability index; 32 bytes \\
+    \texttt{0x20} & Number of topics (nTopics) \\
     ... & Potentially topic value \#1; 32 bytes \\
     ... & Potentially topic value \#2; 32 bytes \\
     ... & Potentially topic value \#3; 32 bytes \\
     ... & Potentially topic value \#4; 32 bytes \\
-    0x40+(nTopics x 0x20) & Log value 32 bytes \\
+    \texttt{0x40}+(nTopics $\times$ 0x20) & Log value 32 bytes \\
     \hline
     End &  \\
     \hline
@@ -971,12 +971,78 @@ Given a Value Send capability $A$ and any other Value Send capability $B$, not
 only is $B \subseteq A$ but also $B = A$.
 
 \section{Procedure Bytecode Validation}\label{bytecode-validation}
-In order to pass bytecode validation each opcode in the contract must either be
-on the whitelist, or part of a recognised system call. The whitelist comprises
-all non-state-changing opcodes, and a system call is in the form:
+In order to be added to the procedure list of a kernel, the bytecode of a contract must be validated by the kernel and must conform to a strict set of requirements. These requirements are as follows:
+
+\begin{itemize}
+  \item All the opcodes must be on the whitelist as defined in Section~\ref{opcode-whitelist}, unless part
+  of a system call.
+  \item The first opcodes of the contract must form a valid execution guard as
+  defined in Section~\ref{execution-guard}.
+\end{itemize}
+
+
+\subsection{Whitelist}\label{opcode-whitelist}
+Generally the whitelist consists of all of the non-state-changing opcodes. This
+\emph{must} be implemented as a whitelist and not a blacklist, as this should
+continue to work in the case that new state-changing opcodes are added to the
+VM.
+
+The table below contains the ranges of opcodes that are allowed.
+
+\begin{table}[H]
+  \caption{Opcode whitelist.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c | X }
+    \hline
+    Range (Inclusive) & Description \\
+    \hline
+    \hline
+    \texttt{0x00} - \texttt{0x0b} & Stop and Arithmetic \\
+    \texttt{0x10} - \texttt{0x1a} & Comparison \& Bitwise Logic Operations \\
+    \texttt{0x20} & SHA3 \\
+    \texttt{0x30} - \texttt{0x3e} & Environmental Information \\
+    \texttt{0x40} - \texttt{0x45} & Block Information \\
+    \texttt{0x50} - \texttt{0x53} & Stack, Memory, Storage and Flow Operation - Part 1\\
+    \texttt{0x54} & SLOAD \\
+    \texttt{0x56} - \texttt{0x5b} & Stack, Memory, Storage and Flow Operation - Part 2 \\
+    \texttt{0x80} - \texttt{0x8f} & Duplication Operations \\
+    \texttt{0x90} - \texttt{0x9f} & Exchange Operations \\
+    \texttt{0xf3} & Return \\
+    \texttt{0x60} - \texttt{0x7f} & Push \\
+    \texttt{0xfa} & STATICCALL \\
+    \texttt{0xfd} & REVERT \\
+    \texttt{0xfe} & INVALID \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Execution Guard}\label{execution-guard}
+An execuation guard \emph{must} start at position \texttt{0x00} in the bytecode.
+It is defined as follows:
 
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \begin{minipage}{\linewidth}
+\small
+\begin{lstlisting}[language=c,commentstyle=\color{mygreen},basicstyle=\ttfamily,
+  identifierstyle=\color{blue},
+  caption=Sequence of steps which constitutes an execution guard.]
+0x00: PUSH 0xffffffff0200...00 // Push kernel addr. location
+0x21: SLOAD     // Load value to the stack
+0x22: PUSH 0x2a // Load value to the stack
+0x24: JUMPI     // Jump if kernel address non-zero
+0x25: PUSH1 0x00 // Revert data size
+0x27: PUSH1 0x00 // Revert data location
+0x29: REVERT    // Revert because we are not a kernel
+0x2a: JUMPDEST  // Destination to jump over
+\end{lstlisting}
+\end{minipage}
+
+\subsection{System Call}
+A system call is in the form:
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\begin{minipage}{\linewidth}
+\small
 \begin{lstlisting}[language=c,commentstyle=\color{mygreen},basicstyle=\ttfamily,
   identifierstyle=\color{blue},
   caption=Sequence of steps to perform a system call.]
