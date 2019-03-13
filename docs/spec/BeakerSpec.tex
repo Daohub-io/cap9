@@ -982,7 +982,7 @@ In order to be added to the procedure list of a kernel, the bytecode of a contra
 
 
 \subsection{Whitelist}\label{opcode-whitelist}
-Generally the whitelist consists of all of the non-state-changing opcodes. This
+Generally the whitelist consists of all of the non-state-changing opcodes (REVERT being a notable exception). This
 \emph{must} be implemented as a whitelist and not a blacklist, as this should
 continue to work in the case that new state-changing opcodes are added to the
 VM.
