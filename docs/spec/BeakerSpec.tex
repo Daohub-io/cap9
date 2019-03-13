@@ -92,24 +92,23 @@ be stored in \emph{kernel storage}.
 
 This kernel storage is defined as all storage locations within a certain storage
 range. All values in kernel storage share the same storage key prefix. This
-prefix is currently 0x00, and so currently includes all values in the interval
-$[0\text{x}0000 \cdots 0000, 0\text{x}0100 \cdots 0000)$ (some zeros have been
-elided for typographic reasons, but each values is 32 bytes).
+prefix is currently \texttt{0xff ff ff ff}, and so currently includes all values in the interval
+[\texttt{0xffffffff00} $\cdots$ \texttt{00}, \texttt{0xffffffffff} $\cdots$ \texttt{ff}].
 
 \begin{table}[H]
   \caption{Overview of kernel storage layout.}
   \centering{}%
   \begin{tabularx}{\textwidth}{c | c | c | c | c | X }
     \hline
-    \texttt{0x} & \texttt{00} & \texttt{01 - 04} & \texttt{05 - 1f} & \texttt{1e - 20} & Description \\
+    \texttt{0x} & \texttt{00 - 03} & \texttt{04} & \texttt{05 - 1f} & \texttt{1e - 20} & Description \\
     \hline
     \hline
-    \texttt{0x} & \texttt{00} & \texttt{00 00 00 00} & Proc Key & $\cdots$ & Procedure Heap \\
-    \texttt{0x} & \texttt{00} & \texttt{00 00 00 01} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & \# of Procedures\\
-    \texttt{0x} & \texttt{00} & \texttt{00 00 00 01} & Key Index & \texttt{00 00 00} & Procedure List \\
-    \texttt{0x} & \texttt{00} & \texttt{00 00 00 02} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Kernel Address \\
-    \texttt{0x} & \texttt{00} & \texttt{00 00 00 03} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Current Procedure \\
-    \texttt{0x} & \texttt{00} & \texttt{00 00 00 04} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Entry Procedure \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{00} & Proc Key & $\cdots$ & Procedure Heap \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{01} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & \# of Procedures\\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{01} & Key Index & \texttt{00 00 00} & Procedure List \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{02} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Kernel Address \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{03} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Current Procedure \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{04} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Entry Procedure \\
     \hline
   \end{tabularx}
 \end{table}
@@ -177,14 +176,14 @@ It is important to note that none of these steps consider deletion (zeroing) of
 data. This is optional for efficiency and can be performed any time after the
 length value has been decremented.
 
-The procedure table is stored under the prefix \texttt{0x00 00 00 00 01}. The
+The procedure table is stored under the prefix \texttt{0xff ff ff ff 01}. The
 maximum number of keys held under this configuration is $2^{24} - 1 =
 16,777,215$ (1 is subtracted to account for the length value occupying a single
 space). This is one less than the total number of procedures that can be held by
 the kernel (which is $2^{24} = 16,777,216$).
 
 \begin{verbatim}
-  0x00 00 00 00 01 + 24 more bytes + 3 zero bytes
+  0xff ff ff ff 01 + 24 more bytes + 3 zero bytes
 \end{verbatim}
 
 \begin{table}[H]
@@ -195,12 +194,12 @@ the kernel (which is $2^{24} = 16,777,216$).
     Storage Location & Description\tabularnewline
     \hline
     \hline
-    \texttt{0x00 00 00 00 01}     & length/number of procedures
+    \texttt{0xff ff ff ff 01}     & length/number of procedures
       \tabularnewline
-    \texttt{0x00 00 00 00 01} + keyIndex & procedure key/name: 24 bytes
+    \texttt{0xff ff ff ff 01} + keyIndex & procedure key/name: 24 bytes
       \tabularnewline
     ~~~$\vdots$ & capabilities in series \tabularnewline
-    \texttt{0x00 00 00 00 01} + n & procedure key/name for procedure $n$
+    \texttt{0xff ff ff ff 01} + n & procedure key/name for procedure $n$
       \tabularnewline
     \hline
   \end{tabular}
@@ -208,11 +207,11 @@ the kernel (which is $2^{24} = 16,777,216$).
 
 \subsection{Procedure Heap}\label{procedure-heap}
 
-Procedure data is stored using the key \texttt{0x00 00 00 00 00}. This is
+Procedure data is stored using the key \texttt{0xff ff ff ff 00}. This is
 combined with the procedure key to produce the following:
 
 \begin{verbatim}
-  0x00 00 00 00 00 + 24 bytes procedure key + 3 bytes data offset
+  0xff ff ff ff 00 + 24 bytes procedure key + 3 bytes data offset
 \end{verbatim}
 
 This leaves 3 bytes at the end of the storage location key. If the first of
@@ -231,7 +230,7 @@ index 0x02) held by this procedure.
 
 The very last value is an offset into the capability data. The meaning of this
 is different for each capability as they each have different formats. The format
-of each capability is specified in Section~\ref{syscalls-and-caps}
+of each capability is specified in Section~\ref{syscalls-and-caps}.
 
 \includegraphics[width=\textwidth]{media/ProcedureKeyLocation.pdf}
 
@@ -241,7 +240,6 @@ locations specified by the \emph{Data Offset}.
 \begin{table}[H]
   \caption{Procedure data.}
   \centering{}%
-  % \begin{tabular}{>{\centering}p{0.25\textwidth}|>{\centering}p{0.475\textwidth}|>{\centering}p{0.2\textwidth}}
   \begin{tabularx}{\textwidth}{c | c | c | c | X }
     \hline
     \multicolumn{4}{c|}{Data Offset} & Description \\
@@ -510,7 +508,6 @@ Data: min(96 bytes) max(96 bytes)
 \begin{table}[H]
   \caption{Capability data as sent in the Register Procedure system call.\label{reg-cap-format}}
   \centering{}%
-  % \begin{tabular}{>{\centering}p{0.25\textwidth}|>{\centering}p{0.475\textwidth}|>{\centering}p{0.2\textwidth}}
   \begin{tabularx}{\textwidth}{c|X}
     \hline
     Key Offset & Description \\
