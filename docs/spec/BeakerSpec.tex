@@ -429,15 +429,14 @@ The values of this capability are packed into a single 32-byte value.
   \centering{}%
   \begin{tabularx}{\textwidth}{c|c|X}
     \hline
-    Key Offset & Value & Description\tabularnewline
+    Key Offset & Byte Offset & Description \\
     \hline
     \hline
-    \texttt{0x00} & -    & The prefix and base procedure key, the first byte is the prefix
-                 size which is in the interval [0,24], bytes [0x1,0x7] are
-                 unused and undefined, bytes [0x8,0x32] are the 24 bytes of the
-                 base procedure key. \tabularnewline
+    \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
+    \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
+    \texttt{0x00} & \texttt{0x08 - 0x20} & The 24 bytes of the base procedure key. \\
     \hline
-    End &  \tabularnewline
+    End &   \\
     \hline
   \end{tabularx}
 \end{table}
