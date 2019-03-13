@@ -192,20 +192,20 @@ the kernel (which is $2^{24} = 16,777,216$).
 \begin{table}[H]
   \caption{Procedure table.}
   \centering{}%
-  \begin{tabular}{l|p{0.4\textwidth}}
+  \begin{tabularx}{\textwidth}{l|X}
     \hline
-    Storage Location & Description\tabularnewline
+    Storage Location & Description\\
     \hline
     \hline
     \texttt{0xff ff ff ff 01}     & length/number of procedures
-      \tabularnewline
+      \\
     \texttt{0xff ff ff ff 01} + keyIndex & procedure key/name: 24 bytes
-      \tabularnewline
-    ~~~$\vdots$ & capabilities in series \tabularnewline
+      \\
+    ~~~$\vdots$ & capabilities in series \\
     \texttt{0xff ff ff ff 01} + n & procedure key/name for procedure $n$
-      \tabularnewline
+      \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsection{Procedure Heap}\label{procedure-heap}
@@ -268,16 +268,16 @@ as follows:
 \begin{table}[H]
   \caption{System call structure.}
   \centering{}%
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\tabularnewline
+    Byte Offset & Description\\
     \hline
     \hline
-    0x0 & 1 byte, system call value \tabularnewline
-    0x8 & The system call data as defined by each system call \tabularnewline
-    ~~~$\vdots$ &  \tabularnewline
+    0x0 & 1 byte, system call value \\
+    0x8 & The system call data as defined by each system call \\
+    ~~~$\vdots$ &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 If the transaction data is longer that specified by the system call format, the
@@ -289,23 +289,23 @@ System call numbers match capability numbers.
 \begin{table}[H]
   \caption{System call and capability numbers.\label{syscall-numbers}}
   \centering{}%
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Type Value & Description\tabularnewline
+    Type Value & Description\\
     \hline
     \hline
-    0x0 & Null capability / noop \tabularnewline
-    % 0x1 & The system call data as defined by each system call \tabularnewline
-    % 0x2 & The system call data as defined by each system call \tabularnewline
-    0x3 & Call Procedure \tabularnewline
-    0x4 & Register Procedure \tabularnewline
-    0x5 & Delete Procedure \tabularnewline
-    0x6 & Set Entry Procedure \tabularnewline
-    0x7 & Write \tabularnewline
-    0x8 & Log \tabularnewline
-    0x9 & Gas Send \tabularnewline
+    0x0 & Null capability / noop \\
+    % 0x1 & The system call data as defined by each system call \\
+    % 0x2 & The system call data as defined by each system call \\
+    0x3 & Call Procedure \\
+    0x4 & Register Procedure \\
+    0x5 & Delete Procedure \\
+    0x6 & Set Entry Procedure \\
+    0x7 & Write \\
+    0x8 & Log \\
+    0x9 & Gas Send \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsection{Executing a System Call}
@@ -353,22 +353,21 @@ Therefore:
 \begin{table}[H]
   \caption{Return and error codes.}
   \centering{}%
-  \begin{tabular}{p{0.3\textwidth}|p{0.1\textwidth}|p{0.2\textwidth}|p{0.3\textwidth}}
+  \begin{tabularx}{\textwidth}{l|c|X|X}
     \hline
-    Type & Value & Additional Data & Description\tabularnewline
+    Type & Value & Additional Data & Description \\
     \hline
     \hline
-    SYSCALL\_BADCAP  & 33 & None & Capability insufficient \tabularnewline
-    SYSCALL\_NOGAS   & 44 & None & Procedure execution ran out of gas.
-      \tabularnewline
+    SYSCALL\_BADCAP  & 33 & None & Capability insufficient. \\
+    SYSCALL\_NOGAS   & 44 & None & Procedure execution ran out of gas. \\
     SYSCALL\_REVERT  & 55 & Returned data from procedure & The called
-      procedure reverted. \tabularnewline
+      procedure reverted. \\
     SYSCALL\_FAIL    & 66 & System call specific error data & The system call
-      failed for reasons specific to the system call. \tabularnewline
+      failed for reasons specific to the system call. \\
     SYSCALL\_NOEXIST & 111 & None & The syscall integer values is not a valid
-      syscall as defined in Table \ref{syscall-numbers} \tabularnewline
+      syscall as defined in Table \ref{syscall-numbers}. \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsection{Capability Subsets}\label{cap-subsets}
@@ -400,19 +399,19 @@ to err on the side of simplicity and stick as close as we can to 32-byte values.
 \begin{table}[H]
   \caption{Call procedure system call format.}
   \centering{}%
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\tabularnewline
+    Byte Offset & Description \\
     \hline
     \hline
-    0x00 & Capability index; 32 bytes \tabularnewline
-    0x20 & Prefix size, 1 bytes \tabularnewline
-    0x21 & 8 unused bytes \tabularnewline
-    0x28 & Procedure key, 24 bytes \tabularnewline
+    \texttt{0x00} & Capability index; 32 bytes \\
+    \texttt{0x20} & Prefix size, 1 bytes \\
+    \texttt{0x21} & 8 unused bytes \\
+    \texttt{0x28} & Procedure key, 24 bytes \\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Format}
@@ -466,15 +465,14 @@ the following codes.
 \begin{table}[H]
   \caption{Return and error codes.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.2\textwidth}|p{0.2\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|l|X}
     \hline
-    Type & Value & Additional Data & Description\tabularnewline
+    Type & Value & Additional Data & Description \\
     \hline
     \hline
-    CALL\_NOPROC  & 33 & None & The procedure key specified does not exit.
-      \tabularnewline
+    CALL\_NOPROC  & 33 & None & The procedure key specified does not exist. \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Call
@@ -492,21 +490,21 @@ Data: min(96 bytes) max(96 bytes)
 \begin{table}[H]
   \caption{Register procedure system call structure.}
   \centering{}%
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\tabularnewline
+    Byte Offset & Description\\
     \hline
     \hline
-    0x0 & Capability index; 32 bytes \tabularnewline
-    0x20 & Procedure key; 24 bytes in 32 bytes \tabularnewline
-    0x40 & Procedure address; 20 bytes in 32 bytes \tabularnewline
+    \texttt{0x00} & Capability index; 32 bytes \\
+    \texttt{0x20} & Procedure key; 24 bytes in 32 bytes \\
+    \texttt{0x40} & Procedure address; 20 bytes in 32 bytes \\
     ~~~$\vdots$ & Capabilities; A series of 32 byte values which correspond
     exactly to the keys as defined in Table~\ref{reg-cap-format}. The length of
-    this list is not provided. \tabularnewline
+    this list is not provided. \\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \begin{table}[H]
@@ -517,10 +515,10 @@ Data: min(96 bytes) max(96 bytes)
     Key Offset & Description \\
     \hline
     \hline
-    0x00       & CapSize: 2 bytes, aligned right in the 32 bytes, the given
+    \texttt{0x00}       & CapSize: 2 bytes, aligned right in the 32 bytes, the given
       name \\
-    0x01       & CapType: 1 byte, aligned right in the 32 bytes \\
-    0x02       & key value \#1: 32 bytes \\
+    \texttt{0x01}       & CapType: 1 byte, aligned right in the 32 bytes \\
+    \texttt{0x02}       & key value \#1: 32 bytes \\
     ~~~$\vdots$ & capabilities in series \\
     CapSize & final key value \\
     \hline
@@ -541,19 +539,18 @@ have.
 \begin{table}[H]
   \caption{Register procedure capability format.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.5\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|X}
     \hline
-    Key Offset & Value & Description\tabularnewline
+    Key Offset & Byte Offset & Description \\
     \hline
     \hline
-    0x00 & -    & The prefix and base procedure key, the first byte is the prefix
-                 size which is in the interval [0,24], bytes [0x1,0x7] are
-                 unused and undefined, bytes [0x8,0x32] are the 24 bytes of the
-                 base procedure key. \tabularnewline
+    \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
+    \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
+    \texttt{0x00} & \texttt{0x08 - 0x20} & The 24 bytes of the base procedure key. \\
     \hline
-    End &  \tabularnewline
+    End &   \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \includegraphics[width=\textwidth]{media/ProcedureKeyBytes.pdf}
@@ -618,14 +615,14 @@ the following codes.
 \begin{table}[H]
   \caption{Return and error codes.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.2\textwidth}|p{0.2\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|l|X}
     \hline
-    Type & Value & Additional Data & Description\tabularnewline
+    Type & Value & Additional Data & Description \\
     \hline
     \hline
-    REG\_TOOMANYCAPS  & 77 & None & Too many caps were provided. \tabularnewline
+    REG\_TOOMANYCAPS  & 77 & None & Too many caps were provided. \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Register
@@ -642,17 +639,17 @@ Data: min(64 bytes) max(64 bytes)
 \begin{table}[H]
   \caption{Delete procedure system call.}
   \centering{}%
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\tabularnewline
+    Byte Offset & Description\\
     \hline
     \hline
-    0x0 & Capability index; 32 bytes \tabularnewline
-    0x20 & Procedure key; 24 bytes in 32 bytes \tabularnewline
+    \texttt{0x00} & Capability index; 32 bytes \\
+    \texttt{0x20} & Procedure key; 24 bytes in 32 bytes \\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Format}
@@ -665,19 +662,18 @@ the same as the first $s$ bits of procedure key $b$.
 \begin{table}[H]
   \caption{Delete procedure capability format.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.5\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|X}
     \hline
-    Key Offset & Value & Description\tabularnewline
+    Key Offset & Byte Offset & Description \\
     \hline
     \hline
-    0x00 & -  & The prefix and base procedure key, the first byte is the prefix
-                 size which is in the interval [0,24], bytes [0x1,0x7] are
-                 unused and undefined, bytes [0x8,0x32] are the 24 bytes of the
-                 base procedure key. \tabularnewline
+    \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
+    \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
+    \texttt{0x00} & \texttt{0x08 - 0x20} & The 24 bytes of the base procedure key. \\
     \hline
-    End &  \tabularnewline
+    End &   \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \includegraphics[width=\textwidth]{media/ProcedureKeyBytes.pdf}
@@ -712,15 +708,14 @@ the following codes.
 \begin{table}[H]
   \caption{Return and error codes.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.2\textwidth}|p{0.2\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|l|X}
     \hline
-    Type & Value & Additional Data & Description\tabularnewline
+    Type & Value & Additional Data & Description \\
     \hline
     \hline
-    DEL\_NOPROC  & 33 & None & The procedure key specified does not exit.
-      \tabularnewline
+    DEL\_NOPROC  & 33 & None & The procedure key specified does not exit. \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Delete
@@ -737,17 +732,17 @@ Data: min(64 bytes) max(64 bytes)
 \begin{table}[H]
   \caption{Set entry procedure system call format.}
   \centering{}%
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\tabularnewline
+    Byte Offset & Description\\
     \hline
     \hline
-    0x0 & Capability index; 32 bytes \tabularnewline
-    0x20 & Procedure key; 24 bytes in 32 bytes \tabularnewline
+    \texttt{0x0} & Capability index; 32 bytes \\
+    \texttt{0x20} & Procedure key; 24 bytes in 32 bytes \\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Format}
@@ -774,15 +769,14 @@ the following codes.
 \begin{table}[H]
   \caption{Return and error codes.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.2\textwidth}|p{0.2\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|l|X}
     \hline
-    Type & Value & Additional Data & Description\tabularnewline
+    Type & Value & Additional Data & Description \\
     \hline
     \hline
-    SETENT\_NOPROC  & 33 & None & The procedure key specified does not exit.
-      \tabularnewline
+    SETENT\_NOPROC  & 33 & None & The procedure key specified does not exit. \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Set Entry
@@ -802,18 +796,18 @@ Data:
 \begin{table}[H]
   \caption{System call structure.}
   \centering{}%
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\tabularnewline
+    Byte Offset & Description\\
     \hline
     \hline
-    0x0 & Capability index; 32 bytes \tabularnewline
-    0x20 & Write address; 32 bytes \tabularnewline
-    0x40 & Write values; 32 bytes \tabularnewline
+    \texttt{0x00} & Capability index; 32 bytes \\
+    \texttt{0x20} & Write address; 32 bytes \\
+    \texttt{0x40} & Write values; 32 bytes \\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Format}
@@ -826,17 +820,17 @@ write to 0x8000, 0x8000+1, 0x8000+2, 0x8000+3, 0x8000+4, and 0x8000+5.
 \begin{table}[H]
   \caption{Write capability format.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.5\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|X}
     \hline
-    Key Offset & Value & Description\tabularnewline
+    Key Offset & Value & Description\\
     \hline
     \hline
-    0x00 & $a$ & The base storage address\tabularnewline
-    0x01 & $n$ & The number of additional keys we can write to\tabularnewline
+    \texttt{0x00} & $a$ & The base storage address\\
+    \texttt{0x01} & $n$ & The number of additional keys we can write to\\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Subsets}
@@ -871,22 +865,22 @@ Data: min(96 bytes) max(224 bytes)
 \begin{table}[H]
   \caption{System call structure.}
   \centering{}%
-  \begin{tabular}{l|p{0.6\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\tabularnewline
+    Byte Offset & Description\\
     \hline
     \hline
-    0x0 & Capability index; 32 bytes \tabularnewline
-    0x20 & Number of topics (nTopics) \tabularnewline
-    ... & Potentially topic value \#1; 32 bytes \tabularnewline
-    ... & Potentially topic value \#2; 32 bytes \tabularnewline
-    ... & Potentially topic value \#3; 32 bytes \tabularnewline
-    ... & Potentially topic value \#4; 32 bytes \tabularnewline
-    0x40+(nTopics x 0x20) & Log value 32 bytes \tabularnewline
+    \texttt{0x00} & Capability index; 32 bytes \\
+    \texttt{0x20} & Number of topics (nTopics) \\
+    \texttt{0x40} & Potentially topic value \#1; 32 bytes \\
+    \texttt{0x60} & Potentially topic value \#2; 32 bytes \\
+    \texttt{0x80} & Potentially topic value \#3; 32 bytes \\
+    \texttt{0xa0} & Potentially topic value \#4; 32 bytes \\
+    \texttt{0xb0} & Log value 32 bytes \\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Format}
@@ -903,24 +897,24 @@ then the unused values are undefined.
 \begin{table}[H]
   \caption{Log capability format.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.5\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|X}
     \hline
-    Key Offset & Value & Description\tabularnewline
+    Key Offset & Value & Description\\
     \hline
     \hline
-    0x00 & [0x00, 0x4] & Number of enforced topics; 32 bytes \tabularnewline
-    0x01 & $t_1$ & Potentially an enforced value for the first topic
-      \tabularnewline
-    0x02 & $t_2$ & Potentially an enforced value for the second topic
-      \tabularnewline
-    0x03 & $t_3$ & Potentially an enforced value for the third topic
-      \tabularnewline
-    0x04 & $t_4$ & Potentially an enforced value for the fourth topic
-      \tabularnewline
+    \texttt{0x00} & [0x00, 0x4] & Number of enforced topics; 32 bytes \\
+    \texttt{0x01} & $t_1$ & Potentially an enforced value for the first topic
+      \\
+    \texttt{0x02} & $t_2$ & Potentially an enforced value for the second topic
+      \\
+    \texttt0x03 & $t_3$ & Potentially an enforced value for the third topic
+      \\
+    \texttt{0x04} & $t_4$ & Potentially an enforced value for the fourth topic
+      \\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Subsets}
@@ -951,18 +945,18 @@ Data:
 \begin{table}[H]
   \caption{System call structure.}
   \centering{}%
-  \begin{tabular}{l|p{0.7\textwidth}}
+  \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\tabularnewline
+    Byte Offset & Description\\
     \hline
     \hline
-    0x0 & Capability index; 32 bytes \tabularnewline
-    0x20 & Account address; 20-bytes right aligned in 32 bytes \tabularnewline
-    0x40 & Value amount; 32 bytes \tabularnewline
+    \texttt{0x00}& Capability index; 32 bytes \\
+    \texttt{0x20} & Account address; 20-bytes right aligned in 32 bytes \\
+    \texttt{0x40} & Value amount; 32 bytes \\
     \hline
-    End &  \tabularnewline
+    End &  \\
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsubsection{Capability Format}
