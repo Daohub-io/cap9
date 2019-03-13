@@ -867,16 +867,16 @@ Data: min(96 bytes) max(224 bytes)
   \centering{}%
   \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Byte Offset & Description\\
+    Byte Offset & Description \\
     \hline
     \hline
-    \texttt{0x00} & Capability index; 32 bytes \\
-    \texttt{0x20} & Number of topics (nTopics) \\
-    \texttt{0x40} & Potentially topic value \#1; 32 bytes \\
-    \texttt{0x60} & Potentially topic value \#2; 32 bytes \\
-    \texttt{0x80} & Potentially topic value \#3; 32 bytes \\
-    \texttt{0xa0} & Potentially topic value \#4; 32 bytes \\
-    \texttt{0xb0} & Log value 32 bytes \\
+    0x0 & Capability index; 32 bytes \\
+    0x20 & Number of topics (nTopics) \\
+    ... & Potentially topic value \#1; 32 bytes \\
+    ... & Potentially topic value \#2; 32 bytes \\
+    ... & Potentially topic value \#3; 32 bytes \\
+    ... & Potentially topic value \#4; 32 bytes \\
+    0x40+(nTopics x 0x20) & Log value 32 bytes \\
     \hline
     End &  \\
     \hline
@@ -907,7 +907,7 @@ then the unused values are undefined.
       \\
     \texttt{0x02} & $t_2$ & Potentially an enforced value for the second topic
       \\
-    \texttt0x03 & $t_3$ & Potentially an enforced value for the third topic
+    \texttt{0x03} & $t_3$ & Potentially an enforced value for the third topic
       \\
     \texttt{0x04} & $t_4$ & Potentially an enforced value for the fourth topic
       \\
