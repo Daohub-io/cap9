@@ -135,7 +135,7 @@ detail.
 
 \subsection{Procedure Index}
 Each procedure key included in the kernel is given an index, which identifies
-the procedure in the procedure list.It is 1-based, that is the first value is 1,
+the procedure in the procedure list. It is 1-based, that is the first value is 1,
 and the value 0 is a null value.
 
 As shown below, the maximum number of procedures is $2^{24} - 1 = 16,777,215$,
@@ -155,6 +155,8 @@ When a procedure is added to the kernel:
   \item The procedure data is added to the procedure heap (see
   Section~\ref{procedure-heap}).
   \item The procedure key is appended to the end of the array.
+  \item If the length value is equal to the maximum procedure index value,
+  abort.
   \item The length value (the first value) is incremented by one.
   \item The procedure index value (in procedure metadata) is set to the new
   length value.
