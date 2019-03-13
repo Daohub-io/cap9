@@ -133,11 +133,10 @@ value to define a range of keys. This allows one to defined a hierarchy of
 procedures, much like a directory structrue. See those capabilities for more
 detail.
 
-\subsection{Key Index}
-Each procedure key included in the kernel is associated with a key index, which
-identifies a procedure in the procedure table. This is not used anywhere except
-the procedure table itself. It is 1-based, that is the first value is 1, and the
-value 0 is a null value.
+\subsection{Procedure Index}
+Each procedure key included in the kernel is given an index, which identifies
+the procedure in the procedure list.It is 1-based, that is the first value is 1,
+and the value 0 is a null value.
 
 As shown below, the maximum number of procedures is $2^{24} - 1 = 16,777,215$,
 therefore the maxium value of the key index is $16,777,215$, therefore the key
@@ -157,6 +156,8 @@ When a procedure is added to the kernel:
   Section~\ref{procedure-heap}).
   \item The procedure key is appended to the end of the array.
   \item The length value (the first value) is incremented by one.
+  \item The procedure index value (in procedure metadata) is set to the new
+  length value.
 \end{enumerate}
 
 When a procedure is deleted from the kernel:
@@ -164,10 +165,12 @@ When a procedure is deleted from the kernel:
 \begin{enumerate}
   \item If the procedure key is the same as the Entry Procedure Key, abort and
   throw an error.
-  \item If the procedure key does not exist in the list, abort and throw an
-  error.
+  \item If the procedure key does not exist in the list (i.e. when looking on
+  the procedure heap no procedure index is associated with it), abort and throw
+  an error.
   \item The length value is decremented by one.
-  \item If the procedure being deleted is not the last in the list, the last in
+  \item If the procedure being deleted is not the last in the list (i.e. it's
+  procedure index does not equal the length of the procedure list), the last in
   the list is copied to overwrite the key being deleted. This also accounts for
   the case of an empty list.
 \end{enumerate}
@@ -245,7 +248,9 @@ locations specified by the \emph{Data Offset}.
     \multicolumn{4}{c|}{Data Offset} & Description \\
     \hline
     \hline
-    \texttt{0x} & \texttt{00} & \texttt{00} & \texttt{00} & address: 20 bytes,
+    \texttt{0x} & \texttt{00} & \texttt{00} & \texttt{00} & Address: 20 bytes,
+      aligned right in the 32 bytes \\
+    \texttt{0x} & \texttt{00} & \texttt{00} & \texttt{01} & Procedure Index: 24 bytes,
       aligned right in the 32 bytes \\
     \texttt{0x} & \texttt{$ty$} & \texttt{00} & \texttt{00} & The number of
       capabilities of type \texttt{0x$ty$}. \\
@@ -400,7 +405,7 @@ to err on the side of simplicity and stick as close as we can to 32-byte values.
     Byte Offset & Description\tabularnewline
     \hline
     \hline
-    0x0 & Capability index; 32 bytes \tabularnewline
+    0x00 & Capability index; 32 bytes \tabularnewline
     0x20 & Prefix size, 1 bytes \tabularnewline
     0x21 & 8 unused bytes \tabularnewline
     0x28 & Procedure key, 24 bytes \tabularnewline
@@ -422,19 +427,19 @@ The values of this capability are packed into a single 32-byte value.
 \begin{table}[H]
   \caption{Call procedure capability format.}
   \centering{}%
-  \begin{tabular}{l|l|p{0.5\textwidth}}
+  \begin{tabularx}{\textwidth}{c|c|X}
     \hline
     Key Offset & Value & Description\tabularnewline
     \hline
     \hline
-    0x00 & -    & The prefix and base procedure key, the first byte is the prefix
+    \texttt{0x00} & -    & The prefix and base procedure key, the first byte is the prefix
                  size which is in the interval [0,24], bytes [0x1,0x7] are
                  unused and undefined, bytes [0x8,0x32] are the 24 bytes of the
                  base procedure key. \tabularnewline
     \hline
     End &  \tabularnewline
     \hline
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \includegraphics[width=\textwidth]{media/ProcedureKeyBytes.pdf}
