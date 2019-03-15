@@ -961,15 +961,44 @@ Data:
 \end{table}
 
 \subsubsection{Capability Format}
-This value contains no data other than its presence, therfore has no format.
+
+The Send capability can either permit Ether to be sent to all addresses or only
+a single address. If Ether can be sent to any address, the value of the first
+key in this capability is 0 and the second value is undefined. If Ether can be
+sent to only a single address, the first value is 1 and the second value is the
+single address to which Ether is permitted to be sent.
+
+\textbf{NB:} It is necessary to have two values to allow for the case that we
+are permitted only to send value to the null address (0x0000...).
+
+\begin{table}[H]
+  \caption{Send capability format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|X}
+    \hline
+    Key Offset & Value & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & 0 or 1 & 0 if any address is permitted or 1 if a single address \\
+    \texttt{0x01} & $a$ & Account address; 20-bytes right aligned in 32 bytes \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
 
 \subsubsection{Capability Subsets}
 As defined in Section~\ref{cap-subsets}, each capability has subsets and
-supersets. As the Value Send capability is a trivial value, there is only one
-value for Value Send capabilities and they are all equal.
+supersets. If the Value Send capability allows value to be sent to any address
+(i.e. the first value is 0) then any other Value Send capabilty is a subset. If
+it only allows value to be sent to a single address (i.e. the first value is 1)
+then another value is only a subset if it is idential.
 
-Given a Value Send capability $A$ and any other Value Send capability $B$, not
-only is $B \subseteq A$ but also $B = A$.
+For a capability $C$, $C_i$ is the first value, and $C_a$ is the potential
+send-to address.
+
+Given a Value Send capability $A$ and any other Value Send capability $B$, $B
+\subseteq A \iff \left(A_i = 0\right) \lor \left(A = B\right)$
 
 \section{Procedure Bytecode Validation}\label{bytecode-validation}
 In order to be added to the procedure list of a kernel, the bytecode of a contract must be validated by the kernel and must conform to a strict set of requirements. These requirements are as follows:
