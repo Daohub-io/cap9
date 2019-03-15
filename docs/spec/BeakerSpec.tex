@@ -410,8 +410,7 @@ to err on the side of simplicity and stick as close as we can to 32-byte values.
     \texttt{0x20} & Prefix size, 1 bytes \\
     \texttt{0x21} & 8 unused bytes \\
     \texttt{0x28} & Procedure key, 24 bytes \\
-    \hline
-    End &  \\
+    ~~~$\vdots$ & Payload for the procedure \\
     \hline
   \end{tabularx}
 \end{table}
@@ -952,7 +951,7 @@ Data:
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00}& Capability index; 32 bytes \\
+    \texttt{0x00} & Capability index; 32 bytes \\
     \texttt{0x20} & Account address; 20-bytes right aligned in 32 bytes \\
     \texttt{0x40} & Value amount; 32 bytes \\
     \hline
