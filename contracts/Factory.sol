@@ -65,15 +65,7 @@ contract Factory {
             if (ins == 0xf1) {return 9;} // CALL
             if (ins == 0xf2) {return 10;} // CALLCODE
             if (ins == 0xf4) {
-                // continue if it is a compliant syscall
-                bool isSysCall = false;
-                // check there are enough bytes
-                if (i < 2) {
-                    isSysCall = false;
-                } else {
-                    isSysCall = (oCode[i-1] == 0x5a /* GAS */) && (oCode[i-2] == 0x33 /* CALLER */);
-                }
-                if (isSysCall) {
+                if (i > 2 && (oCode[i-1] == 0x5a /* GAS */) && (oCode[i-2] == 0x33 /* CALLER */)) {
                     continue;
                 } else {
                     return 11;
