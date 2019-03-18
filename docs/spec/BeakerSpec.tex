@@ -388,7 +388,7 @@ As the nature of each capability is different, the way subsets are defined is
 different for each one. The following sections will define how subsets are
 defined for each capability.
 
-\subsection{Call System Call}
+\subsection{Procedure Call System Call}
 
 \subsubsection{System Call Format}
 Type Value: 3
@@ -434,7 +434,7 @@ The values of this capability are packed into a single 32-byte value.
     \hline
     \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
     \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
-    \texttt{0x00} & \texttt{0x08 - 0x20} & The 24 bytes of the base procedure key. \\
+    \texttt{0x00} & \texttt{0x08 - 0x1f} & The 24 bytes of the base procedure key. \\
     \hline
     End &   \\
     \hline
@@ -547,7 +547,7 @@ have.
     \hline
     \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
     \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
-    \texttt{0x00} & \texttt{0x08 - 0x20} & The 24 bytes of the base procedure key. \\
+    \texttt{0x00} & \texttt{0x08 - 0x1f} & The 24 bytes of the base procedure key. \\
     \hline
     End &   \\
     \hline
@@ -670,7 +670,7 @@ the same as the first $s$ bits of procedure key $b$.
     \hline
     \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
     \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
-    \texttt{0x00} & \texttt{0x08 - 0x20} & The 24 bytes of the base procedure key. \\
+    \texttt{0x00} & \texttt{0x08 - 0x1f} & The 24 bytes of the base procedure key. \\
     \hline
     End &   \\
     \hline
@@ -935,8 +935,9 @@ $$ \forall i \in \left\{1,2,\dots ,A_n\right\}. B_{t_i} = A_{t_i} $$
 There are no specific error conditions for SSTORE, therefore only general system
 call errors are applicable.
 
-\subsection{Value Send System Call}
-This system call sends value (Ether) to another account.
+\subsection{External Call System Call}
+This system call uses the \texttt{CALL} functionality to call and/or send Ether
+to another address.
 
 \subsubsection{System Call Format}
 Type Value: 9
@@ -962,47 +963,77 @@ Data:
 \end{table}
 
 \subsubsection{Capability Format}
+There are three distinct values in the External Call capability:
 
-The Send capability can either permit Ether to be sent to all addresses or only
-a single address. If Ether can be sent to any address, the value of the first
-key in this capability is 0 and the second value is undefined. If Ether can be
-sent to only a single address, the first value is 1 and the second value is the
-single address to which Ether is permitted to be sent.
+\begin{itemize}
+  \item The \textbf{CallAny} Flag: If this flag is true (the bit is set to 1)
+    then any Ethereum address can be called. If this flag is false (the bit is
+    set to 0) then only the address specified by EthAddress can be called.
+  \item The \textbf{SendValue} Flag: If this flag is true (the bit is set to 1)
+    then any quantity of Ether/Value can be sent as part of the call. If this
+    flag is false (the bit is set to 0) then no Ether/Value can be sent, and the
+    system call will only succeed if the value parameter is set to zero.
+  \item \textbf{EthAddress}: If CallAny is true, this value is undefined,
+  otherwise it is the single address that this capability permits to be called.
+\end{itemize}
 
-\textbf{NB:} It is necessary to have two values to allow for the case that we
-are permitted only to send value to the null address (0x0000...).
+These three values are contained in a single storage key, formatted as per the
+table and diagram below. The CallAny flag is the first bit of the storage value,
+the SendValue flag is the second bit of the storage value, and the EthAddress is
+the last 20~bytes of the storage value.
 
 \begin{table}[H]
-  \caption{Send capability format.}
+  \caption{External call capability format.}
   \centering{}%
-  \begin{tabularx}{\textwidth}{c|c|X}
+  \begin{tabularx}{\textwidth}{c|c|c|X}
     \hline
-    Key Offset & Value & Description\\
+    Key Offset & Byte Offset & Bit Offset & Description \\
     \hline
     \hline
-    \texttt{0x00} & 0 or 1 & 0 if any address is permitted or 1 if a single address \\
-    \texttt{0x01} & $a$ & Account address; 20-bytes right aligned in 32 bytes \\
+    \texttt{0x00} & \texttt{0x00} & 0x0 & CallAny Flag: If 1, any address can be
+      called, else only specified EthAddress. \\
+    \texttt{0x00} & \texttt{0x00} & 0x1 & SendValue Flag: If 1, Ether can be
+      sent, else not. \\
+    \texttt{0x00} & \texttt{0x01 - 0x0b} & - & Unused and undefined. \\
+    \texttt{0x00} & \texttt{0x0c - 0x1f} & - & EthAddress: The 20 bytes of the
+      Eth address. \\
     \hline
-    End &  \\
+    End & & & \\
     \hline
   \end{tabularx}
 \end{table}
 
+\includegraphics[width=\textwidth]{media/ExternalCallCapBytes.pdf}
+
 \subsubsection{Capability Subsets}
 As defined in Section~\ref{cap-subsets}, each capability has subsets and
-supersets. If the Value Send capability allows value to be sent to any address
-(i.e. the first value is 0) then any other Value Send capabilty is a subset. If
-it only allows value to be sent to a single address (i.e. the first value is 1)
-then another value is only a subset if it is idential.
+supersets.
 
-For a capability $C$, $C_i$ is the first value, and $C_a$ is the potential
-send-to address.
+For a capability $C$:
 
-Given a Value Send capability $A$ and any other Value Send capability $B$, $B
-\subseteq A \iff \left(A_i = 0\right) \lor \left(A = B\right)$
+\begin{itemize}
+  \item $C_c$ is the CallAny flag.
+  \item $C_s$ is the SendValue flag.
+  \item $C_a$ is the optional EthAddress.
+\end{itemize}
+
+Given an External Call capability $A$ and any other External Call capability
+$B$, $B$ is a sunset of $A$ iff:
+
+\begin{itemize}
+  \item If $B_c$ is true, then $A_c$ must be true.
+  \item If $B_c$ is false, then $A_c$ must be true or $B_a$ must equal $A_a$.
+  \item If $B_s$ is true, then $A_s$ must be true.
+\end{itemize}
+
+If these conditions hold then $B$ is a subset of $A$. That is: $B \subseteq A
+\iff \left(B_c \implies A_c\right) \land ((\lnot B_c \implies A_c) \lor (B_a =
+A_a)) \land (B_a \implies A_s)$.
 
 \section{Procedure Bytecode Validation}\label{bytecode-validation}
-In order to be added to the procedure list of a kernel, the bytecode of a contract must be validated by the kernel and must conform to a strict set of requirements. These requirements are as follows:
+In order to be added to the procedure list of a kernel, the bytecode of a
+contract must be validated by the kernel and must conform to a strict set of
+requirements. These requirements are as follows:
 
 \begin{itemize}
   \item All the opcodes must be on the whitelist as defined in Section~\ref{opcode-whitelist}, unless part
