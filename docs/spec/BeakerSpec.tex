@@ -276,9 +276,9 @@ as follows:
     Byte Offset & Description\\
     \hline
     \hline
-    0x0 & 1 byte, system call value \\
-    0x8 & 32 bytes, the capability index, [0-254] \\
-    0x28 & The system call data as defined by each system call \\
+    0x00 & 1 byte, system call value \\
+    0x01 & 1 bytes, the capability index, [0-254] \\
+    0x02 & The system call data as defined by each system call \\
     ~~~$\vdots$ &  \\
     \hline
   \end{tabularx}
@@ -434,7 +434,7 @@ The values of this capability are packed into a single 32-byte value.
     \hline
     \hline
     \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
-    \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
+    \texttt{0x00} & \texttt{0x01 - 0x07} & Unused and undefined. \\
     \texttt{0x00} & \texttt{0x08 - 0x1f} & The 24 bytes of the base procedure key. \\
     \hline
     End &   \\
@@ -497,8 +497,8 @@ Data: min(96 bytes) max(96 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Procedure key; 24 bytes in 32 bytes \\
-    \texttt{0x20} & Procedure address; 20 bytes in 32 bytes \\
+    \texttt{0x00} & Procedure key; 24 bytes \\
+    \texttt{0x18} & Procedure address; 20 bytes\\
     ~~~$\vdots$ & Capabilities; A series of 32 byte values which correspond
     exactly to the keys as defined in Table~\ref{reg-cap-format}. The length of
     this list is not provided. \\
@@ -546,7 +546,7 @@ have.
     \hline
     \hline
     \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
-    \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
+    \texttt{0x00} & \texttt{0x01 - 0x07} & Unused and undefined. \\
     \texttt{0x00} & \texttt{0x08 - 0x1f} & The 24 bytes of the base procedure key. \\
     \hline
     End &   \\
@@ -645,7 +645,7 @@ Data: min(64 bytes) max(64 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Procedure key; 24 bytes in 32 bytes \\
+    \texttt{0x00} & Procedure key; 24 bytes \\
     \hline
     End &  \\
     \hline
@@ -737,7 +737,7 @@ Data: min(64 bytes) max(64 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Procedure key; 24 bytes in 32 bytes \\
+    \texttt{0x00} & Procedure key; 24 bytes \\
     \hline
     End &  \\
     \hline
@@ -868,7 +868,7 @@ Data: min(96 bytes) max(224 bytes)
     Byte Offset & Description \\
     \hline
     \hline
-    \texttt{0x00} & Number of topics (nTopics) \\
+    \texttt{0x00} & Number of topics (nTopics); 32 bytes \\
     ... & Potentially topic value \#1; 32 bytes \\
     ... & Potentially topic value \#2; 32 bytes \\
     ... & Potentially topic value \#3; 32 bytes \\
@@ -948,8 +948,8 @@ Data:
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Account address; 20-bytes right aligned in 32 bytes \\
-    \texttt{0x20} & Value amount; 32 bytes \\
+    \texttt{0x00} & Account address; 20-bytes \\
+    \texttt{0x14} & Value amount; 32 bytes \\
     ~~~$\vdots$ & Payload for the contract \\
     \hline
     End &  \\
