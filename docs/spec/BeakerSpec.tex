@@ -231,7 +231,8 @@ The second value is the index into the capability list. If the second value is
 0x00, this indicates the number of capabilities in this list. Therefore the
 capabilities start at 0x01. For example, if the third last and second last
 values are 0x0703, this refers to the third write capability (capability at
-index 0x02) held by this procedure.
+index 0x02) held by this procedure. This implicitly limits the number of
+capabilities \emph{per type} to 255 (256 minus 1 for the length value).
 
 The very last value is an offset into the capability data. The meaning of this
 is different for each capability as they each have different formats. The format
@@ -276,7 +277,8 @@ as follows:
     \hline
     \hline
     0x0 & 1 byte, system call value \\
-    0x8 & The system call data as defined by each system call \\
+    0x8 & 32 bytes, the capability index, [0-254] \\
+    0x28 & The system call data as defined by each system call \\
     ~~~$\vdots$ &  \\
     \hline
   \end{tabularx}
@@ -406,10 +408,9 @@ to err on the side of simplicity and stick as close as we can to 32-byte values.
     Byte Offset & Description \\
     \hline
     \hline
-    \texttt{0x00} & Capability index; 32 bytes \\
-    \texttt{0x20} & Prefix size, 1 bytes \\
-    \texttt{0x21} & 8 unused bytes \\
-    \texttt{0x28} & Procedure key, 24 bytes \\
+    \texttt{0x00} & Prefix size, 1 bytes \\
+    \texttt{0x01} & 8 unused bytes \\
+    \texttt{0x08} & Procedure key, 24 bytes \\
     ~~~$\vdots$ & Payload for the procedure \\
     \hline
   \end{tabularx}
@@ -496,9 +497,8 @@ Data: min(96 bytes) max(96 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Capability index; 32 bytes \\
-    \texttt{0x20} & Procedure key; 24 bytes in 32 bytes \\
-    \texttt{0x40} & Procedure address; 20 bytes in 32 bytes \\
+    \texttt{0x00} & Procedure key; 24 bytes in 32 bytes \\
+    \texttt{0x20} & Procedure address; 20 bytes in 32 bytes \\
     ~~~$\vdots$ & Capabilities; A series of 32 byte values which correspond
     exactly to the keys as defined in Table~\ref{reg-cap-format}. The length of
     this list is not provided. \\
@@ -645,8 +645,7 @@ Data: min(64 bytes) max(64 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Capability index; 32 bytes \\
-    \texttt{0x20} & Procedure key; 24 bytes in 32 bytes \\
+    \texttt{0x00} & Procedure key; 24 bytes in 32 bytes \\
     \hline
     End &  \\
     \hline
@@ -738,8 +737,7 @@ Data: min(64 bytes) max(64 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x0} & Capability index; 32 bytes \\
-    \texttt{0x20} & Procedure key; 24 bytes in 32 bytes \\
+    \texttt{0x00} & Procedure key; 24 bytes in 32 bytes \\
     \hline
     End &  \\
     \hline
@@ -802,9 +800,8 @@ Data:
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Capability index; 32 bytes \\
-    \texttt{0x20} & Write address; 32 bytes \\
-    \texttt{0x40} & Write values; 32 bytes \\
+    \texttt{0x00} & Write address; 32 bytes \\
+    \texttt{0x20} & Write values; 32 bytes \\
     \hline
     End &  \\
     \hline
@@ -871,8 +868,7 @@ Data: min(96 bytes) max(224 bytes)
     Byte Offset & Description \\
     \hline
     \hline
-    \texttt{0x00} & Capability index; 32 bytes \\
-    \texttt{0x20} & Number of topics (nTopics) \\
+    \texttt{0x00} & Number of topics (nTopics) \\
     ... & Potentially topic value \#1; 32 bytes \\
     ... & Potentially topic value \#2; 32 bytes \\
     ... & Potentially topic value \#3; 32 bytes \\
@@ -952,9 +948,8 @@ Data:
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Capability index; 32 bytes \\
-    \texttt{0x20} & Account address; 20-bytes right aligned in 32 bytes \\
-    \texttt{0x40} & Value amount; 32 bytes \\
+    \texttt{0x00} & Account address; 20-bytes right aligned in 32 bytes \\
+    \texttt{0x20} & Value amount; 32 bytes \\
     ~~~$\vdots$ & Payload for the contract \\
     \hline
     End &  \\
