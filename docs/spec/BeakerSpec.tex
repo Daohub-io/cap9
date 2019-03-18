@@ -408,10 +408,9 @@ to err on the side of simplicity and stick as close as we can to 32-byte values.
     Byte Offset & Description \\
     \hline
     \hline
-    \texttt{0x00} & Prefix size, 1 bytes \\
-    \texttt{0x01} & 8 unused bytes \\
-    \texttt{0x08} & Procedure key, 24 bytes \\
-    ~~~$\vdots$ & Payload for the procedure \\
+    \texttt{0x00} & Procedure key, 24 bytes \\
+    \texttt{0x18} & Payload for the procedure \\
+    ~~~$\vdots$ &  \\
     \hline
   \end{tabularx}
 \end{table}
