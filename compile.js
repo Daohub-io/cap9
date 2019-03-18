@@ -17,7 +17,7 @@ async function getSources() {
 function compile(outdir, path) {
     return new Promise((resolve, reject) => {
         console.log(["-o", outdir, path, "--combined-json", "bin,abi", "--overwrite"])
-        const ls = spawn("solc", ["-o", outdir, path, "--combined-json", "bin,abi", "--overwrite"])
+        const ls = spawn("solc", ["-o", outdir, path, "--combined-json", "bin,abi,srcmap", "--overwrite", "--allow-paths", "."])
 
         ls.stdout.on('data', (data) => {
             console.log(`stdout: ${data}`);
@@ -42,7 +42,7 @@ async function main() {
     const sourceFilesList = await getSources();
     const sources = sourceFilesList.map(s=>[path.join(path.dirname(s),path.basename(s,".sol")),s]);
     for (const [s,sp] of sources) {
-        compile(path.join("newbuild",s),sp);
+        await compile(path.join("newbuild",s),sp);
     }
 }
 

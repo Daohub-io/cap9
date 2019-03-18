@@ -73,27 +73,26 @@ contract Kernel is Factory, IKernel {
 
     function parse32ByteValue(uint256 startOffset) pure internal returns (uint256) {
         uint256 value = 0;
-        for (uint256 i = 0; i < 32; i++) {
-            value = value << 8;
-            value = value | uint256(msg.data[startOffset+i]);
+        assembly {
+            value := calldataload(startOffset)
         }
         return value;
     }
 
     function parse24ByteValue(uint256 startOffset) pure internal returns (uint192) {
         uint192 value = 0;
-        for (uint192 i = 0; i < 24; i++) {
-            value = value << 8;
-            value = value | uint192(msg.data[startOffset+i]);
+        assembly {
+            // value := shr(8,calldataload(startOffset))
+            value := div(calldataload(startOffset),0x10000000000000000)
         }
         return value;
     }
 
     function parse20ByteValue(uint256 startOffset) pure internal returns (uint160) {
         uint160 value = 0;
-        for (uint160 i = 0; i < 20; i++) {
-            value = value << 8;
-            value = value | uint160(msg.data[startOffset+i]);
+        assembly {
+            // value := shr(8,calldataload(startOffset))
+            value := div(calldataload(startOffset),0x1000000000000000000000000)
         }
         return value;
     }
@@ -176,7 +175,7 @@ contract Kernel is Factory, IKernel {
         // offset 1 is the capIndex (32 bytes)
         // We also perform a shift as this is 24 byte value, not a 32 byte
         // value
-        bytes24 procedureKey = bytes24(parse32ByteValue(1+32)/0x10000000000000000);
+        bytes24 procedureKey = bytes24(parse24ByteValue(1+32));
         uint256 dataLength;
         // log1(bytes32(msg.data.length), bytes32("msg.data.length"));
         if (msg.data.length > (1+3*32)) {
