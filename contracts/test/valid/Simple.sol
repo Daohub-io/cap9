@@ -1,6 +1,14 @@
 pragma solidity ^0.4.17;
 
 contract Simple {
+
+    function () public payable {
+        assembly {
+            mstore(0,37)
+            return(0,32)
+        }
+    }
+
     function A() public pure {
 
     }

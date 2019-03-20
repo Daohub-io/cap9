@@ -42,7 +42,7 @@ contract IKernel {
     uint8 constant CAP_PROC_ENTRY           = 6;
     uint8 constant CAP_STORE_WRITE          = 7;
     uint8 constant CAP_LOG                  = 8;
-    uint8 constant CAP_GAS_SEND             = 9;
+    uint8 constant CAP_ACC_CALL             = 9;
 
     function getEntryProcedure() public view returns (bytes24 key) {
         return entryProcedure;
@@ -128,7 +128,7 @@ contract Kernel is Factory, IKernel {
 
     // This is the fallback function which is used to handle system calls. This
     // is only called if the other functions fail.
-    function() public {
+    function() public payable {
         // This is the entry point for the kernel
 
         // If it is an external account, we forward it straight to the init
@@ -140,7 +140,6 @@ contract Kernel is Factory, IKernel {
 
         // Parse the system call
         uint8 sysCallCapType = uint8(msg.data[0]);
-
         // Here we decode the system call (if there is one)
         if (sysCallCapType == 0) {
             // non-syscall case
@@ -156,13 +155,15 @@ contract Kernel is Factory, IKernel {
             _procDelSystemCall();
         } else if (sysCallCapType == CAP_PROC_ENTRY) {
             _setEntrySystemCall();
+        } else if (sysCallCapType == CAP_ACC_CALL) {
+            _accCallSystemCall();
         } else {
             // default; fallthrough action
             assembly {
-                mstore8(0xb0,5)
-                log0(0xb0, 1)
-                mstore8(0xb0,5)
-                return(0xb0, 1)
+                mstore(0xb0,5)
+                log1(0xb0, 0x20, "fallthrough")
+                mstore(0xb0,5)
+                return(0xb0, 0x20)
             }
         }
     }
@@ -177,7 +178,6 @@ contract Kernel is Factory, IKernel {
         // value
         bytes24 procedureKey = bytes24(parse24ByteValue(1+32));
         uint256 dataLength;
-        // log1(bytes32(msg.data.length), bytes32("msg.data.length"));
         if (msg.data.length > (1+3*32)) {
             dataLength = msg.data.length - (1+3*32);
         } else {
@@ -192,9 +192,7 @@ contract Kernel is Factory, IKernel {
         // it knows which procedure it is executing (this is important for
         // looking up capabilities).
         currentProcedure = procedureKey;
-        // log1(bytes32(procedureKey),bytes32("calling"));
         if (cap) {
-            // log1(bytes32("permitted"),bytes32("call-cap"));
             assembly {
                 function malloc(size) -> result {
                     // align to 32-byte words
@@ -268,26 +266,28 @@ contract Kernel is Factory, IKernel {
                     // We are using returndatasize and returndata copy so we set
                     // it to zero
                     0)
-                let returnLength := returndatasize
-                let retLoc := malloc(returnLength)
-                returndatacopy(retLoc, 0, returnLength)
                 // We need to restore the previous procedure as the current
                 // procedure, this can simply be on the stack
                 sstore(currentProcedure_slot,div(previousProcedure,exp(0x100,8)))
-                if iszero(status) {
-                    let errStore := malloc(0x20)
-                    mstore(errStore,add(22,mload(retLoc)))
-                    revert(errStore,0x20)
-                }
-                if eq(status,1) {
+
+                if status {
+                    let returnLength := returndatasize
+                    let retLoc := malloc(returnLength)
+                    returndatacopy(retLoc, 0, returnLength)
                     return(retLoc,returnLength)
+                }
+                if iszero(status) {
+                    let returnLength := add(0x20,returndatasize)
+                    let retLoc := malloc(returnLength)
+                    returndatacopy(add(0x20,retLoc), 0, returnLength)
+                    mstore(retLoc,0x55)
+                    revert(retLoc,returnLength)
                 }
             }
         } else {
-            // log1(bytes32("not-permitted"),bytes32("call-cap"));
             assembly {
                 // 33 means the capability was rejected
-                mstore(0,33)
+                mstore(0,0x33)
                 revert(0,0x20)
             }
         }
@@ -366,7 +366,7 @@ contract Kernel is Factory, IKernel {
         // TODO: fix this double name variable work-around
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
-        
+
         // Check that target is not the Entry Procedure
         bool not_entry = entryProcedure != regName;
         // Check if Valid Capability
@@ -538,6 +538,117 @@ contract Kernel is Factory, IKernel {
             }
     }
 
+    function _accCallSystemCall() internal {
+        // This is an account call system call
+        // parse a 32-byte value at offset 1 (offset 0 is the capType byte)
+        uint256 capIndex = parse32ByteValue(1);
+        address account = address(parse32ByteValue(1+1*32));
+        uint256 amount = parse32ByteValue(1+2*32);
+        uint256 dataLength;
+        if (msg.data.length > (1+3*32)) {
+            dataLength = msg.data.length - (1+3*32);
+        } else {
+            dataLength = 0;
+        }
+        bool cap = procedures.checkAccCallCapability(uint192(currentProcedure), account, amount, capIndex);
+        if (cap) {
+            assembly {
+                function malloc(size) -> result {
+                    // align to 32-byte words
+                    let rsize := add(size,sub(32,mod(size,32)))
+                    // get the current free mem location
+                    result :=  mload(0x40)
+                    // Bump the value of 0x40 so that it holds the next
+                    // available memory location.
+                    mstore(0x40,add(result,rsize))
+                }
+
+                function mallocZero(size) -> result {
+                    // align to 32-byte words
+                    let rsize := add(size,sub(32,mod(size,32)))
+                    // get the current free mem location
+                    result :=  mload(0x40)
+                    // zero-out the memory
+                    // if there are some bytes to be allocated (rsize is not zero)
+                    if rsize {
+                        // loop through the address and zero them
+                        for { let n := 0 } iszero(eq(n, rsize)) { n := add(n, 32) } {
+                            mstore(add(result,n),0)
+                        }
+
+                    }
+                    // Bump the value of 0x40 so that it holds the next
+                    // available memory location.
+                    mstore(0x40,add(result,rsize))
+                }
+                let calldatastore := mallocZero(calldatasize)
+                calldatacopy(calldatastore,0,calldatasize)
+                let ins
+                let inl
+                if dataLength {
+                    // If there is any data associated with this procedure
+                    // call (this inlcudes the data such as a function
+                    // selector) we need to set that as the input data to
+                    // the delegatecall.
+                    // First we must allocate some memory.
+                    ins :=  malloc(dataLength)
+                    // Then we store that data at this allocated memory
+                    // location
+                    calldatacopy(ins, 97, dataLength)
+                    inl := dataLength
+                }
+                if iszero(dataLength) {
+                    // If there is not data to be sent we just set the
+                    // location and length of the input data to zero. The
+                    // location doesn't actually matter as long the length
+                    // is zero.
+                    ins := 0
+                    inl := 0
+                }
+                let status := call(
+                    // The gas we are budgeting, which is always all the
+                    // available gas
+                    gas,
+                    // The address for the chosen procedure which we
+                    // obtained earlier
+                    account,
+                    // The amount of Ether to send to the recipient
+                    amount,
+                    // The starting memory offset of the input data
+                    ins,
+                    // The length of the input data
+                    inl,
+                    // The starting memory offset to place the output data
+                    // We are using returndatasize and returndata copy so we set
+                    // it to zero
+                    0,
+                    // The length of the output data
+                    // We are using returndatasize and returndata copy so we set
+                    // it to zero
+                    0)
+                let returnLength := returndatasize
+                let retLoc := malloc(returnLength)
+                returndatacopy(retLoc, 0, returnLength)
+                if iszero(status) {
+                    let errStore := malloc(0x20)
+                    mstore(errStore,add(22,mload(retLoc)))
+                    revert(errStore,0x20)
+                }
+                if status {
+                    return(retLoc,returnLength)
+                }
+            }
+        } else {
+            assembly {
+                // 33 means the capability was rejected
+                mstore(0,33)
+                revert(0,0x20)
+            }
+        }
+        return;
+    }
+
+
     // Create a validated procedure.
     function _registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) internal returns (uint8 err, address retAddress) {
         if (validateContract(procedureAddress) == 0) {
@@ -593,17 +704,22 @@ contract Kernel is Factory, IKernel {
     }
 
 
-    function _executeProcedure(bytes24 name, string fselector, bytes payload) internal returns (uint256 retVal) {
+    function _executeProcedure(bytes24 name, string fselector, bytes payload) internal returns (bytes memory output) {
         // // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
-            retVal = 1;
-            return;
+            assembly {
+                mstore8(0,1)
+                return(0,1)
+            }
         }
         // Check whether the address exists
         bool exist = procedures.contains(name);
         if (!exist) {
-            retVal = 3;
-            return;
+            assembly {
+                mstore8(0,3)
+                return(0,1)
+            }
+            
         }
         // TODO: I believe this should use the keyindex
         // assembly {
@@ -702,26 +818,25 @@ contract Kernel is Factory, IKernel {
             }
 
             status := callcode(gas,procedureAddress,0,ins,inl,0,0)
-            // copy the return data to memory based on its size
-            let retSize := returndatasize
-            let retLoc := malloc(retSize)
-            returndatacopy(retLoc, 0, retSize)
+            
             // Zero-out the currentProcedure
             sstore(currentProcedure_slot,0)
-            if eq(status,0) {
-                let errStore := malloc(0x20)
-                mstore(errStore,add(220000,mload(retLoc)))
-                // mstore(0x40,235)
-                // log1(errStore,0x20,"returnedErr")
-                return(errStore,0x20)
+            // copy the return data to memory based on its size
+            if iszero(status) {
+                let retSize := add(0x1,returndatasize)
+                let retLoc := malloc(retSize)
+                returndatacopy(add(0x1,retLoc), 0, returndatasize)
+                mstore8(retLoc, 0x55)
+                // TODO: should be revert, but the current web3 implementation
+                // won't give us this data, so we return.
+                return(retLoc, retSize)
             }
-            if eq(status,1) {
-                // log1(outs,outl,"returned")
+            if status {
+                let retSize := returndatasize
+                let retLoc := malloc(retSize)
+                returndatacopy(retLoc, 0, returndatasize)
                 return(retLoc,retSize)
             }
-        }
-        if (!status) {
-            retVal = 85;
         }
     }
 }

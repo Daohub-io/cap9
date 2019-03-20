@@ -8,7 +8,7 @@ contract BeakerContract is IKernel {
     function this_proc() internal view returns (ProcedureTable.Procedure memory) {
         return ProcedureTable._getProcedureByKey(uint192(currentProcedure));
     }
-    
+
     // TODO: this doesn't actually use caps, just reads raw
     function read(uint256 location) internal view returns (uint256 result) {
         assembly {
@@ -149,6 +149,61 @@ contract BeakerContract is IKernel {
         }
   }
 
+  function proc_acc_call(uint8 capIndex, address account, uint256 amount, uint256[] input) internal returns (uint32 err, bytes memory output) {
+        assembly {
+            function malloc(size) -> result {
+                // align to 32-byte words
+                let rsize := add(size,sub(32,mod(size,32)))
+                // get the current free mem location
+                result :=  mload(0x40)
+                // Bump the value of 0x40 so that it holds the next
+                // available memory location.
+                mstore(0x40,add(result,rsize))
+            }
+
+            let inputSize := mul(mload(input), 0x20)
+            let bufSize := add(0x80, inputSize)
+
+            let buf := malloc(bufSize)
+
+            // First set up the input data
+            // The acc call call is 0x-09
+            mstore(add(buf,0x0),0x09)
+            // The capability index
+            mstore(add(buf,0x20),capIndex)
+            // The address of the account/contract
+            mstore(add(buf,0x40),account)
+            // The wei to be sent
+            mstore(add(buf,0x60),amount)
+
+            // The data from 0x80 onwards is the data we want to send to
+            // this procedure
+            let inputStart := add(input, 0x20)
+            let bufStart := add(buf, 0x80)
+
+            for { let n:= 0 } iszero(eq(n, inputSize)) { n := add(n, 32)} {
+                mstore(add(bufStart, n), mload(add(inputStart, n)))
+            }
+
+            let x := delegatecall(gas, caller, add(buf,31), sub(bufSize, 31), 0x0, 0x0)
+
+            let outSize := returndatasize
+                output := malloc(add(outSize, 0x20))
+                mstore(output, outSize)
+                returndatacopy(add(output, 0x20), 0, outSize)
+
+            if x {
+                // success condition
+                err := 0
+            }
+
+            if iszero(x) {
+                // error condition
+                err := 1
+            }
+        }
+  }
+
   function proc_reg(uint8 capIndex, bytes32 procId, address procAddr, uint256[] caps) internal returns (uint32 err) {
     uint256 nCapKeys = caps.length;
     bytes memory input = new bytes(97 + nCapKeys*32);
@@ -253,7 +308,7 @@ contract BeakerContract is IKernel {
     bytes memory input = new bytes(5 * 0x20);
     bytes memory ret = new bytes(0x20);
     uint256 retSize = ret.length;
-    
+
     assembly {
         let ins := add(input, 0x20)
         let retLoc := add(ret, 0x20)
@@ -286,7 +341,7 @@ contract BeakerContract is IKernel {
     bytes memory input = new bytes(6 * 0x20);
     bytes memory ret = new bytes(0x20);
     uint256 retSize = ret.length;
-    
+
     assembly {
         let ins := add(input, 0x20)
         let retLoc := add(ret, 0x20)
@@ -315,12 +370,12 @@ contract BeakerContract is IKernel {
     }
     return err;
   }
-  
+
   function proc_log3(uint8 capIndex, uint32 t1, uint32 t2, uint32 t3, uint32 value) internal returns (uint32 err) {
     bytes memory input = new bytes(7 * 0x20);
     bytes memory ret = new bytes(0x20);
     uint256 retSize = ret.length;
-    
+
     assembly {
         let ins := add(input, 0x20)
         let retLoc := add(ret, 0x20)
@@ -356,7 +411,7 @@ contract BeakerContract is IKernel {
     bytes memory input = new bytes(8 * 0x20);
     bytes memory ret = new bytes(0x20);
     uint256 retSize = ret.length;
-    
+
     assembly {
         let ins := add(input, 0x20)
         let retLoc := add(ret, 0x20)

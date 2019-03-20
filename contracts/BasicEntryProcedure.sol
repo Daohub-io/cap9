@@ -28,7 +28,6 @@ contract BasicEntryProcedure {
         // }
         // Call the requested procedure
         // Begin our call
-        bytes32 res;
         assembly {
             function malloc(size) -> result {
                 // align to 32-byte words
@@ -39,7 +38,8 @@ contract BasicEntryProcedure {
                 // available memory location.
                 mstore(0x40,add(result,rsize))
             }
-            let ins := malloc(128)
+            let payloadLength := sub(calldatasize,24)
+            let ins := malloc(add(0x80,payloadLength))
             // First set up the input data (at memory location 0x0)
             // The call call is 0x-03
             mstore(add(ins,0x0),0x03)
@@ -47,28 +47,22 @@ contract BasicEntryProcedure {
             mstore(add(ins,0x20),0x02)
             // The key of the procedure
             mstore(add(ins,0x40),procedureKey)
-            // The size of the return value we expect (0x20)
-            let retSize := 0x20
-            let retLoc := malloc(retSize)
-            mstore(add(ins,0x60),retSize)
 
             // Copy the payload data into the input buffer
-            let payloadLength := sub(calldatasize,24)
             calldatacopy(add(ins,0x80),24,payloadLength)
-            // log0(add(ins,0x80),4)
             // "in_offset" is at 31, because we only want the last byte of type
-            // "in_size" is 65 because it is 1+32+32+32+4
-            // we will store the result at 0x80 and it will be 32 bytes
-            if iszero(delegatecall(gas, caller, add(ins,31), add(97,payloadLength), retLoc, retSize)) {
-                mstore(retLoc,add(2200,mload(retLoc)))
-                return(retLoc,retSize)
+            // "in_size" is 97 because it is 1+32+32+32+4
+
+            let status := delegatecall(gas, caller, add(ins,31), add(97,payloadLength), 0, 0)
+            let retLoc := malloc(returndatasize)
+            returndatacopy(retLoc,0,returndatasize)
+            if status {
+                // success condition
+                return(retLoc, returndatasize)
             }
-            res := mload(retLoc)
-            return(retLoc,retSize)
+            // error condition
+            revert(retLoc, returndatasize)
         }
-        // log0(res);
-        // log0(bytes32("call complete"));
-        // End procedure call
     }
 
     // This is simple function for testing that simply returns the number 37

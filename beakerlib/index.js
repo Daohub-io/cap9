@@ -9,7 +9,7 @@ const CAP_TYPE = {
     PROC_ENTRY           : 6,
     STORE_WRITE          : 7,
     LOG                  : 8,
-    GAS_SEND             : 9
+    ACC_CALL             : 9
 }
 
 exports.CAP_TYPE = CAP_TYPE;
@@ -192,6 +192,34 @@ class SetEntryCap extends Cap {
     }
 }
 exports.SetEntryCap = SetEntryCap;
+
+class AccCallCap extends Cap {
+    constructor(callAny, sendValue, ethAddress) {
+        super(CAP_TYPE.ACC_CALL);
+        this.callAny = callAny;
+        this.sendValue = sendValue;
+        this.ethAddress = ethAddress;
+    }
+    // Format the capability values into the values that will be stored in the
+    // kernel. Must be defined for all subclasses
+    keyValues() {
+        let callAny;
+        let sendValue;
+        if (this.callAny) {
+            callAny = 1;
+        } else {
+            callAny = 0;
+        }
+        if (this.sendValue) {
+            sendValue = 1;
+        } else {
+            sendValue = 0;
+        }
+        const val = Array.from([callAny, sendValue, this.ethAddress]);
+        return val;
+    }
+}
+exports.AccCallCap = AccCallCap;
 
 exports.SysCallResponse = {
     SUCCESS: 0,

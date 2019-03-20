@@ -50,7 +50,7 @@ contract TestKernel is Kernel {
         return _deleteProcedure(name);
     }
 
-    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint256 retVal) {
+    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (bytes memory) {
         return _executeProcedure(name, fselector, payload);
     }
 }
