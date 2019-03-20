@@ -1,0 +1,1111 @@
+\documentclass[english,a4paper]{article}
+\usepackage{lmodern}
+\usepackage{float}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{multirow,tabularx}
+\usepackage{fixltx2e} % provides \textsubscript
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+
+\usepackage{microtype}
+\usepackage[unicode=true]{hyperref}
+\usepackage[usenames,dvipsnames]{color}
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            pdfauthor={},
+            pdftitle={},
+            colorlinks=true,
+            citecolor=blue,
+            urlcolor=blue,
+            %linkcolor=magenta,
+            pdfborder={0 0 0}}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{listings}
+
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+
+
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\subsubsection\undefined\else
+\let\oldparagraph\subsubsection
+\renewcommand{\subsubsection}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+{\renewcommand{\arraystretch}{1.5}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+\title{Beaker Specification}\label{beaker-specification}
+
+\author{Jacob Payne \and Jake O'Shannessy \and Alexey Troitskiy}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}\label{abstract}
+
+We describe a secure and extensible operating system for smart contracts. Using
+a capability-based exokernel protocol, we can facilitate secure isolation,
+perform upgrades in a secure and robust manner, and prevent privilege escalation
+at any point in the development process. The protocol is intended to serve as an
+open standard and building block upon which more advanced and tailored security
+models can be built.
+
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Definitions}\label{definitions}
+
+\subsection{Kernel Instance}
+A kernel instance is an Ethereum contract which using the Beaker kernel. It is
+this contract that holds the storage data etc. of the system.
+
+\section{Kernel Storage}\label{kernel-storage}
+This is a critical feature. \emph{All} data stored by the kernel is stored in a
+region of \emph{storage} called \emph{kernel storage}. \emph{No} other data can
+be stored in \emph{kernel storage}.
+
+This kernel storage is defined as all storage locations within a certain storage
+range. All values in kernel storage share the same storage key prefix. This
+prefix is currently \texttt{0xff ff ff ff}, and so currently includes all values in the interval
+[\texttt{0xffffffff00} $\cdots$ \texttt{00}, \texttt{0xffffffffff} $\cdots$ \texttt{ff}].
+
+\begin{table}[H]
+  \caption{Overview of kernel storage layout.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c | c | c | c | c | X }
+    \hline
+    \texttt{0x} & \texttt{00 - 03} & \texttt{04} & \texttt{05 - 1f} & \texttt{1e - 20} & Description \\
+    \hline
+    \hline
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{00} & Proc Key & $\cdots$ & Procedure Heap \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{01} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & \# of Procedures\\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{01} & Key Index & \texttt{00 00 00} & Procedure List \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{02} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Kernel Address \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{03} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Current Procedure \\
+    \texttt{0x} & \texttt{ff ff ff ff} & \texttt{04} & \texttt{00 $\cdots$ 00} & \texttt{00 00 00} & Entry Procedure \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\section{Procedures}\label{procedures}
+Data about procedure is store in 2 locations: the procedure table, and the
+procedure heap. The procedure table is simply a managed, enumerable, and
+iterable list of procedure keys (procedure key being something that identifies a
+particular procedure). The data associated with a procedure, such as its
+Ethereum address and its capabilities are stored on the procedure heap. Given a
+procedure key, the data associated with a procedure can be located using that
+key.
+
+\subsection{Procedure Key}
+Each procedure is defined by a procedure key. This key is a sequence of 24 8-bit
+bytes. This is treated as a sequence of 192~bits in all cases.
+
+The kernel itself treats the procedure keys as an opaque 192-bit value, however,
+the capability system and some functions apply prefixes to these key value. For
+example: capabilities that rely on procedure key values will often use a prefix
+value to define a range of keys. This allows one to defined a hierarchy of
+procedures, much like a directory structrue. See those capabilities for more
+detail.
+
+\subsection{Procedure Index}
+Each procedure key included in the kernel is given an index, which identifies
+the procedure in the procedure list. It is 1-based, that is the first value is 1,
+and the value 0 is a null value.
+
+As shown below, the maximum number of procedures is $2^{24} - 1 = 16,777,215$,
+therefore the maxium value of the procedure index is $16,777,215$, therefore the procedure
+index lies in the range $\left[1,1677215\right]$.
+
+For this reason the procedure index is specified as 24 bytes.
+
+\subsection{Procedure List}\label{procedure-table}
+The procedure list is simply an array of storage values. The first value is the
+length of this list, and the subsequent values are the procedure keys of the
+list.
+
+When a procedure is added to the kernel:
+
+\begin{enumerate}
+  \item The procedure data is added to the procedure heap (see
+  Section~\ref{procedure-heap}).
+  \item The procedure key is appended to the end of the array.
+  \item If the length value is equal to the maximum procedure index value,
+  abort.
+  \item The length value (the first value) is incremented by one.
+  \item The procedure index value (in procedure metadata) is set to the new
+  length value.
+\end{enumerate}
+
+When a procedure is deleted from the kernel:
+
+\begin{enumerate}
+  \item If the procedure key is the same as the Entry Procedure Key, abort and
+  throw an error.
+  \item If the procedure key does not exist in the list (i.e. when looking on
+  the procedure heap no procedure index is associated with it), abort and throw
+  an error.
+  \item The length value is decremented by one.
+  \item If the procedure being deleted is not the last in the list (i.e. it's
+  procedure index does not equal the length of the procedure list), the last in
+  the list is copied to overwrite the key being deleted. This also accounts for
+  the case of an empty list.
+\end{enumerate}
+
+It is important to note that none of these steps consider deletion (zeroing) of
+data. This is optional for efficiency and can be performed any time after the
+length value has been decremented.
+
+The procedure table is stored under the prefix \texttt{0xff ff ff ff 01}. The
+maximum number of keys held under this configuration is $2^{24} - 1 =
+16,777,215$ (1 is subtracted to account for the length value occupying a single
+space). This is one less than the total number of procedures that can be held by
+the kernel (which is $2^{24} = 16,777,216$).
+
+\begin{verbatim}
+  0xff ff ff ff 01 + 24 more bytes + 3 zero bytes
+\end{verbatim}
+
+\begin{table}[H]
+  \caption{Procedure table.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{l|X}
+    \hline
+    Storage Location & Description\\
+    \hline
+    \hline
+    \texttt{0xff ff ff ff 01}     & length/number of procedures
+      \\
+    \texttt{0xff ff ff ff 01} + keyIndex & procedure key/name: 24 bytes
+      \\
+    ~~~$\vdots$ & capabilities in series \\
+    \texttt{0xff ff ff ff 01} + n & procedure key/name for procedure $n$
+      \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Procedure Heap}\label{procedure-heap}
+
+Procedure data is stored using the key \texttt{0xff ff ff ff 00}. This is
+combined with the procedure key to produce the following:
+
+\begin{verbatim}
+  0xff ff ff ff 00 + 24 bytes procedure key + 3 bytes data offset
+\end{verbatim}
+
+This leaves 3 bytes at the end of the storage location key. If the first of
+these bytes is 0x00, the storage key refers to various metadata of the
+procedure, including the location of its contract. If the first byte is any
+other value, then the storage key corresponds to the list of capabilities of
+that type. For example, the type of the write procedure is 7, so if the first of
+the last 3 bytes is 0x07, then that storage key refers to a capability of the
+write type.
+
+The second value is the index into the capability list. If the second value is
+0x00, this indicates the number of capabilities in this list. Therefore the
+capabilities start at 0x01. For example, if the third last and second last
+values are 0x0703, this refers to the third write capability (capability at
+index 0x02) held by this procedure. This implicitly limits the number of
+capabilities \emph{per type} to 255 (256 minus 1 for the length value).
+
+The very last value is an offset into the capability data. The meaning of this
+is different for each capability as they each have different formats. The format
+of each capability is specified in Section~\ref{syscalls-and-caps}.
+
+\includegraphics[width=\textwidth]{media/ProcedureKeyLocation.pdf}
+
+The following table outlines what data is found at each of the different
+locations specified by the \emph{Data Offset}.
+
+\begin{table}[H]
+  \caption{Procedure data.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c | c | c | c | X }
+    \hline
+    \multicolumn{4}{c|}{Data Offset} & Description \\
+    \hline
+    \hline
+    \texttt{0x} & \texttt{00} & \texttt{00} & \texttt{00} & Address: 20 bytes,
+      aligned right in the 32 bytes \\
+    \texttt{0x} & \texttt{00} & \texttt{00} & \texttt{01} & Procedure Index: 24 bytes,
+      aligned right in the 32 bytes \\
+    \texttt{0x} & \texttt{$ty$} & \texttt{00} & \texttt{00} & The number of
+      capabilities of type \texttt{0x$ty$}. \\
+    \texttt{0x} & \texttt{$ty$} & \texttt{$in$} & \texttt{$of$} & Capability of
+      type \texttt{0x$ty$}, with index \texttt{0x$in-1$}, and offset
+      \texttt{0x$of$} into that capability. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\section{System Calls and Capabilities}\label{syscalls-and-caps}
+All system calls are transactions to the kernel. The transaction data is defined
+as follows:
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Byte Offset & Description\\
+    \hline
+    \hline
+    0x00 & 1 byte, system call value \\
+    0x01 & 1 bytes, the capability index, [0-254] \\
+    0x02 & The system call data as defined by each system call \\
+    ~~~$\vdots$ &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+If the transaction data is longer that specified by the system call format, the
+additional data is simply ignored. \textbf{TODO:} We should consider throwing an
+error on this.
+
+System call numbers match capability numbers.
+
+\begin{table}[H]
+  \caption{System call and capability numbers.\label{syscall-numbers}}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Type Value & Description\\
+    \hline
+    \hline
+    0x0 & Null capability / noop \\
+    % 0x1 & The system call data as defined by each system call \\
+    % 0x2 & The system call data as defined by each system call \\
+    0x3 & Call Procedure \\
+    0x4 & Register Procedure \\
+    0x5 & Delete Procedure \\
+    0x6 & Set Entry Procedure \\
+    0x7 & Write \\
+    0x8 & Log \\
+    0x9 & Gas Send \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Executing a System Call}
+The running code will issue a transaction to the kernel by perfoming a
+DELEGATECALL to the kernel with the transactions message data as both above and
+in the definitons of each capability. The system call will be processed as
+follows:
+
+\begin{enumerate}
+  \item The kernel will receive the transaction as defined by the EVM.
+  \item The kernel will read the first byte of the transaction data as an
+  unsigned 8-bit integer. This value is $s$.
+  \item If $s$ is not one of the values listed in Table~\ref{syscall-numbers}
+  then the kernel will revert the current transaction (i.e. the DELEGATECALL)
+  and return the error code \texttt{SYSCALL\_NOEXIST} (error codes are defined
+  in Section~\ref{errors}).
+  \item If $s$ is 0, it will do nothing and return successfully.
+  \item Otherwise the control will be passed to the code in the kernel
+  corresponding to the $s$. For example if $s = \text{0x4}$, then the code for
+  executing a Register Procedure syscall will be called.
+  \item This code will execute and return whatever value it deems appropriate.
+\end{enumerate}
+
+\subsection{Return and Error Codes}\label{errors}
+This section defines return and error codes for interacting with the kernel.
+These values are returned by system calls \emph{only} in the event of a failure
+of the kernel, in which case the DELEGATECALL will have been reverted. As a
+result, these error codes are provided only when the kernel reverts, if the
+DELEGATECALL returns normally, whatever is returned is determined by the
+procedure being called. That is, the DELEGATECALL should leave a 0 on the stack.
+
+The error code is always 8-bits, and may followed by additional data.
+
+Therefore:
+
+\begin{itemize}
+  \item If 1 is left on the stack after the DELEGATECALL of a system call, then
+  the system call succeeded, and whatever data was returned was returned by
+  system call.
+  \item If 0 is left on the stack after the DELEGATECALL of a system call, then
+  the system call failed, and whatever data was returned is defined in the table
+  below.
+\end{itemize}
+
+\begin{table}[H]
+  \caption{Return and error codes.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{l|c|X|X}
+    \hline
+    Type & Value & Additional Data & Description \\
+    \hline
+    \hline
+    SYSCALL\_BADCAP  & 33 & None & Capability insufficient. \\
+    SYSCALL\_NOGAS   & 44 & None & Procedure execution ran out of gas. \\
+    SYSCALL\_REVERT  & 55 & Returned data from procedure & The called
+      procedure reverted. \\
+    SYSCALL\_FAIL    & 66 & System call specific error data & The system call
+      failed for reasons specific to the system call. \\
+    SYSCALL\_NOEXIST & 111 & None & The syscall integer values is not a valid
+      syscall as defined in Table \ref{syscall-numbers}. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Capability Subsets}\label{cap-subsets}
+
+Capability $B$ is a subset\footnote{$A$ subset, not a \emph{strict} or
+\emph{proper} subset.} of Capability $A$, if everything that can be done using
+Capability $B$ can be done using Capabilty $A$. The following rules apply:
+
+\begin{itemize}
+  \item $A$ is always a subset of itself. $A \subseteq A$
+  \item Transitivity: $A \subseteq B \land B \subseteq C \implies A
+  \subseteq C$
+\end{itemize}
+
+As the nature of each capability is different, the way subsets are defined is
+different for each one. The following sections will define how subsets are
+defined for each capability.
+
+\subsection{Procedure Call System Call}
+
+\subsubsection{System Call Format}
+Type Value: 3
+
+Data: Note that here the offset is from after system call type.
+
+Note that here we could pack the data much more densely, but we don't in order
+to err on the side of simplicity and stick as close as we can to 32-byte values.
+
+\begin{table}[H]
+  \caption{Call procedure system call format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Byte Offset & Description \\
+    \hline
+    \hline
+    \texttt{0x00} & Procedure key, 24 bytes \\
+    \texttt{0x18} & Payload for the procedure \\
+    ~~~$\vdots$ &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Format}
+The capability format for the Call Procedure system call defines the a range of
+procedure keys what the capability allows one to call. This is defined as a base
+procedure key $b$ and a prefix $s$. Given this capability, a procedure may call
+any procedure where the first $s$ bits of the key of that procedure key are the
+same as the first $s$ bits of procedure key $b$.
+
+The values of this capability are packed into a single 32-byte value.
+
+\begin{table}[H]
+  \caption{Call procedure capability format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|X}
+    \hline
+    Key Offset & Byte Offset & Description \\
+    \hline
+    \hline
+    \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
+    \texttt{0x00} & \texttt{0x01 - 0x07} & Unused and undefined. \\
+    \texttt{0x00} & \texttt{0x08 - 0x1f} & The 24 bytes of the base procedure key. \\
+    \hline
+    End &   \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\includegraphics[width=\textwidth]{media/ProcedureKeyBytes.pdf}
+
+\subsubsection{Capability Subsets}
+As defined in Section~\ref{cap-subsets}, each capability has subsets and
+supersets. For the call capability a subset is capability which possesses the
+ability to call no more procedures than the original.
+
+The prefix size of a capability $C$ is given as $C_s$ and the base procedure key
+$C_b$. Given a call procedure capability $A$ and a proposed subset $B$:
+\begin{itemize}
+  \item If the prefix size of $B$ is equal to or greater than $A$ (that is: $B_s
+  \geq A_s$), and
+  \item If the first $B_s$ bits of $B_b$ is equal to the first $A_s$ bits of
+  $A_b$.
+\end{itemize}
+
+\subsubsection{Error Codes}
+If the Call Procedure system call fails for any reason other than those
+general system call failure conditions, the system call will return
+\texttt{SYSCALL\_FAIL} (as definted in Section~\ref{errors}) followed by one of
+the following codes.
+
+\begin{table}[H]
+  \caption{Return and error codes.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|l|X}
+    \hline
+    Type & Value & Additional Data & Description \\
+    \hline
+    \hline
+    CALL\_NOPROC  & 33 & None & The procedure key specified does not exist. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Call
+Procedure system call was executed with a procedure key that does not exist then
+the DELEGATECALL will leave a 0 on the stack and return two bytes
+(\texttt{0x6633}).
+
+\subsection{Register Procedure System Call}
+
+\subsubsection{System Call Format}
+Type Value: 4
+
+Data: min(96 bytes) max(96 bytes)
+
+\begin{table}[H]
+  \caption{Register procedure system call structure.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Byte Offset & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & Procedure key; 24 bytes \\
+    \texttt{0x18} & Procedure address; 20 bytes\\
+    ~~~$\vdots$ & Capabilities; A series of 32 byte values which correspond
+    exactly to the keys as defined in Table~\ref{reg-cap-format}. The length of
+    this list is not provided. \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\begin{table}[H]
+  \caption{Capability data as sent in the Register Procedure system call.\label{reg-cap-format}}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Key Offset & Description \\
+    \hline
+    \hline
+    \texttt{0x00}       & CapSize: 2 bytes, aligned right in the 32 bytes, the given
+      name \\
+    \texttt{0x01}       & CapType: 1 byte, aligned right in the 32 bytes \\
+    \texttt{0x02}       & key value \#1: 32 bytes \\
+    ~~~$\vdots$ & capabilities in series \\
+    CapSize & final key value \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Format}
+The capability format for the Register Procedure system call defines the a range
+of procedure keys what the capability allows one to call. This is defined as a
+base procedure key $b$ and a prefix $s$. Given this capability, a procedure may
+call any procedure where the first $s$ bits of the key of that procedure key are
+the same as the first $s$ bits of procedure key $b$.
+
+\textbf{NB:} Register procedure also relies on all of the other capabilities
+possessed by a procedure to determine what capabilities the new procedure will
+have.
+
+\begin{table}[H]
+  \caption{Register procedure capability format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|X}
+    \hline
+    Key Offset & Byte Offset & Description \\
+    \hline
+    \hline
+    \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
+    \texttt{0x00} & \texttt{0x01 - 0x07} & Unused and undefined. \\
+    \texttt{0x00} & \texttt{0x08 - 0x1f} & The 24 bytes of the base procedure key. \\
+    \hline
+    End &   \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\includegraphics[width=\textwidth]{media/ProcedureKeyBytes.pdf}
+
+\subsubsection{Capability Subsets}
+As defined in Section~\ref{cap-subsets}, each capability has subsets and
+supersets. For the register procedure capability a subset is capability which
+possesses the ability to register no more procedures than the original.
+
+The prefix size of a capability $C$ is given as $C_s$ and the base procedure key
+$C_b$. Given a register procedure capability $A$ and a proposed subset $B$:
+\begin{itemize}
+  \item If the prefix size of $B$ is equal to or greater than $A$ (that is: $B_s
+  \geq A_s$), and
+  \item If the first $B_s$ bits of $B_b$ is equal to the first $A_s$ bits of
+  $A_b$.
+\end{itemize}
+
+\subsubsection{Function}
+This registers a new procedure which already exists as a contract at a certain
+address, giving it a name an a list of capabilities. It does a number of things:
+
+\begin{itemize}
+  \item Validate the code at the given address to show that it complies with the
+  requirements of procedure code as described in
+  Section~\ref{bytecode-validation}.
+  \item Add the procedure name to the procedure list.
+  \item Store the specified capabilities with the procedure, but only if each of
+  the capabilities is found to be a subset of one of the capabilities of the
+  procedure performing this system call.
+\end{itemize}
+
+There are two highly critical functions here upon which the safety of the kernel
+relies. The first is the validation of the procedure bytecode, which is covered
+in Section~\ref{bytecode-validation}, but it is also necessary to ensure that
+the capabilities that are being asked to be given to the new procedure can be
+provided by the current procedure. In order to satisfy this constraint it must
+be shown that for every requested procedure, there exists a capability in the
+capability list of the current procedure. It is currently not able to
+``combine'' capabilities. That is, if the procedure has a capability of
+Write(0x80,5) and Write(0x85,5) it cannot provide a capability Write(0x80,10)
+even though it theoretically still able to perform the same writes.
+
+The algorithm is as follows:
+
+\begin{enumerate}
+  \item For each of the capabilities in the list of requested capabilities,
+  search though the list of the current procedures capabilities until a superset
+  of the requested capability is found.
+  \item If for any of the requested capabilities a superset is not found, abort
+  the entire process.
+  \item If for all of the requested capabilities a superset is found, register
+  the capability.
+\end{enumerate}
+
+\subsubsection{Error Codes}
+If the Register Procedure system call fails for any reason other than those
+general system call failure conditions, the system call will return
+\texttt{SYSCALL\_FAIL} (as definted in Section~\ref{errors}) followed by one of
+the following codes.
+
+\begin{table}[H]
+  \caption{Return and error codes.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|l|X}
+    \hline
+    Type & Value & Additional Data & Description \\
+    \hline
+    \hline
+    REG\_TOOMANYCAPS  & 77 & None & Too many caps were provided. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Register
+Procedure system call was executed but provides too many capabilities then the
+DELEGATECALL will leave a 0 on the stack and return two bytes (\texttt{0x6677}).
+
+\subsection{Delete Procedure System Call}
+
+\subsubsection{System Call Format}
+Type Value: 5
+
+Data: min(64 bytes) max(64 bytes)
+
+\begin{table}[H]
+  \caption{Delete procedure system call.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Byte Offset & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & Procedure key; 24 bytes \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Format}
+The capability format for the Delete Procedure system call defines the a range
+of procedure keys what the capability allows one to delete. This is defined as a
+base procedure key $b$ and a prefix $s$. Given this capability, a procedure may
+delete any procedure where the first $s$ bits of the key of that procedure key are
+the same as the first $s$ bits of procedure key $b$.
+
+\begin{table}[H]
+  \caption{Delete procedure capability format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|X}
+    \hline
+    Key Offset & Byte Offset & Description \\
+    \hline
+    \hline
+    \texttt{0x00} & \texttt{0x00} & The prefix, which is in the interval [0,24]. \\
+    \texttt{0x00} & \texttt{0x01 - 0x07} & Unsed and undefined. \\
+    \texttt{0x00} & \texttt{0x08 - 0x1f} & The 24 bytes of the base procedure key. \\
+    \hline
+    End &   \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\includegraphics[width=\textwidth]{media/ProcedureKeyBytes.pdf}
+
+\subsubsection{Capability Subsets}
+As defined in Section~\ref{cap-subsets}, each capability has subsets and
+supersets. For the delete procedure capability a subset is capability which
+possesses the ability to delete no more procedures than the original.
+
+The prefix size of a capability $C$ is given as $C_s$ and the base procedure key
+$C_b$. Given a delete procedure capability $A$ and a proposed subset $B$:
+\begin{itemize}
+  \item If the prefix size of $B$ is equal to or greater than $A$ (that is: $B_s
+  \geq A_s$), and
+  \item If the first $B_s$ bits of $B_b$ is equal to the first $A_s$ bits of
+  $A_b$.
+\end{itemize}
+
+\subsection{Set Entry Procedure System Call}
+The value of the Entry Procedure is 24-byte procedure key which identified which
+procedure should be first called upon receiving a transaction. This is currently
+store at the storage location:
+
+\texttt{0x00 00 00 00 {\color{blue} 04} 00 $\cdots$ 00 00 00 00}
+
+\subsubsection{Error Codes}
+If the Delete Procedure system call fails for any reason other than those
+general system call failure conditions, the system call will return
+\texttt{SYSCALL\_FAIL} (as definted in Section~\ref{errors}) followed by one of
+the following codes.
+
+\begin{table}[H]
+  \caption{Return and error codes.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|l|X}
+    \hline
+    Type & Value & Additional Data & Description \\
+    \hline
+    \hline
+    DEL\_NOPROC  & 33 & None & The procedure key specified does not exit. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Delete
+Procedure system call was executed with a procedure key that does not exist then
+the DELEGATECALL will leave a 0 on the stack and return two bytes
+(\texttt{0x6633}).
+
+\subsubsection{System Call Format}
+
+Type Value: 6
+
+Data: min(64 bytes) max(64 bytes)
+
+\begin{table}[H]
+  \caption{Set entry procedure system call format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Byte Offset & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & Procedure key; 24 bytes \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Format}
+This capability has no associated data and is therefore of size zero.
+
+\subsubsection{Capability Subsets}
+As defined in Section~\ref{cap-subsets}, each capability has subsets and
+supersets. As the Set Entry Procedure capability is a trivial value, there is
+only one value for Set Entry Procedure capabilities and they are all equal.
+
+Given a Set Entry Procedure capability $A$ and any other Set Entry Procedure
+capability $B$, not only is $B \subseteq A$ but also $B = A$.
+
+\subsubsection{Function}
+The only possible state change is the "entryProcedure" value. No other state
+changes should occur.
+
+\subsubsection{Error Codes}
+If the Set Entry Procedure system call fails for any reason other than those
+general system call failure conditions, the system call will return
+\texttt{SYSCALL\_FAIL} (as definted in Section~\ref{errors}) followed by one of
+the following codes.
+
+\begin{table}[H]
+  \caption{Return and error codes.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|l|X}
+    \hline
+    Type & Value & Additional Data & Description \\
+    \hline
+    \hline
+    SETENT\_NOPROC  & 33 & None & The procedure key specified does not exit. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\marginpar[Non-Normative]{\textbf{Non-Normative}}For example, if the Set Entry
+Procedure system call was executed with a procedure key that does not exist then
+the DELEGATECALL will leave a 0 on the stack and return two bytes
+(\texttt{0x6633}).
+
+\subsection{Write System Call}
+This system call will write a single 32-byte value under a single 32-byte key in
+the storage of the kernel instance.
+
+\subsubsection{System Call Format}
+Type Value: 7
+
+Data:
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Byte Offset & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & Write address; 32 bytes \\
+    \texttt{0x20} & Write values; 32 bytes \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Format}
+The write capability includes 2 values: the first is the base address where we
+can write to storage. The second is the number of \emph{additional} addresses we
+can write to. For example, if the first value is 0x8000, and the second value is
+0, we can write only to location 0x8000. If the second value was 5, we could
+write to 0x8000, 0x8000+1, 0x8000+2, 0x8000+3, 0x8000+4, and 0x8000+5.
+
+\begin{table}[H]
+  \caption{Write capability format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|X}
+    \hline
+    Key Offset & Value & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & $a$ & The base storage address\\
+    \texttt{0x01} & $n$ & The number of additional keys we can write to\\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Subsets}
+As defined in Section~\ref{cap-subsets}, each capability has subsets and
+supersets.
+
+Given a Write capability $A$ and a proposed subset $B$, where $C_a$ is the base
+address of capability $C$ and $C_n$ is the number of additional keys writable
+with capability $C$, $B \subseteq A \iff \left(B_a \geq A_a\right) \land
+\left(B_a + B_n \leq A_a + A_n\right)$.
+
+Or more verbosely, $B$ is only a subset of $A$ if and only if:
+\begin{itemize}
+  \item The lowest writable address (which is the base address) of $B$ is
+  greater than or equal to the lowest writable address of $A$, and
+  \item The highest writable address (which is base address plus the number of
+  additional keys) of $B$ is less than or equal to the highest writable address
+  of $A$.
+\end{itemize}
+
+\subsubsection{Error Codes}
+There are no specific error conditions for SSTORE, therefore only general system
+call errors are applicable.
+
+\subsection{Log System Call}
+
+\subsubsection{System Call Format}
+Type Value: 8
+
+Data: min(96 bytes) max(224 bytes)
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{l|X}
+    \hline
+    Byte Offset & Description \\
+    \hline
+    \hline
+    \texttt{0x00} & Number of topics (nTopics); 32 bytes \\
+    ... & Potentially topic value \#1; 32 bytes \\
+    ... & Potentially topic value \#2; 32 bytes \\
+    ... & Potentially topic value \#3; 32 bytes \\
+    ... & Potentially topic value \#4; 32 bytes \\
+    \texttt{0x40}+(nTopics $\times$ 0x20) & Log value 32 bytes \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Format}
+The Write capability includes between 0 and 4 values. Each value forces the use
+of a particular value. For example: if the capability has 1 value, then that
+means that the first topic in the log call must equal that. If it has 2 values
+then the first log topic must be the first of those values and the second topic
+must be the second of those values and so on. If there are no topics listed then
+there are no restrictions on what can be logged.
+
+This capability is 5 values. If the number of enforced topics is less than 4,
+then the unused values are undefined.
+
+\begin{table}[H]
+  \caption{Log capability format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|X}
+    \hline
+    Key Offset & Value & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & [0x00, 0x4] & Number of enforced topics; 32 bytes \\
+    \texttt{0x01} & $t_1$ & Potentially an enforced value for the first topic
+      \\
+    \texttt{0x02} & $t_2$ & Potentially an enforced value for the second topic
+      \\
+    \texttt{0x03} & $t_3$ & Potentially an enforced value for the third topic
+      \\
+    \texttt{0x04} & $t_4$ & Potentially an enforced value for the fourth topic
+      \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Subsets}
+As defined in Section~\ref{cap-subsets}, each capability has subsets and
+supersets.
+
+Given a Log capability $A$ and a proposed subset $B$, $B \subseteq A$ if and
+only if for each log topic of $A$ the topic is either undefined or equal to that
+of $B$.
+
+If $C_{t_i}$, where $i$ is $1$, $2$, $3$, or $4$, is the log topic $i$ of
+capability $C$, and $C_n$ is the number of defined topics:
+
+$$ \forall i \in \left\{1,2,\dots ,A_n\right\}. B_{t_i} = A_{t_i} $$
+
+\subsubsection{Error Codes}
+There are no specific error conditions for SSTORE, therefore only general system
+call errors are applicable.
+
+\subsection{External Call System Call}
+This system call uses the \texttt{CALL} functionality to call and/or send Ether
+to another address.
+
+\subsubsection{System Call Format}
+Type Value: 9
+
+Data:
+
+\begin{table}[H]
+  \caption{System call structure.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Byte Offset & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & Account address; 20-bytes \\
+    \texttt{0x14} & Value amount; 32 bytes \\
+    ~~~$\vdots$ & Payload for the contract \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Capability Format}
+There are three distinct values in the External Call capability:
+
+\begin{itemize}
+  \item The \textbf{CallAny} Flag: If this flag is true (the bit is set to 1)
+    then any Ethereum address can be called. If this flag is false (the bit is
+    set to 0) then only the address specified by EthAddress can be called.
+  \item The \textbf{SendValue} Flag: If this flag is true (the bit is set to 1)
+    then any quantity of Ether/Value can be sent as part of the call. If this
+    flag is false (the bit is set to 0) then no Ether/Value can be sent, and the
+    system call will only succeed if the value parameter is set to zero.
+  \item \textbf{EthAddress}: If CallAny is true, this value is undefined,
+  otherwise it is the single address that this capability permits to be called.
+\end{itemize}
+
+These three values are contained in a single storage key, formatted as per the
+table and diagram below. The CallAny flag is the first bit of the storage value,
+the SendValue flag is the second bit of the storage value, and the EthAddress is
+the last 20~bytes of the storage value.
+
+\begin{table}[H]
+  \caption{External call capability format.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|c|c|X}
+    \hline
+    Key Offset & Byte Offset & Bit Offset & Description \\
+    \hline
+    \hline
+    \texttt{0x00} & \texttt{0x00} & 0x0 & CallAny Flag: If 1, any address can be
+      called, else only specified EthAddress. \\
+    \texttt{0x00} & \texttt{0x00} & 0x1 & SendValue Flag: If 1, Ether can be
+      sent, else not. \\
+    \texttt{0x00} & \texttt{0x01 - 0x0b} & - & Unused and undefined. \\
+    \texttt{0x00} & \texttt{0x0c - 0x1f} & - & EthAddress: The 20 bytes of the
+      Eth address. \\
+    \hline
+    End & & & \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\includegraphics[width=\textwidth]{media/ExternalCallCapBytes.pdf}
+
+\subsubsection{Capability Subsets}
+As defined in Section~\ref{cap-subsets}, each capability has subsets and
+supersets.
+
+For a capability $C$:
+
+\begin{itemize}
+  \item $C_c$ is the CallAny flag.
+  \item $C_s$ is the SendValue flag.
+  \item $C_a$ is the optional EthAddress.
+\end{itemize}
+
+Given an External Call capability $A$ and any other External Call capability
+$B$, $B$ is a sunset of $A$ iff:
+
+\begin{itemize}
+  \item If $B_c$ is true, then $A_c$ must be true.
+  \item If $B_c$ is false, then $A_c$ must be true or $B_a$ must equal $A_a$.
+  \item If $B_s$ is true, then $A_s$ must be true.
+\end{itemize}
+
+If these conditions hold then $B$ is a subset of $A$. That is: $B \subseteq A
+\iff \left(B_c \implies A_c\right) \land ((\lnot B_c \implies A_c) \lor (B_a =
+A_a)) \land (B_a \implies A_s)$.
+
+\section{Procedure Bytecode Validation}\label{bytecode-validation}
+In order to be added to the procedure list of a kernel, the bytecode of a
+contract must be validated by the kernel and must conform to a strict set of
+requirements. These requirements are as follows:
+
+\begin{itemize}
+  \item All the opcodes must be on the whitelist as defined in Section~\ref{opcode-whitelist}, unless part
+  of a system call.
+  \item The first opcodes of the contract must form a valid execution guard as
+  defined in Section~\ref{execution-guard}.
+\end{itemize}
+
+
+\subsection{Whitelist}\label{opcode-whitelist}
+Generally the whitelist consists of all of the non-state-changing opcodes (REVERT being a notable exception). This
+\emph{must} be implemented as a whitelist and not a blacklist, as this should
+continue to work in the case that new state-changing opcodes are added to the
+VM.
+
+The table below contains the ranges of opcodes that are allowed.
+
+\begin{table}[H]
+  \caption{Opcode whitelist.}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c | X }
+    \hline
+    Range (Inclusive) & Description \\
+    \hline
+    \hline
+    \texttt{0x00} - \texttt{0x0b} & Stop and Arithmetic \\
+    \texttt{0x10} - \texttt{0x1a} & Comparison \& Bitwise Logic Operations \\
+    \texttt{0x20} & SHA3 \\
+    \texttt{0x30} - \texttt{0x3e} & Environmental Information \\
+    \texttt{0x40} - \texttt{0x45} & Block Information \\
+    \texttt{0x50} - \texttt{0x53} & Stack, Memory, Storage and Flow Operation - Part 1\\
+    \texttt{0x54} & SLOAD \\
+    \texttt{0x56} - \texttt{0x5b} & Stack, Memory, Storage and Flow Operation - Part 2 \\
+    \texttt{0x80} - \texttt{0x8f} & Duplication Operations \\
+    \texttt{0x90} - \texttt{0x9f} & Exchange Operations \\
+    \texttt{0xf3} & Return \\
+    \texttt{0x60} - \texttt{0x7f} & Push \\
+    \texttt{0xfa} & STATICCALL \\
+    \texttt{0xfd} & REVERT \\
+    \texttt{0xfe} & INVALID \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Execution Guard}\label{execution-guard}
+An execuation guard \emph{must} start at position \texttt{0x00} in the bytecode.
+It is defined as follows:
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\begin{minipage}{\linewidth}
+\small
+\begin{lstlisting}[language=c,commentstyle=\color{mygreen},basicstyle=\ttfamily,
+  identifierstyle=\color{blue},
+  caption=Sequence of steps which constitutes an execution guard.]
+0x00: PUSH 0xffffffff0200...00 // Push kernel addr. location
+0x21: SLOAD     // Load value to the stack
+0x22: PUSH 0x2a // Load value to the stack
+0x24: JUMPI     // Jump if kernel address non-zero
+0x25: PUSH1 0x00 // Revert data size
+0x27: PUSH1 0x00 // Revert data location
+0x29: REVERT    // Revert because we are not a kernel
+0x2a: JUMPDEST  // Destination to jump over
+\end{lstlisting}
+\end{minipage}
+
+\subsection{System Call}
+A system call is in the form:
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\begin{minipage}{\linewidth}
+\small
+\begin{lstlisting}[language=c,commentstyle=\color{mygreen},basicstyle=\ttfamily,
+  identifierstyle=\color{blue},
+  caption=Sequence of steps to perform a system call.]
+CALLER       // Get Caller
+GAS          // Put all the available gas on the stack
+DELEGATECALL // Delegate Call to Caller
+\end{lstlisting}
+\end{minipage}
+
+\end{document}
