@@ -29,15 +29,15 @@ const Invalid = {
 contract('Kernel with entry procedure', function (accounts) {
     describe('Delete capability', function () {
         const entryProcName = "EntryProcedure";
-        
+
         describe('When given cap to delete a specific procedure Id', function () {
             // * Introduces Procedure A and Procedure B into the procedure table.
-            // * Procedure A is designated a procedure delete capability (type `0x3`) 
+            // * Procedure A is designated a procedure delete capability (type `0x3`)
             //   that allows it to delete any procedure iff it has id `X`.
             // * Procedure B is not given any capabilities.
-            // * Procedure A removes Procedure B from the procedure table by 
+            // * Procedure A removes Procedure B from the procedure table by
             //   invoking it's capability **iff** Procedure B has a procedure id `X`.
-            
+
             // Procedure A is a contract with code that deletes a requested
             // procedure.
             const contractA = Valid.SysCallTestProcDelete;
@@ -136,7 +136,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // This uses a direct call to the kernel
                 await kernel.registerAnyProcedure(procAName, deployedEntryProc.address, capArrayEntryProc);
                 await kernel.registerAnyProcedure(procBName, deployedContractB.address, []);
-                await kernel.registerAnyProcedure(procCName, deployedContractB.address, []);       
+                await kernel.registerAnyProcedure(procCName, deployedContractB.address, []);
 
                 // Call the delete function to delete Procedure B, not Procedure C
                 {
@@ -358,10 +358,10 @@ contract('Kernel with entry procedure', function (accounts) {
 
                     const tx3 = await kernel.sendTransaction({data: manualInputData});
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: manualInputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
+                    // const valueX = web3.toBigNumber(valueXRaw);
                     // we execute a test function to ensure the procedure is
                     // functioning properly
-                    assert.equal(valueX.toNumber(), 0, "Should return a zero error code");
+                    assert.equal(valueXRaw, "0x", "Should return nothing");
                 }
 
 

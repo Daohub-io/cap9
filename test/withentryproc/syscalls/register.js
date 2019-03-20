@@ -165,7 +165,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash + web3.fromAscii(testProcName.padEnd(32*2,"\0")).slice(2) + deployedTestContract.address.slice(2).padStart(32*2,0);
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
+
                     // for (const log of tx3.receipt.logs) {
                     //     // console.log(`${log.topics} - ${log.data}`);
                     //     console.log(`${log.topics} - ${log.data}`);
@@ -177,7 +177,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     //     }
                     // }
                     // console.log(valueX.toNumber())
-                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "should succeed with zero errcode the first time");
                 }
 
                 const procedures4Raw = await kernel.listProcedures.call();
@@ -245,7 +245,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash + web3.fromAscii(testProcName.padEnd(32*2,"\0")).slice(2) + deployedTestContract.address.slice(2).padStart(32*2,0);
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
+
                     // for (const log of tx3.receipt.logs) {
                     //     // console.log(`${log.topics} - ${log.data}`);
                     //     console.log(`${log.topics} - ${log.data}`);
@@ -257,7 +257,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     //     }
                     // }
                     // console.log(valueX.toNumber())
-                    assert.equal(valueX.toNumber(), 4455, "should succeed with zero errcode the first time");
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "should succeed with zero errcode the first time");
                 }
 
                 const procedures4Raw = await kernel.listProcedures.call();
@@ -674,7 +674,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     // assert.strictEqual(inputData,)
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
+
                     // for (const log of tx3.receipt.logs) {
                     //     // console.log(`${log.topics} - ${log.data}`);
                     //     console.log(`${log.topics} - ${log.data}`);
@@ -686,7 +686,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     //     }
                     // }
                     // console.log(valueX.toNumber())
-                    assert.equal(valueX.toNumber(), 5599, "should succeed with zero errcode the first time");
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "should succeed with zero errcode the first time");
                 }
 
                 const procedures4Raw = await kernel.listProcedures.call();
@@ -785,7 +785,6 @@ contract('Kernel with entry procedure', function (accounts) {
                     // assert.strictEqual(inputData,)
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
                     // for (const log of tx3.receipt.logs) {
                     //     // console.log(`${log.topics} - ${log.data}`);
                     //     console.log(`${log.topics} - ${log.data}`);
@@ -797,7 +796,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     //     }
                     // }
                     // console.log(valueX.toNumber())
-                    assert.equal(valueX.toNumber(), 5599, "should succeed with zero errcode the first time");
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "should succeed with zero errcode the first time");
                 }
 
                 const procedures4Raw = await kernel.listProcedures.call();
