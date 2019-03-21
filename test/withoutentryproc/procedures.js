@@ -696,8 +696,24 @@ contract('Kernel without entry procedure', function (accounts) {
 
         it('should return an error if key does not exist (3)', async function () {
             const kernel = await Kernel.new();
-            const retVal = await kernel.executeProcedure.call('test', '', "");
-            assert.equal(retVal, 3);
+
+            const procName = "test";
+            const functionSpec = "executeProcedure(bytes24,string,bytes)"
+            const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+
+            const calledFunctionSpec = "";
+            const inputData = functionSelectorHash
+                + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
+                + "60".padStart(64,"0")
+                + "80".padStart(64,"0")
+
+                + "00".padStart(64,"0")
+                + "00".padStart(64,"0")
+                ;
+            const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+
+            assert.equal(valueXRaw.slice(0,4), "0x03", "non-existent procedure should fail, with 0x03");
+
         });
 
         describe('should return an error if procedure return error when', function () {
@@ -733,8 +749,22 @@ contract('Kernel without entry procedure', function (accounts) {
             it('zero length (1)', async function () {
                 const kernel = await Kernel.new();
 
-                const retVal = await kernel.executeProcedure.call('', '', '');
-                assert.equal(retVal.toNumber(), 1);
+                const procName = "";
+                const functionSpec = "executeProcedure(bytes24,string,bytes)"
+                const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+
+                const calledFunctionSpec = "";
+                const inputData = functionSelectorHash
+                    + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
+                    + "60".padStart(64,"0")
+                    + "80".padStart(64,"0")
+
+                    + "00".padStart(64,"0")
+                    + "00".padStart(64,"0")
+                    ;
+                const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+
+                assert.equal(valueXRaw.slice(0,4), "0x01", "non-existent procedure should fail, with 0x01");
             });
         })
     })
