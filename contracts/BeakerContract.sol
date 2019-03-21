@@ -149,7 +149,7 @@ contract BeakerContract is IKernel {
         }
   }
 
-  function proc_acc_call(uint8 capIndex, address account, uint256 amount, uint256[] input) internal returns (uint32 err, bytes memory output) {
+  function proc_acc_call(uint8 capIndex, address account, uint256 amount, bytes memory input) internal returns (uint32 err, bytes memory output) {
         assembly {
             function malloc(size) -> result {
                 // align to 32-byte words
@@ -161,7 +161,7 @@ contract BeakerContract is IKernel {
                 mstore(0x40,add(result,rsize))
             }
 
-            let inputSize := mul(mload(input), 0x20)
+            let inputSize := mload(input)
             let bufSize := add(0x80, inputSize)
 
             let buf := malloc(bufSize)
@@ -181,8 +181,9 @@ contract BeakerContract is IKernel {
             let inputStart := add(input, 0x20)
             let bufStart := add(buf, 0x80)
 
-            for { let n:= 0 } iszero(eq(n, inputSize)) { n := add(n, 32)} {
-                mstore(add(bufStart, n), mload(add(inputStart, n)))
+            // An inefficient memcopy
+            for { let n:= 0 } iszero(eq(n, inputSize)) { n := add(n,1)} {
+                mstore8(add(bufStart, n), div(mload(add(inputStart, n)),0x100000000000000000000000000000000000000000000000000000000000000))
             }
 
             let x := delegatecall(gas, caller, add(buf,31), sub(bufSize, 31), 0x0, 0x0)

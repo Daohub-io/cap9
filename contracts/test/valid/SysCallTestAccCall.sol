@@ -10,36 +10,27 @@ contract SysCallTestAccCall is BeakerContract {
 
     // Test without any input data
     function A(address account, uint256 amount) public returns (bytes memory) {
-        uint256[] memory input = new uint256[](0);
+        bytes memory input = new bytes(0);
         (/* uint32 err */, bytes memory output) = proc_acc_call(2, account, amount, input);
         return output;
     }
 
-    // Call SysCallTestWrite
-    function B() public returns (uint32) {
-        uint32[] memory input = new uint32[](1);
-        input[0] = 0;
-
-        (uint32 err, /* bytes memory output */) = proc_call(2, "SysCallTestWrite", "", input);
-        return err;
-    }
-
-    // Call SysTestCall:S()
-    function C() public {
-        uint32[] memory input = new uint32[](1);
-        input[0] = 0;
-
-        proc_call(2, "SysCallTestWrite", "S()", input);
-    }
-
     // Call Adder:add(3,5), return result
-    function E() public returns (uint) {
+    function B(address account, uint256 amount) public returns (uint256) {
+        // bytes4 functionSelector = bytes4(keccak256("add(uint256,uint256)"));
+        // 771602f7
+        bytes memory input = new bytes(68);
 
-        uint32[] memory input = new uint32[](2);
-        input[0] = 3;
-        input[1] = 5;
+        // input[0] = functionSelector[0];
+        input[0] = 0x77;
+        input[1] = 0x16;
+        input[2] = 0x02;
+        input[3] = 0xf7;
 
-        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
+        input[35] = 0x03;
+        input[67] = 0x05;
+
+        (/* uint32 err */, bytes memory output) = proc_acc_call(2, account, amount, input);
 
         return uint256(output[31]);
     }
