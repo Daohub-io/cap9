@@ -4,14 +4,14 @@ import "./Kernel.sol";
 
 // Kernel Interface for Testing
 contract TestKernel is Kernel {
-    constructor() {
+    constructor() public {
         // kernelAddress = WhatIsMyAddress.get();
         // This is an example kernel global variable for testing.
         assembly {
             sstore(0x8000,3)
         }
     }
-    
+
     function testGetter() public view returns(uint256) {
         assembly {
             mstore(0,sload(0x8000))
@@ -50,7 +50,8 @@ contract TestKernel is Kernel {
         return _deleteProcedure(name);
     }
 
-    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (bytes memory) {
-        return _executeProcedure(name, fselector, payload);
+    function executeProcedure(bytes24 name, string fselector, bytes payload) public returns (uint8) {
+        bytes memory result =  _executeProcedure(name, fselector, payload);
+        return uint8(result[0]);
     }
 }

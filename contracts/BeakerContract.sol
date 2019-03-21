@@ -26,9 +26,9 @@ contract BeakerContract is IKernel {
         // First set up the input data (at memory location 0x0)
         // The write call is 0x-07
         mstore(add(ins,0x0),0x07)
-        // The capability index is 0x-01
+        // The capability index
         mstore(add(ins,0x20),capIndex)
-        // The storage location we want is 0x8000
+        // The storage location
         mstore(add(ins,0x40),location)
         // The value we want to store
         mstore(add(ins,0x60),value)
@@ -104,7 +104,7 @@ contract BeakerContract is IKernel {
             // First set up the input data (at memory location 0x0)
             // The call call is 0x-03
             mstore(add(buf,0x0),0x03)
-            // The capability index is 0x-02
+            // The capability index
             mstore(add(buf,0x20),capIndex)
             // The key of the procedure
             mstore(add(buf,0x40),procId)
@@ -216,7 +216,7 @@ contract BeakerContract is IKernel {
         // First set up the input data (at memory location 0x0)
         // The register syscall is 4
         mstore(add(ins,0x0),4)
-        // The capability index is 0x-01
+        // The capability index
         mstore(add(ins,0x20),capIndex)
         // The name of the procedure (24 bytes)
         mstore(add(ins,0x40),procId)
@@ -286,7 +286,7 @@ contract BeakerContract is IKernel {
         // First set up the input data (at memory location ins)
         // The log call is 0x-08
         mstore(add(ins,0x0),0x08)
-        // The capability index is 0x-01
+        // The capability index
         mstore(add(ins,0x20),capIndex)
         // The number of topics we will use
         mstore(add(ins,0x40),0x0)
@@ -316,7 +316,7 @@ contract BeakerContract is IKernel {
         // First set up the input data (at memory location 0x0)
         // The log call is 0x-08
         mstore(add(ins,0x0),0x08)
-        // The capability index is 0x-01
+        // The capability index
         mstore(add(ins,0x20),capIndex)
         // The number of topics we will use
         mstore(add(ins,0x40),0x1)
@@ -349,7 +349,7 @@ contract BeakerContract is IKernel {
         // First set up the input data (at memory location 0x0)
         // The log call is 0x-08
         mstore(add(ins,0x0),0x08)
-        // The capability index is 0x-01
+        // The capability index
         mstore(add(ins,0x20),capIndex)
         // The number of topics we will use
         mstore(add(ins,0x40),0x2)
@@ -383,7 +383,7 @@ contract BeakerContract is IKernel {
         // First set up the input data (at memory location 0x0)
         // The log call is 0x-08
         mstore(add(ins,0x0),0x08)
-        // The capability index is 0x-01
+        // The capability index
         mstore(add(ins,0x20),capIndex)
         // The number of topics we will use
         mstore(add(ins,0x40),0x3)
@@ -394,7 +394,8 @@ contract BeakerContract is IKernel {
         // The third topic
         mstore(add(ins,0xa0),t3)
         // The value we want to log
-        mstore(add(ins,0xc0),0x1234567890)
+        // TODO: this is limited to 32 bytes, it should not be
+        mstore(add(ins,0xc0),value)
         // "in_offset" is at 31, because we only want the last byte of type
         // "in_size" is 193 because it is 1+32+32+32+32+32+32
         // we will store the result at retLoc and it will be 32 bytes
@@ -419,8 +420,8 @@ contract BeakerContract is IKernel {
         // First set up the input data (at memory location 0x0)
         // The log call is 0x-08
         mstore(add(ins,0x0),0x08)
-        // The capability index is 0x-01
-        mstore(add(ins,0x20),0x01)
+        // The capability index
+        mstore(add(ins,0x20), capIndex)
         // The number of topics we will use
         mstore(add(ins,0x40),0x4)
         // The first topic

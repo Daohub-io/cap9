@@ -148,9 +148,6 @@ library ProcedureTable {
             return false;
         }
         Capability memory cap = p.caps[reqCapIndex];
-        assembly {
-            log0(add(cap, 0x20), mload(cap))
-        }
         // If the capability type is not DELETE it is the wrong type of
         // capability and we should reject
         if (cap.capType != CAP_PROC_DELETE) {

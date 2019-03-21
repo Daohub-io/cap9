@@ -704,7 +704,7 @@ contract Kernel is Factory, IKernel {
     }
 
 
-    function _executeProcedure(bytes24 name, string fselector, bytes payload) internal returns (bytes memory output) {
+    function _executeProcedure(bytes24 name, string fselector, bytes payload) internal returns (bytes memory) {
         // // Check whether the first byte is null and set err to 1 if so
         if (name[0] == 0) {
             assembly {
@@ -719,7 +719,7 @@ contract Kernel is Factory, IKernel {
                 mstore8(0,3)
                 return(0,1)
             }
-            
+
         }
         // TODO: I believe this should use the keyindex
         // assembly {
@@ -818,7 +818,7 @@ contract Kernel is Factory, IKernel {
             }
 
             status := callcode(gas,procedureAddress,0,ins,inl,0,0)
-            
+
             // Zero-out the currentProcedure
             sstore(currentProcedure_slot,0)
             // copy the return data to memory based on its size

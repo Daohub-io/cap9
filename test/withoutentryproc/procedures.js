@@ -493,7 +493,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
         describe('should execute', function () {
             describe('Simple Procedure', function () {
-                it.skip('X() should fail', async function () {
+                it('X() should fail', async function () {
                     // This now longer fails as we included a fallback function
                     const kernel = await Kernel.new();
                     const procName = "Simple";
@@ -515,7 +515,9 @@ contract('Kernel without entry procedure', function (accounts) {
                         + "00".padStart(64,"0")
                         ;
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    assert.equal(valueXRaw, "0x03");
+                    // The error code is 0x55, because the procedure exists, it
+                    // just doesn't have a function called "X()".
+                    assert.equal(valueXRaw, "0x55");
                 })
 
                 it('A() should succeed', async function () {

@@ -11,7 +11,7 @@ contract SysCallTestAccCall is BeakerContract {
     // Test without any input data
     function A(address account, uint256 amount) public returns (bytes memory) {
         uint256[] memory input = new uint256[](0);
-        var (err, output) = proc_acc_call(2, account, amount, input);
+        (/* uint32 err */, bytes memory output) = proc_acc_call(2, account, amount, input);
         return output;
     }
 
@@ -20,7 +20,7 @@ contract SysCallTestAccCall is BeakerContract {
         uint32[] memory input = new uint32[](1);
         input[0] = 0;
 
-        var (err, output) = proc_call(2, "SysCallTestWrite", "", input);
+        (uint32 err, /* bytes memory output */) = proc_call(2, "SysCallTestWrite", "", input);
         return err;
     }
 
@@ -29,7 +29,7 @@ contract SysCallTestAccCall is BeakerContract {
         uint32[] memory input = new uint32[](1);
         input[0] = 0;
 
-        var (err, output) = proc_call(2, "SysCallTestWrite", "S()", input);
+        proc_call(2, "SysCallTestWrite", "S()", input);
     }
 
     // Call Adder:add(3,5), return result
@@ -39,7 +39,7 @@ contract SysCallTestAccCall is BeakerContract {
         input[0] = 3;
         input[1] = 5;
 
-        var (err, output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
+        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
 
         return uint256(output[31]);
     }
@@ -52,7 +52,7 @@ contract SysCallTestAccCall is BeakerContract {
         input[0] = 3;
         input[1] = 5;
 
-        var (err, output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
+        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
         uint256 addResult = uint256(output[31]);
 
         uint32[] memory input2 = new uint32[](1);
