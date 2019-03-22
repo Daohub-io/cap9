@@ -99,8 +99,9 @@ contract BeakerContract is IKernel {
                 let startrem := mul(nwords,32)
 
                 // Copy the 32-byte words
-                for { let n:= 0 } iszero(eq(n, nwords)) { n := add(n, 1)} {
-                    mstore(add(t, mul(n,32)), mload(add(f, mul(n,32))))
+                let nlimit := mul(nwords,32)
+                for { let n:= 0 } iszero(eq(n, nlimit)) { n := add(n, 32)} {
+                    mstore(add(t, n), mload(add(f, n)))
                 }
 
                 // Copy the remaining bytes
