@@ -86,11 +86,38 @@ contract BeakerContract is IKernel {
                 // available memory location.
                 mstore(0x40,add(result,rsize))
             }
+            function memcopy(t,f,s) {
+                // t - memory address to copy to
+                // f - memory address to copy from
+                // s - number of bytes
 
-            // We Get The start of the Proc Input
-            // Then allocate data to include it
-            // let pInputs := add(input, 0x20)
-            // let inSize := add(mload(input), 96)
+                // Calculate the number of 32-byte words.
+                let nwords := div(s,32)
+                // Remaining bytes not in 32-byte word.
+                let rem := mod(s,32)
+                // Offset location of the remaining bytes.
+                let startrem := mul(nwords,32)
+
+                // Copy the 32-byte words
+                for { let n:= 0 } iszero(eq(n, nwords)) { n := add(n, 1)} {
+                    mstore(add(t, mul(n,32)), mload(add(f, mul(n,32))))
+                }
+
+                // Copy the remaining bytes
+                if rem {
+                    // Copy 32 bytes from the start of the remainder
+                    let val := mload(add(f,startrem))
+                    // Clear the bytes we don't want
+                    let clearedVal := and(val,mul(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,exp(0x100,sub(32,rem))))
+                    // Copy the 32 bytes from the target desintation
+                    let targetVal := mload(add(t,startrem))
+                    // Clear the last rem bytes from this targetVal
+                    let clearedTargetVal := and(targetVal,div(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,exp(0x100,rem)))
+                    // Combine the values together with bitwise-OR
+                    let finalVal := or(clearedVal, clearedTargetVal)
+                    mstore(add(t,startrem),finalVal)
+                }
+            }
 
             let inputSize := mul(mload(input), 0x20)
             let bufSize := add(0x80, inputSize)
@@ -101,7 +128,7 @@ contract BeakerContract is IKernel {
 
             let buf := malloc(bufSize)
 
-            // First set up the input data (at memory location 0x0)
+            // First set up the input data
             // The call call is 0x-03
             mstore(add(buf,0x0),0x03)
             // The capability index
@@ -120,9 +147,11 @@ contract BeakerContract is IKernel {
                 bufStart := add(bufStart, 4)
             }
 
-            for { let n:= 0 } iszero(eq(n, inputSize)) { n := add(n, 32)} {
-                mstore(add(bufStart, n), mload(add(inputStart, n)))
-            }
+            // TODO: this will likely be misbehaved in some circumstances.
+            // for { let n:= 0 } iszero(eq(n, inputSize)) { n := add(n, 32)} {
+            //     mstore(add(bufStart, n), mload(add(inputStart, n)))
+            // }
+            memcopy(bufStart,inputStart,mul(mload(input),32))
 
             // "in_offset" is at 31, because we only want the last byte of type
             // "in_size" is 97 because it is 1+32+32+32
@@ -160,6 +189,38 @@ contract BeakerContract is IKernel {
                 // available memory location.
                 mstore(0x40,add(result,rsize))
             }
+            function memcopy(t,f,s) {
+                // t - memory address to copy to
+                // f - memory address to copy from
+                // s - number of bytes
+
+                // Calculate the number of 32-byte words.
+                let nwords := div(s,32)
+                // Remaining bytes not in 32-byte word.
+                let rem := mod(s,32)
+                // Offset location of the remaining bytes.
+                let startrem := mul(nwords,32)
+
+                // Copy the 32-byte words
+                for { let n:= 0 } iszero(eq(n, nwords)) { n := add(n, 1)} {
+                    mstore(add(t, mul(n,32)), mload(add(f, mul(n,32))))
+                }
+
+                // Copy the remaining bytes
+                if rem {
+                    // Copy 32 bytes from the start of the remainder
+                    let val := mload(add(f,startrem))
+                    // Clear the bytes we don't want
+                    let clearedVal := and(val,mul(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,exp(0x100,sub(32,rem))))
+                    // Copy the 32 bytes from the target desintation
+                    let targetVal := mload(add(t,startrem))
+                    // Clear the last rem bytes from this targetVal
+                    let clearedTargetVal := and(targetVal,div(0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,exp(0x100,rem)))
+                    // Combine the values together with bitwise-OR
+                    let finalVal := or(clearedVal, clearedTargetVal)
+                    mstore(add(t,startrem),finalVal)
+                }
+            }
 
             let inputSize := mload(input)
             let bufSize := add(0x80, inputSize)
@@ -181,10 +242,7 @@ contract BeakerContract is IKernel {
             let inputStart := add(input, 0x20)
             let bufStart := add(buf, 0x80)
 
-            // An inefficient memcopy
-            for { let n:= 0 } iszero(eq(n, inputSize)) { n := add(n,1)} {
-                mstore8(add(bufStart, n), div(mload(add(inputStart, n)),0x100000000000000000000000000000000000000000000000000000000000000))
-            }
+            memcopy(bufStart,inputStart,inputSize)
 
             let x := delegatecall(gas, caller, add(buf,31), sub(bufSize, 31), 0x0, 0x0)
 
