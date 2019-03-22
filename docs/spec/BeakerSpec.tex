@@ -744,7 +744,10 @@ Data: min(64 bytes) max(64 bytes)
 \end{table}
 
 \subsubsection{Capability Format}
-This capability has no associated data and is therefore of size zero.
+If this capability is present, the procedure is permitted to set the entry
+procedure, and if it is not present, the procedure is not permitted to set the
+entry procedure. Therefore this capability has no data associated with it and no
+format.
 
 \subsubsection{Capability Subsets}
 As defined in Section~\ref{cap-subsets}, each capability has subsets and
@@ -927,7 +930,7 @@ capability $C$, and $C_n$ is the number of defined topics:
 $$ \forall i \in \left\{1,2,\dots ,A_n\right\}. B_{t_i} = A_{t_i} $$
 
 \subsubsection{Error Codes}
-There are no specific error conditions for SSTORE, therefore only general system
+There are no specific error conditions for LOG, therefore only general system
 call errors are applicable.
 
 \subsection{External Call System Call}
