@@ -203,18 +203,9 @@ class AccCallCap extends Cap {
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        let callAny;
-        let sendValue;
-        if (this.callAny) {
-            callAny = 1;
-        } else {
-            callAny = 0;
-        }
-        if (this.sendValue) {
-            sendValue = 1;
-        } else {
-            sendValue = 0;
-        }
+        const callAny = this.callAny ? 1 : 0;
+        const sendValue = this.sendValue ? 1 : 0;
+
         const val = Array.from([callAny, sendValue, this.ethAddress]);
         return val;
     }

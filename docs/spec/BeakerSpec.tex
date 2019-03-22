@@ -6,7 +6,6 @@
 \usepackage{multirow,tabularx}
 \usepackage{fixltx2e} % provides \textsubscript
 \usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
 % use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 
@@ -362,13 +361,13 @@ Therefore:
     Type & Value & Additional Data & Description \\
     \hline
     \hline
-    SYSCALL\_BADCAP  & 33 & None & Capability insufficient. \\
-    SYSCALL\_NOGAS   & 44 & None & Procedure execution ran out of gas. \\
-    SYSCALL\_REVERT  & 55 & Returned data from procedure & The called
+    SYSCALL\_BADCAP  & 0x33 & None & Capability insufficient. \\
+    SYSCALL\_NOGAS   & 0x44 & None & Procedure execution ran out of gas. \\
+    SYSCALL\_REVERT  & 0x55 & Returned data from procedure & The called
       procedure reverted. \\
-    SYSCALL\_FAIL    & 66 & System call specific error data & The system call
+    SYSCALL\_FAIL    & 0x66 & System call specific error data & The system call
       failed for reasons specific to the system call. \\
-    SYSCALL\_NOEXIST & 111 & None & The syscall integer values is not a valid
+    SYSCALL\_NOEXIST & 0xaa & None & The syscall integer values is not a valid
       syscall as defined in Table \ref{syscall-numbers}. \\
     \hline
   \end{tabularx}

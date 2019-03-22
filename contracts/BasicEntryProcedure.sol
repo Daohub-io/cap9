@@ -21,11 +21,6 @@ contract BasicEntryProcedure {
         assembly {
             procedureKey := calldataload(0)
         }
-        // log1(bytes32(procedureKey), bytes32("KeyName"));
-        // log1(bytes32(msg.data.length-24), bytes32("Payload Length"));
-        // for (uint256 i = 24; i < msg.data.length; i++) {
-        //     log1(bytes32(msg.data[i]), bytes32("Payload"));
-        // }
         // Call the requested procedure
         // Begin our call
         assembly {
@@ -50,12 +45,17 @@ contract BasicEntryProcedure {
 
             // Copy the payload data into the input buffer
             calldatacopy(add(ins,0x80),24,payloadLength)
+
             // "in_offset" is at 31, because we only want the last byte of type
             // "in_size" is 97 because it is 1+32+32+32+4
-
             let status := delegatecall(gas, caller, add(ins,31), add(97,payloadLength), 0, 0)
+
+            // Copy whatever was returned by the procedure into memory
             let retLoc := malloc(returndatasize)
             returndatacopy(retLoc,0,returndatasize)
+
+            // Either return or revert that data (unchanged) depending on the
+            // success of the procedure.
             if status {
                 // success condition
                 return(retLoc, returndatasize)
