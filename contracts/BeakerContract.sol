@@ -100,6 +100,8 @@ contract BeakerContract is IKernel {
 
                 // Copy the 32-byte words
                 let nlimit := mul(nwords,32)
+                // Currently each loop costs 78 gas, i.e. 78 gas per 32 bytes
+                // 2.4375 gas per byte.
                 for { let n:= 0 } iszero(eq(n, nlimit)) { n := add(n, 32)} {
                     mstore(add(t, n), mload(add(f, n)))
                 }
@@ -148,10 +150,6 @@ contract BeakerContract is IKernel {
                 bufStart := add(bufStart, 4)
             }
 
-            // TODO: this will likely be misbehaved in some circumstances.
-            // for { let n:= 0 } iszero(eq(n, inputSize)) { n := add(n, 32)} {
-            //     mstore(add(bufStart, n), mload(add(inputStart, n)))
-            // }
             memcopy(bufStart,inputStart,mul(mload(input),32))
 
             // "in_offset" is at 31, because we only want the last byte of type
