@@ -497,9 +497,9 @@ Data: min(96 bytes) max(96 bytes)
     \hline
     \texttt{0x00} & Procedure key; 24 bytes, aligned right in 32 bytes \\
     \texttt{0x20} & Procedure address; 20 bytes, aligned right in 32 bytes\\
-    \texttt{0x40} & Capabilities; A series of 32 byte values which correspond
-    exactly to the keys as defined in Table~\ref{reg-cap-format}. The length of
-    this list is not provided. \\
+    \texttt{0x40} & Capabilities; A series of capabilities. Each capability is
+      in the format specified in Table~\ref{reg-cap-format}. The length of
+      this list is not provided.\\
     ~~~$\vdots$ & \\
     \hline
     End &  \\
@@ -512,18 +512,33 @@ Data: min(96 bytes) max(96 bytes)
   \centering{}%
   \begin{tabularx}{\textwidth}{c|X}
     \hline
-    Key Offset & Description \\
+    Byte Offset & Description \\
     \hline
     \hline
-    \texttt{0x00}       & CapSize: 2 bytes, aligned right in the 32 bytes, the given
-      name \\
-    \texttt{0x01}       & CapType: 1 byte, aligned right in the 32 bytes \\
-    \texttt{0x02}       & key value \#1: 32 bytes \\
-    ~~~$\vdots$ & capabilities in series \\
-    CapSize & final key value \\
+    \texttt{0x00}       & CapSize: 1 bytes, aligned right in the 32 bytes. The
+      number of 32-byte values associated with this capability. \\
+    \texttt{0x20}       & CapType: 1 byte, aligned right in the 32 bytes. The
+      type of this capability. \\
+    \texttt{0x40}       & CapIndex: 1 byte, aligned right in the 32 bytes. The
+      index into the C-List of this type for the current procedure from which to
+      derive a subset. \\
+    \texttt{0x60}       & key value \#1: 32 bytes \\
+    \texttt{0x80}       & key value \#2: 32 bytes \\
+    \texttt{0x40} $+ n \times 0\text{x}20$ & key value \#n: 32 bytes \\
+    $\left(\text{CapSize} - 1\right) \times 0\text{x}20$  & final key value \\
     \hline
   \end{tabularx}
 \end{table}
+
+\textbf{NB:} CapSize is the number of 32-byte values for this capability,
+including the CapSize, CapType, and CapIndex values. Therefore by adding
+$\text{CapSize} \times 32$ to the current byte offset will give you the offset
+of the CapSize value of the next capability.
+
+For each of these capabilities, CapSize is either 3, or the length of a
+capability of this type plus 3. If the CapSize is 3, then there is no data used
+to determine the correct subset, and the kernel will therefore create an exact
+copy of the capability to be included in the newly registered procedure.
 
 \subsubsection{Capability Format}
 The capability format for the Register Procedure system call defines the a range
