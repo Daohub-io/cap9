@@ -35,22 +35,4 @@ contract SysCallTestAccCall is BeakerContract {
         return uint256(output[31]);
     }
 
-    // Do deeper call stacks
-    function F() public returns (uint256) {
-
-        // We will store the result from the first procedure call (add) here
-        uint32[] memory input = new uint32[](2);
-        input[0] = 3;
-        input[1] = 5;
-
-        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
-        uint256 addResult = uint256(output[31]);
-
-        uint32[] memory input2 = new uint32[](1);
-        input[0] = 0;
-
-        proc_call(2, "SysCallTestWrite", "S()", input2);
-
-        return addResult;
-    }
 }
