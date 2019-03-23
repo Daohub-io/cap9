@@ -27,7 +27,7 @@ library ProcedureTable {
     uint8 constant CAP_PROC_ENTRY           = 6;
     uint8 constant CAP_STORE_WRITE          = 7;
     uint8 constant CAP_LOG                  = 8;
-    uint8 constant CAP_GAS_SEND             = 9;
+    uint8 constant CAP_ACC_CALL             = 9;
 
     // Convert Pointer To File Pointer
     // Takes a single byte and a full 256 bit storage location
@@ -148,9 +148,6 @@ library ProcedureTable {
             return false;
         }
         Capability memory cap = p.caps[reqCapIndex];
-        assembly {
-            log0(add(cap, 0x20), mload(cap))
-        }
         // If the capability type is not DELETE it is the wrong type of
         // capability and we should reject
         if (cap.capType != CAP_PROC_DELETE) {
@@ -221,6 +218,44 @@ library ProcedureTable {
             }
         }
         return false;
+    }
+
+    function checkAccCallCapability(Self storage /* self */, uint192 key, address account, uint256 amount, uint256 reqCapIndex) internal view returns (bool) {
+        Procedure memory p = _getProcedureByKey(uint192(key));
+
+        // If the requested cap is out of the bounds of the cap table, we
+        // clearly don't have the capability;
+        if ((p.caps.length == 0) || (reqCapIndex > (p.caps.length - 1))) {
+            return false;
+        }
+        Capability memory cap = p.caps[reqCapIndex];
+        // If the capability type is the wrong type of capability and we
+        // should reject
+        if (cap.capType != CAP_ACC_CALL) {
+            return false;
+        }
+        // The first value is CallAny.
+        bool callAny = cap.values[0] != 0;
+        // The second value is SendValue
+        bool sendValue = cap.values[1] != 0;
+        // If CallAny is true, all addresses are ok. If it is false we must
+        // check that the account requested equals the one permitted in the
+        // capability.
+        if (!callAny) {
+            if (address(cap.values[2]) != account) {
+                // The account requested is not the one specified, return false.
+                return false;
+            }
+        }
+        // If SendValue is false, the amount sent must be zero.
+        if (!sendValue) {
+            if (amount != 0) {
+                // SendValue is false, but a non-zero amount was requested to be
+                // transferred.
+                return false;
+            }
+        }
+        return true;
     }
 
     function checkWriteCapability(Self storage /* self */, uint192 key, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool) {

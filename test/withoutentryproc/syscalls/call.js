@@ -101,7 +101,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -128,7 +128,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -182,7 +182,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -242,7 +242,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -269,7 +269,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -323,7 +323,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),3, "new value should still be 3");
@@ -382,7 +382,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -409,7 +409,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -463,7 +463,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
 
                 const newValue =  await kernel.testGetter.call();
                 assert.equal(newValue.toNumber(),originalValue.toNumber(), `new value should still be ${originalValue.toNumber()}`);
@@ -483,7 +483,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const cap2 = new beakerlib.LogCap([]);
                 const cap3 = new beakerlib.CallCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
-                
+
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
                 // This is the procedure that will do the calling
@@ -513,7 +513,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
             })
             it('E() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -534,7 +534,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
             })
             it('E() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
@@ -576,7 +576,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
-                assert.equal(valueX.toNumber(), 222233, "should succeed with zero errcode the first time");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should succeed with zero errcode the first time");
             })
         })
         describe('F() - successive calls single depth', function () {

@@ -56,7 +56,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
             it('A() should fail when cap requires more topics', async function () {
@@ -73,7 +73,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
                 // 4 is the error code we are after
-                assert.equal(valueX.toNumber(), 222233, "should fail with correct error code");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "should fail with correct error code");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
         })
@@ -113,7 +113,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx.receipt.logs.length, 0, "Nothing should be logged");
             })
             it('B() should fail when not given cap', async function () {
@@ -126,7 +126,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
             it('B() should fail when trying to log to something outside its capability', async function () {
@@ -143,7 +143,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
         })
@@ -181,7 +181,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
             it('C() should fail when trying to log to something outside its capability', async function () {
@@ -197,7 +197,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
         })
@@ -238,7 +238,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
             it('D() should fail when trying to log to something outside its capability', async function () {
@@ -254,7 +254,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
         })
@@ -297,7 +297,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
             it('E() should fail when trying to log to something outside its capability', async function () {
@@ -313,7 +313,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const valueX = await kernel.executeProcedure.call(procName, functionSpec, "");
                 const tx1 = await kernel.executeProcedure(procName, functionSpec, "");
 
-                assert.equal(valueX.toNumber(), 222233, "errcode should be correct");
+                assert.equal(web3.toHex(valueX).slice(0,4), "0x55", "errcode should be correct");
                 assert.equal(tx1.receipt.logs.length, 0, "Nothing should be logged");
             })
         })

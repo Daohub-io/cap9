@@ -70,10 +70,9 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
 
             })
@@ -97,10 +96,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
         })
@@ -154,10 +153,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
             it('B() should fail when not given cap', async function () {
@@ -177,10 +176,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
             it('B() should fail when trying to log to something outside its capability', async function () {
@@ -203,10 +202,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
         })
@@ -258,10 +257,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
             it('C() should fail when trying to log to something outside its capability', async function () {
@@ -281,10 +280,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
         })
@@ -341,10 +340,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
             it('D() should fail when trying to log to something outside its capability', async function () {
@@ -367,10 +366,9 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
         })
@@ -426,10 +424,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
             it('E() should fail when trying to log to something outside its capability', async function () {
@@ -452,10 +450,10 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
 
-                    assert.equal(valueX.toNumber(), 4455, "errcode should be correct");
-                    assert.equal(tx3.receipt.logs.length, 1, "Nothing should be logged, except for the entry procedure message");
+
+                    assert.equal(valueXRaw.slice(0,4), "0x55", "errcode should be correct");
+                    assert.equal(tx3.receipt.logs.length, 0, "Nothing should be logged");
                 }
             })
         })

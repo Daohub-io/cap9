@@ -8,7 +8,7 @@ contract SysCallTestCall is BeakerContract {
         uint32[] memory input = new uint32[](1);
         input[0] = 0;
 
-        var (err, output) = proc_call(2, "TestWrite", "", input);
+        (uint32 err, /* bytes memory output */) = proc_call(2, "TestWrite", "", input);
         return err;
     }
 
@@ -17,7 +17,7 @@ contract SysCallTestCall is BeakerContract {
         uint32[] memory input = new uint32[](1);
         input[0] = 0;
 
-        var (err, output) = proc_call(2, "SysCallTestWrite", "", input);
+        (uint32 err, /* bytes memory output */) = proc_call(2, "SysCallTestWrite", "", input);
         return err;
     }
 
@@ -26,7 +26,7 @@ contract SysCallTestCall is BeakerContract {
         uint32[] memory input = new uint32[](1);
         input[0] = 0;
 
-        var (err, output) = proc_call(2, "SysCallTestWrite", "S()", input);
+        proc_call(2, "SysCallTestWrite", "S()", input);
     }
 
     // Call Adder:add(3,5), return result
@@ -35,9 +35,9 @@ contract SysCallTestCall is BeakerContract {
         uint32[] memory input = new uint32[](2);
         input[0] = 3;
         input[1] = 5;
-        
-        var (err, output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
-        
+
+        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
+
         return uint256(output[31]);
     }
 
@@ -48,8 +48,8 @@ contract SysCallTestCall is BeakerContract {
         uint32[] memory input = new uint32[](2);
         input[0] = 3;
         input[1] = 5;
-        
-        var (err, output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
+
+        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
         uint256 addResult = uint256(output[31]);
 
         uint32[] memory input2 = new uint32[](1);
