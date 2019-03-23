@@ -6,7 +6,6 @@
 \usepackage{multirow,tabularx}
 \usepackage{fixltx2e} % provides \textsubscript
 \usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
 % use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 
@@ -362,13 +361,13 @@ Therefore:
     Type & Value & Additional Data & Description \\
     \hline
     \hline
-    SYSCALL\_BADCAP  & 33 & None & Capability insufficient. \\
-    SYSCALL\_NOGAS   & 44 & None & Procedure execution ran out of gas. \\
-    SYSCALL\_REVERT  & 55 & Returned data from procedure & The called
+    SYSCALL\_BADCAP  & 0x33 & None & Capability insufficient. \\
+    SYSCALL\_NOGAS   & 0x44 & None & Procedure execution ran out of gas. \\
+    SYSCALL\_REVERT  & 0x55 & Returned data from procedure & The called
       procedure reverted. \\
-    SYSCALL\_FAIL    & 66 & System call specific error data & The system call
+    SYSCALL\_FAIL    & 0x66 & System call specific error data & The system call
       failed for reasons specific to the system call. \\
-    SYSCALL\_NOEXIST & 111 & None & The syscall integer values is not a valid
+    SYSCALL\_NOEXIST & 0xaa & None & The syscall integer values is not a valid
       syscall as defined in Table \ref{syscall-numbers}. \\
     \hline
   \end{tabularx}
@@ -408,8 +407,8 @@ to err on the side of simplicity and stick as close as we can to 32-byte values.
     Byte Offset & Description \\
     \hline
     \hline
-    \texttt{0x00} & Procedure key, 24 bytes \\
-    \texttt{0x18} & Payload for the procedure \\
+    \texttt{0x00} & Procedure key, 24 bytes aligned right in 32 \\
+    \texttt{0x20} & Payload for the procedure \\
     ~~~$\vdots$ &  \\
     \hline
   \end{tabularx}
@@ -496,11 +495,12 @@ Data: min(96 bytes) max(96 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Procedure key; 24 bytes \\
-    \texttt{0x18} & Procedure address; 20 bytes\\
-    ~~~$\vdots$ & Capabilities; A series of 32 byte values which correspond
+    \texttt{0x00} & Procedure key; 24 bytes, aligned right in 32 bytes \\
+    \texttt{0x20} & Procedure address; 20 bytes, aligned right in 32 bytes\\
+    \texttt{0x40} & Capabilities; A series of 32 byte values which correspond
     exactly to the keys as defined in Table~\ref{reg-cap-format}. The length of
     this list is not provided. \\
+    ~~~$\vdots$ & \\
     \hline
     End &  \\
     \hline
@@ -644,7 +644,7 @@ Data: min(64 bytes) max(64 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Procedure key; 24 bytes \\
+    \texttt{0x00} & Procedure key; 24 bytes aligned right in 32 bytes \\
     \hline
     End &  \\
     \hline
@@ -736,7 +736,7 @@ Data: min(64 bytes) max(64 bytes)
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Procedure key; 24 bytes \\
+    \texttt{0x00} & Procedure key; 24 bytes aligned right in 32 bytes\\
     \hline
     End &  \\
     \hline
@@ -875,7 +875,8 @@ Data: min(96 bytes) max(224 bytes)
     ... & Potentially topic value \#2; 32 bytes \\
     ... & Potentially topic value \#3; 32 bytes \\
     ... & Potentially topic value \#4; 32 bytes \\
-    \texttt{0x40}+(nTopics $\times$ 0x20) & Log value 32 bytes \\
+    \texttt{0x40}+(nTopics $\times$ 0x20) & Log value any length \\
+    ~~~$\vdots$ & \\
     \hline
     End &  \\
     \hline
@@ -950,9 +951,10 @@ Data:
     Byte Offset & Description\\
     \hline
     \hline
-    \texttt{0x00} & Account address; 20-bytes \\
-    \texttt{0x14} & Value amount; 32 bytes \\
-    ~~~$\vdots$ & Payload for the contract \\
+    \texttt{0x00} & Account address; 20-bytes aligned right in 32 bytes \\
+    \texttt{0x20} & Value amount; 32 bytes \\
+    \texttt{0x40} & Payload for the contract \\
+    ~~~$\vdots$ & \\
     \hline
     End &  \\
     \hline
