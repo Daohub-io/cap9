@@ -7,7 +7,7 @@ async function installEntryProc(kernel) {
     const capArrayEntryProc = beakerlib.Cap.toInput([
         new beakerlib.WriteCap(0x8001,2),
         new beakerlib.LogCap([]),
-        new beakerlib.CallCap()
+        new beakerlib.CallCap(0,"")
     ]);
     const deployedEntryProc = await deployedTrimmed(BasicEntryProcedure);
     // Install the entry procedure

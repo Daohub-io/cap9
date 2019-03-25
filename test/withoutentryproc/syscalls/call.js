@@ -46,7 +46,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap();
+                const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -140,7 +140,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(["another-proc", testProcName]);
+                const cap3 = new beakerlib.CallCap(10, testProcName);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -167,7 +167,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap([procName+"abc"]);
+                const cap3 = new beakerlib.CallCap(10, "another-proc");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -200,7 +200,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap();
+                const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -281,7 +281,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(["another-proc", testProcName]);
+                const cap3 = new beakerlib.CallCap(10,testProcName);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -308,7 +308,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap([procName+"abc"]);
+                const cap3 = new beakerlib.CallCap(10,"another-proc");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -341,7 +341,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap();
+                const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -421,7 +421,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(["another-proc", testProcName]);
+                const cap3 = new beakerlib.CallCap(10,testProcName);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -448,7 +448,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap([procName+"abc"]);
+                const cap3 = new beakerlib.CallCap(10,"another-proc");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -481,7 +481,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap();
+                const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -543,7 +543,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(["another-proc", testProcName]);
+                const cap3 = new beakerlib.CallCap(10,testProcName);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -564,7 +564,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap([procName+"abc"]);
+                const cap3 = new beakerlib.CallCap(10,"another-proc");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -590,7 +590,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap();
+                const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -633,7 +633,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap();
+                const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -648,12 +648,12 @@ contract('Kernel without entry procedure', function (accounts) {
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
                 // This is the called procedure
                 await kernel.registerProcedure("Adder", deployedAdderContract.address, beakerlib.Cap.toInput([]));
-                await kernel.registerProcedure("FirstNestedCall",  deployedFirstNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8001,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("SecondNestedCall", deployedSecondNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8002,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("ThirdNestedCall",  deployedThirdNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8003,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("FourthNestedCall", deployedFourthNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8004,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("FifthNestedCall",  deployedFifthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap()]));
-                await kernel.registerProcedure("SixthNestedCall",  deployedSixthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap()]));
+                await kernel.registerProcedure("FirstNestedCall",  deployedFirstNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8001,0), new beakerlib.CallCap(0,"")]));
+                await kernel.registerProcedure("SecondNestedCall", deployedSecondNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8002,0), new beakerlib.CallCap(0,"")]));
+                await kernel.registerProcedure("ThirdNestedCall",  deployedThirdNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8003,0), new beakerlib.CallCap(0,"")]));
+                await kernel.registerProcedure("FourthNestedCall", deployedFourthNestedContract.address, beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8004,0), new beakerlib.CallCap(0,"")]));
+                await kernel.registerProcedure("FifthNestedCall",  deployedFifthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap(0,"")]));
+                await kernel.registerProcedure("SixthNestedCall",  deployedSixthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap(0,"")]));
 
                 await kernel.executeProcedure("FirstNestedCall", "G()", "");
 

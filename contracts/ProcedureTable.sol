@@ -205,19 +205,31 @@ library ProcedureTable {
         if (cap.capType != CAP_PROC_CALL) {
             return false;
         }
-        // If the cap is empty it implies all procedures are ok
-        if (cap.values.length == 0) {
-            return true;
-        } else {
-            // otherwise we cycle through the permitted procedure keys and see
-            // if we can find the requested on
-            for (uint256 i = 0; i < cap.values.length; i++) {
-                if (bytes24(cap.values[i]/0x10000000000000000) == procedureKey) {
-                    return true;
-                }
-            }
+        // The cap should contain a single 32-byte value.
+        if (cap.values.length != 1) {
+            return false;
         }
-        return false;
+        // Put that value in a local variable.
+        uint256 value = cap.values[0];
+        uint8 prefix = 0xff;
+        bytes24 baseKey = 0;
+        bytes24 clearedBaseKey;
+        bytes24 clearedReqKey;
+        assembly {
+            // Shift that 32 bytes to the right to obtain the first byte only
+            prefix := div(value,0x100000000000000000000000000000000000000000000000000000000000000)
+            // Shift the value to get the procedure key left align (as it should
+            // be for compatibility with bytes24).
+            baseKey := mul(value,0x10000000000000000)
+            let q := signextend(1,2)
+            // h is a large number we will use for arithmetic
+            let h := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+            // y is a number with $prefix 1s at the start
+            let y := mul(h,exp(2,sub(256,prefix)))
+            clearedBaseKey := and(y,baseKey)
+            clearedReqKey := and(y,procedureKey)
+        }
+        return clearedBaseKey == clearedReqKey;
     }
 
     function checkAccCallCapability(Self storage /* self */, uint192 key, address account, uint256 amount, uint256 reqCapIndex) internal view returns (bool) {

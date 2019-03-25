@@ -124,22 +124,34 @@ class LogCap extends Cap {
 }
 exports.LogCap = LogCap;
 
-// Currently the call is a list of procedure keys it can call. If the list is
-// empty it means that any procedure can be called.
 class CallCap extends Cap {
     // keys should be a list of strings
-    constructor(keys) {
+    constructor(prefixLength, baseKey) {
         super(CAP_TYPE.PROC_CALL);
-        if (!keys) {
-            this.keys = [];
-        } else {
-            this.keys = keys;
+        if (baseKey.length > 24) {
+            throw new Error("key too long");
         }
+        this.baseKey = baseKey;
+        this.prefixLength = prefixLength;
     }
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
     keyValues() {
-        const val = Array.from(this.keys.map(x => web3.fromAscii(x.padEnd(32, '\0'))));
+        // The baseKey will take up the last 24 bytes
+        // baseKey24 is the given key correctly padded to 24 bytes, left aligned
+        const baseKey24 = web3.fromAscii(this.baseKey.padEnd(24, '\0'))
+        // baseKeyHex is baseKey24, hex-encoded, and is therefore 48 chars. The
+        // "0x" is removed from the start of the string.
+        const baseKeyHex = web3.toHex(baseKey24).slice(2);
+        // prefixHex is the prefix length hex-encoded and padded to two chars (a
+        // single byte). The "0x" is removed here also.
+        const prefixHex = web3.toHex(this.prefixLength).slice(2).padStart(2,'0');
+        // There are 7 bytes between the prefix length and the start of the base
+        // key.
+        const undefinedFill = web3.toHex("".padEnd(7,'\0')).slice(2);
+        // We string these together in the correct order.
+        const key = "0x" + prefixHex + undefinedFill + baseKeyHex;
+        const val = Array.from([key]);
         return val;
     }
 }

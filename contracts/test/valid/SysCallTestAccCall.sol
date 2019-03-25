@@ -17,15 +17,13 @@ contract SysCallTestAccCall is BeakerContract {
 
     // Call Adder:add(3,5), return result
     function B(address account, uint256 amount) public returns (uint256) {
-        // bytes4 functionSelector = bytes4(keccak256("add(uint256,uint256)"));
-        // 771602f7
+        bytes4 functionSelector = bytes4(keccak256("add(uint256,uint256)"));
         bytes memory input = new bytes(68);
 
-        // input[0] = functionSelector[0];
-        input[0] = 0x77;
-        input[1] = 0x16;
-        input[2] = 0x02;
-        input[3] = 0xf7;
+        input[0] = functionSelector[0];
+        input[1] = functionSelector[1];
+        input[2] = functionSelector[2];
+        input[3] = functionSelector[3];
 
         input[35] = 0x03;
         input[67] = 0x05;

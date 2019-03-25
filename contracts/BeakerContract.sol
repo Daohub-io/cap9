@@ -75,7 +75,7 @@ contract BeakerContract is IKernel {
     return err;
   }
 
-  function proc_call(uint8 capIndex, bytes32 procId, string fselector, uint32[] input) internal returns (uint32 err, bytes memory output) {
+  function proc_call(uint8 capIndex, bytes24 procId, bytes memory input) internal returns (uint32 err, bytes memory output) {
         assembly {
             function malloc(size) -> result {
                 // align to 32-byte words
@@ -122,12 +122,8 @@ contract BeakerContract is IKernel {
                 }
             }
 
-            let inputSize := mul(mload(input), 0x20)
-            let bufSize := add(0x80, inputSize)
-
-            // If fselector is non-empty
-            let fselSize := mload(fselector)
-            if fselSize { bufSize := add(bufSize, 0x20)}
+            let inputSize := mload(input)
+            let bufSize := add(0x60, inputSize)
 
             let buf := malloc(bufSize)
 
@@ -137,20 +133,14 @@ contract BeakerContract is IKernel {
             // The capability index
             mstore(add(buf,0x20),capIndex)
             // The key of the procedure
-            mstore(add(buf,0x40),procId)
+            mstore(add(buf,0x40),div(procId,0x10000000000000000))
 
-            // The data from 0x80 onwards is the data we want to send to
+            // The data from 0x60 onwards is the data we want to send to
             // this procedure
             let inputStart := add(input, 0x20)
-            let bufStart := add(buf, 0x80)
+            let bufStart := add(buf, 0x60)
 
-            // If selector is non-empty, add it
-            if fselSize {
-                mstore(bufStart, keccak256(add(fselector, 0x20), fselSize))
-                bufStart := add(bufStart, 4)
-            }
-
-            memcopy(bufStart,inputStart,mul(mload(input),32))
+            memcopy(bufStart,inputStart,mload(input))
 
             // "in_offset" is at 31, because we only want the last byte of type
             // "in_size" is 97 because it is 1+32+32+32
