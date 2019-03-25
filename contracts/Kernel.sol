@@ -176,10 +176,18 @@ contract Kernel is Factory, IKernel {
         // offset 1 is the capIndex (32 bytes)
         // We also perform a shift as this is 24 byte value, not a 32 byte
         // value
-        bytes24 procedureKey = bytes24(parse24ByteValue(1+32));
+        bytes24 procedureKey;// = bytes24(parse24ByteValue(1+32));
+        assembly {
+            // value := shr(8,calldataload(startOffset))
+            // We add 8 here because the key is right aligned in 32 bytes
+            // (i.e. 8 bytes from the start).
+            // 41 = 1+32+8
+            procedureKey := calldataload(41)
+        }
+        uint256 dataStart = 1+2*32;
         uint256 dataLength;
-        if (msg.data.length > (1+3*32)) {
-            dataLength = msg.data.length - (1+3*32);
+        if (msg.data.length > dataStart) {
+            dataLength = msg.data.length - dataStart;
         } else {
             dataLength = 0;
         }
@@ -236,7 +244,7 @@ contract Kernel is Factory, IKernel {
                     ins :=  malloc(dataLength)
                     // Then we store that data at this allocated memory
                     // location
-                    calldatacopy(ins, 97, dataLength)
+                    calldatacopy(ins, dataStart, dataLength)
                     inl := dataLength
                 }
                 if iszero(dataLength) {

@@ -41,14 +41,15 @@ contract BasicEntryProcedure {
             // The capability index is 0x-02
             mstore(add(ins,0x20),0x02)
             // The key of the procedure
-            mstore(add(ins,0x40),procedureKey)
+            // mstore(add(ins,0x40),0) // clear
+            mstore(add(ins,0x40),div(procedureKey,0x10000000000000000))
 
             // Copy the payload data into the input buffer
-            calldatacopy(add(ins,0x80),24,payloadLength)
+            calldatacopy(add(ins,0x60),24,payloadLength)
 
             // "in_offset" is at 31, because we only want the last byte of type
             // "in_size" is 97 because it is 1+32+32+32+4
-            let status := delegatecall(gas, caller, add(ins,31), add(97,payloadLength), 0, 0)
+            let status := delegatecall(gas, caller, add(ins,31), add(65,payloadLength), 0, 0)
 
             // Copy whatever was returned by the procedure into memory
             let retLoc := malloc(returndatasize)
