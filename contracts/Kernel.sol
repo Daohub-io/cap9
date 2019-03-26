@@ -34,8 +34,6 @@ contract IKernel {
 
     // CAPABILITY_TYPES
     uint8 constant CAP_NULL                 = 0;
-    uint8 constant CAP_PROC_CAP_PUSH        = 1;
-    uint8 constant CAP_PROC_CAP_DELETE      = 2;
     uint8 constant CAP_PROC_CALL            = 3;
     uint8 constant CAP_PROC_REGISTER        = 4;
     uint8 constant CAP_PROC_DELETE          = 5;

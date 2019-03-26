@@ -1,8 +1,6 @@
 
 const CAP_TYPE = {
     NULL                 : 0,
-    PROC_CAP_PUSH        : 1,
-    PROC_CAP_DELETE      : 2,
     PROC_CALL            : 3,
     PROC_REGISTER        : 4,
     PROC_DELETE          : 5,
@@ -175,7 +173,7 @@ exports.RegisterCap = RegisterCap;
 
 class DeleteCap extends Cap {
     // A DeleteCap is just a boolean value, a procedure can or cannot
-    // register new procedures
+    // delete procedures
     constructor(keys = []) {
         super(CAP_TYPE.PROC_DELETE);
         this.keys = keys;
