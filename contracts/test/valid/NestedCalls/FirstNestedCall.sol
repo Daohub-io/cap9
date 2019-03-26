@@ -15,15 +15,25 @@ contract FirstNestedCall is BeakerContract {
         write(1, 0x8001, 75);
 
         // Begin our call to SecondNestedCall
-        uint32[] memory input = new uint32[](1);
-        input[0] = 0;
+        bytes memory input = new bytes(4);
+        bytes4 functionSelector = bytes4(keccak256("G()"));
 
-        proc_call(2, "SecondNestedCall", "G()", input);
+        input[0] = functionSelector[0];
+        input[1] = functionSelector[1];
+        input[2] = functionSelector[2];
+        input[3] = functionSelector[3];
+
+        proc_call(2, "SecondNestedCall", input);
 
         // Being our call to SixthNestedCall
-        uint32[] memory input2 = new uint32[](1);
-        input[0] = 0;
+        bytes memory input2 = new bytes(4);
+        bytes4 functionSelector2 = bytes4(keccak256("G()"));
 
-        proc_call(2, "SixthNestedCall", "G()", input2);
+        input2[0] = functionSelector2[0];
+        input2[1] = functionSelector2[1];
+        input2[2] = functionSelector2[2];
+        input2[3] = functionSelector2[3];
+
+        proc_call(2, "SixthNestedCall", input2);
     }
 }

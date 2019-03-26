@@ -597,7 +597,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const procAName = "ProcedureA";
                 const capArrayEntryProc = beakerlib.Cap.toInput([
                     // Give the procedure a call cap, not a delete cap
-                    new beakerlib.CallCap()
+                    new beakerlib.CallCap(0,"")
                 ]);
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel
@@ -690,7 +690,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const procAName = "ProcedureA";
                 const capArrayEntryProc = beakerlib.Cap.toInput([
                     // Give the procedure a call cap, not a delete cap
-                    new beakerlib.CallCap()
+                    new beakerlib.CallCap(0,"")
                 ]);
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel

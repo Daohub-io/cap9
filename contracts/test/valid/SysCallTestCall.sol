@@ -5,38 +5,48 @@ import "../../BeakerContract.sol";
 contract SysCallTestCall is BeakerContract {
     // Log to no topics
     function A() public returns (uint32) {
-        uint32[] memory input = new uint32[](1);
-        input[0] = 0;
+        bytes memory input = new bytes(0);
 
-        (uint32 err, /* bytes memory output */) = proc_call(2, "TestWrite", "", input);
+        (uint32 err, /* bytes memory output */) = proc_call(2, "TestWrite", input);
         return err;
     }
 
     // Call SysCallTestWrite
     function B() public returns (uint32) {
-        uint32[] memory input = new uint32[](1);
-        input[0] = 0;
+        bytes memory input = new bytes(0);
 
-        (uint32 err, /* bytes memory output */) = proc_call(2, "SysCallTestWrite", "", input);
+        (uint32 err, /* bytes memory output */) = proc_call(2, "SysCallTestWrite", input);
         return err;
     }
 
     // Call SysTestCall:S()
     function C() public {
-        uint32[] memory input = new uint32[](1);
-        input[0] = 0;
+        bytes memory input = new bytes(4);
+        bytes4 functionSelector = bytes4(keccak256("S()"));
 
-        proc_call(2, "SysCallTestWrite", "S()", input);
+        input[0] = functionSelector[0];
+        input[1] = functionSelector[1];
+        input[2] = functionSelector[2];
+        input[3] = functionSelector[3];
+
+        proc_call(2, "SysCallTestWrite", input);
     }
 
     // Call Adder:add(3,5), return result
     function E() public returns (uint) {
 
-        uint32[] memory input = new uint32[](2);
-        input[0] = 3;
-        input[1] = 5;
+        bytes4 functionSelector = bytes4(keccak256("add(uint256,uint256)"));
+        bytes memory input = new bytes(68);
 
-        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
+        input[0] = functionSelector[0];
+        input[1] = functionSelector[1];
+        input[2] = functionSelector[2];
+        input[3] = functionSelector[3];
+
+        input[35] = 0x03;
+        input[67] = 0x05;
+
+        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", input);
 
         return uint256(output[31]);
     }
@@ -45,17 +55,29 @@ contract SysCallTestCall is BeakerContract {
     function F() public returns (uint256) {
 
         // We will store the result from the first procedure call (add) here
-        uint32[] memory input = new uint32[](2);
-        input[0] = 3;
-        input[1] = 5;
+        bytes4 functionSelector = bytes4(keccak256("add(uint256,uint256)"));
+        bytes memory input = new bytes(68);
 
-        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", "add(uint256,uint256)", input);
+        input[0] = functionSelector[0];
+        input[1] = functionSelector[1];
+        input[2] = functionSelector[2];
+        input[3] = functionSelector[3];
+
+        input[35] = 0x03;
+        input[67] = 0x05;
+
+        (/* uint32 err */, bytes memory output) = proc_call(2, "Adder", input);
         uint256 addResult = uint256(output[31]);
 
-        uint32[] memory input2 = new uint32[](1);
-        input[0] = 0;
+        bytes4 functionSelector2 = bytes4(keccak256("S()"));
+        bytes memory input2 = new bytes(4);
 
-        proc_call(2, "SysCallTestWrite", "S()", input2);
+        input2[0] = functionSelector2[0];
+        input2[1] = functionSelector2[1];
+        input2[2] = functionSelector2[2];
+        input2[3] = functionSelector2[3];
+
+        proc_call(2, "SysCallTestWrite", input2);
 
         return addResult;
     }
