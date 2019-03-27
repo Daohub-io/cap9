@@ -305,12 +305,15 @@ contract('Kernel without entry procedure', function (accounts) {
 
             const [err2, deleteAddress] = await kernel.deleteProcedure.call(procedureName);
             assert.equal(err2, 0);
+            const retrievedAddress1 = await kernel.getProcedure(procedureName);
+            assert(!isNullAddress(retrievedAddress1), "The key should be retrievable")
 
             const tx2 = await kernel.deleteProcedure('test');
 
             assert.equal(address, deleteAddress);
             const retrievedAddress = await kernel.getProcedure(procedureName);
-            assert(isNullAddress(retrievedAddress), "The key be able to be retrieved")
+            // console.log(retrievedAddress)
+            assert(isNullAddress(retrievedAddress), "The key should not be retrievable")
 
             const proceduresRaw = await kernel.listProcedures.call();
             const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
@@ -498,8 +501,8 @@ contract('Kernel without entry procedure', function (accounts) {
                     const kernel = await Kernel.new();
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call(procName, testSimple.address, []);
-                    const tx = await kernel.registerProcedure(procName, testSimple.address, []);
+                    const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
+                    const tx = await kernel.registerAnyProcedure(procName, testSimple.address, []);
 
                     const functionSpec = "executeProcedure(bytes24,string,bytes)"
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
@@ -524,8 +527,8 @@ contract('Kernel without entry procedure', function (accounts) {
                     const kernel = await Kernel.new();
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call(procName, testSimple.address, []);
-                    const tx = await kernel.registerProcedure(procName, testSimple.address, []);
+                    const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
+                    const tx = await kernel.registerAnyProcedure(procName, testSimple.address, []);
 
                     const functionSpec = "executeProcedure(bytes24,string,bytes)"
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
@@ -550,8 +553,8 @@ contract('Kernel without entry procedure', function (accounts) {
                     const kernel = await Kernel.new();
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call(procName, testSimple.address, []);
-                    const tx = await kernel.registerProcedure(procName, testSimple.address, []);
+                    const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
+                    const tx = await kernel.registerAnyProcedure(procName, testSimple.address, []);
 
                     const functionSpec = "executeProcedure(bytes24,string,bytes)"
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
@@ -577,8 +580,8 @@ contract('Kernel without entry procedure', function (accounts) {
                     const kernel = await Kernel.new();
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call(procName, testSimple.address, []);
-                    const tx = await kernel.registerProcedure(procName, testSimple.address, []);
+                    const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
+                    const tx = await kernel.registerAnyProcedure(procName, testSimple.address, []);
 
                     const functionSpec = "executeProcedure(bytes24,string,bytes)"
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
@@ -602,8 +605,8 @@ contract('Kernel without entry procedure', function (accounts) {
                     const kernel = await Kernel.new();
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
-                    const [, address] = await kernel.registerProcedure.call(procName, testSimple.address, []);
-                    const tx = await kernel.registerProcedure(procName, testSimple.address, []);
+                    const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
+                    const tx = await kernel.registerAnyProcedure(procName, testSimple.address, []);
 
                     const functionSpec = "executeProcedure(bytes24,string,bytes)"
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
@@ -637,12 +640,12 @@ contract('Kernel without entry procedure', function (accounts) {
                 const testSimple = await testutils.deployedTrimmed(Valid.Multiply);
                 const tx1 = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, capArray);
                 const tx2 = await kernel.registerProcedure("Simple", testSimple.address, []);
-                const rawProcTableData = await kernel.returnRawProcedureTable.call();
+                // const rawProcTableData = await kernel.returnRawProcedureTable.call();
                 const procTableData = await kernel.returnProcedureTable.call();
 
                 // // Check that the two methods are the same
                 // for (const v in procTableData) {
-                //     console.log(v, ": " + web3.toHex(procTableData[v]) + " -- " + web3.toHex(rawProcTableData[v]));
+                //     console.log(v, ": " + web3.toHex(procTableData[v]));
                 //     if (v > 24) break;
                 // }
 

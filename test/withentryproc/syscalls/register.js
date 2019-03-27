@@ -610,8 +610,9 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(0x8000,procTable.procedures[encodedName].caps[0].values[0], "The first value of the second cap should be 0x8000");
                 assert.equal(1,procTable.procedures[encodedName].caps[0].values[1], "The second value of the second cap should be 1");
 
-                assert.equal(0x8,procTable.procedures[encodedName].caps[1].type, "The first cap should be of type 0x9");
-                assert.equal(0,procTable.procedures[encodedName].caps[1].values.length, "The first cap should have no values associated with it");
+                assert.equal(0x8,procTable.procedures[encodedName].caps[1].type, "The first cap should be of type 0x8");
+                assert.equal(5,procTable.procedures[encodedName].caps[1].values.length, "The first cap should have 5 values associated with it");
+                assert.deepEqual([0,0,0,0,0],procTable.procedures[encodedName].caps[1].values, "ALl the values associated with the log cap should be zero");
             })
             it('B(bytes24 procName, address procAddress, uint256[] caps) should fail when not given cap (the registered contract tries to have 2 caps)', async function () {
                 const kernel = await Kernel.new();

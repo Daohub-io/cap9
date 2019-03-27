@@ -50,7 +50,6 @@ contract('Kernel with entry procedure', function (accounts) {
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});
-                    console.log(tx3.receipt.blockNumber)
                     const valueX = web3.toBigNumber(valueXRaw);
 
                     assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
