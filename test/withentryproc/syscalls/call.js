@@ -434,9 +434,10 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(0,"");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -471,8 +472,9 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -507,9 +509,10 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
                 const cap3 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap4 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -544,9 +547,10 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10,testProcName);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10,testProcName);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -778,9 +782,10 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(0,"");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedAdderContract = await testutils.deployedTrimmed(Valid.Adder);

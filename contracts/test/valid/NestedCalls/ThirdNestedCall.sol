@@ -13,7 +13,7 @@ contract ThirdNestedCall  is BeakerContract {
      // End
     function G() public {
         // First we do the store for FirstNestedCall
-        write(1, 0x8003, 77);
+        write(0, 0x8003, 77);
 
         // Being our call to FourthNestedCall
         bytes memory input = new bytes(4);
@@ -24,6 +24,6 @@ contract ThirdNestedCall  is BeakerContract {
         input[2] = functionSelector[2];
         input[3] = functionSelector[3];
 
-        proc_call(2, "FourthNestedCall", input);
+        proc_call(0, "FourthNestedCall", input);
     }
 }

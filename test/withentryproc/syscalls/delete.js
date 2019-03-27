@@ -64,12 +64,16 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 // Give ProcedureA a delete capability to remove only ProcedureB
                 const capArrayEntryProc = beakerlib.Cap.toInput([
-                    new beakerlib.DeleteCap([procBName])
+                    new beakerlib.DeleteCap(192,procBName)
                 ]);
 
                 // This uses a direct call to the kernel
                 await kernel.registerAnyProcedure(procAName, deployedEntryProc.address, capArrayEntryProc);
                 await kernel.registerAnyProcedure(procBName, deployedContractB.address, []);
+                {
+                    const proceduresRaw = await kernel.listProcedures.call();
+                    const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+                }
 
                 // Call the delete function to delete Procedure B
                 {
@@ -88,7 +92,6 @@ contract('Kernel with entry procedure', function (accounts) {
                     // }
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: manualInputData});
                     const tx3 = await kernel.sendTransaction({data: manualInputData});
-
                     const valueX = web3.toBigNumber(valueXRaw);
                     // we execute a test function to ensure the procedure is
                     // functioning properly
@@ -130,7 +133,7 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 // Give ProcedureA a delete capability to remove a procedure Id different from ProcedureB
                 const capArrayEntryProc = beakerlib.Cap.toInput([
-                    new beakerlib.DeleteCap([procCName])
+                    new beakerlib.DeleteCap(192, procCName)
                 ]);
 
                 // This uses a direct call to the kernel
@@ -204,7 +207,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
                 const capArrayEntryProc = beakerlib.Cap.toInput([
-                    new beakerlib.DeleteCap()
+                    new beakerlib.DeleteCap(0, "")
                 ]);
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel
@@ -290,14 +293,17 @@ contract('Kernel with entry procedure', function (accounts) {
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-
+                {
+                    const proceduresRaw = await kernel.listProcedures.call();
+                    const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+                }
                 // Install the default entry procedure
                 await testutils.installEntryProc(kernel);
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
                 const capArrayEntryProc = beakerlib.Cap.toInput([
-                    new beakerlib.DeleteCap()
+                    new beakerlib.DeleteCap(0, "")
                 ]);
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel
@@ -356,12 +362,12 @@ contract('Kernel with entry procedure', function (accounts) {
                     // }
 
 
-                    const tx3 = await kernel.sendTransaction({data: manualInputData});
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: manualInputData});
-                    // const valueX = web3.toBigNumber(valueXRaw);
+                    const tx3 = await kernel.sendTransaction({data: manualInputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
                     // we execute a test function to ensure the procedure is
                     // functioning properly
-                    assert.equal(valueXRaw, "0x", "Should return nothing");
+                    assert.equal(valueX, 0, "Should return zero");
                 }
 
 
@@ -390,7 +396,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
                 const capArrayEntryProc = beakerlib.Cap.toInput([
-                    new beakerlib.DeleteCap()
+                    new beakerlib.DeleteCap(0, "")
                 ]);
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel
@@ -483,7 +489,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
                 const capArrayEntryProc = beakerlib.Cap.toInput([
-                    new beakerlib.DeleteCap()
+                    new beakerlib.DeleteCap(0, "")
                 ]);
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel
@@ -782,7 +788,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
                 const capArrayEntryProc = beakerlib.Cap.toInput([
-                    new beakerlib.DeleteCap()
+                    new beakerlib.DeleteCap(0, "")
                 ]);
                 const deployedEntryProc = await testutils.deployedTrimmed(contractA);
                 // This uses a direct call to the kernel

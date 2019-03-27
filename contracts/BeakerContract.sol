@@ -6,7 +6,7 @@ import "./ProcedureTable.sol";
 contract BeakerContract is IKernel {
 
     function this_proc() internal view returns (ProcedureTable.Procedure memory) {
-        return ProcedureTable._getProcedureByKey(uint192(currentProcedure));
+        return ProcedureTable._getProcedureByKey(getCurrentProcedure());
     }
 
     // TODO: this doesn't actually use caps, just reads raw

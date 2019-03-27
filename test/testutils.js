@@ -3,15 +3,18 @@ const BasicEntryProcedure = artifacts.require('BasicEntryProcedure.sol');
 
 async function installEntryProc(kernel) {
     const entryProcName = "EntryProcedure";
-    kernel.setEntryProcedure(entryProcName);
     const capArrayEntryProc = beakerlib.Cap.toInput([
         new beakerlib.WriteCap(0x8001,2),
         new beakerlib.LogCap([]),
-        new beakerlib.CallCap(0,"")
+        // Call or register any procedure key
+        new beakerlib.CallCap(0,""),
+        new beakerlib.RegisterCap(0,"")
     ]);
     const deployedEntryProc = await deployedTrimmed(BasicEntryProcedure);
     // Install the entry procedure
-    await kernel.registerAnyProcedure(entryProcName, deployedEntryProc.address, capArrayEntryProc);
+    const regTX = await kernel.registerAnyProcedure(entryProcName, deployedEntryProc.address, capArrayEntryProc);
+    const setEntryTX = await kernel.setEntryProcedure(entryProcName);
+    return [regTX, setEntryTX];
 }
 exports.installEntryProc = installEntryProc;
 

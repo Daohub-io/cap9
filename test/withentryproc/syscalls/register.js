@@ -48,7 +48,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // console.log("procedures2:", procedures2);
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap();
+                const cap2 = new beakerlib.RegisterCap(0,"");
                 const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
@@ -101,7 +101,8 @@ contract('Kernel with entry procedure', function (accounts) {
                     //         console.log("non-ascii");
                     //     }
                     // }
-                    // console.log(valueX.toNumber())
+                    // console.log(tx3)
+                    // console.log(valueXRaw)
                     assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
                 }
 
@@ -287,7 +288,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // console.log("procedures2:", procedures2);
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap();
+                const cap2 = new beakerlib.RegisterCap(0, "");
                 const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
@@ -386,7 +387,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // console.log("procedures2:", procedures2);
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap();
+                const cap2 = new beakerlib.RegisterCap(0, "");
                 const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
@@ -432,9 +433,16 @@ contract('Kernel with entry procedure', function (accounts) {
                         + web3.fromAscii(testProcName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
                         + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
                         + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
-                        + web3.toHex(2).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
-                        + web3.toHex(1).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(9).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
+
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // of type LOG
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
+                        + web3.toHex(4).slice(2).padStart(32*2,0) // the number of log topics
+                        + "0xabcd".slice(2).padStart(32*2,0) // log topic #1
+                        + "0xefa2".slice(2).padStart(32*2,0) // log topic #2
+                        + "0x2343".slice(2).padStart(32*2,0) // log topic #3
+                        + "0xfe12".slice(2).padStart(32*2,0) // log topic #4
                     // console.log(manualInputData)
                     // // when using web3 1.0 this will be good
                     // try {
@@ -446,6 +454,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     // assert.strictEqual(inputData,)
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});
+                    // console.log(tx3.receipt)
                     const valueX = web3.toBigNumber(valueXRaw);
                     // for (const log of tx3.receipt.logs) {
                     //     // console.log(`${log.topics} - ${log.data}`);
@@ -492,7 +501,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 // console.log("procedures2:", procedures2);
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap();
+                const cap2 = new beakerlib.RegisterCap(0, "");
                 const cap3 = new beakerlib.CallCap(0,"");
                 const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
@@ -539,13 +548,20 @@ contract('Kernel with entry procedure', function (accounts) {
                         + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
                         + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
 
-                        + web3.toHex(6).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
+                        + web3.toHex(13).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
 
-                        + web3.toHex(1).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(9).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // 0 topics
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic1
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic2
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic3
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic4
 
-                        + web3.toHex(3).slice(2).padStart(32*2,0) // the length of the second cap, which is 1
+                        + web3.toHex(5).slice(2).padStart(32*2,0) // the length of the second cap, which is 4
                         + web3.toHex(7).slice(2).padStart(32*2,0) // the type of the second cap, which is "write"
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
                         + web3.toHex(0x8000).slice(2).padStart(32*2,0) // the address of the wrote
                         + web3.toHex(1).slice(2).padStart(32*2,0) // the number of additional keys
 
@@ -588,13 +604,14 @@ contract('Kernel with entry procedure', function (accounts) {
                 const encodedName = web3.toHex(testProcName.padEnd(24,'\0'));
                 assert.equal(2,procTable.procedures[encodedName].caps.length, "The procedure should have 2 caps");
 
-                assert.equal(0x9,procTable.procedures[encodedName].caps[0].type, "The first cap should be of type 0x9");
-                assert.equal(0,procTable.procedures[encodedName].caps[0].values.length, "The first cap should have no values associated with it");
 
-                assert.equal(0x7,procTable.procedures[encodedName].caps[1].type, "The second cap should be of type 0x7");
-                assert.equal(2,procTable.procedures[encodedName].caps[1].values.length, "The second cap should have 2 values associated with it");
-                assert.equal(0x8000,procTable.procedures[encodedName].caps[1].values[0], "The first value of the second cap should be 0x8000");
-                assert.equal(1,procTable.procedures[encodedName].caps[1].values[1], "The second value of the second cap should be 1");
+                assert.equal(0x7,procTable.procedures[encodedName].caps[0].type, "The second cap should be of type 0x7");
+                assert.equal(2,procTable.procedures[encodedName].caps[0].values.length, "The second cap should have 2 values associated with it");
+                assert.equal(0x8000,procTable.procedures[encodedName].caps[0].values[0], "The first value of the second cap should be 0x8000");
+                assert.equal(1,procTable.procedures[encodedName].caps[0].values[1], "The second value of the second cap should be 1");
+
+                assert.equal(0x8,procTable.procedures[encodedName].caps[1].type, "The first cap should be of type 0x9");
+                assert.equal(0,procTable.procedures[encodedName].caps[1].values.length, "The first cap should have no values associated with it");
             })
             it('B(bytes24 procName, address procAddress, uint256[] caps) should fail when not given cap (the registered contract tries to have 2 caps)', async function () {
                 const kernel = await Kernel.new();
@@ -653,13 +670,20 @@ contract('Kernel with entry procedure', function (accounts) {
                         + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
                         + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
 
-                        + web3.toHex(6).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
+                        + web3.toHex(13).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
 
-                        + web3.toHex(1).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(9).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // 0 topics
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic1
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic2
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic3
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic4
 
-                        + web3.toHex(3).slice(2).padStart(32*2,0) // the length of the second cap, which is 1
+                        + web3.toHex(5).slice(2).padStart(32*2,0) // the length of the second cap, which is 4
                         + web3.toHex(7).slice(2).padStart(32*2,0) // the type of the second cap, which is "write"
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
                         + web3.toHex(0x8000).slice(2).padStart(32*2,0) // the address of the wrote
                         + web3.toHex(1).slice(2).padStart(32*2,0) // the number of additional keys
 
@@ -764,13 +788,20 @@ contract('Kernel with entry procedure', function (accounts) {
                         + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
                         + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
 
-                        + web3.toHex(6).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
+                        + web3.toHex(13).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
 
-                        + web3.toHex(1).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(9).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // 0 topics
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic1
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic2
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic3
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic4
 
-                        + web3.toHex(3).slice(2).padStart(32*2,0) // the length of the second cap, which is 1
+                        + web3.toHex(5).slice(2).padStart(32*2,0) // the length of the second cap, which is 4
                         + web3.toHex(7).slice(2).padStart(32*2,0) // the type of the second cap, which is "write"
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
                         + web3.toHex(0x8000).slice(2).padStart(32*2,0) // the address of the wrote
                         + web3.toHex(1).slice(2).padStart(32*2,0) // the number of additional keys
 

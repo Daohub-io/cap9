@@ -12,6 +12,6 @@ contract FourthNestedCall  is BeakerContract {
      // End
     function G() public {
         // First we do the store for FirstNestedCall
-        write(1, 0x8004, 78);
+        write(0, 0x8004, 78);
     }
 }

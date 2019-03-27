@@ -35,10 +35,10 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
                 // This is the procedure that will be set as entry
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
-                
+
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
-                
+
                 // Set the "SysCallTestEntry" as entry
                 await kernel.setEntryProcedure(procName);
 
@@ -50,7 +50,7 @@ contract('Kernel with entry procedure', function (accounts) {
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});
-
+                    console.log(tx3.receipt.blockNumber)
                     const valueX = web3.toBigNumber(valueXRaw);
 
                     assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
@@ -58,7 +58,7 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 // Check that entry procedure has changed
                 let entry_raw = await kernel.getEntryProcedure.call();
-                let new_entry_proc = web3.toAscii(entry_raw).replace(/\0.*$/, '')
+                let new_entry_proc = web3.toAscii(web3.toHex(entry_raw)).replace(/\0.*$/, '')
                 assert.equal(new_entry_proc, "TestWrite")
             })
 
@@ -73,10 +73,10 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 // This is the procedure that will be entry procedure first
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
-                
+
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
-                
+
                 // Set the "SysCallTestEntry" as entry
                 await kernel.setEntryProcedure(procName);
 
@@ -95,7 +95,7 @@ contract('Kernel with entry procedure', function (accounts) {
 
                 // Check that entry procedure has changed
                 let entry_raw = await kernel.getEntryProcedure.call();
-                let new_entry_proc = web3.toAscii(entry_raw).replace(/\0.*$/, '')
+                let new_entry_proc = web3.toAscii(web3.toHex(entry_raw)).replace(/\0.*$/, '')
                 assert.equal(new_entry_proc, procName)
             })
         })

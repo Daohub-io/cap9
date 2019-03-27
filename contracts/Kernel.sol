@@ -16,12 +16,8 @@ contract IKernel {
     using ProcedureTable for ProcedureTable.Self;
     ProcedureTable.Self procedures;
 
-    // Current Entry Procedure
-    bytes24 public entryProcedure;
     // Current Instance Address
     address kernelAddress;
-    // Current Running Procedure
-    bytes24 currentProcedure;
 
     // SYSCALL_RESPONSE_TYPES
     uint8 constant SyscallSuccess = 0;
@@ -33,7 +29,6 @@ contract IKernel {
     uint8 constant NoSuchSyscallError = 111;
 
     // CAPABILITY_TYPES
-    uint8 constant CAP_NULL                 = 0;
     uint8 constant CAP_PROC_CALL            = 3;
     uint8 constant CAP_PROC_REGISTER        = 4;
     uint8 constant CAP_PROC_DELETE          = 5;
@@ -42,8 +37,15 @@ contract IKernel {
     uint8 constant CAP_LOG                  = 8;
     uint8 constant CAP_ACC_CALL             = 9;
 
-    function getEntryProcedure() public view returns (bytes24 key) {
-        return entryProcedure;
+    // function getEntryProcedure() public view returns (bytes24 key) {
+    //     return bytes24(_getEntryProcedure());
+    // }
+
+    function getCurrentProcedure() view public returns (uint192 val) {
+        assembly {
+            val := sload(0xffffff0300000000000000000000000000000000000000000000000000000000)
+        }
+        return val;
     }
 
     function listProcedures() public view returns (bytes24[] memory) {
@@ -68,6 +70,33 @@ contract IKernel {
 contract Kernel is Factory, IKernel {
 
     constructor() public {}
+
+
+    function _getEntryProcedure() view internal returns (uint192 val) {
+        assembly {
+            val := sload(0xffffff0400000000000000000000000000000000000000000000000000000000)
+        }
+        return val;
+    }
+
+    function _setEntryProcedureRaw(uint192 procedureKey) internal {
+        assembly {
+            sstore(0xffffff0400000000000000000000000000000000000000000000000000000000,procedureKey)
+        }
+    }
+
+    function _getCurrentProcedure() view internal returns (uint192 val) {
+        assembly {
+            val := sload(0xffffff0300000000000000000000000000000000000000000000000000000000)
+        }
+        return val;
+    }
+
+    function _setCurrentProcedure(uint192 procedureKey) internal {
+        assembly {
+            sstore(0xffffff0300000000000000000000000000000000000000000000000000000000,procedureKey)
+        }
+    }
 
     function parse32ByteValue(uint256 startOffset) pure internal returns (uint256) {
         uint256 value = 0;
@@ -112,7 +141,7 @@ contract Kernel is Factory, IKernel {
 
         // TODO: we will need to reserve a value for "not executing anything"
         // If the transaction is from this procedure...
-        return (currentProcedure == 0);
+        return (_getCurrentProcedure() == 0);
 
     }
 
@@ -121,7 +150,7 @@ contract Kernel is Factory, IKernel {
         // TODO: we need to pass through the sender somehow
         // _executeProcedure will call RETURN or REVERT, ending the transaction,
         // so control should never return here
-        _executeProcedure(entryProcedure, "", msg.data);
+        _executeProcedure(bytes24(_getEntryProcedure()), "", msg.data);
     }
 
     // This is the fallback function which is used to handle system calls. This
@@ -189,15 +218,15 @@ contract Kernel is Factory, IKernel {
         } else {
             dataLength = 0;
         }
-        bool cap = procedures.checkCallCapability(uint192(currentProcedure), procedureKey, capIndex);
+        bool cap = procedures.checkCallCapability(_getCurrentProcedure(), procedureKey, capIndex);
         address procedureAddress = procedures.get(procedureKey);
         // Note the procedure we are currently running, we will put this
         // back into the "currentProcedure" after we have finished the call.
-        bytes24 previousProcedure = currentProcedure;
+        bytes24 previousProcedure = bytes24(_getCurrentProcedure());
         // We set the value for the current procedure in the kernel so that
         // it knows which procedure it is executing (this is important for
         // looking up capabilities).
-        currentProcedure = procedureKey;
+        _setCurrentProcedure(uint192(procedureKey));
         if (cap) {
             assembly {
                 function malloc(size) -> result {
@@ -274,7 +303,7 @@ contract Kernel is Factory, IKernel {
                     0)
                 // We need to restore the previous procedure as the current
                 // procedure, this can simply be on the stack
-                sstore(currentProcedure_slot,div(previousProcedure,exp(0x100,8)))
+                sstore(0xffffff0300000000000000000000000000000000000000000000000000000000,div(previousProcedure,exp(0x100,8)))
 
                 if status {
                     let returnLength := returndatasize
@@ -309,8 +338,8 @@ contract Kernel is Factory, IKernel {
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
         address regProcAddress = address(parse32ByteValue(1+32+32));
-        // the general format of a capability is length,type,values, where
-        // length includes the type
+        // the general format of a capability is length,type,capIndex,values, where
+        // length includes the type and the length itself
         uint256 capsStartOffset =
             /* sysCallCapType */ 1
             /* capIndex */ + 32
@@ -326,7 +355,7 @@ contract Kernel is Factory, IKernel {
         for (uint256 q = 0; q < capsLengthKeys; q++) {
             regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
         }
-        bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
+        bool cap = procedures.checkRegisterCapability(uint192(_getCurrentProcedure()), regName, capIndex);
         if (cap) {
 
             (uint8 err, /* address addr */) = _registerProcedure(regName, regProcAddress, regCaps);
@@ -374,9 +403,9 @@ contract Kernel is Factory, IKernel {
         bytes24 regName = bytes24(regNameB);
 
         // Check that target is not the Entry Procedure
-        bool not_entry = entryProcedure != regName;
+        bool not_entry = bytes24(_getEntryProcedure()) != regName;
         // Check if Valid Capability
-        bool cap = procedures.checkDeleteCapability(uint192(currentProcedure), regName, capIndex);
+        bool cap = procedures.checkDeleteCapability(uint192(_getCurrentProcedure()), regName, capIndex);
         if (cap && not_entry) {
             (uint8 err, /* address addr */) = _deleteProcedure(regName);
             uint256 bigErr = uint256(err);
@@ -400,6 +429,10 @@ contract Kernel is Factory, IKernel {
                 }
                 let retSize := 32
                 let retLoc := mallocZero(retSize)
+                if iszero(bigErr) {
+                    // return nothing if everything went smoothly
+                    return(0,0)
+                }
                 mstore(retLoc,bigErr)
                 return(retLoc,retSize)
             }
@@ -421,7 +454,7 @@ contract Kernel is Factory, IKernel {
         // TODO: fix this double name variable work-around
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
-        bool cap = procedures.checkSetEntryCapability(uint192(currentProcedure), capIndex);
+        bool cap = procedures.checkSetEntryCapability(uint192(_getCurrentProcedure()), capIndex);
         if (cap) {
             (uint8 err) = _setEntryProcedure(regName);
             uint256 bigErr = uint256(err);
@@ -464,7 +497,7 @@ contract Kernel is Factory, IKernel {
         uint256 capIndex = parse32ByteValue(1);
         uint256 writeAddress = parse32ByteValue(1+32*1);
         uint256 writeValue = parse32ByteValue(1+32*2);
-        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
+        bool cap = procedures.checkWriteCapability(uint192(_getCurrentProcedure()), writeAddress, capIndex);
         if (cap) {
             assembly {
                 sstore(writeAddress, writeValue)
@@ -493,7 +526,7 @@ contract Kernel is Factory, IKernel {
                 topicVals[i] = bytes32(parse32ByteValue(1+32*(2+i)));
             }
             bytes32 logValue = bytes32(parse32ByteValue(1+32*(2+nTopics)));
-            bool cap = procedures.checkLogCapability(uint192(currentProcedure), topicVals, capIndex);
+            bool cap = procedures.checkLogCapability(uint192(_getCurrentProcedure()), topicVals, capIndex);
             if (cap) {
                 if (nTopics == 0) {
                     log0(logValue);
@@ -556,7 +589,7 @@ contract Kernel is Factory, IKernel {
         } else {
             dataLength = 0;
         }
-        bool cap = procedures.checkAccCallCapability(uint192(currentProcedure), account, amount, capIndex);
+        bool cap = procedures.checkAccCallCapability(uint192(_getCurrentProcedure()), account, amount, capIndex);
         if (cap) {
             assembly {
                 function malloc(size) -> result {
@@ -688,7 +721,7 @@ contract Kernel is Factory, IKernel {
 
     function _setEntryProcedure(bytes24 name) internal returns (uint8 err) {
         if (procedures.contains(name)) {
-            entryProcedure = name;
+            _setEntryProcedureRaw(uint192(name));
             err = 0;
         } else {
             err = 1;
@@ -706,7 +739,9 @@ contract Kernel is Factory, IKernel {
         bool success = procedures.remove(name);
 
         // Check whether the address exists
-        if (!success) {err = 2;}
+        if (!success) {
+            err = 2;
+        }
     }
 
 
@@ -731,7 +766,7 @@ contract Kernel is Factory, IKernel {
         // assembly {
         //     sstore(currentProcedure_slot,div(name,exp(0x100,8)))
         // }
-        currentProcedure = name;
+        _setCurrentProcedure(uint192(name));
         address procedureAddress = procedures.get(name);
         bool status = false;
         assembly {
@@ -826,7 +861,7 @@ contract Kernel is Factory, IKernel {
             status := callcode(gas,procedureAddress,0,ins,inl,0,0)
 
             // Zero-out the currentProcedure
-            sstore(currentProcedure_slot,0)
+            sstore(0xffffff0300000000000000000000000000000000000000000000000000000000,0)
             // copy the return data to memory based on its size
             if iszero(status) {
                 let retSize := add(0x1,returndatasize)

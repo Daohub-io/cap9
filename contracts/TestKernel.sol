@@ -33,7 +33,11 @@ contract TestKernel is Kernel {
     }
 
     function setEntryProcedure(bytes24 key) public {
-        entryProcedure = key;
+        _setEntryProcedure(key);
+    }
+
+    function getEntryProcedure() view public returns (uint192) {
+        return _getEntryProcedure();
     }
 
     // Create a validated procedure.
