@@ -46,8 +46,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 {
                     // Procedure keys must occupay the first 24 bytes, so must be padded
                     const functionSelectorHash = web3.sha3("A()").slice(2,10);
-                    const inputData = functionSelectorHash;
-
+                    const inputData = "0x" + functionSelectorHash;
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});
                     const valueX = web3.toBigNumber(valueXRaw);
@@ -83,7 +82,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 {
                     // Procedure keys must occupay the first 24 bytes, so must be padded
                     const functionSelectorHash = web3.sha3("A()").slice(2,10);
-                    const inputData = functionSelectorHash;
+                    const inputData = "0x" + functionSelectorHash;
 
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const tx3 = await kernel.sendTransaction({data: inputData});

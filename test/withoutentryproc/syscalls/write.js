@@ -78,13 +78,17 @@ contract('Kernel without entry procedure', function (accounts) {
             const kernel = await Kernel.new();
 
             const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
-            const [, address] = await kernel.registerProcedure.call("SysCallTestWrite", SysCallTestWrite.address, [3, 0x7, 0x8001, 0x0]);
-            const tx = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, [3, 0x7, 0x8001, 0x0]);
+
+            const cap1 = new beakerlib.WriteCap(0x8001, 0);
+            const capArray = beakerlib.Cap.toInput([cap1]);
+
+            const [, address] = await kernel.registerProcedure.call("SysCallTestWrite", SysCallTestWrite.address, capArray);
+            const tx = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, capArray);
 
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the first execution");
             const valueX = await kernel.executeProcedure.call("SysCallTestWrite", "S()", "");
-            await kernel.executeProcedure("SysCallTestWrite", "S()", "");
+            const txn = await kernel.executeProcedure("SysCallTestWrite", "S()", "");
             assert.equal(valueX.toNumber(), SysCallResponse.WRITEFAILURE, "S() should fail with correct value the first time");
             const newValue2 = await kernel.testGetter.call();
             assert.equal(newValue2.toNumber(), 3, "The value should remain the same the first time");

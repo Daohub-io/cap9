@@ -428,7 +428,6 @@ library ProcedureTable {
         // Variables for later use
         uint256 currentLength;
         uint256 val;
-        uint8 pos;
         uint256 j;
         uint256 thisTypeLength;
         // i is the index of the key value
@@ -496,7 +495,7 @@ library ProcedureTable {
                         val = 0xc000000000000000000000000000000000000000000000000000000000000000;
                         _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x00, val);
                     } else {
-                        revert("unknown syscall");
+                        revert("unknown capability");
                     }
                     // Increment length
                     _set(pPointer | (capType*0x10000), currentLength + 1);
@@ -530,8 +529,7 @@ library ProcedureTable {
                     currentLength = _get(pPointer | (capType*0x10000));
                     // A Procedure Call cap has one 32-byte value. Set it here at
                     // position 0
-                    pos = 0x00;
-                    _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | pos, val);
+                    _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x00, val);
                     // Increment length
                     _set(pPointer | (capType*0x10000), currentLength + 1);
                 }
@@ -559,8 +557,10 @@ library ProcedureTable {
                         revert("bad cap index");
                     }
 
-                    // Check if our cap is a subset. If not revert.
-                    // TODO
+                    bool subset = isSubset(currentProcedure, capType, capIndex, caps, i);
+                    if (!subset) {
+                        revert("cap not valid subset");
+                    }
 
                     // Serialise the cap.
                     currentLength = _get(pPointer | (capType*0x10000));
@@ -573,6 +573,113 @@ library ProcedureTable {
                 }
             }
             i += capSize;
+        }
+    }
+
+    function isSubset(uint192 currentProcedure, uint256 capType, uint256 capIndex, uint256[] caps, uint256 i) public view returns (bool) {
+        uint256 currentVal;
+        uint256 requestedVal;
+        uint256 b;
+        uint256 current;
+        uint256 req;
+        // Check if our cap is a subset. If not revert.
+        // The subset logic of these three caps are the same
+        if (capType == CAP_PROC_CALL || capType == CAP_PROC_REGISTER || capType == CAP_PROC_REGISTER) {
+            currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
+            requestedVal = caps[i+3+0];
+
+            // Check the prefix
+            current = currentVal & 0xff00000000000000000000000000000000000000000000000000000000000000;
+            req = requestedVal & 0xff00000000000000000000000000000000000000000000000000000000000000;
+            if (current > req) {
+                return false;
+            }
+
+            // b is "currentMask"
+            b = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff << ((192 - current));
+            current = b & currentVal & 0x0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff;
+            req = b & requestedVal & 0x0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff;
+            // Insert a 0 value (which means the prefix will be zero, i.e. the maximum capability)
+            // Check that the first $prefix bits of the two keys are the same
+            if (current != req) {
+                return false;
+            }
+            return true;
+        } else if (capType == CAP_STORE_WRITE) {
+            currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
+            requestedVal = caps[i+3+0];
+            if (requestedVal < currentVal) {
+                return false;
+            }
+            currentVal += _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x01);
+            requestedVal += caps[i+3+1];
+            if (requestedVal > currentVal) {
+                return false;
+            }
+            return true;
+        } else if (capType == CAP_LOG) {
+            // First we check the number of required topics. The number of
+            // required topics of the requested cap must be equal to or greater
+            // than the number of required topics for the current cap.
+            currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
+            requestedVal = caps[i+3+0];
+            if (requestedVal < currentVal) {
+                return false;
+            }
+
+            // Next we check that the topics required by the current cap are
+            // also required by the requested cap.
+            for (b = 1; b <= currentVal; b++) {
+                if (caps[i+3+b] != _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | b)) {
+                    return false;
+                }
+            }
+            return true;
+        } else if (capType == CAP_PROC_ENTRY) {
+            // All of these caps are identical, therefore any cap of this type
+            // is the subset of another
+            return true;
+        } else if (capType == CAP_ACC_CALL) {
+            // If the requested value of callAny is true, then the requested
+            // value of callAny must be true.
+            currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
+            requestedVal = caps[i+3+0];
+            current = currentVal & 0x8000000000000000000000000000000000000000000000000000000000000000;
+            req = requestedVal & 0x8000000000000000000000000000000000000000000000000000000000000000;
+            // If req != 0 (that is, equals 1, requested callAny flag is true) and
+            // current == 0 (that is, current callAny flag is false)
+            // then fail
+            if (req != 0) {
+                // requested callAny == true
+                if (current == 0) {
+                    return false;
+                }
+            } else {
+                // requested callAny == false
+                // if the current value is callAny, we don't care about the
+                // value of ethAddress. If the current value of callAny is
+                // 0 (false) we must check that the addresses are the same
+                if (current == 0) {
+                    // the addresses must match
+                    // get the current and required addresses
+                    current = currentVal & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+                    req = requestedVal & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+                    if (current != req) {
+                        return false;
+                    }
+                }
+            }
+            // if the requested sendValue flag is true, the current sendValue
+            // flag must also be true.
+            // get the sendValue flags
+            current = currentVal & 0x4000000000000000000000000000000000000000000000000000000000000000;
+            req = requestedVal & 0x4000000000000000000000000000000000000000000000000000000000000000;
+            if (req != 0 && current == 0) {
+                return false;
+            }
+            return true;
+        } else {
+            revert("unknown capability");
         }
     }
 

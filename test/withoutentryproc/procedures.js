@@ -482,7 +482,7 @@ contract('Kernel without entry procedure', function (accounts) {
             const procName = "test";
             const functionSpec = "executeProcedure(bytes24,string,bytes)"
             const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-            const inputData = functionSelectorHash
+            const inputData = "0x" + functionSelectorHash
                 + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
                 + "60".padStart(64,"0")
                 + "80".padStart(64,"0")
@@ -508,7 +508,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
 
                     const calledFunctionSpec = "X()";
-                    const inputData = functionSelectorHash
+                    const inputData = "0x" + functionSelectorHash
                         + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
                         + "60".padStart(64,"0")
                         + "a0".padStart(64,"0")
@@ -534,7 +534,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
 
                     const calledFunctionSpec = "A()";
-                    const inputData = functionSelectorHash
+                    const inputData = "0x" + functionSelectorHash
                         + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
                         + "60".padStart(64,"0")
                         + "a0".padStart(64,"0")
@@ -560,7 +560,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
 
                     const calledFunctionSpec = "C()";
-                    const inputData = functionSelectorHash
+                    const inputData = "0x" + functionSelectorHash
                         + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
                         + "60".padStart(64,"0")
                         + "a0".padStart(64,"0")
@@ -587,7 +587,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
 
                     const calledFunctionSpec = "C(uint)";
-                    const inputData = functionSelectorHash
+                    const inputData = "0x" + functionSelectorHash
                         + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
                         + "60".padStart(64,"0")
                         + "a0".padStart(64,"0")
@@ -612,7 +612,7 @@ contract('Kernel without entry procedure', function (accounts) {
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
 
                     const calledFunctionSpec = "C(uint256)";
-                    const inputData = functionSelectorHash
+                    const inputData = "0x" + functionSelectorHash
                         + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
                         + "60".padStart(64,"0")
                         + "a0".padStart(64,"0")
@@ -707,7 +707,7 @@ contract('Kernel without entry procedure', function (accounts) {
             const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
 
             const calledFunctionSpec = "";
-            const inputData = functionSelectorHash
+            const inputData = "0x" + functionSelectorHash
                 + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
                 + "60".padStart(64,"0")
                 + "80".padStart(64,"0")
@@ -759,7 +759,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
 
                 const calledFunctionSpec = "";
-                const inputData = functionSelectorHash
+                const inputData = "0x" + functionSelectorHash
                     + web3.fromAscii(procName.padEnd(24,"\0")).slice(2).padEnd(64,"0")
                     + "60".padStart(64,"0")
                     + "80".padStart(64,"0")
