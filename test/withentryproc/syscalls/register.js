@@ -389,7 +389,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.RegisterCap(0, "");
                 const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap4 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 // This is the procedure that will do the registering
@@ -486,6 +487,112 @@ contract('Kernel with entry procedure', function (accounts) {
                 // console.log(procTable.procedures[encodedName])
                 assert.equal(1,procTable.procedures[encodedName].caps.length, "The procedure should have 1 cap");
             })
+            it('B(bytes24 procName, address procAddress, uint256[] caps) should fail as it has no LOG cap to derive from', async function () {
+                const kernel = await Kernel.new();
+                // console.log(`kernel: ${kernel.address}`);
+
+                const procedures1Raw = await kernel.listProcedures.call();
+                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+                // console.log("procedures1:", procedures1);
+
+                await testutils.installEntryProc(kernel);
+
+                const procedures2Raw = await kernel.listProcedures.call();
+                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+                // console.log("procedures2:", procedures2);
+
+                const cap1 = new beakerlib.WriteCap(0x8000,2);
+                const cap2 = new beakerlib.RegisterCap(0, "");
+                const cap3 = new beakerlib.CallCap(0,"");
+                // const cap4 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(0,"");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
+
+                const deployedContract = await testutils.deployedTrimmed(contract);
+                // This is the procedure that will do the registering
+                // this currently requires Any because it uses logging for testing
+                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
+                // for (const log of tx1.receipt.logs) {
+                //     // console.log(`${log.topics} - ${log.data}`);
+                //     console.log(`${log.topics} - ${log.data}`);
+                //     try {
+                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
+                //     } catch(e) {
+                //         // console.log(`${log.topics} - ${log.data}`);
+                //         console.log("non-ascii");
+                //     }
+                // }
+                // This is the procedure that will be registered
+                const deployedTestContract = await testutils.deployedTrimmed(testContract);
+                // console.log("deployedContractAddress:", deployedTestContract.address);
+                const procedures3Raw = await kernel.listProcedures.call();
+                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+                // console.log("procedures3:", procedures3);
+                {
+                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
+                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const valueX = web3.toBigNumber(valueXRaw);
+                    // we execute a test function to ensure the procedure is
+                    // functioning properly
+                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
+                }
+
+                {
+                    // console.log(deployedTestContract.address.slice(2))
+                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+                    // here we use padStart because 'address' is like a number, not bytes
+                    // this inputData is custom built, it can be deleted if
+                    // necessary, but shows the underlying input data
+                    const manualInputData = web3.fromAscii(procName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
+                        + functionSelectorHash // the function selector hash (4 bytes)
+                        + web3.fromAscii(testProcName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
+                        + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
+                        + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
+
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
+                        + web3.toHex(8).slice(2).padStart(32*2,0) // of type LOG
+                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
+                        + web3.toHex(4).slice(2).padStart(32*2,0) // the number of log topics
+                        + "0xabcd".slice(2).padStart(32*2,0) // log topic #1
+                        + "0xefa2".slice(2).padStart(32*2,0) // log topic #2
+                        + "0x2343".slice(2).padStart(32*2,0) // log topic #3
+                        + "0xfe12".slice(2).padStart(32*2,0) // log topic #4
+                    // console.log(manualInputData)
+                    // // when using web3 1.0 this will be good
+                    // try {
+                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
+                    // } catch (e) {
+                    //     console.log(e)
+                    // }
+                    const inputData = manualInputData;
+                    // assert.strictEqual(inputData,)
+                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
+                    const tx3 = await kernel.sendTransaction({data: inputData});
+                    // console.log(tx3.receipt)
+                    const valueX = web3.toBigNumber(valueXRaw);
+                    // for (const log of tx3.receipt.logs) {
+                    //     // console.log(`${log.topics} - ${log.data}`);
+                    //     console.log(`${log.topics} - ${log.data}`);
+                    //     try {
+                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
+                    //     } catch(e) {
+                    //         // console.log(`${log.topics} - ${log.data}`);
+                    //         console.log("non-ascii");
+                    //     }
+                    // }
+                    // console.log(valueX.toNumber())
+                    assert(valueX != 0, "fail with non-zero exit code");
+                }
+
+                const procedures4Raw = await kernel.listProcedures.call();
+                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
+                // console.log("procedures4:", procedures4);
+                assert(!procedures4.includes(testProcName), "The name should not be in the procedure table");
+                assert.strictEqual(procedures4.length, (procedures3.length), "The number of procedures should have remained the same");
+            })
             it('B(bytes24 procName, address procAddress, uint256[] caps) should succeed when given cap (the registered contract will have 2 caps)', async function () {
                 const kernel = await Kernel.new();
                 // console.log(`kernel: ${kernel.address}`);
@@ -503,7 +610,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.RegisterCap(0, "");
                 const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap4 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 // This is the procedure that will do the registering

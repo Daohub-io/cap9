@@ -430,6 +430,7 @@ library ProcedureTable {
         uint256 val;
         uint8 pos;
         uint256 j;
+        uint256 thisTypeLength;
         // i is the index of the key value
         for (uint256 i = 0; (i+2) < caps.length; ) {
             uint256 capSize = caps[i+0];
@@ -441,46 +442,104 @@ library ProcedureTable {
                 // If the capSize is 3, we don't need to create a subset, we just
                 // copy whatever is at capIndex
 
-                // We can't deal with this properly yet, but for the pursposes of setEntry, we will jsut set an empty value
+                // We can't deal with this properly yet, but for the pursposes of setEntry, we will just set an empty value
                 currentLength = _get(pPointer | (capType*0x10000));
                 // Increment length
                 _set(pPointer | (capType*0x10000), currentLength + 1);
 
-                // if (currentProcedure == 0) {
-                //     // If there is no currentProcedure we are under direct control
-                //     // of the kernel, and any capability is the max cap of that type
-                //     // serialise Procedure Call cap
-                //     // We can't deal with this just yet.
-                //     // revert();
-                //     // We can't deal with this properly yet, but for the pursposes of setEntry, we will jsut set an empty value
-                //     currentLength = _get(pPointer | (capType*0x10000));
-                //     // Increment length
-                //     _set(pPointer | (capType*0x10000), currentLength + 1);
-                // } else {
-                //     // Otherwise we need to copy the capability from the current
-                //     // procedure.
-                //     // We are after type 3, index capIndex
-                //     // Get the 0th value, which is the only value in this case.
-                //     val = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | (capIndex + 1)*0x100);
-                //     // Store that in the procedure we are registering
-                //     // Get the current number of caps of this type for this
-                //     // proc.
-                //     currentLength = _get(pPointer | (capType*0x10000));
-                //     // A Procedure Call cap has one 32-byte value. Set it here at
-                //     // position 0
-                //     pos = 0x00;
-                //     _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | pos, val);
-                //     // Increment length
-                //     _set(pPointer | (capType*0x10000), currentLength + 1);
-                // }
+                if (currentProcedure == 0) {
+                    // If there is no currentProcedure we are under direct control
+                    // of the kernel, and any capability is the max cap of that type
+                    // serialise Procedure Call cap
+
+                    currentLength = _get(pPointer | (capType*0x10000));
+                    // We branch here as we need to insert the maximum capability, which varies for each type
+                    if (capType == CAP_PROC_CALL) {
+                        // Insert a 0 value (which means the prefix will be zero, i.e. the maximum capability)
+                        val  = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x00, val);
+                    } else if (capType == CAP_STORE_WRITE) {
+                        // Insert a base address of zero
+                        val = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x00, val);
+                        // Insert "number of additional keys as MAX-1
+                        val = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x01, val);
+                    } else if (capType == CAP_LOG) {
+                         // Number of requred caps is zero
+                        val = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x00, val);
+                        // set topic 1 to zero (TODO: not required but defensive)
+                        val = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x01, val);
+                        // set topic 2 to zero (TODO: not required but defensive)
+                        val = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x02, val);
+                        // set topic 3 to zero (TODO: not required but defensive)
+                        val = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x03, val);
+                        // set topic 4 to zero (TODO: not required but defensive)
+                        val = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x04, val);
+                    } else if (capType == CAP_PROC_REGISTER) {
+                        // Insert a 0 value (which means the prefix will be zero, i.e. the maximum capability)
+                        val  = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x00, val);
+                    } else if (capType == CAP_PROC_DELETE) {
+                        // Insert a 0 value (which means the prefix will be zero, i.e. the maximum capability)
+                        val  = 0;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x00, val);
+                    } else if (capType == CAP_PROC_ENTRY) {
+                        // This cap does not require any values to be set
+                    } else if (capType == CAP_ACC_CALL) {
+                        // Insert the max value, which is the first 2 bits set on, and the remainder zero
+                        val = 0xc000000000000000000000000000000000000000000000000000000000000000;
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | 0x00, val);
+                    } else {
+                        revert("unknown syscall");
+                    }
+                    // Increment length
+                    _set(pPointer | (capType*0x10000), currentLength + 1);
+                } else {
+                    // Otherwise we need to copy the capability from the current
+                    // procedure.
+
+                    // First check that capIndex (from which we derive our cap)
+                    // actually exists. This just checks that the list of that
+                    // type is long enough.
+                    thisTypeLength = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | (0)*0x100);
+                    if (capIndex >= thisTypeLength) {
+                        // The c-list of this type is not long enough.
+                        revert("bad cap index");
+                    }
+
+                    // Serialise the cap.
+                    currentLength = _get(pPointer | (capType*0x10000));
+                    for (j = 0; (j+3) < capSize; j++) {
+                        val = caps[i+3+j];
+                        _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | j, val);
+                    }
+                    // Increment length
+                    _set(pPointer | (capType*0x10000), currentLength + 1);
+
+
+                    val = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | (capIndex + 1)*0x100);
+                    // Store that in the procedure we are registering
+                    // Get the current number of caps of this type for this
+                    // proc.
+                    currentLength = _get(pPointer | (capType*0x10000));
+                    // A Procedure Call cap has one 32-byte value. Set it here at
+                    // position 0
+                    pos = 0x00;
+                    _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | pos, val);
+                    // Increment length
+                    _set(pPointer | (capType*0x10000), currentLength + 1);
+                }
             } else {
                 // If the capSize is not three, we want to create a subset.
                 // For testing purposes at this stage we will ignore subsets
                 // and simply allow whatever is dictated by the request.
                 if (currentProcedure == 0) {
-                    // We are after type 3, index capIndex
-
-                    // Store that in the procedure we are registering
                     // Get the current number of caps of this type for this
                     // proc.
                     currentLength = _get(pPointer | (capType*0x10000));
@@ -491,21 +550,19 @@ library ProcedureTable {
                     // Increment length
                     _set(pPointer | (capType*0x10000), currentLength + 1);
                 } else {
-                    // We are after type 3, index capIndex
-                    // The 0th value is taken directly from the cap request array
-                    // We can't deal with this just yet.
-                    // revert();
-                    // val = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | (capIndex + 1)*0x100);
-                    // // Store that in the procedure we are registering
-                    // currentLength = _get(pPointer | (capType*0x10000));
-                    // // A Procedure Call cap has one 32-byte value. Set it here at
-                    // // position 0
-                    // pos = 0x00;
-                    // _set(pPointer | (capType*0x10000) | ((currentLength+1)*0x100) | pos, val);
-                    // // Increment length
-                    // _set(pPointer | (capType*0x10000), currentLength + 1);
+                    // First check that capIndex (from which we derive our cap)
+                    // actually exists. This just checks that the list of that
+                    // type is long enough.
+                    thisTypeLength = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | (0)*0x100);
+                    if (capIndex >= thisTypeLength) {
+                        // The c-list of this type is not long enough.
+                        revert("bad cap index");
+                    }
 
-                    // Cheat and register it anyway
+                    // Check if our cap is a subset. If not revert.
+                    // TODO
+
+                    // Serialise the cap.
                     currentLength = _get(pPointer | (capType*0x10000));
                     for (j = 0; (j+3) < capSize; j++) {
                         val = caps[i+3+j];
