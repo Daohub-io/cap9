@@ -500,6 +500,144 @@ contract('Kernel with entry procedure', function () {
             await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
         });
     });
+    describe('Register Log capability', function () {
+        it('Should succeed when deriving maximal cap from maximal cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.LogCap([]),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.LogCap([]),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when adding one topic to cap from maximal cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.LogCap([]),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.LogCap(["abcd"]),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when adding two topics to cap from maximal cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.LogCap([]),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.LogCap(["abcd", "efgh"]),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when adding three topics to cap from maximal cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.LogCap([]),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.LogCap(["abcd", "efgh", "ijkl"]),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when adding four topics to cap from maximal cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.LogCap([]),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.LogCap(["abcd", "efgh", "ijkl", "mnop"]),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving one topic from same one topic cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.LogCap(["abcd"]),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.LogCap(["abcd"]),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving one topic from two topic cap, even though that top is the same', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.LogCap(["abcd", "efgh"]),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.LogCap(["abcd"]),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when deriving one topic from differnt one topic cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.LogCap(["abcd"]),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.LogCap(["efgh"]),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+    });
 })
 
 // A test which uses procA to register procB. procACaps are the capabilities
