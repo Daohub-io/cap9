@@ -137,263 +137,14 @@ contract('Kernel with entry procedure', function () {
             await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
         });
     });
-    describe('Register Call capability', function () {
-        it('Should succeed when deriving general cap from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should fail when deriving general cap from no cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const shouldSucceed = false;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving larger prefix cap (30) from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(30,""),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving larger prefix cap (192) from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(192,""),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should fail when deriving smaller prefix cap (30) from larger prefix cap (48)', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(48,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(30,""),
-            ];
-
-            const shouldSucceed = false;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving 2 larger prefix caps (40, 192) from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(40,""),
-                new beakerlib.CallCap(192,""),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving general cap with address from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(0,"abcd"),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving prefix(30) with address from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(30,"abcd"),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving 2 general caps with different addresses from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(0,"abcd"),
-                new beakerlib.CallCap(0,"wxyz"),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving 2 prefix(30) caps with different addresses from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(30,"abcd"),
-                new beakerlib.CallCap(30,"wxyz"),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving a prefix(16) cap and a prefix(32) cap with different addresses from general cap', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(0,""),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(16,"ab"),
-                new beakerlib.CallCap(32,"wxyz"),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should succeed when deriving a prefix(32) cap from a prefix(16) where 16 bits match, but others do not', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(16,"ab"),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(32,"abcd"),
-                new beakerlib.CallCap(32,"abxy"),
-            ];
-
-            const shouldSucceed = true;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should fail when deriving a prefix(32) cap from a prefix(16) where addresses are different', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(16,"ab"),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(32,"axcd"),
-            ];
-
-            const shouldSucceed = false;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
-        it('Should fail when deriving a prefix(16) cap from a prefix(32) where addresses are the same', async function () {
-            const procAName = "SysCallTestProcRegister";
-            const procAContract = Valid.SysCallTestProcRegister;
-            const procACaps = [
-                new beakerlib.WriteCap(0x8000,2),
-                new beakerlib.RegisterCap(0, ""),
-                new beakerlib.CallCap(32,"abcd"),
-            ];
-
-            const procBName = "Adder";
-            const procBContract = Valid.Adder;
-            const procBCaps = [
-                new beakerlib.CallCap(16,"abcd"),
-            ];
-
-            const shouldSucceed = false;
-            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
-        });
+    describe('Register Call capability', async function () {
+        await testCallType(beakerlib.CallCap);
+    });
+    describe('Register Delete capability', async function () {
+        await testCallType(beakerlib.DeleteCap);
+    });
+    describe('Register Register capability', async function () {
+        await testCallType(beakerlib.RegisterCapWithIndexOne);
     });
     describe('Register Write capability', function () {
         it('Should succeed when deriving maximal cap from maximal cap', async function () {
@@ -529,7 +280,7 @@ contract('Kernel with entry procedure', function () {
             const procBName = "Adder";
             const procBContract = Valid.Adder;
             const procBCaps = [
-                new beakerlib.LogCap(["abcd"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd")]),
             ];
 
             const shouldSucceed = true;
@@ -546,7 +297,7 @@ contract('Kernel with entry procedure', function () {
             const procBName = "Adder";
             const procBContract = Valid.Adder;
             const procBCaps = [
-                new beakerlib.LogCap(["abcd", "efgh"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd"), web3.fromAscii("efgh")]),
             ];
 
             const shouldSucceed = true;
@@ -563,7 +314,7 @@ contract('Kernel with entry procedure', function () {
             const procBName = "Adder";
             const procBContract = Valid.Adder;
             const procBCaps = [
-                new beakerlib.LogCap(["abcd", "efgh", "ijkl"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd"), web3.fromAscii("efgh"), web3.fromAscii("ijkl")]),
             ];
 
             const shouldSucceed = true;
@@ -580,7 +331,7 @@ contract('Kernel with entry procedure', function () {
             const procBName = "Adder";
             const procBContract = Valid.Adder;
             const procBCaps = [
-                new beakerlib.LogCap(["abcd", "efgh", "ijkl", "mnop"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd"), web3.fromAscii("efgh"), web3.fromAscii("ijkl"), web3.fromAscii("mnop")]),
             ];
 
             const shouldSucceed = true;
@@ -590,14 +341,14 @@ contract('Kernel with entry procedure', function () {
             const procAName = "SysCallTestProcRegister";
             const procAContract = Valid.SysCallTestProcRegister;
             const procACaps = [
-                new beakerlib.LogCap(["abcd"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd")]),
                 new beakerlib.RegisterCap(0, ""),
             ];
 
             const procBName = "Adder";
             const procBContract = Valid.Adder;
             const procBCaps = [
-                new beakerlib.LogCap(["abcd"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd")]),
             ];
 
             const shouldSucceed = true;
@@ -607,14 +358,14 @@ contract('Kernel with entry procedure', function () {
             const procAName = "SysCallTestProcRegister";
             const procAContract = Valid.SysCallTestProcRegister;
             const procACaps = [
-                new beakerlib.LogCap(["abcd", "efgh"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd"), web3.fromAscii("efgh")]),
                 new beakerlib.RegisterCap(0, ""),
             ];
 
             const procBName = "Adder";
             const procBContract = Valid.Adder;
             const procBCaps = [
-                new beakerlib.LogCap(["abcd"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd")]),
             ];
 
             const shouldSucceed = false;
@@ -624,14 +375,14 @@ contract('Kernel with entry procedure', function () {
             const procAName = "SysCallTestProcRegister";
             const procAContract = Valid.SysCallTestProcRegister;
             const procACaps = [
-                new beakerlib.LogCap(["abcd"]),
+                new beakerlib.LogCap([web3.fromAscii("abcd")]),
                 new beakerlib.RegisterCap(0, ""),
             ];
 
             const procBName = "Adder";
             const procBContract = Valid.Adder;
             const procBCaps = [
-                new beakerlib.LogCap(["efgh"]),
+                new beakerlib.LogCap([web3.fromAscii("efgh")]),
             ];
 
             const shouldSucceed = false;
@@ -639,6 +390,265 @@ contract('Kernel with entry procedure', function () {
         });
     });
 })
+
+async function testCallType(ThisCap) {
+    it('Should succeed when deriving general cap from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(0,""),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should fail when deriving general cap from no cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(0,""),
+        ];
+
+        const shouldSucceed = false;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving larger prefix cap (30) from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(30,""),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving larger prefix cap (192) from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(192,""),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should fail when deriving smaller prefix cap (30) from larger prefix cap (48)', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(48,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(30,""),
+        ];
+
+        const shouldSucceed = false;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving 2 larger prefix caps (40, 192) from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(40,""),
+            new ThisCap(192,""),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving general cap with address from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(0,"abcd"),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving prefix(30) with address from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(30,"abcd"),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving 2 general caps with different addresses from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(0,"abcd"),
+            new ThisCap(0,"wxyz"),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving 2 prefix(30) caps with different addresses from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(30,"abcd"),
+            new ThisCap(30,"wxyz"),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving a prefix(16) cap and a prefix(32) cap with different addresses from general cap', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(0,""),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(16,"ab"),
+            new ThisCap(32,"wxyz"),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should succeed when deriving a prefix(32) cap from a prefix(16) where 16 bits match, but others do not', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(16,"ab"),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(32,"abcd"),
+            new ThisCap(32,"abxy"),
+        ];
+
+        const shouldSucceed = true;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should fail when deriving a prefix(32) cap from a prefix(16) where addresses are different', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(16,"ab"),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(32,"axcd"),
+        ];
+
+        const shouldSucceed = false;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+    it('Should fail when deriving a prefix(16) cap from a prefix(32) where addresses are the same', async function () {
+        const procAName = "SysCallTestProcRegister";
+        const procAContract = Valid.SysCallTestProcRegister;
+        const procACaps = [
+            new beakerlib.WriteCap(0x8000,2),
+            new beakerlib.RegisterCap(0, ""),
+            new ThisCap(32,"abcd"),
+        ];
+
+        const procBName = "Adder";
+        const procBContract = Valid.Adder;
+        const procBCaps = [
+            new ThisCap(16,"abcd"),
+        ];
+
+        const shouldSucceed = false;
+        await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+    });
+}
 
 // A test which uses procA to register procB. procACaps are the capabilities
 // that procA is originally registered with procBCaps are the caps that it will
@@ -750,8 +760,10 @@ async function stdTest(procAName, procAContract, procACaps,
         const procBNameEncoded = web3.fromAscii(procBName.padEnd(24,'\0'));
         const procBData = procTable.procedures[procBNameEncoded];
 
-        assert.deepStrictEqual(beakerlib.Cap.toCLists(procBCaps),
-            procBData.caps, "The requested caps should equal resulting caps");
+        assert.deepStrictEqual(
+            stripCapIndexVals(beakerlib.Cap.toCLists(procBCaps)),
+            stripCapIndexVals(procBData.caps),
+            "The requested caps should equal resulting caps");
     } else {
         assert(!procedures4.includes(procBName),
             "The correct name should not be in the procedure table");
@@ -759,4 +771,13 @@ async function stdTest(procAName, procAContract, procACaps,
             "The number of procedures should have remained the same");
     }
     return mainTX;
+}
+
+
+// Test hack to remove data we don't care about. The kernel stores no
+// information about where a capability was derived from.
+function stripCapIndexVals(capData) {
+    for (const cap in capData) {
+        cap.capIndex = 0;
+    }
 }

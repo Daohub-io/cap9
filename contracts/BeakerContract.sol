@@ -351,7 +351,7 @@ contract BeakerContract is IKernel {
     }
     return err;
   }
-  function proc_log1(uint8 capIndex, uint32 t1, uint32 value) internal returns (uint32 err) {
+  function proc_log1(uint8 capIndex, bytes32 t1, bytes32 value) internal returns (uint32 err) {
 
     bytes memory input = new bytes(5 * 0x20);
     bytes memory ret = new bytes(0x20);

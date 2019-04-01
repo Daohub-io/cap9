@@ -78,10 +78,13 @@ class ProcedureTable {
                         proc.caps[rawcap.type].push(CallCap.fromKeyValues(rawcap.values));
                         break;
                     case CAP_TYPE.PROC_REGISTER:
+                        proc.caps[rawcap.type].push(RegisterCap.fromKeyValues(rawcap.values));
                         break;
                     case CAP_TYPE.PROC_DELETE:
+                        proc.caps[rawcap.type].push(DeleteCap.fromKeyValues(rawcap.values));
                         break;
                     case CAP_TYPE.PROC_ENTRY:
+                        proc.caps[rawcap.type].push(SetEntryCap.fromKeyValues(rawcap.values));
                         break;
                     case CAP_TYPE.STORE_WRITE:
                         proc.caps[rawcap.type].push(WriteCap.fromKeyValues(rawcap.values));
@@ -126,7 +129,6 @@ class ProcedureTable {
 }
 exports.ProcedureTable = ProcedureTable;
 
-
 class Cap {
     constructor(type) {
         this.type = type;
@@ -134,7 +136,7 @@ class Cap {
     toIntegerArray() {
         const keyValArray = this.keyValues();
         // The plus one is to account for the type value
-        const headerArray = Array.from([keyValArray.length + 3, this.type, 0]);
+        const headerArray = Array.from([keyValArray.length + 3, this.type, this.capIndex]);
         return headerArray.concat(keyValArray);
     }
     // Convert clists based on types.
@@ -165,6 +167,7 @@ exports.Cap = Cap;
 class WriteCap extends Cap {
     constructor(address, size) {
         super(CAP_TYPE.STORE_WRITE);
+        this.capIndex = 0;
         if ((typeof address === "string") || (typeof address === "number")) {
             this.address = web3.toBigNumber(address);
         } else {
@@ -235,6 +238,7 @@ exports.WriteCap = WriteCap;
 class LogCap extends Cap {
     constructor(topics) {
         super(CAP_TYPE.LOG);
+        this.capIndex = 0;
         if (topics.length > 4) {
             throw new Error("too many topics");
         }
@@ -250,12 +254,13 @@ class LogCap extends Cap {
                 if (topic.length > 66) {
                     throw new Error("Topic must be 32 bytes or less");
                 }
-                this.topics.push(web3.toBigNumber(topic.padEnd(66,0)));
+                this.topics.push(web3.toBigNumber("0x"+topic.slice(2).padStart(64,0)));
+            } else if (typeof topic === "object") {
+                this.topics.push(topic);
             } else {
-                throw new Error("Topic must be a hex-string");
+                throw new Error("Topic must be a hex-string or bignum");
             }
         }
-        // this.topics = topics;
     }
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
@@ -287,6 +292,7 @@ class CallCap extends Cap {
     // keys should be a list of strings
     constructor(prefixLength, baseKey) {
         super(CAP_TYPE.PROC_CALL);
+        this.capIndex = 0;
         if (baseKey.length > 24) {
             throw new Error(`key too long ${baseKey}`);
         }
@@ -330,10 +336,11 @@ class RegisterCap extends Cap {
     // register new procedures
     constructor(prefixLength, baseKey) {
         super(CAP_TYPE.PROC_REGISTER);
+        this.capIndex = 0;
         if (baseKey.length > 24) {
             throw new Error("key too long");
         }
-        this.baseKey = baseKey;
+        this.baseKey = baseKey.padEnd(24,'\0');
         this.prefixLength = prefixLength;
     }
     // Format the capability values into the values that will be stored in the
@@ -356,17 +363,39 @@ class RegisterCap extends Cap {
         const val = Array.from([key]);
         return val;
     }
+    static fromKeyValues(values) {
+        if (values.length != 1) {
+            throw new Error("Incorrect number of values for REGISTER cap");
+        }
+        const val = "0x"+values[0].slice(2).padStart(64,0);
+        const prefixHex = val.slice(0,4);
+        const baseKeyHex = "0x"+val.slice(18);
+        return new RegisterCap(web3.toBigNumber(prefixHex).toNumber(), web3.toAscii(baseKeyHex));
+    }
 }
 exports.RegisterCap = RegisterCap;
+
+// A temporary hack for testing. We need to separate the cap we are using for
+// registration and the one for delegation. All caps should include a capIndex,
+// but during the transition phase, this class will provide a shim until all the
+// test code has been modified to include capIndices.
+class RegisterCapWithIndexOne extends RegisterCap {
+    constructor(prefixLength, baseKey) {
+        super(prefixLength, baseKey);
+        this.capIndex = 1;
+    }
+}
+exports.RegisterCapWithIndexOne = RegisterCapWithIndexOne;
 
 class DeleteCap extends Cap {
     // keys should be a list of strings
     constructor(prefixLength, baseKey) {
         super(CAP_TYPE.PROC_DELETE);
+        this.capIndex = 0;
         if (baseKey.length > 24) {
             throw new Error("key too long");
         }
-        this.baseKey = baseKey;
+        this.baseKey = baseKey.padEnd(24,'\0');
         this.prefixLength = prefixLength;
     }
     // Format the capability values into the values that will be stored in the
@@ -388,6 +417,15 @@ class DeleteCap extends Cap {
         const key = "0x" + prefixHex + undefinedFill + baseKeyHex;
         const val = Array.from([key]);
         return val;
+    }
+    static fromKeyValues(values) {
+        if (values.length != 1) {
+            throw new Error("Incorrect number of values for DELETE cap");
+        }
+        const val = "0x"+values[0].slice(2).padStart(64,0);
+        const prefixHex = val.slice(0,4);
+        const baseKeyHex = "0x"+val.slice(18);
+        return new DeleteCap(web3.toBigNumber(prefixHex).toNumber(), web3.toAscii(baseKeyHex));
     }
 }
 exports.DeleteCap = DeleteCap;
@@ -397,6 +435,7 @@ class SetEntryCap extends Cap {
     // register new procedures
     constructor() {
         super(CAP_TYPE.PROC_ENTRY);
+        this.capIndex = 0;
         this.keys = [];
     }
     // Format the capability values into the values that will be stored in the
@@ -405,12 +444,16 @@ class SetEntryCap extends Cap {
         const val = Array.from(this.keys.map(x => web3.fromAscii(x.padEnd(32, '\0'))));
         return val;
     }
+    static fromKeyValues(values) {
+        return new SetEntryCap();
+    }
 }
 exports.SetEntryCap = SetEntryCap;
 
 class AccCallCap extends Cap {
     constructor(callAny, sendValue, ethAddress) {
         super(CAP_TYPE.ACC_CALL);
+        this.capIndex = 0;
         this.callAny = callAny;
         this.sendValue = sendValue;
         this.ethAddress = ethAddress;
@@ -431,6 +474,17 @@ class AccCallCap extends Cap {
         }
         const val = Array.from(["0x"+bufferToHex(value)]);
         return val;
+    }
+    static fromKeyValues(values) {
+        if (values.length != 1) {
+            throw new Error("Incorrect number of values for DELETE cap");
+        }
+        const val = "0x"+values[0].slice(2).padStart(64,0);
+        const flagByte = parseInt(val.slice(0,4));
+        const callAny = 0b10000000 & flagByte ? true : false;
+        const sendValue = 0b01000000 & flagByte ? true : false;
+        const ethAddress = "0x"+val.slice(26);
+        return new AccCallCap(callAny, sendValue, ethAddress);
     }
 }
 exports.AccCallCap = AccCallCap;

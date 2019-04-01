@@ -10,7 +10,7 @@ contract SysCallTestLog is BeakerContract {
 
     // Log to a single topic
     function B() public {
-        proc_log1(0, 0xabcd, uint32(0x1234567890));
+        proc_log1(0, 0xabcd, bytes32(0x1234567890));
     }
 
     // Log to two topics
