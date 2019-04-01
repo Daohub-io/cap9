@@ -584,7 +584,7 @@ library ProcedureTable {
         uint256 req;
         // Check if our cap is a subset. If not revert.
         // The subset logic of these three caps are the same
-        if (capType == CAP_PROC_CALL || capType == CAP_PROC_REGISTER || capType == CAP_PROC_REGISTER) {
+        if (capType == CAP_PROC_CALL || capType == CAP_PROC_REGISTER || capType == CAP_PROC_DELETE) {
             currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
             requestedVal = caps[i+3+0];
 
