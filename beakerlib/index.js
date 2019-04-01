@@ -175,6 +175,26 @@ class WriteCap extends Cap {
         } else {
             this.size = size;
         }
+
+        // try {
+        //     if (this.address > web3.toBigNumber("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")) {
+        //         console.log(this.address)
+        //         console.log(web3.toHex(this.address))
+        //         console.log(this.address.toNumber())
+        //         console.log( web3.toBigNumber("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
+        //         console.log(web3.toHex(web3.toBigNumber("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")))
+        //         throw new Error("baseAddress too big");
+        //     }
+        // } catch (e) {
+        //     throw new Error(e);
+        // }
+        // try {
+        //     if (this.size > web3.toBigNumber("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")) {
+        //         throw new Error("size too big");
+        //     }
+        // } catch (e) {
+        //     throw new Error(e);
+        // }
     }
     // Format the capability values into the values that will be stored in the
     // kernel. Must be defined for all subclasses
@@ -187,7 +207,27 @@ class WriteCap extends Cap {
         }
         const baseAddress = values[0];
         const additionalKeys = values[1];
-        return new WriteCap(web3.toBigNumber(baseAddress), web3.toBigNumber(additionalKeys));
+        let baseAddressBN;
+        baseAddressBN = web3.toBigNumber(baseAddress);
+        // try {
+        //     baseAddressBN = web3.toBigNumber(baseAddress);
+        //     if (baseAddressBN > web3.toBigNumber("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")) {
+        //         throw new Error("baseAddress too big");
+        //     }
+        // } catch (e) {
+        //     throw new Error(e);
+        // }
+        let additionalKeysBN;
+        additionalKeysBN = web3.toBigNumber(additionalKeys);
+        // try {
+        //     additionalKeysBN = web3.toBigNumber(additionalKeys);
+        //     if (additionalKeysBN > web3.toBigNumber("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")) {
+        //         throw new Error("size too big");
+        //     }
+        // } catch (e) {
+        //     throw new Error(e);
+        // }
+        return new WriteCap(baseAddressBN, additionalKeysBN);
     }
 }
 exports.WriteCap = WriteCap;

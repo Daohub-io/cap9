@@ -606,16 +606,25 @@ library ProcedureTable {
             }
             return true;
         } else if (capType == CAP_STORE_WRITE) {
+            // Base storage address
             currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
             requestedVal = caps[i+3+0];
             if (requestedVal < currentVal) {
                 return false;
             }
+
+            // Number of additional storage keys
             currentVal += _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x01);
             requestedVal += caps[i+3+1];
             if (requestedVal > currentVal) {
                 return false;
             }
+            // Even though there exists invalid capabilities, we don't check for
+            // them here as it wouldn't cover all circumstances. If we wan to
+            // check for it we should do it more generally.
+            // if (requestedVal == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+            //     return false;
+            // }
             return true;
         } else if (capType == CAP_LOG) {
             // First we check the number of required topics. The number of

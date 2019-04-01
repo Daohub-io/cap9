@@ -394,7 +394,112 @@ contract('Kernel with entry procedure', function () {
             const shouldSucceed = false;
             await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
         });
-    })
+    });
+    describe('Register Write capability', function () {
+        it('Should succeed when deriving maximal cap from maximal cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x00,"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.WriteCap(0x00,"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving invalid cap from maximal cap', async function () {
+            // This looks at when size extends far beyond available storage.
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x00,"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.WriteCap(0xffffffff,"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when reduced cap from maximal cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x00,"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.WriteCap(0x80,100),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when reduced cap from cap, base address ok, size too big', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,100),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.WriteCap(0x8000,101),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when reduced cap from cap, base address too low, size ok', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000, 100),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.WriteCap(0x7000,30),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when reduced cap from cap, base address too high, size ok', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000, 100),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.WriteCap(0x9000,30),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+    });
 })
 
 // A test which uses procA to register procB. procACaps are the capabilities
@@ -410,7 +515,6 @@ async function stdTest(procAName, procAContract, procACaps,
         .map(s => s.replace(/\0.*$/, ''));
     assert(procedures1.length == 0,
         "The kernel should initially have no procedures");
-
     const [regEPTX, setEPTX] = await testutils.installEntryProc(kernel);
 
     const procedures2Raw = await kernel.listProcedures.call();
