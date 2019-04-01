@@ -373,7 +373,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const table0 = await kernel.returnRawProcedureTable.call()
 
                 const cap1 = new beakerlib.LogCap([]);
-                const cap2 = new beakerlib.LogCap([0xdeadbeef]);
+                const cap2 = new beakerlib.LogCap(["0xdeadbeef"]);
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
                 const procedureName = "test";
@@ -406,7 +406,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const table_empty = await kernel.returnRawProcedureTable.call()
 
                 const cap1 = new beakerlib.LogCap([]);
-                const cap2 = new beakerlib.LogCap([0xdeadbeef]);
+                const cap2 = new beakerlib.LogCap(["0xdeadbeef"]);
                 const capArray1 = beakerlib.Cap.toInput([cap1]);
                 const capArray2 = beakerlib.Cap.toInput([cap1, cap2]);
 
@@ -660,15 +660,10 @@ contract('Kernel without entry procedure', function (accounts) {
                 const proc1 = procTable.procedures[procedures[0]];
                 const proc2 = procTable.procedures[procedures[1]];
 
-                assert.equal(proc1.caps[0].type, CAP_TYPE.STORE_WRITE, "proc1: First cap should have the right type");
-                assert.equal(proc1.caps[0].values[0],0x8500, "proc1: First cap first value should be correct");
-                assert.equal(proc1.caps[0].values[1],0x2, "proc1: First cap second value should be correct");
-
-                assert.equal(proc1.caps[1].type, CAP_TYPE.STORE_WRITE, "proc1: Second cap should have the right type");
-                assert.equal(proc1.caps[1].values[0],0x8000, "proc1: Second cap first value should be correct");
-                assert.equal(proc1.caps[1].values[1],0x0, "proc1: Second cap second value should be correct");
-
-                assert.equal(proc2.caps.length,0, "Second procedure should have no caps");
+                assert.deepStrictEqual(
+                    stripCapIndexVals(beakerlib.Cap.toCLists([cap1, cap2])),
+                    stripCapIndexVals(proc1.caps),
+                    "The requested caps should equal resulting caps");
             })
         })
 
@@ -774,3 +769,11 @@ contract('Kernel without entry procedure', function (accounts) {
         })
     })
 })
+
+// Test hack to remove data we don't care about. The kernel stores no
+// information about where a capability was derived from.
+function stripCapIndexVals(capData) {
+    for (const cap in capData) {
+        cap.capIndex = 0;
+    }
+}
