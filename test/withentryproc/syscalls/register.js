@@ -24,934 +24,497 @@ const Invalid = {
     Simple: artifacts.require('test/invalid/Simple.sol')
 }
 
-contract('Kernel with entry procedure', function (accounts) {
-    describe('Register capability', function () {
-        const procName = "SysCallTestProcRegister";
-        const contract = Valid.SysCallTestProcRegister;
-
-        describe('A(bytes24,address) - register a procedure', function () {
-            const testProcName = "Adder";
-            const testContract = Valid.Adder;
-            const functionSpec = "A(bytes24,address)";
-            it('A(bytes24,address) should succeed when given cap', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap(0,"");
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log(deployedTestContract.address)
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash + web3.fromAscii(testProcName.padEnd(32*2,"\0")).slice(2) + deployedTestContract.address.slice(2).padStart(32*2,0);
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(tx3)
-                    // console.log(valueXRaw)
-                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(procedures4.includes(testProcName), "The correct name should be in the procedure table");
-                assert.strictEqual(procedures4.length, (procedures3.length+1), "The number of procedures should have increased by 1");
-            })
-            it('A(bytes24,address) should fail when not given cap', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, []);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log(deployedTestContract.address)
-                // const tx2 = await kernel.registerProcedure(testProcName, deployedTestContract.address, []);
-                // const tx2 = await kernel.registerProcedure("testtesttesttesttesttesa", "0xf958a87ec617211109ec02846ec0df996532b104", []);
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash + web3.fromAscii(testProcName.padEnd(32*2,"\0")).slice(2) + deployedTestContract.address.slice(2).padStart(32*2,0);
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(valueX.toNumber())
-                    assert.equal(valueXRaw.slice(0,4), "0x55", "should succeed with zero errcode the first time");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(!procedures4.includes(testProcName), "The correct name should not be in the procedure table");
-                assert.strictEqual(procedures4.length, procedures3.length, "The number of procedures should not have increased");
-            })
-            it('A(bytes24,address) should fail when given the wrong cap', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log(deployedTestContract.address)
-                // const tx2 = await kernel.registerProcedure(testProcName, deployedTestContract.address, []);
-                // const tx2 = await kernel.registerProcedure("testtesttesttesttesttesa", "0xf958a87ec617211109ec02846ec0df996532b104", []);
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash + web3.fromAscii(testProcName.padEnd(32*2,"\0")).slice(2) + deployedTestContract.address.slice(2).padStart(32*2,0);
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(valueX.toNumber())
-                    assert.equal(valueXRaw.slice(0,4), "0x55", "should succeed with zero errcode the first time");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(!procedures4.includes(testProcName), "The correct name should not be in the procedure table");
-                assert.strictEqual(procedures4.length, procedures3.length, "The number of procedures should not have increased");
-            })
-        })
-        describe('B(bytes24 procName, address procAddress, uint256[] caps) - register a procedure', function () {
-            const testProcName = "Adder";
-            const testContract = Valid.Adder;
-            const functionSpec = "B(bytes24,address,uint256[])";
-            // console.log(contract);
-            it('B(bytes24 procName, address procAddress, uint256[] caps) should succeed when given cap (the registered contract will not have caps)', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap(0, "");
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log("deployedContractAddress:", deployedTestContract.address);
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    // this inputData is custom built, it can be deleted if
-                    // necessary, but shows the underlying input data
-                    const manualInputData = web3.fromAscii(procName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
-                        + functionSelectorHash // the function selector hash (4 bytes)
-                        + web3.fromAscii(testProcName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
-                        + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
-                        + web3.toHex(124).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of zero (32 bytes)
-                    // console.log(manualInputData)
-                    // when using web3 1.0 this will be good
-                    // try {
-                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
-                    // } catch (e) {
-                    //     console.log(e)
-                    // }
-                    const inputData = manualInputData;
-                    // assert.strictEqual(inputData,)
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(valueX.toNumber())
-                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(procedures4.includes(testProcName), "The correct name should be in the procedure table");
-                assert.strictEqual(procedures4.length, (procedures3.length+1), "The number of procedures should have increased by 1");
-
-                const procTableData = await kernel.returnProcedureTable.call();
-                const procTable = beakerlib.ProcedureTable.parse(procTableData);
-                // console.log("Kernel Address:", kernel.address)
-                // console.log(beakerlib.ProcedureTable.stringify(procTable));
-            })
-            it('B(bytes24 procName, address procAddress, uint256[] caps) should succeed when given cap (the registered contract will have 1 cap)', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap(0, "");
-                const cap3 = new beakerlib.CallCap(0,"");
-                const cap4 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log("deployedContractAddress:", deployedTestContract.address);
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    // this inputData is custom built, it can be deleted if
-                    // necessary, but shows the underlying input data
-                    const manualInputData = web3.fromAscii(procName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
-                        + functionSelectorHash // the function selector hash (4 bytes)
-                        + web3.fromAscii(testProcName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
-                        + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
-                        + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
-
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // of type LOG
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
-                        + web3.toHex(4).slice(2).padStart(32*2,0) // the number of log topics
-                        + "0xabcd".slice(2).padStart(32*2,0) // log topic #1
-                        + "0xefa2".slice(2).padStart(32*2,0) // log topic #2
-                        + "0x2343".slice(2).padStart(32*2,0) // log topic #3
-                        + "0xfe12".slice(2).padStart(32*2,0) // log topic #4
-                    // console.log(manualInputData)
-                    // // when using web3 1.0 this will be good
-                    // try {
-                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
-                    // } catch (e) {
-                    //     console.log(e)
-                    // }
-                    const inputData = manualInputData;
-                    // assert.strictEqual(inputData,)
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    // console.log(tx3.receipt)
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(valueX.toNumber())
-                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(procedures4.includes(testProcName), "The correct name should be in the procedure table");
-                assert.strictEqual(procedures4.length, (procedures3.length+1), "The number of procedures should have increased by 1");
-
-                const procTableData = await kernel.returnProcedureTable.call();
-                const procTable = beakerlib.ProcedureTable.parse(procTableData);
-                // console.log("Kernel Address:", kernel.address)
-                // console.log(beakerlib.ProcedureTable.stringify(procTable));
-                // console.log(procTable)
-                const encodedName = web3.toHex(testProcName.padEnd(24,'\0'));
-                // console.log(encodedName)
-                // console.log(procTable.procedures[encodedName])
-                assert.equal(1,procTable.procedures[encodedName].caps.length, "The procedure should have 1 cap");
-            })
-            it('B(bytes24 procName, address procAddress, uint256[] caps) should fail as it has no LOG cap to derive from', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap(0, "");
-                const cap3 = new beakerlib.CallCap(0,"");
-                // const cap4 = new beakerlib.LogCap([]);
-                const cap4 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log("deployedContractAddress:", deployedTestContract.address);
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    // this inputData is custom built, it can be deleted if
-                    // necessary, but shows the underlying input data
-                    const manualInputData = web3.fromAscii(procName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
-                        + functionSelectorHash // the function selector hash (4 bytes)
-                        + web3.fromAscii(testProcName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
-                        + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
-                        + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
-
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // of type LOG
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
-                        + web3.toHex(4).slice(2).padStart(32*2,0) // the number of log topics
-                        + "0xabcd".slice(2).padStart(32*2,0) // log topic #1
-                        + "0xefa2".slice(2).padStart(32*2,0) // log topic #2
-                        + "0x2343".slice(2).padStart(32*2,0) // log topic #3
-                        + "0xfe12".slice(2).padStart(32*2,0) // log topic #4
-                    // console.log(manualInputData)
-                    // // when using web3 1.0 this will be good
-                    // try {
-                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
-                    // } catch (e) {
-                    //     console.log(e)
-                    // }
-                    const inputData = manualInputData;
-                    // assert.strictEqual(inputData,)
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    // console.log(tx3.receipt)
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(valueX.toNumber())
-                    assert(valueX != 0, "fail with non-zero exit code");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(!procedures4.includes(testProcName), "The name should not be in the procedure table");
-                assert.strictEqual(procedures4.length, (procedures3.length), "The number of procedures should have remained the same");
-            })
-            it('B(bytes24 procName, address procAddress, uint256[] caps) should succeed when given cap (the registered contract will have 2 caps)', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.RegisterCap(0, "");
-                const cap3 = new beakerlib.CallCap(0,"");
-                const cap4 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log("deployedContractAddress:", deployedTestContract.address);
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    // this inputData is custom built, it can be deleted if
-                    // necessary, but shows the underlying input data
-                    const manualInputData = web3.fromAscii(procName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
-                        + functionSelectorHash // the function selector hash (4 bytes)
-                        + web3.fromAscii(testProcName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
-                        + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
-                        + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
-
-                        + web3.toHex(13).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
-
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // 0 topics
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic1
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic2
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic3
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic4
-
-                        + web3.toHex(5).slice(2).padStart(32*2,0) // the length of the second cap, which is 4
-                        + web3.toHex(7).slice(2).padStart(32*2,0) // the type of the second cap, which is "write"
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
-                        + web3.toHex(0x8000).slice(2).padStart(32*2,0) // the address of the wrote
-                        + web3.toHex(1).slice(2).padStart(32*2,0) // the number of additional keys
-
-                    // console.log(manualInputData)
-                    // // when using web3 1.0 this will be good
-                    // try {
-                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
-                    // } catch (e) {
-                    //     console.log(e)
-                    // }
-                    const inputData = manualInputData;
-                    // assert.strictEqual(inputData,)
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(valueX.toNumber())
-                    assert.equal(valueX.toNumber(), 0, "should succeed with zero errcode the first time");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(procedures4.includes(testProcName), "The correct name should be in the procedure table");
-                assert.strictEqual(procedures4.length, (procedures3.length+1), "The number of procedures should have increased by 1");
-
-                const procTableData = await kernel.returnProcedureTable.call();
-                const procTable = beakerlib.ProcedureTable.parse(procTableData);
-                // console.log("Kernel Address:", kernel.address)
-                // console.log(beakerlib.ProcedureTable.stringify(procTable));
-                const encodedName = web3.toHex(testProcName.padEnd(24,'\0'));
-                assert.equal(2,procTable.procedures[encodedName].caps.length, "The procedure should have 2 caps");
-
-
-                assert.equal(0x7,procTable.procedures[encodedName].caps[0].type, "The second cap should be of type 0x7");
-                assert.equal(2,procTable.procedures[encodedName].caps[0].values.length, "The second cap should have 2 values associated with it");
-                assert.equal(0x8000,procTable.procedures[encodedName].caps[0].values[0], "The first value of the second cap should be 0x8000");
-                assert.equal(1,procTable.procedures[encodedName].caps[0].values[1], "The second value of the second cap should be 1");
-
-                assert.equal(0x8,procTable.procedures[encodedName].caps[1].type, "The first cap should be of type 0x8");
-                assert.equal(5,procTable.procedures[encodedName].caps[1].values.length, "The first cap should have 5 values associated with it");
-                assert.deepEqual([0,0,0,0,0],procTable.procedures[encodedName].caps[1].values, "ALl the values associated with the log cap should be zero");
-            })
-            it('B(bytes24 procName, address procAddress, uint256[] caps) should fail when not given cap (the registered contract tries to have 2 caps)', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, []);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log("deployedContractAddress:", deployedTestContract.address);
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    // this inputData is custom built, it can be deleted if
-                    // necessary, but shows the underlying input data
-                    const manualInputData = web3.fromAscii(procName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
-                        + functionSelectorHash // the function selector hash (4 bytes)
-                        + web3.fromAscii(testProcName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
-                        + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
-                        + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
-
-                        + web3.toHex(13).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
-
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // 0 topics
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic1
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic2
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic3
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic4
-
-                        + web3.toHex(5).slice(2).padStart(32*2,0) // the length of the second cap, which is 4
-                        + web3.toHex(7).slice(2).padStart(32*2,0) // the type of the second cap, which is "write"
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
-                        + web3.toHex(0x8000).slice(2).padStart(32*2,0) // the address of the wrote
-                        + web3.toHex(1).slice(2).padStart(32*2,0) // the number of additional keys
-
-                    // console.log(manualInputData)
-                    // // when using web3 1.0 this will be good
-                    // try {
-                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
-                    // } catch (e) {
-                    //     console.log(e)
-                    // }
-                    const inputData = manualInputData;
-                    // assert.strictEqual(inputData,)
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(valueX.toNumber())
-                    assert.equal(valueXRaw.slice(0,4), "0x55", "should succeed with zero errcode the first time");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(!procedures4.includes(testProcName), "The name should notbe in the procedure table");
-                assert.strictEqual(procedures4.length, procedures3.length, "The number of procedures should have remained the same");
-
-                const procTableData = await kernel.returnProcedureTable.call();
-                const procTable = beakerlib.ProcedureTable.parse(procTableData);
-                // console.log("Kernel Address:", kernel.address)
-                // console.log(beakerlib.ProcedureTable.stringify(procTable));
-                const encodedName = web3.toHex(testProcName.padEnd(24,'\0'));
-                assert(procTable.procedures[encodedName] === undefined, "The procedure should not be present in the table");
-            })
-            it('B(bytes24 procName, address procAddress, uint256[] caps) should fail when given the wrong cap (the registered contract tries to have 2 caps)', async function () {
-                const kernel = await Kernel.new();
-                // console.log(`kernel: ${kernel.address}`);
-
-                const procedures1Raw = await kernel.listProcedures.call();
-                const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures1:", procedures1);
-
-                await testutils.installEntryProc(kernel);
-
-                const procedures2Raw = await kernel.listProcedures.call();
-                const procedures2 = procedures2Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures2:", procedures2);
-
-                const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
-
-                const deployedContract = await testutils.deployedTrimmed(contract);
-                // This is the procedure that will do the registering
-                // this currently requires Any because it uses logging for testing
-                const tx1 = await kernel.registerAnyProcedure(procName, deployedContract.address, capArray);
-                // for (const log of tx1.receipt.logs) {
-                //     // console.log(`${log.topics} - ${log.data}`);
-                //     console.log(`${log.topics} - ${log.data}`);
-                //     try {
-                //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                //     } catch(e) {
-                //         // console.log(`${log.topics} - ${log.data}`);
-                //         console.log("non-ascii");
-                //     }
-                // }
-                // This is the procedure that will be registered
-                const deployedTestContract = await testutils.deployedTrimmed(testContract);
-                // console.log("deployedContractAddress:", deployedTestContract.address);
-                const procedures3Raw = await kernel.listProcedures.call();
-                const procedures3 = procedures3Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures3:", procedures3);
-                {
-                    const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
-                    const inputData = web3.fromAscii(procName.padEnd(24,"\0")) + functionSelectorHash;
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const valueX = web3.toBigNumber(valueXRaw);
-                    // we execute a test function to ensure the procedure is
-                    // functioning properly
-                    assert.equal(valueX.toNumber(), 392, "should receive the correct test number");
-                }
-
-                {
-                    // console.log(deployedTestContract.address.slice(2))
-                    const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
-                    // here we use padStart because 'address' is like a number, not bytes
-                    // this inputData is custom built, it can be deleted if
-                    // necessary, but shows the underlying input data
-                    const manualInputData = web3.fromAscii(procName.padEnd(24,"\0")) // the name of the procedure to call (24 bytes)
-                        + functionSelectorHash // the function selector hash (4 bytes)
-                        + web3.fromAscii(testProcName.padEnd(24,"\0")).slice(2).padEnd(32*2,0) // the name argument for register (32 bytes)
-                        + deployedTestContract.address.slice(2).padStart(32*2,0) // the address argument for register (32 bytes)
-                        + web3.toHex(96).slice(2).padStart(32*2,0) // the offset for the start of caps data (32 bytes)
-
-                        + web3.toHex(13).slice(2).padStart(32*2,0) // the caps data, which is currently just a length of 2 (32 bytes)
-
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the length of the first (only) cap, which is 1
-                        + web3.toHex(8).slice(2).padStart(32*2,0) // the type of the first (only) type, which is "log any"
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // 0 topics
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic1
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic2
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic3
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // topic4
-
-                        + web3.toHex(5).slice(2).padStart(32*2,0) // the length of the second cap, which is 4
-                        + web3.toHex(7).slice(2).padStart(32*2,0) // the type of the second cap, which is "write"
-                        + web3.toHex(0).slice(2).padStart(32*2,0) // the cap index to derive from
-                        + web3.toHex(0x8000).slice(2).padStart(32*2,0) // the address of the wrote
-                        + web3.toHex(1).slice(2).padStart(32*2,0) // the number of additional keys
-
-                    // console.log(manualInputData)
-                    // // when using web3 1.0 this will be good
-                    // try {
-                    //     console.log(deployedContract.methods.B(testProcName,deployedTestContract.address,[]).data)
-                    // } catch (e) {
-                    //     console.log(e)
-                    // }
-                    const inputData = manualInputData;
-                    // assert.strictEqual(inputData,)
-                    const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
-                    const tx3 = await kernel.sendTransaction({data: inputData});
-                    // for (const log of tx3.receipt.logs) {
-                    //     // console.log(`${log.topics} - ${log.data}`);
-                    //     console.log(`${log.topics} - ${log.data}`);
-                    //     try {
-                    //         console.log(`${log.topics.map(web3.toAscii)} - ${web3.toAscii(log.data)}`);
-                    //     } catch(e) {
-                    //         // console.log(`${log.topics} - ${log.data}`);
-                    //         console.log("non-ascii");
-                    //     }
-                    // }
-                    // console.log(valueX.toNumber())
-                    assert.equal(valueXRaw.slice(0,4), "0x55", "should succeed with zero errcode the first time");
-                }
-
-                const procedures4Raw = await kernel.listProcedures.call();
-                const procedures4 = procedures4Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                // console.log("procedures4:", procedures4);
-                assert(!procedures4.includes(testProcName), "The name should not be in the procedure table");
-                assert.strictEqual(procedures4.length, procedures3.length, "The number of procedures should not have changed");
-
-                const procTableData = await kernel.returnProcedureTable.call();
-                const procTable = beakerlib.ProcedureTable.parse(procTableData);
-                // console.log("Kernel Address:", kernel.address)
-                // console.log(beakerlib.ProcedureTable.stringify(procTable));
-                const encodedName = web3.toHex(testProcName.padEnd(24,'\0'));
-                assert(procTable.procedures[encodedName] === undefined, "The procedure should not be present in the table");
-            })
-        })
+contract('Kernel with entry procedure', function () {
+    // These tests have a general form in which there are 2 procedures,
+    // Procedure A and Procedure B. The following will be performed for each
+    // test, although it isn't part of the properties being tested:
+    //    1. A new kernel will be deployed.
+    //    2. A basic entry procedure will be installed.
+    //    3. The contract code for Procedure A and Procedure B will be deployed
+    //       to the chain.
+    //    4. Procedure A will be registered with the kernel.
+    //
+    // We will then test procedure registration by getting Procedure A to
+    // register Procedure B with a set of capabilities.
+    describe('Register without capabilities', function () {
+        it('Should succeed when Procedure A is given a general Register Capability', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when Procedure A is given a Register Capability with the same name as ProcB and 192-bit prefix', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procBName = "Adder";
+
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(192, procBName),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBContract = Valid.Adder;
+            const procBCaps = [];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when Procedure A is given a Register Capability with the same name as ProcB and 30-bit prefix', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procBName = "Adder";
+
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(30, procBName),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBContract = Valid.Adder;
+            const procBCaps = [];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when Procedure A is given a Register Capability with the first 2 bytes of as ProcBName and 16-bit prefix', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procBName = "Adder";
+
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(16, "Ad"),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBContract = Valid.Adder;
+            const procBCaps = [];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when Procedure A is given a Register Capability with the first 2 bytes of as ProcBName and 24-bit prefix', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procBName = "Adder";
+
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(24, "Ad"),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBContract = Valid.Adder;
+            const procBCaps = [];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when Procedure A is not given any Register Capability', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+    });
+    describe('Register Call capability', function () {
+        it('Should succeed when deriving general cap from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when deriving general cap from no cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving larger prefix cap (30) from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(30,""),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving larger prefix cap (192) from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(192,""),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when deriving smaller prefix cap (30) from larger prefix cap (48)', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(48,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(30,""),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving 2 larger prefix caps (40, 192) from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(40,""),
+                new beakerlib.CallCap(192,""),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving general cap with address from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(0,"abcd"),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving prefix(30) with address from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(30,"abcd"),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving 2 general caps with different addresses from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(0,"abcd"),
+                new beakerlib.CallCap(0,"wxyz"),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving 2 prefix(30) caps with different addresses from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(30,"abcd"),
+                new beakerlib.CallCap(30,"wxyz"),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving a prefix(16) cap and a prefix(32) cap with different addresses from general cap', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(0,""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(16,"ab"),
+                new beakerlib.CallCap(32,"wxyz"),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should succeed when deriving a prefix(32) cap from a prefix(16) where 16 bits match, but others do not', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(16,"ab"),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(32,"abcd"),
+                new beakerlib.CallCap(32,"abxy"),
+            ];
+
+            const shouldSucceed = true;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when deriving a prefix(32) cap from a prefix(16) where addresses are different', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(16,"ab"),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(32,"axcd"),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
+        it('Should fail when deriving a prefix(16) cap from a prefix(32) where addresses are the same', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.CallCap(32,"abcd"),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            const procBCaps = [
+                new beakerlib.CallCap(16,"abcd"),
+            ];
+
+            const shouldSucceed = false;
+            await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
+        });
     })
 })
+
+// A test which uses procA to register procB. procACaps are the capabilities
+// that procA is originally registered with procBCaps are the caps that it will
+// attempt to register procB with.
+async function stdTest(procAName, procAContract, procACaps,
+                       procBName, procBContract, procBCaps, shouldSucceed) {
+    const kernel = await Kernel.new();
+    const functionSpec = "B(bytes24,address,uint256[])";
+
+    const procedures1Raw = await kernel.listProcedures.call();
+    const procedures1 = procedures1Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    assert(procedures1.length == 0,
+        "The kernel should initially have no procedures");
+
+    const [regEPTX, setEPTX] = await testutils.installEntryProc(kernel);
+
+    const procedures2Raw = await kernel.listProcedures.call();
+    const procedures2 = procedures2Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    // Check that the entry procedure was correctly installed.
+    assert(procedures2.includes("EntryProcedure"),
+        "The kernel should have an entry procedure registered");
+    let entryProcedureNameRaw = await kernel.getEntryProcedure.call();
+    let entryProcedureName = web3.toAscii(web3.toHex(entryProcedureNameRaw))
+        .replace(/\0.*$/, '');
+    assert.strictEqual(entryProcedureName,
+        "EntryProcedure", "The entry procedure should be correctly set");
+
+    const deployedContractA = await testutils.deployedTrimmed(procAContract);
+    // This is the procedure that will do the registering
+    // this currently requires Any because it uses logging for testing
+    const tx1 = await kernel.registerAnyProcedure(procAName,
+        deployedContractA.address, beakerlib.Cap.toInput(procACaps));
+    // Check that procA was correctly installed.
+    const procedures3Raw = await kernel.listProcedures.call();
+    const procedures3 = procedures3Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    assert(procedures3.includes(procAName), "ProcA should be registered");
+
+    {
+        // Test that procA returns the correct testNum
+        const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
+        const inputData = web3.fromAscii(procAName.padEnd(24,"\0"))
+            + functionSelectorHash;
+        const tx3 = await kernel.sendTransaction({data: inputData});
+        const valueXRaw = await web3.eth.call({to: kernel.address,
+            data: inputData});
+        const valueX = web3.toBigNumber(valueXRaw);
+        // we execute a test function to ensure the procedure is
+        // functioning properly
+        assert.equal(valueX.toNumber(), 392,
+            "should receive the correct test number");
+    }
+
+    let mainTX;
+    // This is the procedure that will be registered
+    const deployedContractB = await testutils.deployedTrimmed(procBContract);
+    {
+        const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+        const encodedCapsVals = beakerlib.Cap.toInput(procBCaps).map(x=>web3.toHex(x).slice(2).padStart(64,0));
+        const manualInputData
+            // the name of the procedure to call (24 bytes)
+            = web3.fromAscii(procAName.padEnd(24,"\0"))
+            // the function selector hash (4 bytes)
+            + functionSelectorHash
+            // the name argument for register (32 bytes)
+            + web3.fromAscii(procBName.padEnd(24,"\0")).slice(2).padEnd(32*2,0)
+            // the address argument for register (32 bytes)
+            + deployedContractB.address.slice(2).padStart(32*2,0)
+            // the offset for the start of caps data (32 bytes)
+            + web3.toHex(96).slice(2).padStart(32*2,0)
+            // the caps data, which starts with the length
+            // + web3.toHex(0).slice(2).padStart(32*2,0)
+            + web3.toHex(encodedCapsVals.length).slice(2).padStart(32*2,0)
+            // followed by the values
+            + encodedCapsVals.join("");
+
+        // when using web3 1.0 this will be good
+        // try {
+        //     console.log(deployedContract.methods.B(testProcName,
+        //         deployedTestContract.address,[]).data)
+        // } catch (e) {
+        //     console.log(e)
+        // }
+        const inputData = manualInputData;
+        const valueXRaw = await web3.eth.call({to: kernel.address,
+            data: inputData});
+        mainTX = await kernel.sendTransaction({data: inputData});
+        const valueX = web3.toBigNumber(valueXRaw);
+        if (shouldSucceed) {
+            assert.equal(valueX.toNumber(), 0,
+                "should succeed with zero errcode");
+        } else {
+            assert(valueX.toNumber() != 0, "should fail with non-zero errcode");
+        }
+    }
+
+    const procedures4Raw = await kernel.listProcedures.call();
+    const procedures4 = procedures4Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    if (shouldSucceed) {
+        assert(procedures4.includes(procBName),
+            "The correct name should be in the procedure table");
+        assert.strictEqual(procedures4.length, (procedures3.length+1),
+            "The number of procedures should have increased by 1");
+        // TODO: check that the capabilities are correct.
+        const procTableData = await kernel.returnProcedureTable.call();
+        const procTable = beakerlib.ProcedureTable.parse(procTableData);
+        const procBNameEncoded = web3.fromAscii(procBName.padEnd(24,'\0'));
+        const procBData = procTable.procedures[procBNameEncoded];
+
+        assert.deepStrictEqual(beakerlib.Cap.toCLists(procBCaps),
+            procBData.caps, "The requested caps should equal resulting caps");
+    } else {
+        assert(!procedures4.includes(procBName),
+            "The correct name should not be in the procedure table");
+        assert.strictEqual(procedures4.length, procedures3.length,
+            "The number of procedures should have remained the same");
+    }
+    return mainTX;
+}

@@ -588,7 +588,7 @@ library ProcedureTable {
             currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
             requestedVal = caps[i+3+0];
 
-            // Check the prefix
+            // Check that the prefix of B is >= than the prefix of A.
             current = currentVal & 0xff00000000000000000000000000000000000000000000000000000000000000;
             req = requestedVal & 0xff00000000000000000000000000000000000000000000000000000000000000;
             if (current > req) {
@@ -596,7 +596,7 @@ library ProcedureTable {
             }
 
             // b is "currentMask"
-            b = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff << ((192 - current));
+            b = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff << ((192 - (current >> 248)));
             current = b & currentVal & 0x0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff;
             req = b & requestedVal & 0x0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff;
             // Insert a 0 value (which means the prefix will be zero, i.e. the maximum capability)
