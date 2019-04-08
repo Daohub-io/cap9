@@ -240,7 +240,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const testMultiply = await testutils.deployedTrimmed(Valid.Multiply);
                 const [err2, address2] = await kernel.registerProcedure.call(name, testMultiply.address, []);
                 const tx2 = await kernel.registerProcedure(name, testMultiply.address, []);
-                assert.equal(err2, 3);
+                assert.equal(err2.toNumber(), 4);
 
                 const proceduresRaw = await kernel.listProcedures.call();
                 const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
