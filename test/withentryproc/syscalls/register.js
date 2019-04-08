@@ -138,13 +138,13 @@ contract('Kernel with entry procedure', function () {
         });
     });
     describe('Register Call capability', async function () {
-        await testCallType(beakerlib.CallCap);
+        await testCallType(beakerlib.CallCap, 0);
     });
     describe('Register Delete capability', async function () {
-        await testCallType(beakerlib.DeleteCap);
+        await testCallType(beakerlib.DeleteCap, 0);
     });
     describe('Register Register capability', async function () {
-        await testCallType(beakerlib.RegisterCapWithIndexOne);
+        await testCallType(beakerlib.RegisterCap, 1);
     });
     describe('Register Write capability', function () {
         it('Should succeed when deriving maximal cap from maximal cap', async function () {
@@ -678,7 +678,7 @@ contract('Kernel with entry procedure', function () {
     });
 })
 
-async function testCallType(ThisCap) {
+async function testCallType(ThisCap, capIndex) {
     it('Should succeed when deriving general cap from general cap', async function () {
         const procAName = "SysCallTestProcRegister";
         const procAContract = Valid.SysCallTestProcRegister;
@@ -691,7 +691,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(0,""),
+            new ThisCap(0,"", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -708,7 +708,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(0,""),
+            new ThisCap(0,"", capIndex),
         ];
 
         const shouldSucceed = false;
@@ -726,7 +726,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(30,""),
+            new ThisCap(30,"", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -744,7 +744,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(192,""),
+            new ThisCap(192,"", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -762,7 +762,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(30,""),
+            new ThisCap(30,"", capIndex),
         ];
 
         const shouldSucceed = false;
@@ -780,8 +780,8 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(40,""),
-            new ThisCap(192,""),
+            new ThisCap(40,"", capIndex),
+            new ThisCap(192,"", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -799,7 +799,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(0,"abcd"),
+            new ThisCap(0,"abcd", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -817,7 +817,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(30,"abcd"),
+            new ThisCap(30,"abcd", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -835,8 +835,8 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(0,"abcd"),
-            new ThisCap(0,"wxyz"),
+            new ThisCap(0,"abcd", capIndex),
+            new ThisCap(0,"wxyz", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -854,8 +854,8 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(30,"abcd"),
-            new ThisCap(30,"wxyz"),
+            new ThisCap(30,"abcd", capIndex),
+            new ThisCap(30,"wxyz", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -873,8 +873,8 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(16,"ab"),
-            new ThisCap(32,"wxyz"),
+            new ThisCap(16,"ab", capIndex),
+            new ThisCap(32,"wxyz", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -892,8 +892,8 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(32,"abcd"),
-            new ThisCap(32,"abxy"),
+            new ThisCap(32,"abcd", capIndex),
+            new ThisCap(32,"abxy", capIndex),
         ];
 
         const shouldSucceed = true;
@@ -911,7 +911,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(32,"axcd"),
+            new ThisCap(32,"axcd", capIndex),
         ];
 
         const shouldSucceed = false;
@@ -929,7 +929,7 @@ async function testCallType(ThisCap) {
         const procBName = "Adder";
         const procBContract = Valid.Adder;
         const procBCaps = [
-            new ThisCap(16,"abcd"),
+            new ThisCap(16,"abcd", capIndex),
         ];
 
         const shouldSucceed = false;
@@ -1253,12 +1253,14 @@ async function stdTest(procAName, procAContract, procACaps,
     return mainTX;
 }
 
-
 // Test hack to remove data we don't care about. The kernel stores no
 // information about where a capability was derived from.
 function stripCapIndexVals(capData) {
-    for (const cap in capData) {
-        cap.capIndex = 0;
+    for (const capType in capData) {
+        capData[capType].capIndex = 0;
+        for (const cap in capData[capType]) {
+            capData[capType][cap].capIndex = 0;
+        }
     }
     return capData;
 }
