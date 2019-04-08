@@ -650,6 +650,208 @@ async function testCallType(ThisCap) {
     });
 }
 
+// Deploy a kernel and install the example entry procedure
+async function deployKernelTest() {
+    const kernel = await Kernel.new();
+    const procedures1Raw = await kernel.listProcedures.call();
+    const procedures1 = procedures1Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    assert(procedures1.length == 0,
+        "The kernel should initially have no procedures");
+    const [regEPTX, setEPTX] = await testutils.installEntryProc(kernel);
+
+    const procedures2Raw = await kernel.listProcedures.call();
+    const procedures2 = procedures2Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    // Check that the entry procedure was correctly installed.
+    assert(procedures2.includes("EntryProcedure"),
+        "The kernel should have an entry procedure registered");
+    let entryProcedureNameRaw = await kernel.getEntryProcedure.call();
+    let entryProcedureName = web3.toAscii(web3.toHex(entryProcedureNameRaw))
+        .replace(/\0.*$/, '');
+    assert.strictEqual(entryProcedureName,
+        "EntryProcedure", "The entry procedure should be correctly set");
+    return kernel;
+}
+
+async function regProcDirectTest(kernel, procName, procContract, procCaps) {
+    // Check that proc is not already installed
+    const procedures1Raw = await kernel.listProcedures.call();
+    const procedures1 = procedures1Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    assert(!procedures1.includes(procName),
+        `Proc ${procName} should not be registered`);
+
+    // Deploy the contract to the chain
+    const deployedContract = await testutils.deployedTrimmed(procContract);
+    // Register the procedure directly to the kernel using the test API.
+    const tx1 = await kernel.registerAnyProcedure(procName,
+        deployedContract.address, beakerlib.Cap.toInput(procCaps));
+
+    // Check that proc was correctly installed.
+    const procedures2Raw = await kernel.listProcedures.call();
+    const procedures2 = procedures2Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    assert(procedures2.includes(procName),
+        `Proc ${procName} should be registered`);
+
+    {
+        // Test that proc returns the correct testNum
+        const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
+        const inputData = web3.fromAscii(procName.padEnd(24,"\0"))
+            + functionSelectorHash;
+        const tx3 = await kernel.sendTransaction({data: inputData});
+        const valueXRaw = await web3.eth.call({to: kernel.address,
+            data: inputData});
+        const valueX = web3.toBigNumber(valueXRaw);
+        // Execute a test function to ensure the procedure is
+        // functioning properly
+        assert.equal(valueX.toNumber(), 392,
+            "should receive the correct test number");
+    }
+}
+
+// Register a procedure to the given kernel.
+async function regProcTest(kernel, procAName, procBName, procBContract,
+                           procBCaps, shouldSucceed) {
+    const functionSpec = "B(bytes24,address,uint256[])";
+
+    const procedures3Raw = await kernel.listProcedures.call();
+    const procedures3 = procedures3Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    assert(!procedures3.includes(procBName),
+        `Proc ${procBName} should not be registered`);
+
+    let mainTX;
+    // This is the procedure that will be registered
+    const deployedContractB = await testutils.deployedTrimmed(procBContract);
+    {
+        const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+        const encodedCapsVals = beakerlib.Cap.toInput(procBCaps).map(x=>web3.toHex(x).slice(2).padStart(64,0));
+        const manualInputData
+            // the name of the procedure to call (24 bytes)
+            = web3.fromAscii(procAName.padEnd(24,"\0"))
+            // the function selector hash (4 bytes)
+            + functionSelectorHash
+            // the name argument for register (32 bytes)
+            + web3.fromAscii(procBName.padEnd(24,"\0")).slice(2).padEnd(32*2,0)
+            // the address argument for register (32 bytes)
+            + deployedContractB.address.slice(2).padStart(32*2,0)
+            // the offset for the start of caps data (32 bytes)
+            + web3.toHex(96).slice(2).padStart(32*2,0)
+            // the caps data, which starts with the length
+            // + web3.toHex(0).slice(2).padStart(32*2,0)
+            + web3.toHex(encodedCapsVals.length).slice(2).padStart(32*2,0)
+            // followed by the values
+            + encodedCapsVals.join("");
+
+        // when using web3 1.0 this will be good
+        // try {
+        //     console.log(deployedContract.methods.B(testProcName,
+        //         deployedTestContract.address,[]).data)
+        // } catch (e) {
+        //     console.log(e)
+        // }
+        const inputData = manualInputData;
+        const valueXRaw = await web3.eth.call({to: kernel.address,
+            data: inputData});
+        mainTX = await kernel.sendTransaction({data: inputData});
+        const valueX = web3.toBigNumber(valueXRaw);
+        if (shouldSucceed) {
+            assert.equal(valueX.toNumber(), 0,
+                "should succeed with zero errcode");
+        } else {
+            assert(valueX.toNumber() != 0, "should fail with non-zero errcode");
+        }
+    }
+
+    const procedures4Raw = await kernel.listProcedures.call();
+    const procedures4 = procedures4Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    if (shouldSucceed) {
+        assert(procedures4.includes(procBName),
+            "The correct name should be in the procedure table");
+        assert.strictEqual(procedures4.length, (procedures3.length+1),
+            "The number of procedures should have increased by 1");
+        // TODO: check that the capabilities are correct.
+        const procTableData = await kernel.returnProcedureTable.call();
+        const procTable = beakerlib.ProcedureTable.parse(procTableData);
+        const procBNameEncoded = web3.fromAscii(procBName.padEnd(24,'\0'));
+        const procBData = procTable.procedures[procBNameEncoded];
+
+        assert.deepStrictEqual(
+            stripCapIndexVals(beakerlib.Cap.toCLists(procBCaps)),
+            stripCapIndexVals(procBData.caps),
+            "The requested caps should equal resulting caps");
+    } else {
+        assert(!procedures4.includes(procBName),
+            "The correct name should not be in the procedure table");
+        assert.strictEqual(procedures4.length, procedures3.length,
+            "The number of procedures should have remained the same");
+    }
+    return mainTX;
+}
+
+// Delete a procedure from the given kernel.
+async function delProcTest(kernel, procAName, procBName, shouldSucceed) {
+    const functionSpec = "Delete(bytes24)";
+
+    // Check that procA was correctly installed.
+    const procedures1Raw = await kernel.listProcedures.call();
+    const procedures1 = procedures1Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    assert(procedures1.includes(procBName), "ProcB should initially be registered");
+
+
+    let mainTX;
+    // This is the procedure that will be registered
+    {
+        const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
+        const manualInputData
+            // the name of the procedure to call (24 bytes)
+            = web3.fromAscii(procAName.padEnd(24,"\0"))
+            // the function selector hash (4 bytes)
+            + functionSelectorHash
+            // the name argument for register (32 bytes)
+            + web3.fromAscii(procBName.padEnd(24,"\0")).slice(2).padEnd(32*2,0);
+
+        // when using web3 1.0 this will be good
+        // try {
+        //     console.log(deployedContract.methods.B(testProcName,
+        //         deployedTestContract.address,[]).data)
+        // } catch (e) {
+        //     console.log(e)
+        // }
+        const inputData = manualInputData;
+        const valueXRaw = await web3.eth.call({to: kernel.address,
+            data: inputData});
+        mainTX = await kernel.sendTransaction({data: inputData});
+        const valueX = web3.toBigNumber(valueXRaw);
+        if (shouldSucceed) {
+            assert.equal(valueX.toNumber(), 0,
+                "should succeed with zero errcode");
+        } else {
+            assert(valueX.toNumber() != 0, "should fail with non-zero errcode");
+        }
+    }
+
+    const procedures2Raw = await kernel.listProcedures.call();
+    const procedures2 = procedures2Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    if (shouldSucceed) {
+        assert(!procedures2.includes(procBName),
+            "The procedure name should not be in the procedure table");
+        assert.strictEqual(procedures2.length, (procedures1.length-1),
+            "The number of procedures should have decreased by 1");
+    } else {
+        assert(!procedures2.includes(procBName),
+            "The procedure name should still be in the procedure table");
+        assert.strictEqual(procedures2.length, procedures3.length,
+            "The number of procedures should have remained the same");
+    }
+    return mainTX;
+}
+
 // A test which uses procA to register procB. procACaps are the capabilities
 // that procA is originally registered with procBCaps are the caps that it will
 // attempt to register procB with.

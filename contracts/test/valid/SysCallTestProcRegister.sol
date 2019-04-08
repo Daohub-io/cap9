@@ -13,6 +13,12 @@ contract SysCallTestProcRegister is BeakerContract {
         return proc_reg(0, bytes32(name), procAddress, caps);
     }
 
+    // Delete a procedure
+    function Delete(bytes24 name) public returns (uint32) {
+        return proc_del(0, bytes32(name));
+    }
+
+
     function testNum() public pure returns (uint256) {
         return 392;
     }
