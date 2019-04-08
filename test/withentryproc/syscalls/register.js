@@ -389,7 +389,7 @@ contract('Kernel with entry procedure', function () {
             await stdTest(procAName, procAContract, procACaps, procBName, procBContract, procBCaps, shouldSucceed);
         });
     });
-    describe.only('Register previously deleted procedure name', function () {
+    describe('Register previously deleted procedure name', function () {
         it('Should succeed when registering previously deleted name, no caps', async function () {
             const procAName = "SysCallTestProcRegister";
             const procAContract = Valid.SysCallTestProcRegister;
