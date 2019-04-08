@@ -25,11 +25,12 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.SetEntryCap([]);
+                const cap2 = new beakerlib.SetEntryCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
+                // console.log(deployedTestContract)
 
                 // This is the procedure that will be entry procedure first
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
@@ -37,6 +38,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, []);
 
                 const originalValue =  await kernel.testGetter.call();
+
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 // Set the "SysCallTestEntry" as entry
@@ -64,7 +66,7 @@ contract('Kernel with entry procedure', function (accounts) {
                 const kernel = await Kernel.new();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.SetEntryCap([]);
+                const cap2 = new beakerlib.SetEntryCap();
                 const capArray = beakerlib.Cap.toInput([cap1, cap2]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
