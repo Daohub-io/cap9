@@ -416,6 +416,8 @@ library ProcedureTable {
         _set(pPointer + 0, uint256(location));
         // Store the keyIndex
         _set(pPointer + 1, uint256(keyIndex));
+        // Clear any previously defined caps by setting the clists to 0-length
+        _clearCaps(pPointer);
         _serialiseCapArray(pPointer, caps);
     }
 
@@ -574,6 +576,17 @@ library ProcedureTable {
             }
             i += capSize;
         }
+    }
+
+    // Clear the capabilities of a procedure of the given name.
+    function _clearCaps(uint256 pPointer) internal {
+        _set(pPointer | (CAP_PROC_CALL*0x10000), 0);
+        _set(pPointer | (CAP_PROC_REGISTER*0x10000), 0);
+        _set(pPointer | (CAP_PROC_DELETE*0x10000), 0);
+        _set(pPointer | (CAP_PROC_ENTRY*0x10000), 0);
+        _set(pPointer | (CAP_STORE_WRITE*0x10000), 0);
+        _set(pPointer | (CAP_LOG*0x10000), 0);
+        _set(pPointer | (CAP_ACC_CALL*0x10000), 0);
     }
 
     function isSubset(uint192 currentProcedure, uint256 capType, uint256 capIndex, uint256[] caps, uint256 i) public view returns (bool) {

@@ -416,6 +416,9 @@ contract('Kernel with entry procedure', function () {
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps1, true)
 
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps1);
+
             // Delete Procedure B using Procedure A
             await delProcTest(kernel, procAName, procBName, true);
 
@@ -425,6 +428,9 @@ contract('Kernel with entry procedure', function () {
             // Register Procedure B (again) using Procedure A
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps2, shouldSucceed);
+
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps2);
         });
         it('Should succeed when registering previously deleted name, same caps', async function () {
             const procAName = "SysCallTestProcRegister";
@@ -452,6 +458,9 @@ contract('Kernel with entry procedure', function () {
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps1, true)
 
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps1);
+
             // Delete Procedure B using Procedure A
             await delProcTest(kernel, procAName, procBName, true);
 
@@ -461,8 +470,11 @@ contract('Kernel with entry procedure', function () {
             // Register Procedure B (again) using Procedure A
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps2, shouldSucceed);
+
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps2);
         });
-        it('Should succeed when registering previously deleted name, different caps', async function () {
+        it('Should succeed when registering previously deleted name, more caps', async function () {
             const procAName = "SysCallTestProcRegister";
             const procAContract = Valid.SysCallTestProcRegister;
             const procACaps = [
@@ -488,6 +500,9 @@ contract('Kernel with entry procedure', function () {
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps1, true)
 
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps1);
+
             // Delete Procedure B using Procedure A
             await delProcTest(kernel, procAName, procBName, true);
 
@@ -497,6 +512,51 @@ contract('Kernel with entry procedure', function () {
             // Register Procedure B (again) using Procedure A
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps2, shouldSucceed);
+
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps2);
+        });
+        it('Should succeed when registering previously deleted name, fewer caps', async function () {
+            const procAName = "SysCallTestProcRegister";
+            const procAContract = Valid.SysCallTestProcRegister;
+            const procACaps = [
+                new beakerlib.WriteCap(0x8000,2),
+                new beakerlib.RegisterCap(0, ""),
+                new beakerlib.DeleteCap(0, ""),
+            ];
+
+            const procBName = "Adder";
+            const procBContract = Valid.Adder;
+            // Initially we will have no caps
+            const procBCaps1 = [new beakerlib.WriteCap(0x8000,2)];
+
+            const shouldSucceed = true;
+
+            // Deploy the test kernel
+            const kernel = await deployKernelTest();
+
+            // Register Procedure A
+            await regProcDirectTest(kernel, procAName, procAContract, procACaps);
+
+            // Register Procedure B using Procedure A
+            await regProcTest(kernel, procAName, procBName, procBContract,
+                procBCaps1, true)
+
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps1);
+
+            // Delete Procedure B using Procedure A
+            await delProcTest(kernel, procAName, procBName, true);
+
+            // The second registration will use these caps
+            const procBCaps2 = [];
+
+            // Register Procedure B (again) using Procedure A
+            await regProcTest(kernel, procAName, procBName, procBContract,
+                procBCaps2, shouldSucceed);
+
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps2);
         });
         it('Should fail when re-registering previously registered name, no caps', async function () {
             const procAName = "SysCallTestProcRegister";
@@ -524,12 +584,18 @@ contract('Kernel with entry procedure', function () {
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps1, true)
 
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps1);
+
             // The second registration will use these caps
             const procBCaps2 = [];
 
             // Register Procedure B (again) using Procedure A
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps2, shouldSucceed);
+
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps2);
         });
         it('Should fail when re-registering previously registered name, same caps', async function () {
             const procAName = "SysCallTestProcRegister";
@@ -557,14 +623,20 @@ contract('Kernel with entry procedure', function () {
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps1, true)
 
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps1);
+
             // The second registration will use these caps
             const procBCaps2 = [new beakerlib.WriteCap(0x8000,2)];
 
             // Register Procedure B (again) using Procedure A
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps2, shouldSucceed);
+
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps2);
         });
-        it('Should fail when re-registering previously registered name, different caps', async function () {
+        it('Should fail when re-registering previously registered name, more caps', async function () {
             const procAName = "SysCallTestProcRegister";
             const procAContract = Valid.SysCallTestProcRegister;
             const procACaps = [
@@ -588,7 +660,10 @@ contract('Kernel with entry procedure', function () {
 
             // Register Procedure B using Procedure A
             await regProcTest(kernel, procAName, procBName, procBContract,
-                procBCaps1, true)
+                procBCaps1, true);
+
+            // Check that the capabilities are correct
+            await checkCaps(kernel, procBName, procBCaps1);
 
             // The second registration will use these caps
             const procBCaps2 = [new beakerlib.WriteCap(0x8000,2)];
@@ -596,6 +671,9 @@ contract('Kernel with entry procedure', function () {
             // Register Procedure B (again) using Procedure A
             await regProcTest(kernel, procAName, procBName, procBContract,
                 procBCaps2, shouldSucceed);
+
+            // Check that there are no capabilities
+            await checkCaps(kernel, procBName, []);
         });
     });
 })
@@ -977,28 +1055,19 @@ async function regProcTest(kernel, procAName, procBName, procBContract,
     const procedures4Raw = await kernel.listProcedures.call();
     const procedures4 = procedures4Raw.map(web3.toAscii)
         .map(s => s.replace(/\0.*$/, ''));
-    // if (shouldSucceed) {
-    //     assert(procedures4.includes(procBName),
-    //         "The correct name should be in the procedure table");
-    //     assert.strictEqual(procedures4.length, (procedures3.length+1),
-    //         "The number of procedures should have increased by 1");
-    //     // TODO: check that the capabilities are correct.
-    //     const procTableData = await kernel.returnProcedureTable.call();
-    //     const procTable = beakerlib.ProcedureTable.parse(procTableData);
-    //     const procBNameEncoded = web3.fromAscii(procBName.padEnd(24,'\0'));
-    //     const procBData = procTable.procedures[procBNameEncoded];
-
-    //     assert.deepStrictEqual(
-    //         stripCapIndexVals(beakerlib.Cap.toCLists(procBCaps)),
-    //         stripCapIndexVals(procBData.caps),
-    //         "The requested caps should equal resulting caps");
-    // } else {
-    //     assert(!procedures4.includes(procBName),
-    //         "The correct name should not be in the procedure table");
-    //     assert.strictEqual(procedures4.length, procedures3.length,
-    //         "The number of procedures should have remained the same");
-    // }
     return mainTX;
+}
+
+async function checkCaps(kernel, procName, procCaps) {
+    const procTableData = await kernel.returnProcedureTable.call();
+    const procTable = beakerlib.ProcedureTable.parse(procTableData);
+    const procNameEncoded = web3.fromAscii(procName.padEnd(24,'\0'));
+    const procData = procTable.procedures[procNameEncoded];
+
+    assert.deepStrictEqual(
+        stripCapIndexVals(beakerlib.Cap.toCLists(procCaps)),
+        stripCapIndexVals(procData.caps),
+        "The requested caps should equal resulting caps");
 }
 
 // Delete a procedure from the given kernel.
@@ -1191,4 +1260,5 @@ function stripCapIndexVals(capData) {
     for (const cap in capData) {
         cap.capIndex = 0;
     }
+    return capData;
 }
