@@ -706,17 +706,13 @@ contract Kernel is Factory, IKernel {
             return;
         }
 
-        // Check whether the address exists
-        bool exist = procedures.contains(name);
-        if (exist) {
-            err = 3;
-            return;
-        }
-
-        procedures.insert(name, procedureAddress, caps);
+        bool inserted = procedures.insert(name, procedureAddress, caps);
         retAddress = procedureAddress;
         err = 0;
-        return (0, procedureAddress);
+        if (!inserted) {
+            err = 4;
+        }
+        return (err, procedureAddress);
     }
 
     function _setEntryProcedure(bytes24 name) internal returns (uint8 err) {

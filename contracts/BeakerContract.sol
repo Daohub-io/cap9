@@ -260,6 +260,15 @@ contract BeakerContract is IKernel {
     uint256 retSize = retInput.length;
 
     assembly {
+        function malloc(size) -> result {
+            // align to 32-byte words
+            let rsize := add(size,sub(32,mod(size,32)))
+            // get the current free mem location
+            result :=  mload(0x40)
+            // Bump the value of 0x40 so that it holds the next
+            // available memory location.
+            mstore(0x40,add(result,rsize))
+        }
         let ins := add(input, 0x20)
         // First set up the input data (at memory location 0x0)
         // The register syscall is 4
@@ -278,16 +287,15 @@ contract BeakerContract is IKernel {
         // "in_offset" is at 31, because we only want the last byte of type
         // "in_size" is 97 because it is 1+32+32+32
         // we will store the result at 0x80 and it will be 32 bytes
-        let retLoc := add(retInput, 0x20)
         err := 0
-        if iszero(delegatecall(gas, caller, add(ins,31), inSize, retLoc, retSize)) {
-            err := add(2200, mload(retLoc))
-            if nCapKeys {
-                err := add(77,mul(100,mload(retLoc)))
-            }
-            mstore(0xd, err)
-            revert(0xd,retSize)
+        let status := delegatecall(gas, caller, add(ins,31), inSize, 0, 0)
+        let retLoc := malloc(returndatasize)
+        returndatacopy(retLoc,0,returndatasize)
+        if iszero(status) {
+            revert(retLoc,returndatasize)
         }
+        // Here we will just take the first 32 bytes of the return data.
+        err := mload(retLoc)
     }
     return err;
   }

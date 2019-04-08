@@ -776,7 +776,7 @@ library ProcedureTable {
 
     }
 
-    function insert(Self storage /* self */, bytes24 key, address location, uint256[] caps) internal returns (bool replaced) {
+    function insert(Self storage /* self */, bytes24 key, address location, uint256[] caps) internal returns (bool inserted) {
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
@@ -791,7 +791,7 @@ library ProcedureTable {
         // already exists. In this case *WE HAVE NOT OVERWRITTEN * the values,
         // as we have not called _storeProcdure.
         if (keyIndex > 0) {
-            return true;
+            return false;
         // If the keyIndex is zero (it is unsigned and cannot be negative) then
         // it means the procedure is new. We must therefore assign it a key
         // index.
@@ -806,7 +806,7 @@ library ProcedureTable {
             _set(lenP, len + 1);
             // We actually commit the values in p to storage
             _storeProcedure(uint192(key), keyIndex, location, caps);
-            return false;
+            return true;
         }
     }
 
