@@ -398,30 +398,30 @@ library ProcedureTable {
         return true;
     }
 
-    function _storeProcedure(Procedure memory p, uint192 key, uint256[] caps) internal {
+    function _storeProcedure(uint192 key, uint192 keyIndex, address location, uint256[] caps) internal {
         // Procedure List
         // Store the the procedure key in the procedure list
-        uint256 keyPointer = _getKeyPointerByIndex(p.keyIndex);
+        uint256 keyPointer = _getKeyPointerByIndex(keyIndex);
         _set(keyPointer, key);
 
         // Procedure Heap
         // Get the storage address of the procedure data. This is the storage
         // key which contains all of the procedure data.
         uint256 pPointer = _getProcedurePointerByKey(key);
-        _serialiseProcedure(p, pPointer, caps);
+        _serialiseProcedure(pPointer, keyIndex, location, caps);
     }
 
-    function _serialiseProcedure(Procedure memory p, uint256 pPointer, uint256[] caps) internal {
+    function _serialiseProcedure(uint256 pPointer, uint192 keyIndex, address location, uint256[] caps) internal {
         // Store the address of the code contract
-        _set(pPointer + 0, uint256(p.location));
+        _set(pPointer + 0, uint256(location));
         // Store the keyIndex
-        _set(pPointer + 1, p.keyIndex);
+        _set(pPointer + 1, uint256(keyIndex));
         _serialiseCapArray(pPointer, caps);
     }
 
     function _serialiseCapArray(uint256 pPointer, uint256[] caps) internal {
         uint192 currentProcedure = _getCurrentProcedure();
-        // If their is no current procedure, we can do anything.
+        // If there is no current procedure, we can do anything.
         // TODO: this is something for consideration, we often ask the kernel to
         // register things directly.
 
@@ -430,7 +430,7 @@ library ProcedureTable {
         uint256 val;
         uint256 j;
         uint256 thisTypeLength;
-        // i is the index of the key value
+        // i is the index into the caps array, which is a series of 32-byte values
         for (uint256 i = 0; (i+2) < caps.length; ) {
             uint256 capSize = caps[i+0];
             uint256 capType = caps[i+1];
@@ -776,27 +776,21 @@ library ProcedureTable {
 
     }
 
-    function insert(Self storage /* self */, bytes24 key, address value, uint256[] caps) internal returns (bool replaced) {
+    function insert(Self storage /* self */, bytes24 key, address location, uint256[] caps) internal returns (bool replaced) {
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
-        Procedure memory p = _getProcedureByKey(uint192(key));
-        // We then write or overwrite the various properties
-        p.location = value;
+        uint192 keyIndex = _getProcedureIndex(uint192(key));
         // we just copy in the table in verbatim as long as its length is less
         // than 128 (arbitrary, but less than 256 minus room for other parameters)
         if (caps.length > 128) {
             revert();
         }
 
-        // The capabilities are parsed here. We neeed to pass in the Procedure
-        // struct as solidity can't return complex data structures.
-        // _parseCaps(p,caps);
-
         // If the keyIndex is not zero then that indicates that the procedure
         // already exists. In this case *WE HAVE NOT OVERWRITTEN * the values,
         // as we have not called _storeProcdure.
-        if (p.keyIndex > 0) {
+        if (keyIndex > 0) {
             return true;
         // If the keyIndex is zero (it is unsigned and cannot be negative) then
         // it means the procedure is new. We must therefore assign it a key
@@ -807,11 +801,11 @@ library ProcedureTable {
             // We then dereference that value.
             uint256 len = _get(lenP);
             // We assign this procedure the next keyIndex, i.e. len+1
-            p.keyIndex = uint8(len + 1);
+            keyIndex = uint8(len + 1);
             // We increment the Procedure Table Length value
             _set(lenP, len + 1);
             // We actually commit the values in p to storage
-            _storeProcedure(p, uint192(key), caps);
+            _storeProcedure(uint192(key), keyIndex, location, caps);
             return false;
         }
     }
@@ -839,7 +833,6 @@ library ProcedureTable {
     }
 
     function remove(Self storage /* self */, bytes24 key) internal returns (bool success) {
-        // Procedure memory p1 = _getProcedureByKey(uint192(key));
 
         // Get the key index of the procedure we are trying to delete.
         uint192 p1Index = _getProcedureIndex(uint192(key));
@@ -894,7 +887,7 @@ library ProcedureTable {
                 _set(procedureIndexToLocation(uint192(len)), 0);
             }
 
-            // TODO: this is completely option so is left for now.
+            // TODO: this is completely optional so is left for now.
             // Free P1
             // _freeProcedure(p1P);
             uint256 pPointer = _getProcedurePointerByKey(uint192(key));
