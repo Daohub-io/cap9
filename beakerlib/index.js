@@ -130,8 +130,10 @@ class ProcedureTable {
 exports.ProcedureTable = ProcedureTable;
 
 class Cap {
-    constructor(type) {
+    constructor(type, capIndex) {
         this.type = type;
+        // capIndex defaults to 0
+        this.capIndex = capIndex ? capIndex : 0;
     }
     toIntegerArray() {
         const keyValArray = this.keyValues();
@@ -165,9 +167,8 @@ class Cap {
 exports.Cap = Cap;
 
 class WriteCap extends Cap {
-    constructor(address, size) {
-        super(CAP_TYPE.STORE_WRITE);
-        this.capIndex = 0;
+    constructor(address, size, capIndex) {
+        super(CAP_TYPE.STORE_WRITE, capIndex);
         if ((typeof address === "string") || (typeof address === "number")) {
             this.address = web3.toBigNumber(address);
         } else {
@@ -236,9 +237,8 @@ class WriteCap extends Cap {
 exports.WriteCap = WriteCap;
 
 class LogCap extends Cap {
-    constructor(topics) {
-        super(CAP_TYPE.LOG);
-        this.capIndex = 0;
+    constructor(topics, capIndex) {
+        super(CAP_TYPE.LOG, capIndex);
         if (topics.length > 4) {
             throw new Error("too many topics");
         }
@@ -290,9 +290,8 @@ exports.LogCap = LogCap;
 
 class CallCap extends Cap {
     // keys should be a list of strings
-    constructor(prefixLength, baseKey) {
-        super(CAP_TYPE.PROC_CALL);
-        this.capIndex = 0;
+    constructor(prefixLength, baseKey, capIndex) {
+        super(CAP_TYPE.PROC_CALL, capIndex);
         if (baseKey.length > 24) {
             throw new Error(`key too long ${baseKey}`);
         }
@@ -334,9 +333,8 @@ exports.CallCap = CallCap;
 class RegisterCap extends Cap {
     // A RegisterCap is just a boolean value, a procedure can or cannot
     // register new procedures
-    constructor(prefixLength, baseKey) {
-        super(CAP_TYPE.PROC_REGISTER);
-        this.capIndex = 0;
+    constructor(prefixLength, baseKey, capIndex) {
+        super(CAP_TYPE.PROC_REGISTER, capIndex);
         if (baseKey.length > 24) {
             throw new Error("key too long");
         }
@@ -375,23 +373,10 @@ class RegisterCap extends Cap {
 }
 exports.RegisterCap = RegisterCap;
 
-// A temporary hack for testing. We need to separate the cap we are using for
-// registration and the one for delegation. All caps should include a capIndex,
-// but during the transition phase, this class will provide a shim until all the
-// test code has been modified to include capIndices.
-class RegisterCapWithIndexOne extends RegisterCap {
-    constructor(prefixLength, baseKey) {
-        super(prefixLength, baseKey);
-        this.capIndex = 1;
-    }
-}
-exports.RegisterCapWithIndexOne = RegisterCapWithIndexOne;
-
 class DeleteCap extends Cap {
     // keys should be a list of strings
-    constructor(prefixLength, baseKey) {
-        super(CAP_TYPE.PROC_DELETE);
-        this.capIndex = 0;
+    constructor(prefixLength, baseKey, capIndex) {
+        super(CAP_TYPE.PROC_DELETE, capIndex);
         if (baseKey.length > 24) {
             throw new Error("key too long");
         }
@@ -433,9 +418,8 @@ exports.DeleteCap = DeleteCap;
 class SetEntryCap extends Cap {
     // A DeleteCap is just a boolean value, a procedure can or cannot
     // register new procedures
-    constructor() {
-        super(CAP_TYPE.PROC_ENTRY);
-        this.capIndex = 0;
+    constructor(capIndex) {
+        super(CAP_TYPE.PROC_ENTRY, capIndex);
         this.keys = [];
     }
     // Format the capability values into the values that will be stored in the
@@ -451,9 +435,8 @@ class SetEntryCap extends Cap {
 exports.SetEntryCap = SetEntryCap;
 
 class AccCallCap extends Cap {
-    constructor(callAny, sendValue, ethAddress) {
-        super(CAP_TYPE.ACC_CALL);
-        this.capIndex = 0;
+    constructor(callAny, sendValue, ethAddress, capIndex) {
+        super(CAP_TYPE.ACC_CALL, capIndex);
         this.callAny = callAny;
         this.sendValue = sendValue;
         this.ethAddress = ethAddress;
