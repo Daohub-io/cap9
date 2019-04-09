@@ -76,7 +76,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 // Test that the order and indexing of procedures is the same
                 assert.equal(speccedProcedures[i][0], procedures[i])
                 // Retrieve the listed procedure adress
-                const address = await kernel.getProcedure.call(procedures[i]);
+                const address = await kernel.getProcedureAddress.call(procedures[i]);
                 // Check the address is correct
                 assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`);
                 assert(!isNullAddress(address), `Procedure Address (${address}) is not null`);
@@ -86,7 +86,7 @@ contract('Kernel without entry procedure', function (accounts) {
             }
         });
     })
-    describe('.getProcedure()', function () {
+    describe('.getProcedureAddress()', function () {
         it('should return a non-zero address iff procedure exists', async function () {
             let kernel = await Kernel.new();
 
@@ -101,7 +101,7 @@ contract('Kernel without entry procedure', function (accounts) {
             let tx1 = await kernel.registerProcedure('TestAdder', testAdder.address, []);
 
             // Get the procedure
-            let address = await kernel.getProcedure.call("TestAdder");
+            let address = await kernel.getProcedureAddress.call("TestAdder");
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`);
             assert(!isNullAddress(address), `Procedure Address (${address}) is not null`);
 
@@ -110,7 +110,7 @@ contract('Kernel without entry procedure', function (accounts) {
         it('should return a zero address iff procedure does not exist', async function () {
             let kernel = await Kernel.new();
             // No procedures exist yet (nor does "TestAdder")
-            let address = await kernel.getProcedure.call('TestAdder');
+            let address = await kernel.getProcedureAddress.call('TestAdder');
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
             assert(isNullAddress(address), `Procedure Address (${address}) is null`)
         });
@@ -223,7 +223,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 assert.equal(procedures.length, 0);
                 assert(!procedures.includes(''))
 
-                const address = await kernel.getProcedure.call('');
+                const address = await kernel.getProcedureAddress.call('');
                 assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
                 assert(isNullAddress(address), 'Procedure Address is null')
             });
@@ -246,7 +246,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
                 assert.equal(procedures.length, 1);
 
-                const address = await kernel.getProcedure.call(name);
+                const address = await kernel.getProcedureAddress.call(name);
                 assert.equal(address, address1);
                 assert.notEqual(address, address2);
                 assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
@@ -305,13 +305,13 @@ contract('Kernel without entry procedure', function (accounts) {
 
             const [err2, deleteAddress] = await kernel.deleteProcedure.call(procedureName);
             assert.equal(err2, 0);
-            const retrievedAddress1 = await kernel.getProcedure(procedureName);
+            const retrievedAddress1 = await kernel.getProcedureAddress(procedureName);
             assert(!isNullAddress(retrievedAddress1), "The key should be retrievable")
 
             const tx2 = await kernel.deleteProcedure('test');
 
             assert.equal(address, deleteAddress);
-            const retrievedAddress = await kernel.getProcedure(procedureName);
+            const retrievedAddress = await kernel.getProcedureAddress(procedureName);
             // console.log(retrievedAddress)
             assert(isNullAddress(retrievedAddress), "The key should not be retrievable")
 
@@ -351,7 +351,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
 
             assert.equal(address, deleteAddress);
-            const retrievedAddress = await kernel.getProcedure(procedureName);
+            const retrievedAddress = await kernel.getProcedureAddress(procedureName);
             assert(isNullAddress(retrievedAddress), "The key be able to be retrieved")
 
             assert(!proceduresAfter.includes(procedureName), "The procedure name should no longer be included in the procedure table")
@@ -389,7 +389,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const table2 = await kernel.returnRawProcedureTable.call()
                 assert.deepEqual(table0, table2, 'Procedure Tables should be equal after deletion')
 
-                const retrievedAddress = await kernel.getProcedure(procedureName);
+                const retrievedAddress = await kernel.getProcedureAddress(procedureName);
                 assert(isNullAddress(retrievedAddress), "Procedure is deleted")
 
                 await kernel.registerProcedure.call(procedureName, testAdder.address, capArray);
@@ -675,7 +675,7 @@ contract('Kernel without entry procedure', function (accounts) {
                 const [a, address] = await kernel.registerProcedure.call(procedureName, SysCallTestWrite.address, [3, 0x7, 0x80, 0x0]);
                 // assert.equal(a.toNumber(), 0, "S() should succeed with zero errcode the second time");
                 const tx = await kernel.registerProcedure(procedureName, SysCallTestWrite.address, [3, 0x7, 0x80, 0x0]);
-                const valueA = await kernel.getProcedure.call(procedureName);
+                const valueA = await kernel.getProcedureAddress.call(procedureName);
                 // const
                 // console.log(errA, valueA);
                 // console.log(errA)
