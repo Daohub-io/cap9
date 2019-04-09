@@ -13,15 +13,6 @@ library WhatIsMyAddress {
 // Public Kernel Interface
 contract IKernel is KernelStorage {
 
-    // SYSCALL_RESPONSE_TYPES
-    uint8 constant SyscallSuccess = 0;
-    uint8 constant SyscallReadError = 11;
-    uint8 constant SyscallWriteError = 22;
-    uint8 constant SyscallLogError = 33;
-    uint8 constant SyscallCallError = 44;
-
-    uint8 constant NoSuchSyscallError = 111;
-
     // CAPABILITY_TYPES
     uint8 constant CAP_PROC_CALL            = 3;
     uint8 constant CAP_PROC_REGISTER        = 4;
