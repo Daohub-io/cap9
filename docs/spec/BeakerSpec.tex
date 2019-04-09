@@ -1093,7 +1093,18 @@ The table below contains the ranges of opcodes that are allowed.
 \end{table}
 
 \subsection{Execution Guard}\label{execution-guard}
-An execuation guard \emph{must} start at position \texttt{0x00} in the bytecode.
+An execution guard \emph{must} start at position \texttt{0x00} in the bytecode.
+The purpose of the exeuction guard is to ensure that the procedure is being
+called by a kernel. The risk is that somebody might perform a CALL to a bare
+procedure contract. The procedure contract will then DELEGATECALL back to
+whoever called it, giving them the power to execute a SELFDESTRUCT instruction.
+In order to prevent this, we want to make sure that the procedure is only being
+called via CALLCODE, DELEGATECALL, or STATICCALL. On simple way to check this is
+to check that a kernel address is stored in storage. This means the contract is
+being called either by a kernel, or something pretending to be a kernel. Because
+this value is undefined in the procedures own storage, we will abort if it is
+undefined.
+
 It is defined as follows:
 
 \definecolor{mygreen}{rgb}{0,0.6,0}

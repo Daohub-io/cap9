@@ -3,9 +3,6 @@ pragma solidity ^0.4.17;
 contract KernelStorage {
     event KernelLog(string message);
 
-    // Current Instance Address
-    address kernelAddress;
-
     // ** KERNEL STORAGE API **
     // These functions operate on the kernel storage. These functions can be
     // considered the kernel storage API, all storage reads and writes should
@@ -25,6 +22,11 @@ contract KernelStorage {
     // Returns the storage key that holds the current procedure name.
     function _getPointerCurrentProcedure() pure internal returns (uint256) {
         return 0xffffff0300000000000000000000000000000000000000000000000000000000;
+    }
+
+    // Returns the storage key that holds the kernel address.
+    function _getPointerKernelAddress() pure internal returns (uint256) {
+        return 0xffffff0200000000000000000000000000000000000000000000000000000000;
     }
 
     // Return the storage key that holds the number of procedures in the list.
@@ -115,9 +117,20 @@ contract KernelStorage {
         }
     }
 
+    function _getKernelAddress() view internal returns (uint192 val) {
+        uint256 storageKey = _getPointerKernelAddress();
+        assembly {
+            val := sload(storageKey)
+        }
+        return val;
+    }
 
-
-
+    function _setKernelAddress(address theAddress) internal {
+        uint256 storageKey = _getPointerKernelAddress();
+        assembly {
+            sstore(storageKey, theAddress)
+        }
+    }
 
     // _get and _set functions which use the _getPointer functions above.
 

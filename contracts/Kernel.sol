@@ -188,6 +188,12 @@ contract Kernel is Factory, ProcedureTable, CapabilityManager, IKernel {
     function() public payable {
         // This is the entry point for the kernel
 
+        // Set the kernel address to the current address. This is a little
+        // hacky as we would rather just do this once on deployment of the
+        // kernel.
+        // TODO: Only set this once, on deployment.
+        _setKernelAddress(this);
+
         // If it is an external account, we forward it straight to the init
         // procedure. We currently shouldn't reach this point, as we usually use
         // "_executeProcedure"
