@@ -1,21 +1,8 @@
 pragma solidity ^0.4.17;
 
-library ProcedureTable {
-    using ProcedureTable for ProcedureTable.Self;
+import "./KernelStorage.sol";
 
-    struct Procedure {
-        // Equal to the index of the key of this item in keys, plus 1.
-        uint8 keyIndex;
-        address location;
-        Capability[] caps;
-    }
-
-    struct Capability {
-        uint8 capType;
-        uint256[] values;
-    }
-
-    struct Self {}
+contract ProcedureTable is KernelStorage {
 
     // CAPABILITY_TYPES
     uint8 constant CAP_PROC_CALL            = 3;
@@ -26,388 +13,16 @@ library ProcedureTable {
     uint8 constant CAP_LOG                  = 8;
     uint8 constant CAP_ACC_CALL             = 9;
 
-    function _get(uint256 pointer) internal view returns (uint256 val) {
-        assembly {
-            // Load Value
-            val := sload(pointer)
-        }
-    }
-
-    function _set(uint256 pointer, uint256 value) internal {
-        assembly {
-            sstore(pointer, value)
-        }
-    }
-
-    // Get the procedure currently being executed.
-    function _getCurrentProcedure() view internal returns (uint192 val) {
-        assembly {
-            val := sload(0xffffff0300000000000000000000000000000000000000000000000000000000)
-        }
-        return val;
-    }
-
-    // Return the storage key that holds the number of procedures in the list.
-    function _getLengthPointer() internal pure returns (uint256) {
-        bytes5 directory = bytes5(0xffffffff01);
-        return uint256(bytes32(directory));
-    }
-
-    // Returns the storage key that holds the procedure data of procedure #idx
-    // in the procedure list. idx starts at 1.
-    function _getKeyPointerByIndex(uint192 idx) internal pure returns (uint256) {
-        // TODO: annoying error condition, can we avoid it?
-        if (idx == 0) {
-            revert("0 is not a valid key index");
-        }
-        bytes5 directory = bytes5(0xffffffff01);
-        return uint256(bytes32(directory)) | (uint256(idx) << 24);
-    }
-
-    // Returns the storage key that holds the procedure data named by key.
-    function _getProcedurePointerByKey(uint192 key) internal pure returns (uint256) {
-        bytes5 directory = bytes5(0xffffffff00);
-        return uint256(bytes32(directory)) | (uint256(key) << 24);
-    }
-
-    // Given a Procedure Key, return it's index in the Procedure List (i.e. its
-    // Procedure Index). If the procedure is not in the list it will return a
-    // Procedure Index of zero. Zero is not a valid Procedure Index.
-    function _getProcedureIndex(uint192 key) internal view returns (uint192) {
-        uint256 procedureIndexPointer = _getProcedureIndexPointer(key);
-        return uint192(_get(procedureIndexPointer));
-    }
-
-    // The storage key that holds the Procedure Index of a procedure with the
-    // given key.
-    function _getProcedureIndexPointer(uint192 key) internal pure returns (uint256) {
-        uint256 pPointer = _getProcedurePointerByKey(key);
-        // The procedure index is stored at position 1
-        return (pPointer+1);
-    }
-
-    // The storage key that holds the Ethereum Address of the code of a
-    // procedure with the given key.
-    function _getProcedureAddressPointer(uint192 key) internal pure returns (uint256) {
-        uint256 pPointer = _getProcedurePointerByKey(key);
-        // The procedure index is stored at position 1
-        return (pPointer+1);
-    }
-
-    function _getProcedureByKey(uint192 key) internal view returns (Procedure memory p) {
-        // pPointer is a storage key which points to the start of the procedure
-        // data on the procedure heap
-        uint256 pPointer = _getProcedurePointerByKey(key);
-        // The first storage location (0) is used to store the keyIndex.
-        p.keyIndex = uint8(_get(pPointer));
-        // The second storage location (1) is used to store the address of the
-        // contract.
-        p.location = address(_get(pPointer + 1));
-        // For now let's just get the number of Procedure Call caps
-        uint256 nCallCaps = _get(pPointer | 0x030000);
-
-        // The third storage location (2) is used to store the number of caps
-        // uint256 nCaps = _get(pPointer + 2);
-        p.caps = new Capability[](nCallCaps);
-        // n is the cap index
-        uint256 n = 0;
-        // The rest of the 256 keys are (or can be) used for the caps
-        for (uint256 i = 0; i < (256-3); i++) {
-            if (n >= nCallCaps) {
-                break;
-            }
-            p.caps[n].capType = uint8(0x03);
-            // A call cap will always have length 1
-            uint256 nValues = 1;
-            p.caps[n].values = new uint256[](nValues);
-            for (uint256 k = 0; k < nValues; k++) {
-                p.caps[n].values[k] = uint256(_get((pPointer | 0x030000) + i*(0x100) + k));
-            }
-            // uint256 thisCurrentCapLength = _get(pPointer+3+i);
-            // p.caps[n].capType = uint8(_get(pPointer+3+i+1));
-            // // subtract 1 from cap length because it includes the type
-            // uint256 nValues = thisCurrentCapLength - 1;
-            // // uint256 nValues = 2;
-            // p.caps[n].values = new uint256[](nValues);
-            // for (uint256 k = 0; k < nValues; k++) {
-            //     p.caps[n].values[k] = uint256(_get(pPointer+3+i+2+k));
-            // }
-            // i = i + uint256(thisCurrentCapLength);
-            // n++;
-        }
-    }
-
-    function checkRegisterCapability(Self storage /* self */, uint192 currentProcedure, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
-
-        uint256 capType = CAP_PROC_REGISTER;
-        // Storage key of the current procedure on the procedure heap
-        uint256 currentProcPointer = _getProcedurePointerByKey(currentProcedure);
-        // How many Procedure Call capabilities does the current procedure have?
-        uint256 nCaps = _get(currentProcPointer | (capType*0x10000));
-        // If the requested cap is out of the bounds of the cap list, we
-        // clearly don't have the capability;
-        if (reqCapIndex+1 > nCaps) {
-            return false;
-        }
-        // A procedure call capabilities stores a single 32-byte value at 0x00.
-        uint256 value = _get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x00);
-        // This value has to be destructured to get 2 values, a prefix length
-        // and a base address.
-        uint8 prefix;
-        bytes24 baseKey;
-        bytes24 clearedBaseKey;
-        bytes24 clearedReqKey;
-        assembly {
-            // Shift the 32-byte value to the right to obtain the first byte only
-            prefix := div(value,0x100000000000000000000000000000000000000000000000000000000000000)
-            // Shift the value to get the procedure key left align (as it should
-            // be for compatibility with bytes24).
-            baseKey := mul(value,0x10000000000000000)
-            let q := signextend(1,2)
-            // h is a large number we will use for arithmetic
-            let h := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-            // y is a number with $prefix 1s at the start
-            let y := mul(h,exp(2,sub(256,prefix)))
-            clearedBaseKey := and(y,baseKey)
-            clearedReqKey := and(y,procedureKey)
-        }
-        return clearedBaseKey == clearedReqKey;
-    }
-
-    function checkDeleteCapability(Self storage /* self */, uint192 currentProcedure, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
-
-        uint256 capType = CAP_PROC_DELETE;
-        // Storage key of the current procedure on the procedure heap
-        uint256 currentProcPointer = _getProcedurePointerByKey(currentProcedure);
-        // How many Procedure Call capabilities does the current procedure have?
-        uint256 nCaps = _get(currentProcPointer | (capType*0x10000));
-        // If the requested cap is out of the bounds of the cap list, we
-        // clearly don't have the capability;
-        if (reqCapIndex+1 > nCaps) {
-            return false;
-        }
-        // A procedure delete capability stores a single 32-byte value at 0x00.
-        uint256 value = _get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x00);
-        // This value has to be destructured to get 2 values, a prefix length
-        // and a base address.
-        uint8 prefix;
-        bytes24 baseKey;
-        bytes24 clearedBaseKey;
-        bytes24 clearedReqKey;
-        assembly {
-            // Shift the 32-byte value to the right to obtain the first byte only
-            prefix := div(value,0x100000000000000000000000000000000000000000000000000000000000000)
-            // Shift the value to get the procedure key left align (as it should
-            // be for compatibility with bytes24).
-            baseKey := mul(value,0x10000000000000000)
-            let q := signextend(1,2)
-            // h is a large number we will use for arithmetic
-            let h := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-            // y is a number with $prefix 1s at the start
-            let y := mul(h,exp(2,sub(256,prefix)))
-            clearedBaseKey := and(y,baseKey)
-            clearedReqKey := and(y,procedureKey)
-        }
-        return clearedBaseKey == clearedReqKey;
-    }
-
-    function checkSetEntryCapability(Self storage /* self */, uint192 currentProcedure, uint256 reqCapIndex) internal view returns (bool) {
-        uint256 capType = CAP_PROC_ENTRY;
-        // Storage key of the current procedure on the procedure heap
-        uint256 currentProcPointer = _getProcedurePointerByKey(currentProcedure);
-        // How many Write capabilities does the current procedure have?
-        uint256 nCaps = _get(currentProcPointer | (capType*0x10000));
-        // If the requested cap is out of the bounds of the cap list, we
-        // clearly don't have the capability.
-        // NB: Even though all set entry caps are identical, if you ask for an
-        // index that doesn't exist, we will still return false. This implies
-        // that you should always ask for the cap at index zero to be on the
-        // safe side.
-        if (reqCapIndex+1 > nCaps) {
-            return false;
-        } else {
-            return true;
-        }
-        // A set entry capability has no values
-    }
-
-    function checkCallCapability(Self storage /* self */, uint192 currentProcedure, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
-
-        uint256 capType = CAP_PROC_CALL;
-        // Storage key of the current procedure on the procedure heap
-        uint256 currentProcPointer = _getProcedurePointerByKey(currentProcedure);
-        // How many Procedure Call capabilities does the current procedure have?
-        uint256 nCaps = _get(currentProcPointer | (capType*0x10000));
-        // If the requested cap is out of the bounds of the cap list, we
-        // clearly don't have the capability;
-        if (reqCapIndex+1 > nCaps) {
-            return false;
-        }
-        // A procedure call capabilities stores a single 32-byte value at 0x00.
-        uint256 value = _get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x00);
-        // This value has to be destructured to get 2 values, a prefix length
-        // and a base address.
-        uint8 prefix;
-        bytes24 baseKey;
-        bytes24 clearedBaseKey;
-        bytes24 clearedReqKey;
-        assembly {
-            // Shift the 32-byte value to the right to obtain the first byte only
-            prefix := div(value,0x100000000000000000000000000000000000000000000000000000000000000)
-            // Shift the value to get the procedure key left align (as it should
-            // be for compatibility with bytes24).
-            baseKey := mul(value,0x10000000000000000)
-            let q := signextend(1,2)
-            // h is a large number we will use for arithmetic
-            let h := 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-            // y is a number with $prefix 1s at the start
-            let y := mul(h,exp(2,sub(256,prefix)))
-            clearedBaseKey := and(y,baseKey)
-            clearedReqKey := and(y,procedureKey)
-        }
-        return clearedBaseKey == clearedReqKey;
-    }
-
-    function checkAccCallCapability(Self storage /* self */, uint192 currentProcedure, address account, uint256 amount, uint256 reqCapIndex) internal view returns (bool) {
-        uint256 capType = CAP_ACC_CALL;
-        // Storage key of the current procedure on the procedure heap
-        uint256 currentProcPointer = _getProcedurePointerByKey(currentProcedure);
-        // How many Write capabilities does the current procedure have?
-        uint256 nCaps = _get(currentProcPointer | (capType*0x10000));
-        // If the requested cap is out of the bounds of the cap list, we
-        // clearly don't have the capability;
-        if (reqCapIndex+1 > nCaps) {
-            return false;
-        }
-        // A write capability has 2-3 values, callAny: Boolean, sendValue: Boolean,
-        // and ethAddress: EthereumAddress. ethAddress is only defined if
-        // callAny is false. These values are packed into a single 32-byte value.
-        uint256 value = _get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x00);
-        // This value has to be destructured to get 2 values, a prefix length
-        // and a base address.
-        // The two flags, callAny and sendValue are stored in the first byte
-        // (which we will call the flagByte).
-        uint8 flagByte;
-        assembly {
-            flagByte := byte(0,value)
-        }
-
-        // Select the first bit
-        // Solidity does not allow conversion of ints to bools, so we do it
-        // explicitly.
-        bool callAny;
-        if ((flagByte & 0x80) > 0) { // 0x80 == 0b100000000;
-            callAny = true;
-        }
-        // Select the second bit
-        // Solidity does not allow conversion of ints to bools, so we do it
-        // explicitly.
-        bool sendValue;
-        if ((flagByte & 0x40) > 0) { // 0x40 == 0b010000000;
-            sendValue = true;
-        }
-
-        // We probably don't need to clear these bits, but it is defensive coding.
-        address ethAddress = address(value & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff); // clear all but last 20-bytes
-
-        // If callAny is false (0) and ethAddress does not match the requested
-        // account, return false
-        if (!callAny && (ethAddress != account)) {
-            return false;
-        }
-
-        // If sendValue is false (0) and amount is non-zero, return false
-        if (!sendValue && (amount != 0)) {
-            return false;
-        }
-
-        // Otherwise return true
-        return true;
-    }
-
-    function checkWriteCapability(Self storage /* self */, uint192 currentProcedure, uint256 toStoreAddress, uint256 reqCapIndex) internal view returns (bool) {
-        uint256 capType = CAP_STORE_WRITE;
-        // Storage key of the current procedure on the procedure heap
-        uint256 currentProcPointer = _getProcedurePointerByKey(currentProcedure);
-        // How many Write capabilities does the current procedure have?
-        uint256 nCaps = _get(currentProcPointer | (capType*0x10000));
-        // If the requested cap is out of the bounds of the cap list, we
-        // clearly don't have the capability;
-        if (reqCapIndex+1 > nCaps) {
-            return false;
-        }
-        // A write capability has two values, address and size. Address is at
-        // 0x00 and size is at 0x01.
-        uint256 addr = _get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x00);
-        uint256 size = _get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x01);
-
-        // If the store addess is within the range return true, else false
-        return (toStoreAddress >= addr && toStoreAddress <= (addr + size));
-    }
-
-    function checkLogCapability(Self storage /* self */, uint192 currentProcedure, bytes32[] reqTopics, uint256 reqCapIndex) internal view returns (bool) {
-        uint256 capType = CAP_LOG;
-        // Storage key of the current procedure on the procedure heap
-        uint256 currentProcPointer = _getProcedurePointerByKey(currentProcedure);
-        // How many Write capabilities does the current procedure have?
-        uint256 nCaps = _get(currentProcPointer | (capType*0x10000));
-        // If the requested cap is out of the bounds of the cap list, we
-        // clearly don't have the capability;
-        if (reqCapIndex+1 > nCaps) {
-            return false;
-        }
-        // A log capability has 5 values. The first is the number of topics
-        // specified and must be in the range [0,4]. The next 4 values are the
-        // values that those log topics are required to be.
-
-        uint256 nTopics =         _get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x00);
-        bytes32 topic1  = bytes32(_get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x01));
-        bytes32 topic2  = bytes32(_get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x02));
-        bytes32 topic3  = bytes32(_get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x03));
-        bytes32 topic4  = bytes32(_get(currentProcPointer | (capType*0x10000) | (reqCapIndex + 1)*0x100 | 0x04));
-
-        // Check that all of the topics required by the cap are satisfied. That
-        // is, for every topic in the capability, the corresponding exists in
-        // the system call and is set to that exact value. First we check that
-        // there are enough topics in the request.
-        if (reqTopics.length < nTopics) {
-            // The system call specifies an insufficient number of topics
-            return false;
-        }
-
-        if (nTopics >= 1) {
-            if (reqTopics[0] != topic1) {
-                return false;
-            }
-        }
-        if (nTopics >= 2) {
-            if (reqTopics[1] != topic2) {
-                return false;
-            }
-        }
-        if (nTopics >= 3) {
-            if (reqTopics[2] != topic3) {
-                return false;
-            }
-        }
-        if (nTopics >= 4) {
-            if (reqTopics[3] != topic4) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     function _storeProcedure(uint192 key, uint192 keyIndex, address location, uint256[] caps) internal {
         // Procedure List
         // Store the the procedure key in the procedure list
-        uint256 keyPointer = _getKeyPointerByIndex(keyIndex);
+        uint256 keyPointer = _getPointerProcHeapByIndex(keyIndex);
         _set(keyPointer, key);
 
         // Procedure Heap
         // Get the storage address of the procedure data. This is the storage
         // key which contains all of the procedure data.
-        uint256 pPointer = _getProcedurePointerByKey(key);
+        uint256 pPointer = _getPointerProcHeapByName(key);
         _serialiseProcedure(pPointer, keyIndex, location, caps);
     }
 
@@ -508,10 +123,14 @@ library ProcedureTable {
                     // First check that capIndex (from which we derive our cap)
                     // actually exists. This just checks that the list of that
                     // type is long enough.
-                    thisTypeLength = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | (0)*0x100);
+                    thisTypeLength = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | (0)*0x100);
                     if (capIndex >= thisTypeLength) {
                         // The c-list of this type is not long enough.
-                        revert("bad cap index");
+                        // revert("bad cap index");
+                        assembly {
+                            mstore(0,0x88)
+                            revert(0,32)
+                        }
                     }
 
                     // Serialise the cap.
@@ -524,7 +143,7 @@ library ProcedureTable {
                     _set(pPointer | (capType*0x10000), currentLength + 1);
 
 
-                    val = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | (capIndex + 1)*0x100);
+                    val = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | (capIndex + 1)*0x100);
                     // Store that in the procedure we are registering
                     // Get the current number of caps of this type for this
                     // proc.
@@ -553,10 +172,14 @@ library ProcedureTable {
                     // First check that capIndex (from which we derive our cap)
                     // actually exists. This just checks that the list of that
                     // type is long enough.
-                    thisTypeLength = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | (0)*0x100);
+                    thisTypeLength = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | (0)*0x100);
                     if (capIndex >= thisTypeLength) {
                         // The c-list of this type is not long enough.
-                        revert("bad cap index");
+                        // revert("bad cap index");
+                        assembly {
+                            mstore(0,0x88)
+                            revert(0,32)
+                        }
                     }
 
                     bool subset = isSubset(currentProcedure, capType, capIndex, caps, i);
@@ -598,7 +221,7 @@ library ProcedureTable {
         // Check if our cap is a subset. If not revert.
         // The subset logic of these three caps are the same
         if (capType == CAP_PROC_CALL || capType == CAP_PROC_REGISTER || capType == CAP_PROC_DELETE) {
-            currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
+            currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
             requestedVal = caps[i+3+0];
 
             // Check that the prefix of B is >= than the prefix of A.
@@ -620,14 +243,14 @@ library ProcedureTable {
             return true;
         } else if (capType == CAP_STORE_WRITE) {
             // Base storage address
-            currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
+            currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
             requestedVal = caps[i+3+0];
             if (requestedVal < currentVal) {
                 return false;
             }
 
             // Number of additional storage keys
-            currentVal += _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x01);
+            currentVal += _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x01);
             requestedVal += caps[i+3+1];
             if (requestedVal > currentVal) {
                 return false;
@@ -643,7 +266,7 @@ library ProcedureTable {
             // First we check the number of required topics. The number of
             // required topics of the requested cap must be equal to or greater
             // than the number of required topics for the current cap.
-            currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
+            currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
             requestedVal = caps[i+3+0];
             if (requestedVal < currentVal) {
                 return false;
@@ -652,7 +275,7 @@ library ProcedureTable {
             // Next we check that the topics required by the current cap are
             // also required by the requested cap.
             for (b = 1; b <= currentVal; b++) {
-                if (caps[i+3+b] != _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | b)) {
+                if (caps[i+3+b] != _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | b)) {
                     return false;
                 }
             }
@@ -664,7 +287,7 @@ library ProcedureTable {
         } else if (capType == CAP_ACC_CALL) {
             // If the requested value of callAny is true, then the requested
             // value of callAny must be true.
-            currentVal = _get(_getProcedurePointerByKey(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
+            currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
             requestedVal = caps[i+3+0];
             current = currentVal & 0x8000000000000000000000000000000000000000000000000000000000000000;
             req = requestedVal & 0x8000000000000000000000000000000000000000000000000000000000000000;
@@ -706,8 +329,8 @@ library ProcedureTable {
     }
 
     // Just returns an array of all the procedure data (257 32-byte values) concatenated.
-    function returnRawProcedureTable(Self storage self) internal view returns (uint256[]) {
-        bytes24[] memory keys = self.getKeys();
+    function returnRawProcedureTable() public view returns (uint256[]) {
+        bytes24[] memory keys = getKeys();
         uint256 len = keys.length;
         // max is 256 keys times the number of procedures
         uint256[] memory r = new uint256[](len*257);
@@ -715,7 +338,7 @@ library ProcedureTable {
         uint256 n = 0;
         for (uint256 i = 0; i < len ; i++) {
             uint192 key = uint192(keys[i]);
-            uint256 pPointer = _getProcedurePointerByKey(key);
+            uint256 pPointer = _getPointerProcHeapByName(key);
             r[n] = uint256(key); n++;
             for (uint256 j = 0; j < 256; j++) {
                 r[n] = _get(pPointer+j); n++;
@@ -724,8 +347,8 @@ library ProcedureTable {
         return r;
     }
 
-    function returnProcedureTable(Self storage self) internal view returns (uint256[]) {
-        bytes24[] memory keys = self.getKeys();
+    function returnProcedureTable() public view returns (uint256[]) {
+        bytes24[] memory keys = getKeys();
         uint256 len = keys.length;
         // max is 256 keys times the number of procedures
         uint256[] memory r = new uint256[](len*256);
@@ -733,7 +356,7 @@ library ProcedureTable {
         uint256 n = 1;
         for (uint256 i = 0; i < len ; i++) {
             // uint192 key = uint192(keys[i]);
-            uint256 pPointer = _getProcedurePointerByKey(uint192(keys[i]));
+            uint256 pPointer = _getPointerProcHeapByName(uint192(keys[i]));
             r[n] = uint192(keys[i]); n++;
             // Store the keyIndex at this location
             r[n] = _get(pPointer); n++;
@@ -789,7 +412,7 @@ library ProcedureTable {
 
     }
 
-    function insert(Self storage /* self */, bytes24 key, address location, uint256[] caps) internal returns (bool inserted) {
+    function insert(bytes24 key, address location, uint256[] caps) internal returns (bool inserted) {
         // First we get retrieve the procedure that is specified by this key, if
         // it exists, otherwise the struct we create in memory is just
         // zero-filled.
@@ -810,7 +433,7 @@ library ProcedureTable {
         // index.
         } else {
             // First we retrieve a pointer to the Procedure Table Length value.
-            uint256 lenP = _getLengthPointer();
+            uint256 lenP = _getPointerProcedureTableLength();
             // We then dereference that value.
             uint256 len = _get(lenP);
             // We assign this procedure the next keyIndex, i.e. len+1
@@ -823,29 +446,7 @@ library ProcedureTable {
         }
     }
 
-    function _parseCaps(Procedure memory p, uint256[] caps) internal pure {
-        // count caps
-        uint256 nCaps = 0;
-        for (uint256 i = 0; i < caps.length; i++) {
-            uint256 capLength = caps[i];
-            i = i + capLength;
-            nCaps++;
-        }
-        p.caps = new Capability[](nCaps);
-        uint256 n = 0;
-        for (i = 0; i < caps.length; ) {
-            capLength = caps[i]; i++;
-            uint256 nValues = capLength - 1;
-            p.caps[n].values = new uint256[](nValues);
-            p.caps[n].capType = uint8(caps[i]); i++;
-            for (uint256 j = 0; j < nValues; j++) {
-                p.caps[n].values[j] = caps[i];i++;
-            }
-            n++;
-        }
-    }
-
-    function remove(Self storage /* self */, bytes24 key) internal returns (bool success) {
+    function remove(bytes24 key) internal returns (bool success) {
 
         // Get the key index of the procedure we are trying to delete.
         uint192 p1Index = _getProcedureIndex(uint192(key));
@@ -856,7 +457,7 @@ library ProcedureTable {
         // When we remove a procedure, we want to move another procedure into
         // this "slot" to keep the active keys contiguous
         // First we get the storage address of the Procedure Table Length
-        uint256 lenP = _getLengthPointer();
+        uint256 lenP = _getPointerProcedureTableLength();
         // We then dereference that to get the value
         uint256 len = _get(lenP);
 
@@ -879,7 +480,7 @@ library ProcedureTable {
 
             if (p1Index != len) {
                 // 1. Zero out the Procedure Index value on the heap
-                _set(_getProcedureIndexPointer(uint192(key)), 0);
+                _set(_getPointerProcedureIndexOnHeap(uint192(key)), 0);
                 // 2. Get the key of the last value in the list (we will move
                 // that into the newly vacated position)
                 uint256 lastKey = _get(procedureIndexToLocation(uint192(len)));
@@ -889,13 +490,13 @@ library ProcedureTable {
                 _set(procedureIndexToLocation(p1Index), lastKey);
                 // 5. Update the value of the Procedure Index in the procedure
                 // heap for this procedure
-                _set(_getProcedureIndexPointer(uint192(lastKey)), p1Index);
+                _set(_getPointerProcedureIndexOnHeap(uint192(lastKey)), p1Index);
             } else {
                 // This procedure is the last in the list, so we simply need to
                 // zero out that value, and zero out the Procedure Index in
                 // the procedure heap
                 // 1. Zero out the Procedure Index value on the heap
-                _set(_getProcedureIndexPointer(uint192(key)), 0);
+                _set(_getPointerProcedureIndexOnHeap(uint192(key)), 0);
                 // 2. Zero out the last value in the procedure list
                 _set(procedureIndexToLocation(uint192(len)), 0);
             }
@@ -903,7 +504,7 @@ library ProcedureTable {
             // TODO: this is completely optional so is left for now.
             // Free P1
             // _freeProcedure(p1P);
-            uint256 pPointer = _getProcedurePointerByKey(uint192(key));
+            uint256 pPointer = _getPointerProcHeapByName(uint192(key));
             _set(pPointer, 0);
             // _set(pPointer + 1, 0);
 
@@ -913,25 +514,25 @@ library ProcedureTable {
         }
     }
 
-    function contains(Self storage /* self */, bytes24 key) internal view returns (bool exists) {
-        return _get(_getProcedurePointerByKey(uint192(key))) > 0;
+    function contains(bytes24 key) internal view returns (bool exists) {
+        return _get(_getPointerProcHeapByName(uint192(key))) > 0;
     }
 
-    function size(Self storage /* self */) internal view returns (uint) {
-        return _get(_getLengthPointer());
+    function size() internal view returns (uint) {
+        return _get(_getPointerProcedureTableLength());
     }
 
-    function get(Self storage /* self */, bytes24 key) internal view returns (address) {
-        return address(_get(_getProcedurePointerByKey(uint192(key)) + 0));
+    function get(bytes24 key) internal view returns (address) {
+        return address(_get(_getPointerProcHeapByName(uint192(key)) + 0));
     }
 
     function procedureIndexToLocation(uint192 procedureIndex) internal pure returns (uint256) {
-        uint256 lenP = _getLengthPointer();
+        uint256 lenP = _getPointerProcedureTableLength();
         return (lenP + (procedureIndex << 24));
     }
 
-    function getKeys(Self storage /* self */) internal view returns (bytes24[] memory keys) {
-        uint256 lenP = _getLengthPointer();
+    function getKeys() public view returns (bytes24[] memory keys) {
+        uint256 lenP = _getPointerProcedureTableLength();
         uint256 len = _get(lenP);
         keys = new bytes24[](len);
         for (uint256 i = 0; i < len; i++) {
@@ -941,12 +542,12 @@ library ProcedureTable {
         }
     }
 
-    function getKeyByIndex(Self storage /* self */, uint8 idx) internal view returns (uint192) {
-        return uint192(_get(_getKeyPointerByIndex(idx)));
+    function getKeyByIndex(uint8 idx) internal view returns (uint192) {
+        return uint192(_get(_getPointerProcHeapByIndex(idx)));
     }
 
-    function getValueByIndex(Self storage self, uint8 idx) internal view returns (address) {
-        return address(_get(_getProcedurePointerByKey(self.getKeyByIndex(idx)) + 1));
+    function getValueByIndex(uint8 idx) internal view returns (address) {
+        return address(_get(_getPointerProcHeapByName(getKeyByIndex(idx)) + 1));
     }
 
 }

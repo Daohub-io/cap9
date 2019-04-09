@@ -36,10 +36,6 @@ contract TestKernel is Kernel {
         _setEntryProcedure(key);
     }
 
-    function getEntryProcedure() view public returns (uint192) {
-        return _getEntryProcedure();
-    }
-
     // Create a validated procedure.
     function registerProcedure(bytes24 name, address procedureAddress, uint256[] caps) public returns (uint8 err, address retAddress) {
         return _registerProcedure(name, procedureAddress, caps);

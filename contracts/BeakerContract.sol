@@ -2,11 +2,12 @@ pragma solidity ^0.4.17;
 
 import "./Kernel.sol";
 import "./ProcedureTable.sol";
+import "./KernelStorage.sol";
 
 contract BeakerContract is IKernel {
 
-    function this_proc() internal view returns (ProcedureTable.Procedure memory) {
-        return ProcedureTable._getProcedureByKey(getCurrentProcedure());
+    function this_proc() internal view returns (Procedure memory) {
+        return _getProcedureByKey(_getCurrentProcedure());
     }
 
     // TODO: this doesn't actually use caps, just reads raw
