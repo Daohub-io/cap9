@@ -28,7 +28,7 @@ const Invalid = {
 
 contract('Kernel with entry procedure', function (accounts) {
     describe('Delete capability', function () {
-        const entryProcName = "EntryProcedure";
+        const entryProcName = "init";
 
         describe('When given cap to delete a specific procedure Id', function () {
             // * Introduces Procedure A and Procedure B into the procedure table.
@@ -47,14 +47,12 @@ contract('Kernel with entry procedure', function (accounts) {
 
             it('Delete procedure with matching id', async function() {
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
@@ -113,14 +111,14 @@ contract('Kernel with entry procedure', function (accounts) {
             })
             it('Fails to delete procedure if non-matching id', async function() {
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
 
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
+
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
@@ -195,14 +193,14 @@ contract('Kernel with entry procedure', function (accounts) {
 
             it('Delete a procedure', async function () {
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
 
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
+
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
@@ -288,7 +286,8 @@ contract('Kernel with entry procedure', function (accounts) {
             })
             it('Delete itself', async function () {
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
@@ -297,8 +296,7 @@ contract('Kernel with entry procedure', function (accounts) {
                     const proceduresRaw = await kernel.listProcedures.call();
                     const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
                 }
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
+
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
@@ -384,14 +382,14 @@ contract('Kernel with entry procedure', function (accounts) {
             })
             it('Fail to delete the entry procedure', async function () {
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
 
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
+
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
@@ -477,14 +475,14 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Fail to delete non-existent procedure', async function () {
                 const nonExistentName = "NonExistant";
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
 
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
+
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
@@ -590,14 +588,14 @@ contract('Kernel with entry procedure', function (accounts) {
 
             it('Fail to delete a procedure', async function () {
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
 
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
+
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
@@ -683,14 +681,14 @@ contract('Kernel with entry procedure', function (accounts) {
             })
             it('Fail to delete itself', async function () {
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
 
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
+
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";
@@ -776,14 +774,12 @@ contract('Kernel with entry procedure', function (accounts) {
             })
             it('Fail to delete the entry procedure', async function () {
                 // Deploy the kernel
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Save the initial state of the procedure table
                 const procedures1Raw = await kernel.listProcedures.call();
                 const procedures1 = procedures1Raw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-
-                // Install the default entry procedure
-                await testutils.installEntryProc(kernel);
 
                 // Install Procedure A as the entry procedure
                 const procAName = "ProcedureA";

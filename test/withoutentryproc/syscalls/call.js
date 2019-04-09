@@ -42,7 +42,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -84,7 +85,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -111,7 +113,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -139,7 +142,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -167,7 +171,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -201,7 +206,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -229,7 +235,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -257,7 +264,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -285,7 +293,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -313,7 +322,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -347,7 +357,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -375,7 +386,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -402,7 +414,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -430,7 +443,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -458,7 +472,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -492,7 +507,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -514,7 +530,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -535,7 +552,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -557,7 +575,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -579,7 +598,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -606,7 +626,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('F() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -650,7 +671,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('G() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);

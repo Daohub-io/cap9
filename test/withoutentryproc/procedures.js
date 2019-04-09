@@ -37,23 +37,24 @@ const testAccount = 0;
 contract('Kernel without entry procedure', function (accounts) {
     describe('.listProcedures()', function () {
         it('should return nothing if zero procedures', async function () {
-            let kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
 
             let procedures = await kernel.listProcedures.call();
-            assert.equal(procedures.length, 0);
+            assert.equal(procedures.length, 1);
         })
         it('should return existing procedure keys', async function () {
-            let kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
 
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             let [err, address] = await kernel.registerProcedure.call('TestAdder', testAdder.address, []);
             let tx1 = await kernel.registerProcedure('TestAdder', testAdder.address, []);
 
             let procedures = await kernel.listProcedures.call();
-            assert.equal(procedures.length, 1);
+            assert.equal(procedures.length, 2);
         });
         it('should return a list of procedures which can be retrieved', async function () {
-            const kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
+
             const speccedProcedures = [
                 ["TestAdder", Valid.Adder],
                 ["TestDivider", Valid.Divide],
@@ -69,14 +70,15 @@ contract('Kernel without entry procedure', function (accounts) {
             const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
 
             // Test that the number of procedures stored is the same as the
-            // number of procedures created
-            assert.equal(procedures.length, speccedProcedures.length);
+            // number of procedures created. The +1 accounts for the entry proc
+            assert.equal(procedures.length, speccedProcedures.length+1);
             // Cycle through each of the listed procedures
-            for (const i in procedures) {
-                // Test that the order and indexing of procedures is the same
-                assert.equal(speccedProcedures[i][0], procedures[i])
+            for (let i = 0; i < (procedures.length - 1); i++) {
+                // Test that the order and indexing of procedures is the same.
+                // We skip procedure 0, as that is the entry proc.
+                assert.equal(speccedProcedures[i][0], procedures[i+1])
                 // Retrieve the listed procedure adress
-                const address = await kernel.getProcedureAddress.call(procedures[i]);
+                const address = await kernel.getProcedureAddress.call(procedures[i+1]);
                 // Check the address is correct
                 assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`);
                 assert(!isNullAddress(address), `Procedure Address (${address}) is not null`);
@@ -88,7 +90,7 @@ contract('Kernel without entry procedure', function (accounts) {
     })
     describe('.getProcedureAddress()', function () {
         it('should return a non-zero address iff procedure exists', async function () {
-            let kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
 
             // Create "TestAdder"
             // Find the address (ephemerally)
@@ -108,7 +110,7 @@ contract('Kernel without entry procedure', function (accounts) {
             assert.equal(creationAddress, address);
         });
         it('should return a zero address iff procedure does not exist', async function () {
-            let kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
             // No procedures exist yet (nor does "TestAdder")
             let address = await kernel.getProcedureAddress.call('TestAdder');
             assert(web3.isAddress(address), `Procedure Address (${address}) is a real address`)
@@ -118,7 +120,7 @@ contract('Kernel without entry procedure', function (accounts) {
 
     describe('.registerProcedure()', function () {
         it('should create valid procedure', async function () {
-            let kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
             const procedureName = "TestAdder";
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             let [err, address] = await kernel.registerProcedure.call(procedureName, testAdder.address, []);
@@ -142,7 +144,8 @@ contract('Kernel without entry procedure', function (accounts) {
             assert.equal(testutils.trimSwarm(Valid.Adder.deployedBytecode), code);
         });
         it('should create valid procedure (max key length)', async function () {
-            const kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
+
             const name = "start1234567890123456end";
             assert.equal(name.length, 24);
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
@@ -167,7 +170,8 @@ contract('Kernel without entry procedure', function (accounts) {
         });
 
         it('should create 2 valid procedures', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const proceduresRaw1 = await kernel.listProcedures.call();
             const name = "start1234567890123456end";
@@ -210,7 +214,7 @@ contract('Kernel without entry procedure', function (accounts) {
         describe('should reject invalid key', function () {
 
             it('zero length', async function () {
-                let kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
 
                 const testAdder = await testutils.deployedTrimmed(Valid.Adder);
                 let [err, creationAddress] = await kernel.registerProcedure.call('', testAdder.address, []);
@@ -220,7 +224,9 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const proceduresRaw = await kernel.listProcedures.call();
                 const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                assert.equal(procedures.length, 0);
+                // There should be a single procedure: the initial entry
+                // procedure.
+                assert.equal(procedures.length, 1);
                 assert(!procedures.includes(''))
 
                 const address = await kernel.getProcedureAddress.call('');
@@ -229,7 +235,8 @@ contract('Kernel without entry procedure', function (accounts) {
             });
 
             it('duplicate procedure key', async function () {
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const name = "TestAdder";
                 const testAdder = await testutils.deployedTrimmed(Valid.Adder);
                 // This is the first time the procedure is added
@@ -244,7 +251,9 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 const proceduresRaw = await kernel.listProcedures.call();
                 const procedures = proceduresRaw.map(web3.toAscii).map(s => s.replace(/\0.*$/, ''));
-                assert.equal(procedures.length, 1);
+                // There should be two procedures, the intial entry procedure,
+                // and teh procedure we first registered.
+                assert.equal(procedures.length, 2);
 
                 const address = await kernel.getProcedureAddress.call(name);
                 assert.equal(address, address1);
@@ -261,12 +270,14 @@ contract('Kernel without entry procedure', function (accounts) {
 
     describe('.deleteProcedure()', function () {
         it('should return error if procedure key does not exist(3)', async function () {
-            const kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
+
             const [err, deleteAddress] = await kernel.deleteProcedure.call('test');
             assert.equal(err, 2);
         });
         it('should return deleted procedure address if procedure key is valid', async function () {
-            const kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
+
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             const [err1, address] = await kernel.registerProcedure.call("test", testAdder.address, []);
             assert.equal(err1, 0);
@@ -287,7 +298,8 @@ contract('Kernel without entry procedure', function (accounts) {
         });
 
         it('should remove the procedure from the list on deletion', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const procedureName = "test";
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
@@ -321,7 +333,8 @@ contract('Kernel without entry procedure', function (accounts) {
         })
 
         it('should remove the procedure from the list on deletion (multiple)', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const procedureName = "test";
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
@@ -369,7 +382,8 @@ contract('Kernel without entry procedure', function (accounts) {
         describe('should not have side-effects', function() {
 
             it('removing then registering a new proc with same name + capabilities', async function() {
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const table0 = await kernel.returnRawProcedureTable.call()
 
                 const cap1 = new beakerlib.LogCap([]);
@@ -402,7 +416,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
             it('removing then registering a superset with same name', async function() {
 
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const table_empty = await kernel.returnRawProcedureTable.call()
 
                 const cap1 = new beakerlib.LogCap([]);
@@ -439,7 +454,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
         // TODO: this is not currently functional
         it.skip('should destroy the procedures contract on deletion', async function () {
-            const kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
+
             const testAdder = await testutils.deployedTrimmed(Valid.Adder);
             const [err1, address] = await kernel.registerProcedure.call("test", testAdder.address, []);
             assert.equal(err1, 0);
@@ -467,7 +483,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
         describe('should reject invalid key', function () {
             it('zero length (1)', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const [err, deleteAddress] = await kernel.deleteProcedure.call('');
                 assert.equal(err, 1);
@@ -477,7 +494,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
     describe('.executeProcedure(bytes24 key, bytes payload)', function () {
         it('should return error if procedure key does not exist(3)', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const procName = "test";
             const functionSpec = "executeProcedure(bytes24,string,bytes)"
@@ -498,7 +516,8 @@ contract('Kernel without entry procedure', function (accounts) {
             describe('Simple Procedure', function () {
                 it('X() should fail', async function () {
                     // This now longer fails as we included a fallback function
-                    const kernel = await Kernel.new();
+                    const kernel = await testutils.deployTestKernel();
+
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
@@ -524,7 +543,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 })
 
                 it('A() should succeed', async function () {
-                    const kernel = await Kernel.new();
+                    const kernel = await testutils.deployTestKernel();
+
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
@@ -550,7 +570,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 it('C() should fail without correctly specifying arguments', async function () {
 
-                    const kernel = await Kernel.new();
+                    const kernel = await testutils.deployTestKernel();
+
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
@@ -577,7 +598,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
                 it('C() should fail when using type synonyms such as uint, which cant be used in function selectors', async function () {
 
-                    const kernel = await Kernel.new();
+                    const kernel = await testutils.deployTestKernel();
+
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
@@ -602,7 +624,8 @@ contract('Kernel without entry procedure', function (accounts) {
                 })
 
                 it('C(uint256) should succeed passing arguments', async function () {
-                    const kernel = await Kernel.new();
+                    const kernel = await testutils.deployTestKernel();
+
                     const procName = "Simple";
                     const testSimple = await testutils.deployedTrimmed(Valid.Simple);
                     const [, address] = await kernel.registerAnyProcedure.call(procName, testSimple.address, []);
@@ -630,7 +653,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
         describe('Discover Procedure Table', function () {
             it('should print a procedure table', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,0);
@@ -669,7 +693,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
         describe.skip('Entry Procedure', function () {
             it('should return the entry procedure address', async function () {
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const procedureName = "Entry";
                 const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
                 const [a, address] = await kernel.registerProcedure.call(procedureName, SysCallTestWrite.address, [3, 0x7, 0x80, 0x0]);
@@ -695,7 +720,8 @@ contract('Kernel without entry procedure', function (accounts) {
         })
 
         it('should return an error if key does not exist (3)', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const procName = "test";
             const functionSpec = "executeProcedure(bytes24,string,bytes)"
@@ -719,7 +745,7 @@ contract('Kernel without entry procedure', function (accounts) {
         describe('should return an error if procedure return error when', function () {
             it('receives invalid arguments')
             it('throws an error', async function () {
-                let kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
 
                 const testDivide = await testutils.deployedTrimmed(Valid.Divide);
                 let [err, address] = await kernel.registerProcedure.call('TestDivide', testDivide.address, []);
@@ -747,7 +773,8 @@ contract('Kernel without entry procedure', function (accounts) {
 
         describe('should reject invalid key', function () {
             it('zero length (1)', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const procName = "";
                 const functionSpec = "executeProcedure(bytes24,string,bytes)"

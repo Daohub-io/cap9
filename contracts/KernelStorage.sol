@@ -16,17 +16,17 @@ contract KernelStorage {
 
     // Returns the storage key that holds the entry procedure name.
     function _getPointerEntryProcedure() pure internal returns (uint256) {
-        return 0xffffff0400000000000000000000000000000000000000000000000000000000;
+        return 0xffffffff04000000000000000000000000000000000000000000000000000000;
     }
 
     // Returns the storage key that holds the current procedure name.
     function _getPointerCurrentProcedure() pure internal returns (uint256) {
-        return 0xffffff0300000000000000000000000000000000000000000000000000000000;
+        return 0xffffffff03000000000000000000000000000000000000000000000000000000;
     }
 
     // Returns the storage key that holds the kernel address.
     function _getPointerKernelAddress() pure internal returns (uint256) {
-        return 0xffffff0200000000000000000000000000000000000000000000000000000000;
+        return 0xffffffff02000000000000000000000000000000000000000000000000000000;
     }
 
     // Return the storage key that holds the number of procedures in the list.

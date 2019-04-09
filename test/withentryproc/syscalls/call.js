@@ -43,7 +43,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('A() should succeed when given general cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -61,7 +62,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -81,7 +81,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('A() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -98,7 +99,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupy the first 24 bytes, so must be
                     // padded
@@ -123,7 +123,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('A() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -141,7 +142,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -160,7 +160,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('A() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -178,7 +179,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -197,7 +197,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('A() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -215,7 +216,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -240,7 +240,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('B() should succeed when a general given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -259,7 +260,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -277,7 +277,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('B() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -295,7 +296,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -314,7 +314,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('B() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -332,7 +333,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -351,7 +351,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('B() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -369,7 +370,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -388,7 +388,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('B() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -406,7 +407,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -431,7 +431,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('C() should succeed when given a general cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -450,7 +451,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -469,7 +469,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('C() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -487,7 +488,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -506,7 +506,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('C() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -525,7 +526,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -544,7 +544,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('C() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -563,7 +564,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -587,7 +587,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('E() should succeed when given general cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -602,7 +603,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -619,7 +619,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('E() should succeed when given specific cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -635,7 +636,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -652,7 +652,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('E() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -666,7 +667,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -682,7 +682,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('E() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -697,7 +698,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -713,7 +713,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('E() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -728,7 +729,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap2, cap1]));
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -744,7 +744,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('E() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -759,7 +760,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx2 = await kernel.registerAnyProcedure(testProcName, deployedTestContract.address, beakerlib.Cap.toInput([cap1]));
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -773,13 +773,12 @@ contract('Kernel with entry procedure', function (accounts) {
             })
         })
         describe('F() - successive calls single depth', function () {
-            const testProcName = "Adder";
-            const testBytecode = Valid.Adder.bytecode;
             const functionSpec = "F()";
             it('F() should succeed when given a general cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.WriteCap(0x8000,2);
@@ -799,8 +798,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 // await kernel.createProcedure("SysCallTestCall", Valid.SysCallTestCall.bytecode, beakerlib.Cap.toInput([cap2, cap1]));
 
                 {
-                    await testutils.installEntryProc(kernel);
-
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
                     const functionSelectorHash = web3.sha3(functionSpec).slice(2,10);
@@ -808,7 +805,6 @@ contract('Kernel with entry procedure', function (accounts) {
                     const tx3 = await kernel.sendTransaction({data: inputData});
                     const valueXRaw = await web3.eth.call({to: kernel.address, data: inputData});
                     const valueX = web3.toBigNumber(valueXRaw);
-
                     assert.equal(valueX.toNumber(),8, `new value should be 8`);
                 }
                 const newValue2 =  await kernel.testGetter.call();
@@ -822,7 +818,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('G() should succeed when given a general cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);

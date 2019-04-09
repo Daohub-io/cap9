@@ -26,7 +26,8 @@ const SysCallResponse = beakerlib.SysCallResponse;
 contract('Kernel without entry procedure', function (accounts) {
     describe('Write SysCall Procedure', function () {
         it('S() should succeed when given cap', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const cap1 = new beakerlib.WriteCap(0x8500,2);
             const cap2 = new beakerlib.WriteCap(0x8000,0);
@@ -54,7 +55,8 @@ contract('Kernel without entry procedure', function (accounts) {
             assert.equal(newValue3.toNumber(), 5, "The value should be 5 after the second execution");
         })
         it('S() should fail when not given cap', async function () {
-            const kernel = await Kernel.new();
+            const kernel = await testutils.deployTestKernel();
+
             const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
             const [, address] = await kernel.registerProcedure.call("SysCallTestWrite", SysCallTestWrite.address, []);
             const tx = await kernel.registerProcedure("SysCallTestWrite", SysCallTestWrite.address, []);
@@ -75,7 +77,8 @@ contract('Kernel without entry procedure', function (accounts) {
             assert.equal(newValue3.toNumber(), 3, "The value should still be 3 before the second execution");
         })
         it('S() should fail when trying to write to an address below its cap', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
 

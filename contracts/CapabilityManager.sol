@@ -5,6 +5,15 @@ import "./ProcedureTable.sol";
 
 contract CapabilityManager is ProcedureTable {
 
+    // CAPABILITY_TYPES
+    uint8 constant CAP_PROC_CALL            = 3;
+    uint8 constant CAP_PROC_REGISTER        = 4;
+    uint8 constant CAP_PROC_DELETE          = 5;
+    uint8 constant CAP_PROC_ENTRY           = 6;
+    uint8 constant CAP_STORE_WRITE          = 7;
+    uint8 constant CAP_LOG                  = 8;
+    uint8 constant CAP_ACC_CALL             = 9;
+
     function checkRegisterCapability(uint192 currentProcedure, bytes24 procedureKey, uint256 reqCapIndex) internal view returns (bool) {
 
         uint256 capType = CAP_PROC_REGISTER;

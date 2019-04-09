@@ -339,7 +339,8 @@ contract Kernel is Factory, ProcedureTable, CapabilityManager, IKernel {
                     0)
                 // We need to restore the previous procedure as the current
                 // procedure, this can simply be on the stack
-                sstore(0xffffff0300000000000000000000000000000000000000000000000000000000,div(previousProcedure,exp(0x100,8)))
+                // TODO: remove direct reference to storage key here
+                sstore(0xffffffff03000000000000000000000000000000000000000000000000000000,div(previousProcedure,exp(0x100,8)))
 
                 if status {
                     let returnLength := returndatasize
@@ -893,7 +894,8 @@ contract Kernel is Factory, ProcedureTable, CapabilityManager, IKernel {
             status := callcode(gas,procedureAddress,0,ins,inl,0,0)
 
             // Zero-out the currentProcedure
-            sstore(0xffffff0300000000000000000000000000000000000000000000000000000000,0)
+            // TODO: needs to use the KernelStorage abstraction
+            sstore(0xffffffff03000000000000000000000000000000000000000000000000000000,0)
             // copy the return data to memory based on its size
             if iszero(status) {
                 let retSize := add(0x1,returndatasize)

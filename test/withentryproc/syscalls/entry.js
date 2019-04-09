@@ -22,7 +22,8 @@ contract('Kernel with entry procedure', function (accounts) {
             const testContract = TestWrite;
 
             it('A() should succeed when given cap and correct procedure Id', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.SetEntryCap();
@@ -63,7 +64,8 @@ contract('Kernel with entry procedure', function (accounts) {
             })
 
             it('A() should fail when given cap but invalid procedure Id', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.SetEntryCap();

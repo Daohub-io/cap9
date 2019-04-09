@@ -29,7 +29,8 @@ contract('Kernel with entry procedure', function (accounts) {
         describe('A() No topics', function () {
             const functionSpec = "A()";
             it('A() should succeed when given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -39,7 +40,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -52,7 +52,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 }
             })
             it('A() should fail when not given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const capArray = beakerlib.Cap.toInput([cap1]);
@@ -61,7 +62,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -77,7 +77,8 @@ contract('Kernel with entry procedure', function (accounts) {
 
             })
             it('A() should fail when cap requires more topics', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap(["0xaabb"]);
@@ -87,7 +88,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx0 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -109,7 +109,8 @@ contract('Kernel with entry procedure', function (accounts) {
             // must be the same
             const topic = "0xabcd";
             it('B() should succeed when given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic]);
@@ -119,7 +120,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -134,7 +134,8 @@ contract('Kernel with entry procedure', function (accounts) {
 
             })
             it('B() should fail when cap has incorrect topic', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic+"1"]);
@@ -144,7 +145,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -160,14 +160,14 @@ contract('Kernel with entry procedure', function (accounts) {
                 }
             })
             it('B() should fail when not given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -183,7 +183,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 }
             })
             it('B() should fail when trying to log to something outside its capability', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap = new beakerlib.LogCap(["0x8001", "0x0"]);
                 const capArray = beakerlib.Cap.toInput([cap]);
@@ -193,7 +194,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -216,7 +216,8 @@ contract('Kernel with entry procedure', function (accounts) {
             const topic0 = "0xabcd";
             const topic1 = "0xbeef";
             it('C() should succeed when given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1]);
@@ -226,7 +227,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -241,14 +241,14 @@ contract('Kernel with entry procedure', function (accounts) {
                 }
             })
             it('C() should fail when not given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -264,14 +264,14 @@ contract('Kernel with entry procedure', function (accounts) {
                 }
             })
             it('C() should fail when trying to log to something outside its capability', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, [3, 0x7, 0x8001, 0x0]);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -295,7 +295,8 @@ contract('Kernel with entry procedure', function (accounts) {
             const topic1 = "0xbeef";
             const topic2 = "0xcafe";
             it('D() should succeed when given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1, topic2]);
@@ -306,7 +307,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -324,14 +324,14 @@ contract('Kernel with entry procedure', function (accounts) {
                 }
             })
             it('D() should fail when not given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -347,7 +347,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 }
             })
             it('D() should fail when trying to log to something outside its capability', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap = new beakerlib.LogCap(["0x8001", "0x0"]);
                 const capArray = beakerlib.Cap.toInput([cap]);
@@ -357,7 +358,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -381,7 +381,8 @@ contract('Kernel with entry procedure', function (accounts) {
             const topic2 = "0xcafe";
             const topic3 = "0x4545";
             it('E() should succeed when given cap', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8500,2);
                 const cap2 = new beakerlib.LogCap([topic0, topic1, topic2, topic3]);
@@ -391,7 +392,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx1 = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -409,13 +409,13 @@ contract('Kernel with entry procedure', function (accounts) {
 
             })
             it('E() should fail when not given cap', async function () {
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const [, address] = await kernel.registerProcedure.call(procName, deployedContract.address, []);
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, []);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded
@@ -431,7 +431,8 @@ contract('Kernel with entry procedure', function (accounts) {
                 }
             })
             it('E() should fail when trying to log to something outside its capability', async function () {
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap = new beakerlib.LogCap(["0x8001", "0x0"]);
                 const capArray = beakerlib.Cap.toInput([cap]);
@@ -441,7 +442,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const tx = await kernel.registerProcedure(procName, deployedContract.address, capArray);
 
                 {
-                    await testutils.installEntryProc(kernel);
 
                     // Procedure keys must occupay the first 24 bytes, so must be
                     // padded

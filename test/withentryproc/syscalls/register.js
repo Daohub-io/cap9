@@ -1,11 +1,11 @@
 const debug = require('debug')
 const assert = require('assert')
 
-const Kernel = artifacts.require('./TestKernel.sol')
 const abi = require('ethereumjs-abi')
 
 const beakerlib = require("../../../beakerlib");
 const testutils = require("../../testutils.js");
+const BasicEntryProcedure = artifacts.require('BasicEntryProcedure.sol');
 
 // Valid Contracts
 const Valid = {
@@ -407,7 +407,7 @@ contract('Kernel with entry procedure', function () {
             const shouldSucceed = true;
 
             // Deploy the test kernel
-            const kernel = await deployKernelTest();
+            const kernel = await testutils.deployTestKernel();
 
             // Register Procedure A
             await regProcDirectTest(kernel, procAName, procAContract, procACaps);
@@ -449,7 +449,7 @@ contract('Kernel with entry procedure', function () {
             const shouldSucceed = true;
 
             // Deploy the test kernel
-            const kernel = await deployKernelTest();
+            const kernel = await testutils.deployTestKernel();
 
             // Register Procedure A
             await regProcDirectTest(kernel, procAName, procAContract, procACaps);
@@ -491,7 +491,7 @@ contract('Kernel with entry procedure', function () {
             const shouldSucceed = true;
 
             // Deploy the test kernel
-            const kernel = await deployKernelTest();
+            const kernel = await testutils.deployTestKernel();
 
             // Register Procedure A
             await regProcDirectTest(kernel, procAName, procAContract, procACaps);
@@ -533,7 +533,7 @@ contract('Kernel with entry procedure', function () {
             const shouldSucceed = true;
 
             // Deploy the test kernel
-            const kernel = await deployKernelTest();
+            const kernel = await testutils.deployTestKernel();
 
             // Register Procedure A
             await regProcDirectTest(kernel, procAName, procAContract, procACaps);
@@ -575,7 +575,7 @@ contract('Kernel with entry procedure', function () {
             const shouldSucceed = false;
 
             // Deploy the test kernel
-            const kernel = await deployKernelTest();
+            const kernel = await testutils.deployTestKernel();
 
             // Register Procedure A
             await regProcDirectTest(kernel, procAName, procAContract, procACaps);
@@ -614,7 +614,7 @@ contract('Kernel with entry procedure', function () {
             const shouldSucceed = false;
 
             // Deploy the test kernel
-            const kernel = await deployKernelTest();
+            const kernel = await testutils.deployTestKernel();
 
             // Register Procedure A
             await regProcDirectTest(kernel, procAName, procAContract, procACaps);
@@ -653,7 +653,7 @@ contract('Kernel with entry procedure', function () {
             const shouldSucceed = false;
 
             // Deploy the test kernel
-            const kernel = await deployKernelTest();
+            const kernel = await testutils.deployTestKernel();
 
             // Register Procedure A
             await regProcDirectTest(kernel, procAName, procAContract, procACaps);
@@ -937,30 +937,6 @@ async function testCallType(ThisCap, capIndex) {
     });
 }
 
-// Deploy a kernel and install the example entry procedure
-async function deployKernelTest() {
-    const kernel = await Kernel.new();
-    const procedures1Raw = await kernel.listProcedures.call();
-    const procedures1 = procedures1Raw.map(web3.toAscii)
-        .map(s => s.replace(/\0.*$/, ''));
-    assert(procedures1.length == 0,
-        "The kernel should initially have no procedures");
-    const [regEPTX, setEPTX] = await testutils.installEntryProc(kernel);
-
-    const procedures2Raw = await kernel.listProcedures.call();
-    const procedures2 = procedures2Raw.map(web3.toAscii)
-        .map(s => s.replace(/\0.*$/, ''));
-    // Check that the entry procedure was correctly installed.
-    assert(procedures2.includes("EntryProcedure"),
-        "The kernel should have an entry procedure registered");
-    let entryProcedureNameRaw = await kernel.getEntryProcedure.call();
-    let entryProcedureName = web3.toAscii(web3.toHex(entryProcedureNameRaw))
-        .replace(/\0.*$/, '');
-    assert.strictEqual(entryProcedureName,
-        "EntryProcedure", "The entry procedure should be correctly set");
-    return kernel;
-}
-
 async function regProcDirectTest(kernel, procName, procContract, procCaps) {
     // Check that proc is not already installed
     const procedures1Raw = await kernel.listProcedures.call();
@@ -1135,27 +1111,8 @@ async function delProcTest(kernel, procAName, procBName, shouldSucceed) {
 // attempt to register procB with.
 async function stdTest(procAName, procAContract, procACaps,
                        procBName, procBContract, procBCaps, shouldSucceed) {
-    const kernel = await Kernel.new();
-    const functionSpec = "B(bytes24,address,uint256[])";
 
-    const procedures1Raw = await kernel.listProcedures.call();
-    const procedures1 = procedures1Raw.map(web3.toAscii)
-        .map(s => s.replace(/\0.*$/, ''));
-    assert(procedures1.length == 0,
-        "The kernel should initially have no procedures");
-    const [regEPTX, setEPTX] = await testutils.installEntryProc(kernel);
-
-    const procedures2Raw = await kernel.listProcedures.call();
-    const procedures2 = procedures2Raw.map(web3.toAscii)
-        .map(s => s.replace(/\0.*$/, ''));
-    // Check that the entry procedure was correctly installed.
-    assert(procedures2.includes("EntryProcedure"),
-        "The kernel should have an entry procedure registered");
-    let entryProcedureNameRaw = await kernel.getEntryProcedure.call();
-    let entryProcedureName = web3.toAscii(web3.toHex(entryProcedureNameRaw))
-        .replace(/\0.*$/, '');
-    assert.strictEqual(entryProcedureName,
-        "EntryProcedure", "The entry procedure should be correctly set");
+    const kernel = await testutils.deployTestKernel();
 
     const deployedContractA = await testutils.deployedTrimmed(procAContract);
     // This is the procedure that will do the registering
@@ -1168,14 +1125,15 @@ async function stdTest(procAName, procAContract, procACaps,
         .map(s => s.replace(/\0.*$/, ''));
     assert(procedures3.includes(procAName), "ProcA should be registered");
 
+    const functionSpec = "B(bytes24,address,uint256[])";
     {
         // Test that procA returns the correct testNum
         const functionSelectorHash = web3.sha3("testNum()").slice(2,10);
         const inputData = web3.fromAscii(procAName.padEnd(24,"\0"))
             + functionSelectorHash;
-        const tx3 = await kernel.sendTransaction({data: inputData});
         const valueXRaw = await web3.eth.call({to: kernel.address,
             data: inputData});
+        const tx3 = await kernel.sendTransaction({data: inputData});
         const valueX = web3.toBigNumber(valueXRaw);
         // we execute a test function to ensure the procedure is
         // functioning properly
