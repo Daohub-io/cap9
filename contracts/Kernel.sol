@@ -126,8 +126,6 @@ contract IKernel is KernelStorage {
 // Internal Kernel Interface
 contract Kernel is Factory, ProcedureTable, CapabilityManager, IKernel {
 
-    constructor() public {}
-
     function parse32ByteValue(uint256 startOffset) pure internal returns (uint256) {
         uint256 value = 0;
         assembly {
