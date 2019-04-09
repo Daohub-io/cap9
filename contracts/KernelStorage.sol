@@ -117,7 +117,7 @@ contract KernelStorage {
         }
     }
 
-    function _getKernelAddress() view internal returns (uint192 val) {
+    function _getKernelAddress() view internal returns (address val) {
         uint256 storageKey = _getPointerKernelAddress();
         assembly {
             val := sload(storageKey)

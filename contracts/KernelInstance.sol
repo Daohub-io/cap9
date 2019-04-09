@@ -4,6 +4,9 @@ import "./Kernel.sol";
 
 contract KernelInstance is Kernel {
     constructor(address initProcAddress) public {
+        // Set the kernel address to the current address.
+        _setKernelAddress(this);
+
         uint256[] memory caps = new uint256[](21);
         // CAP_PROC_CALL            = 3;
         caps[0] = 3; // capSize
