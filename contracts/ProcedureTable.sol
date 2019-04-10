@@ -212,7 +212,7 @@ contract ProcedureTable is KernelStorage {
         _set(pPointer | (CAP_ACC_CALL*0x10000), 0);
     }
 
-    function isSubset(uint192 currentProcedure, uint256 capType, uint256 capIndex, uint256[] caps, uint256 i) public view returns (bool) {
+    function isSubset(uint192 currentProcedure, uint256 capType, uint256 capIndex, uint256[] caps, uint256 i) internal view returns (bool) {
         uint256 currentVal;
         uint256 requestedVal;
         uint256 b;
@@ -326,69 +326,6 @@ contract ProcedureTable is KernelStorage {
         } else {
             revert("unknown capability");
         }
-    }
-
-    // Just returns an array of all the procedure data (257 32-byte values) concatenated.
-    function returnRawProcedureTable() public view returns (uint256[]) {
-        bytes24[] memory keys = getKeys();
-        uint256 len = keys.length;
-        // max is 256 keys times the number of procedures
-        uint256[] memory r = new uint256[](len*257);
-        // The rest are the elements
-        uint256 n = 0;
-        for (uint256 i = 0; i < len ; i++) {
-            uint192 key = uint192(keys[i]);
-            uint256 pPointer = _getPointerProcHeapByName(key);
-            r[n] = uint256(key); n++;
-            for (uint256 j = 0; j < 256; j++) {
-                r[n] = _get(pPointer+j); n++;
-            }
-        }
-        return r;
-    }
-
-    function returnProcedureTable() public view returns (uint256[]) {
-        bytes24[] memory keys = getKeys();
-        uint256 len = keys.length;
-        // max is 256 keys times the number of procedures
-        uint256[] memory r = new uint256[](len*256);
-        // The rest are the elements
-        uint256 n = 1;
-        for (uint256 i = 0; i < len ; i++) {
-            // uint192 key = uint192(keys[i]);
-            uint256 pPointer = _getPointerProcHeapByName(uint192(keys[i]));
-            r[n] = uint192(keys[i]); n++;
-            // Store the keyIndex at this location
-            r[n] = _get(pPointer); n++;
-            r[n] = _get(pPointer + 1); n++;
-            // Save this spot to record the the total number of caps
-            uint256 nCapTypesLocation = n; n++;
-            uint256 totalCaps = 0;
-            // Cycle through all cap types [0,255], even though most don't exist
-            for (uint256 j = 1; j <= 10; j++) {
-                // How many caps are there of this type
-                uint256 nCaps = _get(pPointer | (j*0x10000) | 0x00 | 0x00);
-                // Only record the caps if they're at least 1W
-                if (nCaps > 0) {
-                    uint256 capSize = capTypeToSize(j);
-                    // Cycle through them and add them to the array. Here we need to
-                    // know the size.
-                    for (uint256 k = 1; k <= nCaps; k++) {
-                    // record the size
-                    r[n] = (capSize+2); n++;
-                    // record the type
-                    r[n] = j; n++;
-                        totalCaps++;
-                        for (uint256 l = 0; l < capSize; l++) {
-                            r[n] = _get(pPointer | (j*0x10000) | (k*0x100) | (l*0x1)); n++;
-                        }
-                    }
-                }
-            }
-            r[nCapTypesLocation] = totalCaps;
-        }
-        r[0] = n;
-        return r;
     }
 
     function capTypeToSize(uint256 capType) internal pure returns (uint256) {

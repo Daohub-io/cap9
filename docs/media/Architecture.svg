@@ -154,11 +154,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="468.36824"
-     inkscape:cy="272.17932"
+     inkscape:zoom="1.4608151"
+     inkscape:cx="669.51941"
+     inkscape:cy="304.3942"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="layer2"
      showgrid="false"
      fit-margin-top="5"
      fit-margin-right="5"
@@ -177,7 +177,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -188,7 +188,7 @@
      transform="translate(-31.753599,-72.170793)">
     <path
        style="fill:#edefc9;fill-opacity:1;stroke:#dd0000;stroke-width:0.52916664;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       d="M 94.078877,217.08641 H 339.49824 v 19.51067 H 94.078877 Z"
+       d="M 94.078877,214.44058 H 339.45249 v 22.1565 H 94.078877 Z"
        id="rect815"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccc" />
@@ -200,7 +200,7 @@
        sodipodi:nodetypes="ccccc" />
     <path
        style="fill:#edefc9;fill-opacity:1;stroke:#dd0000;stroke-width:0.52916664;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       d="M 94.078877,190.09219 H 200.2359 v 26.99422 H 94.078877 Z"
+       d="M 94.078877,190.09219 H 339.45249 v 24.34839 H 94.078877 Z"
        id="rect819"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccc" />
@@ -212,13 +212,13 @@
        sodipodi:nodetypes="ccccc" />
     <path
        style="fill:#edefc9;fill-opacity:1;stroke:#dd0000;stroke-width:0.52916664;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       d="m 200.2359,154.87941 h 139.26234 v 62.207 H 200.2359 Z"
+       d="m 200.2359,154.87941 h 139.21659 v 35.2195 H 200.2359 Z"
        id="rect823"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccc" />
     <path
        style="fill:#edefc9;fill-opacity:1;stroke:#dd0000;stroke-width:0.52916664;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       d="M 237.29436,77.435376 H 339.49824 V 154.87939 H 237.29436 Z"
+       d="M 237.29436,77.435376 H 339.45249 V 154.87939 H 237.29436 Z"
        id="rect825"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccc" />
@@ -260,13 +260,13 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="177.06747"
-       y="229.76921"
+       x="177.0446"
+       y="228.4463"
        id="text838"><tspan
          sodipodi:role="line"
          id="tspan836"
-         x="177.06747"
-         y="229.76921"
+         x="177.0446"
+         y="228.4463"
          style="stroke-width:0.26458332">Kernel Storage</tspan></text>
     <text
        xml:space="preserve"
@@ -282,13 +282,13 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="106.88078"
-       y="207.52963"
+       x="176.48907"
+       y="206.20671"
        id="text846"><tspan
          sodipodi:role="line"
          id="tspan844"
-         x="106.88078"
-         y="207.52963"
+         x="176.48907"
+         y="206.20671"
          style="stroke-width:0.26458332">ProcedureTable</tspan></text>
     <text
        xml:space="preserve"
@@ -305,12 +305,12 @@
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
        x="250.90182"
-       y="189.93616"
+       y="176.43904"
        id="text854"><tspan
          sodipodi:role="line"
          id="tspan852"
          x="250.90182"
-         y="189.93616"
+         y="176.43904"
          style="stroke-width:0.26458332">IKernel</tspan></text>
     <text
        xml:space="preserve"
@@ -340,14 +340,16 @@
        inkscape:connector-curvature="0" />
     <path
        style="fill:none;stroke:#000000;stroke-width:0.94535798;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker2323)"
-       d="m 269.86707,219.14693 v -1.97059"
+       d="m 269.86707,192.15943 v -1.97059"
        id="path2319"
-       inkscape:connector-curvature="0" />
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
     <path
        inkscape:connector-curvature="0"
        id="path2601"
-       d="m 147.15739,219.54783 v -1.97059"
-       style="fill:none;stroke:#000000;stroke-width:0.94535798;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker2605)" />
+       d="m 216.76568,216.902 v -1.97059"
+       style="fill:none;stroke:#000000;stroke-width:0.94535798;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker2605)"
+       sodipodi:nodetypes="cc" />
     <path
        style="fill:none;stroke:#000000;stroke-width:0.94535798;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker2911)"
        d="m 147.15739,192.41997 v -1.97059"
