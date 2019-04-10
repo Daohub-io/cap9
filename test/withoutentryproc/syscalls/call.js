@@ -42,12 +42,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(0,"");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -83,11 +85,13 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -109,12 +113,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
                 const cap3 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap4 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -136,12 +142,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10, testProcName);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10, testProcName);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -163,12 +171,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('A() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10, "another-proc");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10, "another-proc");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -196,12 +206,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(0, "");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -223,11 +235,13 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -250,12 +264,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
                 const cap3 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap4 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -277,12 +293,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10,testProcName);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10,testProcName);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -304,12 +322,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('B() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10,"another-proc");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10,"another-proc");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -337,12 +357,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(0,"");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -364,11 +386,13 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -390,12 +414,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
                 const cap3 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap4 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -417,12 +443,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10,testProcName);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10,testProcName);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -444,12 +472,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('C() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10,"another-proc");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10,"another-proc");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -477,12 +507,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(0,"");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -498,11 +530,13 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should fail when not given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -518,12 +552,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should fail when given the wrong cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
                 const cap3 = new beakerlib.LogCap([]);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap4 = new beakerlib.LogCap([]);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -539,12 +575,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should succeed with a more restricted cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10,testProcName);
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10,testProcName);
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -560,12 +598,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('E() should fail when the given cap is insufficient', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(10,"another-proc");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(10,"another-proc");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedTestContract = await testutils.deployedTrimmed(testContract);
@@ -586,12 +626,14 @@ contract('Kernel without entry procedure', function (accounts) {
             it('F() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
-                const cap2 = new beakerlib.LogCap([]);
-                const cap3 = new beakerlib.CallCap(0,"");
-                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3]);
+                const cap2 = new beakerlib.WriteCap(0x8000,2);
+                const cap3 = new beakerlib.LogCap([]);
+                const cap4 = new beakerlib.CallCap(0,"");
+                const capArray = beakerlib.Cap.toInput([cap1, cap2, cap3, cap4]);
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
                 const deployedAdderContract = await testutils.deployedTrimmed(Valid.Adder);
@@ -629,7 +671,8 @@ contract('Kernel without entry procedure', function (accounts) {
             it('G() should succeed when given cap', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from x to x+1.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 const cap1 = new beakerlib.WriteCap(0x8000,2);
                 const cap2 = new beakerlib.LogCap([]);
@@ -655,7 +698,15 @@ contract('Kernel without entry procedure', function (accounts) {
                 await kernel.registerProcedure("FifthNestedCall",  deployedFifthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8005,0), new beakerlib.CallCap(0,"")]));
                 await kernel.registerProcedure("SixthNestedCall",  deployedSixthNestedContract.address,  beakerlib.Cap.toInput([cap2, new beakerlib.WriteCap(0x8006,0), new beakerlib.CallCap(0,"")]));
 
-                await kernel.executeProcedure("FirstNestedCall", "G()", "");
+                const tx2 = await kernel.executeProcedure("FirstNestedCall", "G()", "");
+                // console.log(tx2)
+                // const procTableData = await kernel.returnProcedureTable.call();
+                // const procTable = beakerlib.ProcedureTable.parse(procTableData);
+                // console.log(procTable)
+                // for (const proc of Object.keys(procTable.procedures)) {
+                //     console.log(procTable.procedures[proc].caps)
+                // }
+                // console.log(procTable.procedures)
 
                 const firstVal = await kernel.anyTestGetter(0x8001);
                 assert.equal(firstVal.toNumber(),75, `new value should be 75`);

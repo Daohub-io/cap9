@@ -11,7 +11,7 @@ contract SysCallTestAccCall is BeakerContract {
     // Test without any input data
     function A(address account, uint256 amount) public returns (bytes memory) {
         bytes memory input = new bytes(0);
-        (/* uint32 err */, bytes memory output) = proc_acc_call(2, account, amount, input);
+        (/* uint32 err */, bytes memory output) = proc_acc_call(0, account, amount, input);
         return output;
     }
 
@@ -28,7 +28,7 @@ contract SysCallTestAccCall is BeakerContract {
         input[35] = 0x03;
         input[67] = 0x05;
 
-        (/* uint32 err */, bytes memory output) = proc_acc_call(2, account, amount, input);
+        (/* uint32 err */, bytes memory output) = proc_acc_call(0, account, amount, input);
 
         return uint256(output[31]);
     }

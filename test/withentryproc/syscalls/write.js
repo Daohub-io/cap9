@@ -25,8 +25,8 @@ const Invalid = {
 contract('Kernel with entry procedure', function (accounts) {
     describe('Write SysCall Procedure', function () {
         it('S() should succeed when given cap', async function () {
-            const kernel = await Kernel.new();
-            const factory = await Factory.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const capArraySysCallTest = beakerlib.Cap.toInput([
                 new beakerlib.WriteCap(0x8500,2),
@@ -40,7 +40,6 @@ contract('Kernel with entry procedure', function (accounts) {
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the execution");
 
-            await testutils.installEntryProc(kernel);
 
             // Procedure keys must occupay the first 24 bytes, so must be
             // padded
@@ -68,7 +67,8 @@ contract('Kernel with entry procedure', function (accounts) {
 
         })
         it('S() should fail when not given cap', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const SysCallTestWrite = await testutils.deployedTrimmed(Valid.SysCallTestWrite);
             const simpleTest = await testutils.deployedTrimmed(Valid.Multiply);
@@ -78,7 +78,6 @@ contract('Kernel with entry procedure', function (accounts) {
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the execution");
 
-            await testutils.installEntryProc(kernel);
 
             // Procedure keys must occupay the first 24 bytes, so must be
             // padded
@@ -105,7 +104,8 @@ contract('Kernel with entry procedure', function (accounts) {
             assert.equal(newValue4.toNumber(), 3, "The value should still be 3 after the execution");
         })
         it('S() should fail when trying to write to an address below its cap', async function () {
-            const kernel = await Kernel.new();
+
+            const kernel = await testutils.deployTestKernel();
 
             const capArraySysCallTest = beakerlib.Cap.toInput([
                 new beakerlib.WriteCap(0x8500,2),
@@ -119,7 +119,6 @@ contract('Kernel with entry procedure', function (accounts) {
             const newValue1 = await kernel.testGetter.call();
             assert.equal(newValue1.toNumber(), 3, "The value should be 3 before the execution");
 
-            await testutils.installEntryProc(kernel);
 
             // Procedure keys must occupay the first 24 bytes, so must be
             // padded

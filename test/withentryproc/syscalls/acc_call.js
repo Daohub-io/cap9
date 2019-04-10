@@ -52,7 +52,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract and retrieve correct testNum', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -65,7 +66,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -116,7 +116,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract, retrieve correct testNum and transfer 1 wei', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
                 const amount = 1;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -132,7 +133,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -191,7 +191,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract and retrieve correct testNum', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -207,7 +208,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -258,7 +258,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
                 const amount = 1;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -274,7 +275,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -329,7 +329,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract and retrieve correct testNum from specified contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -359,7 +360,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -405,7 +405,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract, retrieve correct testNum and transfer 1 wei from specified contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -435,7 +436,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -478,7 +478,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract and retrieve correct testNum from another contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -519,7 +520,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -567,7 +567,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei from another contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -608,7 +609,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -663,7 +663,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract and retrieve correct testNum from specified contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -693,7 +694,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -739,7 +739,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei from specified contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -769,7 +770,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -812,7 +812,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract and retrieve correct testNum from another contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -853,7 +854,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -901,7 +901,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei from another contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -942,7 +943,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1002,7 +1002,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract and retrieve correct testNum', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -1018,7 +1019,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1068,7 +1068,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 1;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -1084,7 +1085,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1142,7 +1142,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract and retrieve correct testNum', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -1158,7 +1159,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1208,7 +1208,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 1;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -1224,7 +1225,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1289,7 +1289,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract and retrieve correct testNum', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -1302,7 +1303,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1351,7 +1351,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract, retrieve correct testNum and transfer 1 wei', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -1367,7 +1368,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1425,7 +1425,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract and retrieve correct testNum', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -1441,7 +1442,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1490,7 +1490,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+                const kernel = await testutils.deployTestKernel();
+
                 const amount = 1;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -1506,7 +1507,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1559,7 +1559,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract and retrieve correct testNum from specified contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -1589,7 +1590,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1633,7 +1633,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract, retrieve correct testNum and transfer 1 wei from specified contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -1663,7 +1664,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1705,7 +1705,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract and retrieve correct testNum from another contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -1746,7 +1747,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1793,7 +1793,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei from another contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -1834,7 +1835,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1888,7 +1888,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should be able to call a contract and retrieve correct testNum from specified contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -1918,7 +1919,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -1962,7 +1962,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei from specified contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -1992,7 +1993,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -2034,7 +2034,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract and retrieve correct testNum from another contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -2075,7 +2076,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -2122,7 +2122,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei from another contract', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
 
                 // Deploy a regular Ethereum contract that is not related to
                 // Beaker.
@@ -2163,7 +2164,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -2222,7 +2222,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract and retrieve correct testNum', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -2238,7 +2239,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -2287,7 +2287,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
                 const amount = 1;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -2303,7 +2304,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -2360,7 +2360,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract and retrieve correct testNum', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
                 const amount = 0;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -2376,7 +2377,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.
@@ -2425,7 +2425,8 @@ contract('Kernel with entry procedure', function (accounts) {
             it('Should fail to call a contract, retrieve correct testNum and transfer 1 wei', async function () {
                 // This tests calls a test procedure which changes a storage
                 // value in the kernel from 3 to 356.
-                const kernel = await Kernel.new();
+
+                const kernel = await testutils.deployTestKernel();
                 const amount = 1;
 
                 const deployedContract = await testutils.deployedTrimmed(contract);
@@ -2441,7 +2442,6 @@ contract('Kernel with entry procedure', function (accounts) {
                 const originalValue =  await kernel.testGetter.call();
                 assert.equal(originalValue.toNumber(), 3, "test incorrectly set up: initial value should be 3");
 
-                await testutils.installEntryProc(kernel);
 
                 // Test that the AccCall test procedure is correctly installed
                 // by querying a value from it.

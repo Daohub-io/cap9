@@ -9,7 +9,7 @@ contract SysCallTestWrite is BeakerContract {
     }
 
     function() public {
-        uint8 err = write(1, 0x8000,356);
+        uint8 err = write(0, 0x8000,356);
         assembly {
             mstore(0x80,err)
             return(0x80,0x20)

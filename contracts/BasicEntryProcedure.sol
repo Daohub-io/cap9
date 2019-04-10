@@ -38,8 +38,8 @@ contract BasicEntryProcedure {
             // First set up the input data (at memory location 0x0)
             // The call call is 0x-03
             mstore(add(ins,0x0),0x03)
-            // The capability index is 0x-02
-            mstore(add(ins,0x20),0x02)
+            // The capability index is 0x-00 (the 0th proc call cap)
+            mstore(add(ins,0x20),0x00)
             // The key of the procedure
             // mstore(add(ins,0x40),0) // clear
             mstore(add(ins,0x40),div(procedureKey,0x10000000000000000))

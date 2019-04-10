@@ -1,11 +1,10 @@
 pragma solidity ^0.4.17;
 
-import "./Kernel.sol";
+import "./KernelInstance.sol";
 
 // Kernel Interface for Testing
-contract TestKernel is Kernel {
-    constructor() public {
-        // kernelAddress = WhatIsMyAddress.get();
+contract TestKernel is KernelInstance {
+    constructor(address initProcAddress) KernelInstance(initProcAddress) public {
         // This is an example kernel global variable for testing.
         assembly {
             sstore(0x8000,3)
@@ -33,7 +32,7 @@ contract TestKernel is Kernel {
     }
 
     function setEntryProcedure(bytes24 key) public {
-        entryProcedure = key;
+        _setEntryProcedure(key);
     }
 
     // Create a validated procedure.

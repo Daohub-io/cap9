@@ -36,10 +36,10 @@ contract('Kernel with entry procedure', function (accounts) {
 
         describe('A()', function () {
             it('A() should succeed when given cap', async function () {
-                const kernel = await Kernel.new();
+
 
                 // Install the entry procedure
-                await testutils.installEntryProc(kernel);
+                const kernel = await testutils.deployTestKernel();
                 // We want to send an empty transaction. With an empty
                 // transaction, the following things should occur:
                 //   1. The payload should get forwared to the entry

@@ -2,6 +2,7 @@ pragma solidity ^0.4.17;
 
 import "./Factory.sol";
 import "./ProcedureTable.sol";
+import "./CapabilityManager.sol";
 
 library WhatIsMyAddress {
     function get() public view returns (address) {
@@ -10,32 +11,9 @@ library WhatIsMyAddress {
 }
 
 // Public Kernel Interface
-contract IKernel {
-    event KernelLog(string message);
-
-    using ProcedureTable for ProcedureTable.Self;
-    ProcedureTable.Self procedures;
-
-    // Current Entry Procedure
-    bytes24 public entryProcedure;
-    // Current Instance Address
-    address kernelAddress;
-    // Current Running Procedure
-    bytes24 currentProcedure;
-
-    // SYSCALL_RESPONSE_TYPES
-    uint8 constant SyscallSuccess = 0;
-    uint8 constant SyscallReadError = 11;
-    uint8 constant SyscallWriteError = 22;
-    uint8 constant SyscallLogError = 33;
-    uint8 constant SyscallCallError = 44;
-
-    uint8 constant NoSuchSyscallError = 111;
+contract IKernel is KernelStorage, ProcedureTable {
 
     // CAPABILITY_TYPES
-    uint8 constant CAP_NULL                 = 0;
-    uint8 constant CAP_PROC_CAP_PUSH        = 1;
-    uint8 constant CAP_PROC_CAP_DELETE      = 2;
     uint8 constant CAP_PROC_CALL            = 3;
     uint8 constant CAP_PROC_REGISTER        = 4;
     uint8 constant CAP_PROC_DELETE          = 5;
@@ -44,32 +22,174 @@ contract IKernel {
     uint8 constant CAP_LOG                  = 8;
     uint8 constant CAP_ACC_CALL             = 9;
 
-    function getEntryProcedure() public view returns (bytes24 key) {
-        return entryProcedure;
+    function getCurrentProcedure() public view returns (bytes24) {
+        return bytes24(_getCurrentProcedure());
     }
 
-    function listProcedures() public view returns (bytes24[] memory) {
-        return procedures.getKeys();
+    function getEntryProcedure() public view returns (bytes24) {
+        return bytes24(_getEntryProcedure());
     }
 
+    function listProcedures() public view returns (bytes24[] memory keys) {
+        uint256 lenP = _getPointerProcedureTableLength();
+        uint256 len = _get(lenP);
+        keys = new bytes24[](len);
+        for (uint256 i = 0; i < len; i++) {
+            // We use +1 here because the length of the procedure list is
+            // stored in the first position
+            keys[i] = bytes24(_get(lenP + ((i+1) << 24)));
+        }
+    }
+
+    function getProcedureAddress(bytes24 name) public view returns (address) {
+        return address(_get(_getPointerProcHeapByName(uint192(name)) + 0));
+    }
+
+    struct Procedure {
+        // Equal to the index of the key of this item in keys, plus 1.
+        uint8 keyIndex;
+        address location;
+        Capability[] caps;
+    }
+
+    struct Capability {
+        uint8 capType;
+        uint256[] values;
+    }
+
+    function _getProcedureByKey(uint192 key) internal view returns (Procedure memory p) {
+        // pPointer is a storage key which points to the start of the procedure
+        // data on the procedure heap
+        uint256 pPointer = _getPointerProcHeapByName(key);
+        // The first storage location (0) is used to store the keyIndex.
+        p.keyIndex = uint8(_get(pPointer));
+        // The second storage location (1) is used to store the address of the
+        // contract.
+        p.location = address(_get(pPointer + 1));
+        // For now let's just get the number of Procedure Call caps
+        uint256 nCallCaps = _get(pPointer | 0x030000);
+
+        // The third storage location (2) is used to store the number of caps
+        // uint256 nCaps = _get(pPointer + 2);
+        p.caps = new Capability[](nCallCaps);
+        // n is the cap index
+        uint256 n = 0;
+        // The rest of the 256 keys are (or can be) used for the caps
+        for (uint256 i = 0; i < (256-3); i++) {
+            if (n >= nCallCaps) {
+                break;
+            }
+            p.caps[n].capType = uint8(0x03);
+            // A call cap will always have length 1
+            uint256 nValues = 1;
+            p.caps[n].values = new uint256[](nValues);
+            for (uint256 k = 0; k < nValues; k++) {
+                p.caps[n].values[k] = uint256(_get((pPointer | 0x030000) + i*(0x100) + k));
+            }
+            // uint256 thisCurrentCapLength = _get(pPointer+3+i);
+            // p.caps[n].capType = uint8(_get(pPointer+3+i+1));
+            // // subtract 1 from cap length because it includes the type
+            // uint256 nValues = thisCurrentCapLength - 1;
+            // // uint256 nValues = 2;
+            // p.caps[n].values = new uint256[](nValues);
+            // for (uint256 k = 0; k < nValues; k++) {
+            //     p.caps[n].values[k] = uint256(_get(pPointer+3+i+2+k));
+            // }
+            // i = i + uint256(thisCurrentCapLength);
+            // n++;
+        }
+    }
+
+    function _parseCaps(Procedure memory p, uint256[] caps) internal pure {
+        // count caps
+        uint256 nCaps = 0;
+        for (uint256 i = 0; i < caps.length; i++) {
+            uint256 capLength = caps[i];
+            i = i + capLength;
+            nCaps++;
+        }
+        p.caps = new Capability[](nCaps);
+        uint256 n = 0;
+        for (i = 0; i < caps.length; ) {
+            capLength = caps[i]; i++;
+            uint256 nValues = capLength - 1;
+            p.caps[n].values = new uint256[](nValues);
+            p.caps[n].capType = uint8(caps[i]); i++;
+            for (uint256 j = 0; j < nValues; j++) {
+                p.caps[n].values[j] = caps[i];i++;
+            }
+            n++;
+        }
+    }
+
+
+    // Just returns an array of all the procedure data (257 32-byte values) concatenated.
     function returnRawProcedureTable() public view returns (uint256[]) {
-        return procedures.returnRawProcedureTable();
+        bytes24[] memory keys = getKeys();
+        uint256 len = keys.length;
+        // max is 256 keys times the number of procedures
+        uint256[] memory r = new uint256[](len*257);
+        // The rest are the elements
+        uint256 n = 0;
+        for (uint256 i = 0; i < len ; i++) {
+            uint192 key = uint192(keys[i]);
+            uint256 pPointer = _getPointerProcHeapByName(key);
+            r[n] = uint256(key); n++;
+            for (uint256 j = 0; j < 256; j++) {
+                r[n] = _get(pPointer+j); n++;
+            }
+        }
+        return r;
     }
 
     function returnProcedureTable() public view returns (uint256[]) {
-        return procedures.returnProcedureTable();
-    }
-
-    function getProcedure(bytes24 name) public view returns (address) {
-        return procedures.get(name);
+        bytes24[] memory keys = getKeys();
+        uint256 len = keys.length;
+        // max is 256 keys times the number of procedures
+        uint256[] memory r = new uint256[](len*256);
+        // The rest are the elements
+        uint256 n = 1;
+        for (uint256 i = 0; i < len ; i++) {
+            // uint192 key = uint192(keys[i]);
+            uint256 pPointer = _getPointerProcHeapByName(uint192(keys[i]));
+            r[n] = uint192(keys[i]); n++;
+            // Store the keyIndex at this location
+            r[n] = _get(pPointer); n++;
+            r[n] = _get(pPointer + 1); n++;
+            // Save this spot to record the the total number of caps
+            uint256 nCapTypesLocation = n; n++;
+            uint256 totalCaps = 0;
+            // Cycle through all cap types [0,255], even though most don't exist
+            for (uint256 j = 1; j <= 10; j++) {
+                // How many caps are there of this type
+                uint256 nCaps = _get(pPointer | (j*0x10000) | 0x00 | 0x00);
+                // Only record the caps if they're at least 1W
+                if (nCaps > 0) {
+                    uint256 capSize = capTypeToSize(j);
+                    // Cycle through them and add them to the array. Here we need to
+                    // know the size.
+                    for (uint256 k = 1; k <= nCaps; k++) {
+                    // record the size
+                    r[n] = (capSize+2); n++;
+                    // record the type
+                    r[n] = j; n++;
+                        totalCaps++;
+                        for (uint256 l = 0; l < capSize; l++) {
+                            r[n] = _get(pPointer | (j*0x10000) | (k*0x100) | (l*0x1)); n++;
+                        }
+                    }
+                }
+            }
+            r[nCapTypesLocation] = totalCaps;
+        }
+        r[0] = n;
+        return r;
     }
 
 }
 
 // Internal Kernel Interface
-contract Kernel is Factory, IKernel {
-
-    constructor() public {}
+contract Kernel is Factory, ProcedureTable, CapabilityManager, IKernel {
 
     function parse32ByteValue(uint256 startOffset) pure internal returns (uint256) {
         uint256 value = 0;
@@ -114,7 +234,7 @@ contract Kernel is Factory, IKernel {
 
         // TODO: we will need to reserve a value for "not executing anything"
         // If the transaction is from this procedure...
-        return (currentProcedure == 0);
+        return (_getCurrentProcedure() == 0);
 
     }
 
@@ -123,12 +243,12 @@ contract Kernel is Factory, IKernel {
         // TODO: we need to pass through the sender somehow
         // _executeProcedure will call RETURN or REVERT, ending the transaction,
         // so control should never return here
-        _executeProcedure(entryProcedure, "", msg.data);
+        _executeProcedure(bytes24(_getEntryProcedure()), "", msg.data);
     }
 
     // This is the fallback function which is used to handle system calls. This
     // is only called if the other functions fail.
-    function() public payable {
+    function () public payable {
         // This is the entry point for the kernel
 
         // If it is an external account, we forward it straight to the init
@@ -191,15 +311,15 @@ contract Kernel is Factory, IKernel {
         } else {
             dataLength = 0;
         }
-        bool cap = procedures.checkCallCapability(uint192(currentProcedure), procedureKey, capIndex);
-        address procedureAddress = procedures.get(procedureKey);
+        bool cap = checkCallCapability(_getCurrentProcedure(), procedureKey, capIndex);
+        address procedureAddress = get(procedureKey);
         // Note the procedure we are currently running, we will put this
         // back into the "currentProcedure" after we have finished the call.
-        bytes24 previousProcedure = currentProcedure;
+        bytes24 previousProcedure = bytes24(_getCurrentProcedure());
         // We set the value for the current procedure in the kernel so that
         // it knows which procedure it is executing (this is important for
         // looking up capabilities).
-        currentProcedure = procedureKey;
+        _setCurrentProcedure(uint192(procedureKey));
         if (cap) {
             assembly {
                 function malloc(size) -> result {
@@ -276,7 +396,8 @@ contract Kernel is Factory, IKernel {
                     0)
                 // We need to restore the previous procedure as the current
                 // procedure, this can simply be on the stack
-                sstore(currentProcedure_slot,div(previousProcedure,exp(0x100,8)))
+                // TODO: remove direct reference to storage key here
+                sstore(0xffffffff03000000000000000000000000000000000000000000000000000000,div(previousProcedure,exp(0x100,8)))
 
                 if status {
                     let returnLength := returndatasize
@@ -311,8 +432,8 @@ contract Kernel is Factory, IKernel {
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
         address regProcAddress = address(parse32ByteValue(1+32+32));
-        // the general format of a capability is length,type,values, where
-        // length includes the type
+        // the general format of a capability is length,type,capIndex,values, where
+        // length includes the type and the length itself
         uint256 capsStartOffset =
             /* sysCallCapType */ 1
             /* capIndex */ + 32
@@ -328,7 +449,7 @@ contract Kernel is Factory, IKernel {
         for (uint256 q = 0; q < capsLengthKeys; q++) {
             regCaps[q] = parse32ByteValue(capsStartOffset+q*32);
         }
-        bool cap = procedures.checkRegisterCapability(uint192(currentProcedure), capIndex);
+        bool cap = checkRegisterCapability(uint192(_getCurrentProcedure()), regName, capIndex);
         if (cap) {
 
             (uint8 err, /* address addr */) = _registerProcedure(regName, regProcAddress, regCaps);
@@ -376,9 +497,9 @@ contract Kernel is Factory, IKernel {
         bytes24 regName = bytes24(regNameB);
 
         // Check that target is not the Entry Procedure
-        bool not_entry = entryProcedure != regName;
+        bool not_entry = bytes24(_getEntryProcedure()) != regName;
         // Check if Valid Capability
-        bool cap = procedures.checkDeleteCapability(uint192(currentProcedure), regName, capIndex);
+        bool cap = checkDeleteCapability(uint192(_getCurrentProcedure()), regName, capIndex);
         if (cap && not_entry) {
             (uint8 err, /* address addr */) = _deleteProcedure(regName);
             uint256 bigErr = uint256(err);
@@ -402,6 +523,10 @@ contract Kernel is Factory, IKernel {
                 }
                 let retSize := 32
                 let retLoc := mallocZero(retSize)
+                if iszero(bigErr) {
+                    // return nothing if everything went smoothly
+                    return(0,0)
+                }
                 mstore(retLoc,bigErr)
                 return(retLoc,retSize)
             }
@@ -423,7 +548,7 @@ contract Kernel is Factory, IKernel {
         // TODO: fix this double name variable work-around
         bytes32 regNameB = bytes32(parse32ByteValue(1+32));
         bytes24 regName = bytes24(regNameB);
-        bool cap = procedures.checkSetEntryCapability(uint192(currentProcedure), capIndex);
+        bool cap = checkSetEntryCapability(uint192(_getCurrentProcedure()), capIndex);
         if (cap) {
             (uint8 err) = _setEntryProcedure(regName);
             uint256 bigErr = uint256(err);
@@ -466,7 +591,7 @@ contract Kernel is Factory, IKernel {
         uint256 capIndex = parse32ByteValue(1);
         uint256 writeAddress = parse32ByteValue(1+32*1);
         uint256 writeValue = parse32ByteValue(1+32*2);
-        bool cap = procedures.checkWriteCapability(uint192(currentProcedure), writeAddress, capIndex);
+        bool cap = checkWriteCapability(uint192(_getCurrentProcedure()), writeAddress, capIndex);
         if (cap) {
             assembly {
                 sstore(writeAddress, writeValue)
@@ -495,7 +620,7 @@ contract Kernel is Factory, IKernel {
                 topicVals[i] = bytes32(parse32ByteValue(1+32*(2+i)));
             }
             bytes32 logValue = bytes32(parse32ByteValue(1+32*(2+nTopics)));
-            bool cap = procedures.checkLogCapability(uint192(currentProcedure), topicVals, capIndex);
+            bool cap = checkLogCapability(uint192(_getCurrentProcedure()), topicVals, capIndex);
             if (cap) {
                 if (nTopics == 0) {
                     log0(logValue);
@@ -558,7 +683,7 @@ contract Kernel is Factory, IKernel {
         } else {
             dataLength = 0;
         }
-        bool cap = procedures.checkAccCallCapability(uint192(currentProcedure), account, amount, capIndex);
+        bool cap = checkAccCallCapability(uint192(_getCurrentProcedure()), account, amount, capIndex);
         if (cap) {
             assembly {
                 function malloc(size) -> result {
@@ -675,22 +800,18 @@ contract Kernel is Factory, IKernel {
             return;
         }
 
-        // Check whether the address exists
-        bool exist = procedures.contains(name);
-        if (exist) {
-            err = 3;
-            return;
-        }
-
-        procedures.insert(name, procedureAddress, caps);
+        bool inserted = insert(name, procedureAddress, caps);
         retAddress = procedureAddress;
         err = 0;
-        return (0, procedureAddress);
+        if (!inserted) {
+            err = 4;
+        }
+        return (err, procedureAddress);
     }
 
     function _setEntryProcedure(bytes24 name) internal returns (uint8 err) {
-        if (procedures.contains(name)) {
-            entryProcedure = name;
+        if (contains(name)) {
+            _setEntryProcedureRaw(uint192(name));
             err = 0;
         } else {
             err = 1;
@@ -704,11 +825,13 @@ contract Kernel is Factory, IKernel {
             return;
         }
 
-        procedureAddress = procedures.get(name);
-        bool success = procedures.remove(name);
+        procedureAddress = get(name);
+        bool success = remove(name);
 
         // Check whether the address exists
-        if (!success) {err = 2;}
+        if (!success) {
+            err = 2;
+        }
     }
 
 
@@ -721,7 +844,7 @@ contract Kernel is Factory, IKernel {
             }
         }
         // Check whether the address exists
-        bool exist = procedures.contains(name);
+        bool exist = contains(name);
         if (!exist) {
             assembly {
                 mstore8(0,3)
@@ -733,8 +856,8 @@ contract Kernel is Factory, IKernel {
         // assembly {
         //     sstore(currentProcedure_slot,div(name,exp(0x100,8)))
         // }
-        currentProcedure = name;
-        address procedureAddress = procedures.get(name);
+        _setCurrentProcedure(uint192(name));
+        address procedureAddress = get(name);
         bool status = false;
         assembly {
             function malloc(size) -> result {
@@ -828,7 +951,8 @@ contract Kernel is Factory, IKernel {
             status := callcode(gas,procedureAddress,0,ins,inl,0,0)
 
             // Zero-out the currentProcedure
-            sstore(currentProcedure_slot,0)
+            // TODO: needs to use the KernelStorage abstraction
+            sstore(0xffffffff03000000000000000000000000000000000000000000000000000000,0)
             // copy the return data to memory based on its size
             if iszero(status) {
                 let retSize := add(0x1,returndatasize)

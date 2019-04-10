@@ -11,6 +11,6 @@ contract FifthNestedCall is BeakerContract {
      // End
     function G() public {
         // First we do the store for FirstNestedCall
-        write(1, 0x8005, 79);
+        write(0, 0x8005, 79);
     }
 }

@@ -39,7 +39,7 @@ contract Factory {
             if((ins == 0x20)){continue;} // SHA3
             if((ins >= 0x30 && ins <= 0x3e)){continue;} // Environmental Informatio
             if((ins >= 0x40 && ins <= 0x45)){continue;} // Block Information
-            if((ins >= 0x50 && ins <= 0x53)){continue;} // Stack, Memory, Storage and Flow Operation 
+            if((ins >= 0x50 && ins <= 0x53)){continue;} // Stack, Memory, Storage and Flow Operation
             if((ins >= 0x56 && ins <= 0x5b)){continue;} // Stack, Memory, Storage and Flow Operation
             if((ins >= 0x80 && ins <= 0x8f)){continue;} // Duplication Operations
             if((ins >= 0x90 && ins <= 0x9f)){continue;} // Exchange Operations
@@ -74,10 +74,10 @@ contract Factory {
             if (ins == 0xf5) {return 12;} // CREATE2
             if (ins == 0xff) {return 13;} // SELFDESTRUCT
 
-            
+
 
             return 100; // UNKNOWN OPCODE
-            
+
         }
         return 0;
     }

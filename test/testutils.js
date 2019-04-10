@@ -1,19 +1,37 @@
 const beakerlib = require("../beakerlib");
 const BasicEntryProcedure = artifacts.require('BasicEntryProcedure.sol');
+const Kernel = artifacts.require('./TestKernel.sol')
 
-async function installEntryProc(kernel) {
-    const entryProcName = "EntryProcedure";
-    kernel.setEntryProcedure(entryProcName);
-    const capArrayEntryProc = beakerlib.Cap.toInput([
-        new beakerlib.WriteCap(0x8001,2),
-        new beakerlib.LogCap([]),
-        new beakerlib.CallCap(0,"")
-    ]);
+// Deploy a kernel and install the example entry procedure
+async function deployTestKernel() {
+    // First deploy the entry procedure that will be used to bootstrap the
+    // system.
     const deployedEntryProc = await deployedTrimmed(BasicEntryProcedure);
-    // Install the entry procedure
-    await kernel.registerAnyProcedure(entryProcName, deployedEntryProc.address, capArrayEntryProc);
+
+    // Deploy the kernel, specifying the previsouly deployed procedure as the
+    // first entry procedure. This will be named "init                    ".
+    let kernel;
+    try {
+        kernel = await Kernel.new(deployedEntryProc.address);
+    } catch (e) {
+        throw new Error(e);
+    }
+
+    const procedures1Raw = await kernel.listProcedures.call();
+    const procedures1 = procedures1Raw.map(web3.toAscii)
+        .map(s => s.replace(/\0.*$/, ''));
+    assert(procedures1.length == 1,
+        "The kernel should initially have a single procedure procedures");
+    const initEntryProc = await kernel.getEntryProcedure.call();
+    // Check that the entry procedure was correctly installed.
+    assert.strictEqual(web3.toAscii(initEntryProc).replace(/\0.*$/, ''), "init",
+        "The kernel should have an entry procedure registered as \"init\"");
+    // Check that the capabilities are correct
+    // TODO: we want to ensure that the maximal caps are provided
+    // await checkCaps(kernel, "init", []);
+    return kernel;
 }
-exports.installEntryProc = installEntryProc;
+exports.deployTestKernel = deployTestKernel;
 
 function trimSwarm(bytecode) {
     const size = bytecode.length;
