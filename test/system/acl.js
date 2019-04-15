@@ -93,11 +93,27 @@ class TestACL {
         return abiCoder.decodeParameters([{ name: 'procId', type: 'bytes24' }, { name: 'accountsLen', type: 'uint8' }, { name: 'groupIndex', type: 'uint8' }], valueXRawRaw)
     }
 
+    async removeGroup(procId) {
+        const { kernel, web3 } = this;
+
+        const functionSelector = "removeGroup(bytes24)";
+        const functionSelectorHash = web3.sha3(functionSelector).slice(2, 10);
+        const inputData = web3.fromAscii("ACL".padEnd(24, "\0"))
+            + functionSelectorHash
+            + web3.fromAscii(procId.padEnd(24, "\0")).slice(2).padEnd(32 * 2, 0)
+
+        const valueXRawRaw = await web3.eth.call({ to: kernel.address, data: inputData });
+        const value = web3.toBigNumber(valueXRawRaw);
+
+        const tx = await kernel.sendTransaction({ data: inputData });
+        return { tx, groupIndex: value };
+    }
+
 }
 
-contract('ACL', function (accounts) {
+contract.only('ACL', function (accounts) {
     describe('#_createGroup(bytes24)', function () {
-        it.only('should push new group', async function () {
+        it('should push new group', async function () {
             const kernel = await testutils.deployTestKernel();
             const acl = await testutils.deployedTrimmed(ACL)
             const testACL = new TestACL(web3, kernel, acl)
@@ -118,6 +134,31 @@ contract('ACL', function (accounts) {
             assert.equal(bar.procId, web3.fromAscii("BAR".padEnd(24, "\0")))
         })
 
+    })
+
+    describe('#_removeGroup(bytes24)', function () {
+        it('should remove group', async function() {
+            const kernel = await testutils.deployTestKernel();
+            const acl = await testutils.deployedTrimmed(ACL)
+            const testACL = new TestACL(web3, kernel, acl)
+            const tx1 = await testACL.register();
+
+            // Create Group FOO
+            const foo_res = await testACL.createGroup("FOO");
+            assert.equal(foo_res.groupIndex, 0)
+
+            // Create Group BAR
+            const bar_res = await testACL.createGroup("BAR");
+            assert.equal(bar_res.groupIndex, 1)
+
+            // Remove Group FOO
+            const foo_res_removed = await testACL.removeGroup("FOO");
+            assert.equal(foo_res_removed.groupIndex, 0)
+
+            // GROUP BAR Should be moved to index 0
+            const bar = await testACL.getGroupByIndex(0)
+            assert.equal(bar.groupIndex, web3.fromAscii("BAR".padEnd(24, "\0")))
+        })
     })
 
     //     it('S() should fail when not given cap', async function () {
