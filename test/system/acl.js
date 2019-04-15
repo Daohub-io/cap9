@@ -40,27 +40,27 @@ const SELECTOR_REMOVE_ACCOUNT = "removeAccount(address,uint8)";
 const SELECTOR_GET_ACCOUNT_BY_ID = "getAccountById(address)";
 const SELECTOR_GET_ACCOUNT_BY_INDEX = "getAccountByIndex(uint8)";
 
+const ACL_DEFAULT_CAPS = beakerlib.Cap.toInput([
+    // Account Mapping Cap
+    new beakerlib.WriteCap(0x1000, 2 << 21),
+    // Account Array Cap
+    new beakerlib.WriteCap(0x2000, 256),
+    // Account Mapping Cap
+    new beakerlib.WriteCap(0x1000, 2 << 21),
+    // Account Array Cap
+    new beakerlib.WriteCap(0x2000, 256)
+]);
+
 class TestACL {
 
     constructor(web3, kernel, acl) {
-        this.caps = beakerlib.Cap.toInput([
-            // Account Mapping Cap
-            new beakerlib.WriteCap(0x1000, 2 << 21),
-            // Account Array Cap
-            new beakerlib.WriteCap(0x2000, 256),
-            // Account Mapping Cap
-            new beakerlib.WriteCap(0x1000, 2 << 21),
-            // Account Array Cap
-            new beakerlib.WriteCap(0x2000, 256)
-        ]);
-
         this.kernel = kernel;
         this.acl = acl;
         this.web3 = web3;
     }
 
-    async register() {
-        const { kernel, acl, caps } = this;
+    async register(caps = ACL_DEFAULT_CAPS) {
+        const { kernel, acl } = this;
         return await kernel.registerAnyProcedure("ACL", acl.address, caps);
     }
 
