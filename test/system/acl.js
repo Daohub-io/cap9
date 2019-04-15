@@ -77,7 +77,7 @@ class TestACL {
         const value = web3.toBigNumber(valueXRawRaw);
 
         const tx = await kernel.sendTransaction({ data: inputData });
-        return { tx, groupIndex: value};
+        return { tx, groupIndex: value };
     }
 
     async getGroupByIndex(groupIndex) {
@@ -90,28 +90,34 @@ class TestACL {
             + web3.toHex(groupIndex).slice(2).padStart(32 * 2, 0) // the amount argument for call (32 bytes)
 
         const valueXRawRaw = await web3.eth.call({ to: kernel.address, data: inputData2 });
-        return abiCoder.decodeParameters([{name: 'procId', type: 'bytes24'}, {name: 'accountsLen', type: 'uint8'}, {name: 'groupIndex', type: 'uint8'}], valueXRawRaw)
+        return abiCoder.decodeParameters([{ name: 'procId', type: 'bytes24' }, { name: 'accountsLen', type: 'uint8' }, { name: 'groupIndex', type: 'uint8' }], valueXRawRaw)
     }
 
 }
 
 contract('ACL', function (accounts) {
-    describe('#addAccount', function () {
-        it.only('should add Account', async function () {
-
+    describe('#_createGroup(bytes24)', function () {
+        it.only('should push new group', async function () {
             const kernel = await testutils.deployTestKernel();
             const acl = await testutils.deployedTrimmed(ACL)
             const testACL = new TestACL(web3, kernel, acl)
             const tx1 = await testACL.register();
 
-            // Create Group FOOBAR
-            const { groupIndex } = await testACL.createGroup("FOOBAR");
-            assert.equal(groupIndex, 0)
+            // Create Group FOO
+            const foo_res = await testACL.createGroup("FOO");
+            assert.equal(foo_res.groupIndex, 0)
 
-            // Get Group
-            const { procId } = await testACL.getGroupByIndex(0)
-            assert.equal(procId, web3.fromAscii("FOOBAR".padEnd(24, "\0")))
+            // Create Group BAR
+            const bar_res = await testACL.createGroup("BAR");
+            assert.equal(bar_res.groupIndex, 1)
+
+            // Get Groups
+            const foo = await testACL.getGroupByIndex(0)
+            assert.equal(foo.procId, web3.fromAscii("FOO".padEnd(24, "\0")))
+            const bar = await testACL.getGroupByIndex(1)
+            assert.equal(bar.procId, web3.fromAscii("BAR".padEnd(24, "\0")))
         })
+
     })
 
     //     it('S() should fail when not given cap', async function () {
