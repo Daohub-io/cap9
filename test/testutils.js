@@ -3,10 +3,10 @@ const BasicEntryProcedure = artifacts.require('BasicEntryProcedure.sol');
 const Kernel = artifacts.require('./TestKernel.sol')
 
 // Deploy a kernel and install the example entry procedure
-async function deployTestKernel() {
+async function deployTestKernel(entryProc = BasicEntryProcedure) {
     // First deploy the entry procedure that will be used to bootstrap the
     // system.
-    const deployedEntryProc = await deployedTrimmed(BasicEntryProcedure);
+    const deployedEntryProc = await deployedTrimmed(entryProc);
 
     // Deploy the kernel, specifying the previsouly deployed procedure as the
     // first entry procedure. This will be named "init                    ".
