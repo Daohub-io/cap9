@@ -157,7 +157,7 @@ contract.only('ACL', function (accounts) {
 
             // GROUP BAR Should be moved to index 0
             const bar = await testACL.getGroupByIndex(0)
-            assert.equal(bar.groupIndex, web3.fromAscii("BAR".padEnd(24, "\0")))
+            assert.equal(bar.procId, web3.fromAscii("BAR".padEnd(24, "\0")))
         })
     })
 
