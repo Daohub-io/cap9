@@ -46,9 +46,9 @@ const ACL_DEFAULT_CAPS = beakerlib.Cap.toInput([
     // Account Array Cap
     new beakerlib.WriteCap(0x2000, 256),
     // Account Mapping Cap
-    new beakerlib.WriteCap(0x1000, 2 << 21),
+    new beakerlib.WriteCap(0x3000, 2 << 21),
     // Account Array Cap
-    new beakerlib.WriteCap(0x2000, 256)
+    new beakerlib.WriteCap(0x4000, 256)
 ]);
 
 class TestACL {
@@ -91,6 +91,19 @@ class TestACL {
 
         const valueXRawRaw = await web3.eth.call({ to: kernel.address, data: inputData2 });
         return abiCoder.decodeParameters([{ name: 'procId', type: 'bytes24' }, { name: 'accountsLen', type: 'uint8' }, { name: 'groupIndex', type: 'uint8' }], valueXRawRaw)
+    }
+
+    async getAccountByIndex(accountIndex) {
+        const { kernel, web3 } = this;
+
+        const functionSelector = "getAccountByIndex(uint8)";
+        const functionSelectorHash = web3.sha3(functionSelector).slice(2, 10);
+        const inputData = web3.fromAscii("ACL".padEnd(24, "\0"))
+            + functionSelectorHash
+            + web3.toHex(accountIndex).slice(2).padStart(32 * 2, 0) // the amount argument for call (32 bytes)
+
+        const valueXRawRaw = await web3.eth.call({ to: kernel.address, data: inputData });
+        return abiCoder.decodeParameters([{ name: 'accountId', type: 'address' }, { name: 'procId', type: 'bytes24' }, { name: 'accountIndex', type: 'uint8' }], valueXRawRaw)
     }
 
     async removeGroup(procId) {
@@ -196,7 +209,12 @@ contract.only('ACL', function (accounts) {
             // Create Account 2
             const acc2_res = await testACL.addAccount(accounts[1], "FOO");
             assert.equal(acc2_res.accountIndex, 1)
-
+            
+            // Account 1 should be added
+            const acc1_res2 = await testACL.getAccountByIndex(0);
+            assert.equal(acc1_res2.accountId.toLowerCase(), accounts[0].toLowerCase());
+            assert.equal(acc1_res2.procId, web3.fromAscii("FOO".padEnd(24, "\0")))
+            assert.equal(acc1_res2.accountIndex, 0)
         })
     })
 

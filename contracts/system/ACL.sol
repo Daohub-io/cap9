@@ -190,7 +190,7 @@ contract ACL is BeakerContract {
     function _getAccountById(address _accountId) internal returns (address accountId, bytes24 procId, uint8 accountIndex) {
         // Get AccountsArray
         WriteCap memory accountsArray = _getStoreCap(ACCOUNT_ARRAY);
-        assert(accountsMap.len > 256);
+        assert(accountsArray.len >= 256);
 
         // Get AccountsMap
         WriteCap memory accountsMap = _getStoreCap(ACCOUNT_MAPPING);
@@ -208,11 +208,11 @@ contract ACL is BeakerContract {
     function _getAccountByIndex(uint8 _accountIndex) internal returns (address accountId, bytes24 procId, uint8 accountIndex) {
         // Get AccountsArray
         WriteCap memory accountsArray = _getStoreCap(ACCOUNT_ARRAY);
-        assert(accountsMap.len > 256);
+        assert(accountsArray.len >= 256);
 
         // Get AccountsMap
         WriteCap memory accountsMap = _getStoreCap(ACCOUNT_MAPPING);
-        assert(accountsMap.len > (2 << 20)); // Must be a mapping
+        assert(accountsMap.len >= (2 << 20)); // Must be a mapping
 
         // Get Current Account Data
         AccountArrVal memory current_account_arr = AccountArrVal_decode(read(accountsArray.start + 1 + uint256(_accountIndex)));
@@ -223,69 +223,49 @@ contract ACL is BeakerContract {
         accountIndex = current_account_map.accountIndex;
     }
 
-       /// Get GroupId from Account Address
-    function getAccountById(address _accountId) public returns (address accountId, bytes24 procId, uint8 accountIndex) {
+    function _addAccount(address _accountId, bytes24 _procId) internal returns (uint8 accountIndex) {
+        // Check Paramters
+        assert(_procId != 0 && _accountId != 0);
+
+        // Check Account Does not Exist
+        (,bytes24 cpid,) = _getAccountById(_accountId);
+        assert(cpid == 0);
+
         // Get AccountsArray
         WriteCap memory accountsArray = _getStoreCap(ACCOUNT_ARRAY);
-        assert(accountsMap.len > 256);
-
         // Get AccountsMap
         WriteCap memory accountsMap = _getStoreCap(ACCOUNT_MAPPING);
-        assert(accountsMap.len > (2 << 20)); // Must be a mapping
 
-        // Get Current Account Data
-        AccountMapVal memory current_account_map = AccountMapVal_decode(read(accountsMap.start + uint256(_accountId)));
-        AccountArrVal memory current_account_arr = AccountArrVal_decode(read(accountsArray.start + 1 + uint256(current_account_map.accountIndex)));
-
-        accountId = current_account_arr.accountId;
-        procId = current_account_map.procId;
-        accountIndex = current_account_map.accountIndex;
-    }
-
-
-
-    function _addAccount(address _accountId, uint8 _groupIndex) internal {
-        // Get AccountsArray
-        WriteCap memory accountsArray = _getStoreCap(ACCOUNT_ARRAY);
-        assert(accountsArray.len + 1 > 256);
-
-        // Get AccountsMap
-        WriteCap memory accountsMap = _getStoreCap(ACCOUNT_MAPPING);
-        assert(accountsMap.len + 1 > (2 << 20)); // Must be a mapping
-
-        // Get Current Account Data
-        AccountMapVal memory current_account_map = AccountMapVal_decode(read(accountsMap.start + uint256(_accountId)));
-        AccountArrVal memory current_account_arr = AccountArrVal_decode(read(accountsArray.start + 1 + uint256(current_account_map.accountIndex)));
-
-        // Check that Account does not exist
-        assert(current_account_arr.accountId == 0);
+        // Get GroupArray
+        WriteCap memory groupArray = _getStoreCap(GROUP_ARRAY);
+        // Get GroupMap
+        WriteCap memory groupsMap = _getStoreCap(GROUP_MAPPING);
 
         // Check that Accounts Array is not full
-        uint256 acc_len = read(accountsArray.start + 0);
+        uint8 acc_len = uint8(read(accountsArray.start + 0));
         assert(acc_len + 2 < accountsArray.len);
 
-        // Get Group Length + Check Group is not full
-        WriteCap memory groupArray = _getStoreCap(GROUP_ARRAY);
-        assert(groupArray.len + 1 > 256);
+        GroupMapVal memory current_group_map = GroupMapVal_decode(read(groupsMap.start + uint256(_procId)));
+        GroupArrVal memory current_group_arr = GroupArrVal_decode(read(groupArray.start + 1 + uint256(current_group_map.groupIndex)));
 
-        // Get Group Index
-        WriteCap memory groupsMap = _getStoreCap(GROUP_MAPPING);
-        assert(groupsMap.len > (2 << 20)); // Must be a mapping
-
-        GroupMapVal memory current_group_map = GroupMapVal_decode(read(groupsMap.start + uint256(current_account_map.procId)));
-        GroupArrVal memory current_group = GroupArrVal_decode(read(groupArray.start + 1 + uint256(current_group_map.groupIndex)));
-
-        assert(current_group.accountLen + 1 < 256);
+        // Check that Group exists and is not full
+        assert(current_group_arr.procId != 0);
+        assert(current_group_arr.accountLen + 1 < 256);
 
         // Set Index to Current Accounts Length
-        uint256 account_map_data = AccountMapVal_encode(AccountMapVal(_groupIndex, current_account_map.procId));
+        uint256 account_map_data = AccountMapVal_encode(AccountMapVal(acc_len, _procId));
         uint256 account_arr_data = AccountArrVal_encode(AccountArrVal(_accountId));
 
+        // Create Account
         write(ACCOUNT_MAPPING, accountsMap.start + uint256(_accountId), account_map_data);
         write(ACCOUNT_ARRAY, accountsArray.start + 1 + acc_len, account_arr_data);
+        // Update Accounts Length
+        write(ACCOUNT_ARRAY, accountsArray.start + 0, acc_len + 1);
 
         // Update Group Length
-        write(GROUP_ARRAY, groupArray.len + 0, GroupArrVal_encode(GroupArrVal(current_group.accountLen + 1, current_group.procId)));
+        write(GROUP_ARRAY, groupArray.start + 1 + uint256(current_group_map.groupIndex), GroupArrVal_encode(GroupArrVal(current_group_arr.accountLen + 1, current_group_arr.procId)));
+
+        return acc_len;
     }
 
     function _removeAccount(address _accountId) internal {

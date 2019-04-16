@@ -24,11 +24,11 @@ contract TestACL is ACL {
         return _removeGroup(_procId);
     }
 
-    function addAccount(address _accountId, uint8 _groupIndex) public {
-        _addAccount(_accountId, _groupIndex);
+    function addAccount(address _accountId, bytes24 _procId) public returns (uint8 accountIndex) {
+        return _addAccount(_accountId, _procId);
     }
 
-    function removeAccount(address _accountId, uint8 _groupIndex) public {
+    function removeAccount(address _accountId) public {
         _removeAccount(_accountId);
     }
 
