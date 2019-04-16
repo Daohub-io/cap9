@@ -109,6 +109,23 @@ class TestACL {
         return { tx, groupIndex: value };
     }
 
+    async addAccount(account, procId) {
+        const { kernel, web3 } = this;
+
+        const functionSelector = "addAccount(address,bytes24)";
+        const functionSelectorHash = web3.sha3(functionSelector).slice(2, 10);
+        const inputData = web3.fromAscii("ACL".padEnd(24, "\0"))
+            + functionSelectorHash
+            + account.slice(2).padStart(32*2,0)
+            + web3.fromAscii(procId.padEnd(24, "\0")).slice(2).padEnd(32 * 2, 0)
+
+        const valueXRawRaw = await web3.eth.call({ to: kernel.address, data: inputData });
+        const value = web3.toBigNumber(valueXRawRaw);
+
+        const tx = await kernel.sendTransaction({ data: inputData });
+        return { tx, accountIndex: value };
+    }
+
 }
 
 contract.only('ACL', function (accounts) {
@@ -137,7 +154,7 @@ contract.only('ACL', function (accounts) {
     })
 
     describe('#_removeGroup(bytes24)', function () {
-        it('should remove group', async function() {
+        it('should remove group', async function () {
             const kernel = await testutils.deployTestKernel();
             const acl = await testutils.deployedTrimmed(ACL)
             const testACL = new TestACL(web3, kernel, acl)
@@ -158,6 +175,28 @@ contract.only('ACL', function (accounts) {
             // GROUP BAR Should be moved to index 0
             const bar = await testACL.getGroupByIndex(0)
             assert.equal(bar.procId, web3.fromAscii("BAR".padEnd(24, "\0")))
+        })
+    })
+
+    describe('#_addAccount(address,bytes24)', function () {
+        it('should add account', async function () {
+            const kernel = await testutils.deployTestKernel();
+            const acl = await testutils.deployedTrimmed(ACL)
+            const testACL = new TestACL(web3, kernel, acl)
+            const tx1 = await testACL.register();
+
+            // Create Group FOO
+            const foo_res = await testACL.createGroup("FOO");
+            assert.equal(foo_res.groupIndex, 0)
+
+            // Create Account 1
+            const acc1_res = await testACL.addAccount(accounts[0], "FOO");
+            assert.equal(acc1_res.accountIndex, 0)
+
+            // Create Account 2
+            const acc2_res = await testACL.addAccount(accounts[1], "FOO");
+            assert.equal(acc2_res.accountIndex, 1)
+
         })
     })
 
