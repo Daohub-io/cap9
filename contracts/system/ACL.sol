@@ -98,6 +98,22 @@ contract ACL is BeakerContract {
         procId = current_group_arr.procId;
         accountsLen = current_group_arr.accountLen;
         groupIndex = current_group_map.groupIndex;
+    }
+
+    function _getGroupById(uint8 _procId) internal returns (bytes24 procId, uint8 accountsLen, uint8 groupIndex) {
+        WriteCap memory groupsMap = _getStoreCap(GROUP_MAPPING);
+        assert(groupsMap.len > (2 << 20)); // Must be a mapping
+
+        WriteCap memory groupsArray = _getStoreCap(GROUP_ARRAY);
+        assert(groupsArray.len >= 256);
+
+        // Get Current Group Data
+        GroupMapVal memory current_group_map = GroupMapVal_decode(read(groupsMap.start + uint256(_procId)));
+        GroupArrVal memory current_group_arr = GroupArrVal_decode(read(groupsArray.start + 1 + uint256(current_group_map.groupIndex)));
+
+        procId = current_group_arr.procId;
+        accountsLen = current_group_arr.accountLen;
+        groupIndex = current_group_map.groupIndex;
     } 
 
     function _createGroup(bytes24 _procId) internal returns (uint8 groupIndex) {
@@ -136,7 +152,39 @@ contract ACL is BeakerContract {
     }
 
     function _removeGroup(bytes24 _procId) internal returns (uint8 groupIndex) {
-        revert("Unimplemented!");
+        WriteCap memory groupsMap = _getStoreCap(GROUP_MAPPING);
+        assert(groupsMap.len > (2 << 20)); // Must be a mapping
+
+        WriteCap memory groupsArray = _getStoreCap(GROUP_ARRAY);
+        uint8 groups_len = uint8(read(groupsArray.start + 0));
+        assert(groupsArray.len >= 256);
+        assert(groups_len > 0);
+
+        // Get Current Group Data
+        GroupMapVal memory current_group_map = GroupMapVal_decode(read(groupsMap.start + uint256(_procId)));
+        GroupArrVal memory current_group_arr = GroupArrVal_decode(read(groupsArray.start + 1 + uint256(current_group_map.groupIndex)));
+
+        // If Not Last Group, Overwrite with Last data
+        if (current_group_map.groupIndex +1 != groups_len) {
+            GroupArrVal memory last_group_arr = GroupArrVal_decode(read(groupsArray.start + groups_len));
+            GroupMapVal memory last_group_map = GroupMapVal_decode(read(groupsMap.start + uint256(last_group_arr.procId)));
+
+            // Update Index
+            last_group_map.groupIndex = current_group_map.groupIndex;
+
+            write(GROUP_ARRAY, groupsArray.start + 1 + last_group_map.groupIndex, GroupArrVal_encode(last_group_arr));
+            write(GROUP_MAPPING, groupsMap.start + uint256(last_group_arr.procId), GroupMapVal_encode(last_group_map));
+        }
+
+        // Remove Mapping Value
+        write(GROUP_MAPPING, groupsMap.start + uint256(_procId), 0);
+        // Remove Last Group
+        write(GROUP_ARRAY, groupsArray.start + groups_len, 0);
+        // Decrement Group Length
+        write(GROUP_ARRAY, groupsArray.start + 0, groups_len -1 );
+
+        // Return Changed/Deleted Index;
+        return current_group_map.groupIndex;
     }
 
     function _getAccountById(address _accountId) internal returns (address accountId, bytes24 procId, uint8 accountIndex) {
