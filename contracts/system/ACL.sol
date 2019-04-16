@@ -15,8 +15,8 @@ contract ACL is BeakerContract {
     uint8 constant GROUP_ARRAY = 3;
 
     struct AccountMapVal {
-        uint8 groupIndex;
         uint8 accountIndex;
+        bytes24 procId;
     }
 
     struct AccountArrVal {
@@ -33,11 +33,11 @@ contract ACL is BeakerContract {
     }
 
     function AccountMapVal_decode(uint256 _data) internal returns (AccountMapVal) {
-        return AccountMapVal(uint8(_data >> 8), uint8(_data & 255));
+        return AccountMapVal(uint8(_data >> 24), bytes24(_data));
     }
 
     function AccountMapVal_encode(AccountMapVal _acc_map_val) internal returns (uint256 data) {
-        return (uint256(_acc_map_val.groupIndex) << 8) | uint256(_acc_map_val.accountIndex);
+        return (uint256(_acc_map_val.accountIndex) << 24) | uint256(_acc_map_val.procId);
     }
 
 
@@ -135,7 +135,11 @@ contract ACL is BeakerContract {
         return uint8(groups_len);
     }
 
-    function _getAccountById(address _accountId) internal returns (address accountId, uint8 groupIndex, uint8 accountIndex) {
+    function _removeGroup(bytes24 _procId) internal returns (uint8 groupIndex) {
+        revert("Unimplemented!");
+    }
+
+    function _getAccountById(address _accountId) internal returns (address accountId, bytes24 procId, uint8 accountIndex) {
         // Get AccountsArray
         WriteCap memory accountsArray = _getStoreCap(ACCOUNT_ARRAY);
         assert(accountsMap.len > 256);
@@ -149,11 +153,11 @@ contract ACL is BeakerContract {
         AccountArrVal memory current_account_arr = AccountArrVal_decode(read(accountsArray.start + 1 + uint256(current_account_map.accountIndex)));
 
         accountId = current_account_arr.accountId;
-        groupIndex = current_account_map.groupIndex;
+        procId = current_account_map.procId;
         accountIndex = current_account_map.accountIndex;
     }
 
-    function _getAccountByIndex(uint8 _accountIndex) internal returns (address accountId, uint8 groupIndex, uint8 accountIndex) {
+    function _getAccountByIndex(uint8 _accountIndex) internal returns (address accountId, bytes24 procId, uint8 accountIndex) {
         // Get AccountsArray
         WriteCap memory accountsArray = _getStoreCap(ACCOUNT_ARRAY);
         assert(accountsMap.len > 256);
@@ -167,9 +171,29 @@ contract ACL is BeakerContract {
         AccountMapVal memory current_account_map = AccountMapVal_decode(read(accountsMap.start + uint256(current_account_arr.accountId)));
 
         accountId = current_account_arr.accountId;
-        groupIndex = current_account_map.groupIndex;
+        procId = current_account_map.procId;
         accountIndex = current_account_map.accountIndex;
     }
+
+       /// Get GroupId from Account Address
+    function getAccountById(address _accountId) public returns (address accountId, bytes24 procId, uint8 accountIndex) {
+        // Get AccountsArray
+        WriteCap memory accountsArray = _getStoreCap(ACCOUNT_ARRAY);
+        assert(accountsMap.len > 256);
+
+        // Get AccountsMap
+        WriteCap memory accountsMap = _getStoreCap(ACCOUNT_MAPPING);
+        assert(accountsMap.len > (2 << 20)); // Must be a mapping
+
+        // Get Current Account Data
+        AccountMapVal memory current_account_map = AccountMapVal_decode(read(accountsMap.start + uint256(_accountId)));
+        AccountArrVal memory current_account_arr = AccountArrVal_decode(read(accountsArray.start + 1 + uint256(current_account_map.accountIndex)));
+
+        accountId = current_account_arr.accountId;
+        procId = current_account_map.procId;
+        accountIndex = current_account_map.accountIndex;
+    }
+
 
 
     function _addAccount(address _accountId, uint8 _groupIndex) internal {
@@ -195,12 +219,18 @@ contract ACL is BeakerContract {
         // Get Group Length + Check Group is not full
         WriteCap memory groupArray = _getStoreCap(GROUP_ARRAY);
         assert(groupArray.len + 1 > 256);
-        
-        GroupArrVal memory current_group = GroupArrVal_decode(read(groupArray.start + 1 + uint256(current_account_map.groupIndex)));
+
+        // Get Group Index
+        WriteCap memory groupsMap = _getStoreCap(GROUP_MAPPING);
+        assert(groupsMap.len > (2 << 20)); // Must be a mapping
+
+        GroupMapVal memory current_group_map = GroupMapVal_decode(read(groupsMap.start + uint256(current_account_map.procId)));
+        GroupArrVal memory current_group = GroupArrVal_decode(read(groupArray.start + 1 + uint256(current_group_map.groupIndex)));
+
         assert(current_group.accountLen + 1 < 256);
 
         // Set Index to Current Accounts Length
-        uint256 account_map_data = AccountMapVal_encode(AccountMapVal(_groupIndex, uint8(acc_len)));
+        uint256 account_map_data = AccountMapVal_encode(AccountMapVal(_groupIndex, current_account_map.procId));
         uint256 account_arr_data = AccountArrVal_encode(AccountArrVal(_accountId));
 
         write(ACCOUNT_MAPPING, accountsMap.start + uint256(_accountId), account_map_data);
@@ -211,7 +241,7 @@ contract ACL is BeakerContract {
     }
 
     function _removeAccount(address _accountId) internal {
-                // Get AccountsArray
+        // Get AccountsArray
         WriteCap memory accountsArray = _getStoreCap(ACCOUNT_ARRAY);
         assert(accountsArray.len + 1 > 256);
 
@@ -233,8 +263,14 @@ contract ACL is BeakerContract {
         // Get Group Length + Check Group is not full
         WriteCap memory groupArray = _getStoreCap(GROUP_ARRAY);
         assert(groupArray.len + 1 > 256);
-        
-        GroupArrVal memory current_group = GroupArrVal_decode(read(groupArray.start + 1 + uint256(current_account_map.groupIndex)));
+
+        WriteCap memory groupsMap = _getStoreCap(GROUP_MAPPING);
+        assert(groupsMap.len > (2 << 20)); // Must be a mapping
+
+        // Get Group Index
+        GroupMapVal memory current_group_map = GroupMapVal_decode(read(groupsMap.start + uint256(current_account_map.procId)));
+        GroupArrVal memory current_group = GroupArrVal_decode(read(groupArray.start + 1 + uint256(current_group_map.groupIndex)));
+
         assert(current_group.accountLen + 1 < 256);
         assert(current_group.accountLen > 0);
 
@@ -260,32 +296,9 @@ contract ACL is BeakerContract {
         write(ACCOUNT_ARRAY, accountsArray.start + 0, acc_len - 1);
 
         // Update Group Length
-        write(GROUP_ARRAY, groupArray.start + current_account_map.groupIndex, GroupArrVal_encode(GroupArrVal(current_group.accountLen - 1, current_group.procId)));
+        write(GROUP_ARRAY, groupArray.start + current_group_map.groupIndex, GroupArrVal_encode(GroupArrVal(current_group.accountLen - 1, current_group.procId)));
     }
     
-    /// Get GroupId from Account Address
-    function getAccountGroup(address _account) public returns (bytes24 _groupId) {
-        uint256 len = _getStoreCapsLen();
-        assert(len > 0);
-
-        WriteCap memory accountsMap = _getStoreCap(ACCOUNT_MAPPING);
-        assert(accountsMap.len > (2 << 20)); // Must be a mapping
-
-        uint256 a_val = read(accountsMap.start + uint256(_account));
-        AccountMapVal memory account_map_val = AccountMapVal_decode(a_val);
-
-        WriteCap memory groupArray = _getStoreCap(GROUP_ARRAY);
-        assert(groupArray.len + 1 > 256);
-
-        uint256 glen = read(groupArray.start + 0);
-        assert(glen >= account_map_val.groupIndex);
-
-        uint256 g_val = read(groupArray.start + 1 + uint256(account_map_val.groupIndex));
-        GroupArrVal memory group_acc_val = GroupArrVal_decode(g_val);
-
-        return group_acc_val.procId;
-    }
-
     /// Add Account to associate to a group
     /// Only Callable by Group Member
     // function addAccount(address _account, bytes24 _groupId) public {
