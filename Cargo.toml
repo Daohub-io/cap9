@@ -1,0 +1,10 @@
+[package]
+name = "cap9"
+version = "0.1.0"
+authors = ["Jacob Payne <jacob@daohub.io>"]
+edition = "2018"
+
+[workspace]
+members = ["ewasm"]
+
+[dependencies]

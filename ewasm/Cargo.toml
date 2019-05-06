@@ -1,0 +1,7 @@
+[package]
+name = "ewasm"
+version = "0.1.0"
+authors = ["Jacob Payne <jacob@daohub.io>"]
+edition = "2018"
+
+[dependencies]
