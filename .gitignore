@@ -12,6 +12,10 @@ chain
 #
 #already existing elements are commented out
 
+<<<<<<< HEAD
 kernel-ewasm/target/*
+=======
+/target
+>>>>>>> e02a2624942c5311a30ad3a7aec794205a6c762a
 **/*.rs.bk
 Cargo.lock
