@@ -1,0 +1,14 @@
+{
+  "name": "kernel-ewasm",
+  "version": "1.0.0",
+  "description": "## Development",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "node script/deploy.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dev-dependencies": {
+    "web3": "^1.0.0-beta.54"
+  }
+}

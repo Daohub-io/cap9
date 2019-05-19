@@ -1,0 +1,20 @@
+[package]
+description = "Cap9 Ewasm Kernel Library"
+name = "kernel-ewasm"
+version = "0.1.0"
+authors = ["Daohub Inc <info@daohub.io>"]
+edition = "2018"
+
+[dependencies]
+pwasm-ethereum = "0.8"
+pwasm-abi = "0.2"
+ewasm-validator = { path = "./validator" }
+pwasm-token-contract = { path = "./contract" }
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = "z"

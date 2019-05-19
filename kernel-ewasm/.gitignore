@@ -1,0 +1,6 @@
+#NODE
+node_modules
+
+#CARGO
+target
+**/*.rs.bk
