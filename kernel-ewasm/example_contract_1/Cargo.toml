@@ -1,0 +1,19 @@
+[package]
+name = "example_contract_1"
+version = "0.1.0"
+
+[dependencies]
+pwasm-std = "0.13"
+pwasm-ethereum = "0.8"
+pwasm-abi = "0.2"
+pwasm-abi-derive = "0.2"
+tiny-keccak = "1.4.2"
+
+[dev-dependencies]
+pwasm-test = { git = "https://github.com/paritytech/pwasm-test" }
+
+[features]
+std = ["pwasm-std/std", "pwasm-ethereum/std"]
+
+[lib]
+crate-type = ["cdylib"]
