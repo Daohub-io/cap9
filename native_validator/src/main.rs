@@ -17,7 +17,7 @@ fn main() {
     if validity.validation_errors.len() != 0 {
         println!("Module is not valid, the following validation errors were found:");
         for (i, ve) in validity.validation_errors.iter().enumerate() {
-            println!("{}: {}", i, show_validation(ve));
+            println!("  {}: {}", i, show_validation(ve));
         }
     } else {
         println!("Module is valid");
@@ -75,7 +75,8 @@ impl Listed for ImportEntry {
                 "ret" => Listing::White,
                 "memory" => Listing::White,
                 "storage_write" => Listing::Black,
-                "ccall" => Listing::Grey,
+                "ccall" => Listing::Black,
+                "dcall" => Listing::Grey,
                 _ => Listing::Black,
             }
         }
