@@ -3,7 +3,7 @@ extern crate parity_wasm;
 use parity_wasm::elements::{ImportEntry, Module};
 
 fn main() {
-    let module = parity_wasm::deserialize_file("../kernel-ewasm/example_contract_1/build/pwasm_token_contract.wasm").unwrap();
+    let module = parity_wasm::deserialize_file("../kernel-ewasm/example_contract_1/build/example_contract_1.wasm").unwrap();
     assert!(module.code_section().is_some());
 
     // We have now located the bad imports, but this does not establish if they
