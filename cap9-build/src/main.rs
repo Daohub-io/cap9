@@ -21,9 +21,6 @@ fn main() {
     let output_path = matches.value_of("OUTPUT-FILE").expect("output path is required");
 
     let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
-    // println!("Names {:?}", module);
-    // println!("Names {:?}", module.clone().parse_names());
-    // println!("Names {:?}", module.names_section());
     assert!(module.code_section().is_some());
 
     // TODO: we need to make sure these values never change between now and when

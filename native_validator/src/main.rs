@@ -1,6 +1,8 @@
 extern crate parity_wasm;
 
 use parity_wasm::elements::{ImportEntry, Module};
+use parity_wasm::elements::Instruction;
+use parity_wasm::elements::{FunctionType, ValueType};
 
 fn main() {
     let module = parity_wasm::deserialize_file("../kernel-ewasm/example_contract_1/build/example_contract_1.wasm").unwrap();
@@ -74,6 +76,8 @@ impl Listed for ImportEntry {
             match self.field() {
                 "ret" => Listing::White,
                 "memory" => Listing::White,
+                "gasleft" => Listing::White,
+                "sender" => Listing::White,
                 "storage_write" => Listing::Black,
                 "ccall" => Listing::Black,
                 "dcall" => Listing::Grey,
@@ -128,9 +132,9 @@ impl Validity for Module {
                 Listing::Grey => {
                     // Check that this grey import is called safely, wherever is
                     // is called.
-                    match check_grey(self, import_index) {
-                        None => (),
-                        Some(_) => return false,
+
+                    if check_grey(self, import_index).len() > 0 {
+                        return false;
                     }
                 },
                 Listing::Black => return false,
@@ -153,16 +157,12 @@ impl Validity for Module {
                 Listing::Grey => {
                     // Check that this grey import is called safely, wherever is
                     // is called.
-                    match check_grey(self, import_index) {
-                        None => (),
-                        Some((function_index,instruction_index)) => {
-                            report.validation_errors.push(ValidityError::UnsafeGreylistedCall {
-                                import: import.clone(),
-                                function_index,
-                                instruction_index,
-                            });
-
-                        }
+                    for (function_index,instruction_index) in check_grey(self, import_index) {
+                        report.validation_errors.push(ValidityError::UnsafeGreylistedCall {
+                            import: import.clone(),
+                            function_index,
+                            instruction_index,
+                        });
                     }
                 },
                 Listing::Black => {
@@ -175,17 +175,154 @@ impl Validity for Module {
 
 }
 
-fn check_grey(module: &Module, grey_index: usize) -> Option<(u32, u32)> {
+fn check_grey(module: &Module, grey_index: usize) -> Vec<(u32, u32)> {
+    let mut uses = Vec::new();
     let code_section = module.code_section().unwrap();
     let codes = Vec::from(code_section.bodies());
     // If the instruction Call(grey_index) exists in the body of the function, that is a dangerous function.
     let this_call = parity_wasm::elements::Instruction::Call(grey_index as u32);
     for (func_index, func_body) in codes.iter().enumerate() {
         for (instruction_index, instruction) in func_body.code().elements().iter().enumerate() {
-            if instruction == &this_call {
-                return Some((func_index as u32, instruction_index as u32))
+            if instruction == &this_call && is_syscall(module, func_index as u32) {
+                uses.push((func_index as u32, instruction_index as u32));
             }
         }
     }
-    None
+    uses
+}
+
+// Find the function index of an import
+fn find_import(module: &Module, mod_name: &str, field_name: &str) -> Option<u32> {
+    let imports = module.import_section().unwrap().entries();
+    for (i,import) in imports.iter().enumerate() {
+        if import.module() == mod_name && import.field() == field_name {
+            return Some(i as u32);
+        }
+    }
+    return None;
+}
+
+fn is_syscall(module: &Module, function_index: u32) -> bool {
+
+    let function_section = module.function_section().unwrap();
+    let functions = Vec::from(function_section.entries());
+    let function = functions.get(function_index as usize).unwrap();
+    let type_index = function.type_ref();
+
+    let type_section = module.type_section().unwrap();
+    let types = Vec::from(type_section.types());
+    let this_type = types.get(type_index as usize).unwrap();
+
+    let code_section = module.code_section().unwrap();
+    let codes = Vec::from(code_section.bodies());
+    let code = codes.get(function_index as usize).unwrap();
+    let instructions = Vec::from(code.code().elements());
+
+    // First we need to check that the instructions are correct, that is:
+    //   0. call $a
+    //   1. call $b
+    //   2. get_local 0
+    //   3. get_local 1
+    //   4. get_local 2
+    //   5. get_local 3
+    //   6. call $c
+    // $a, $b, and $c will be used later.
+    // First we simply check the length
+    if instructions.len() != 8 {
+        println!("wrong number of instructions");
+        return false;
+    }
+    //   0. call gasleft
+    if let Instruction::Call(f_ind) = instructions[0] {
+        // Check that f_ind is the function index of "gasleft"
+        let gasleft_index = find_import(module, "env", "gasleft");
+        if Some(f_ind) != gasleft_index {
+            println!("not gasleft");
+            return false;
+        }
+    } else {
+        println!("not call1");
+        return false;
+    }
+    //   1. call sender
+    if let Instruction::Call(f_ind) = instructions[1] {
+        // Check that f_ind is the function index of "sender"
+        let sender_index = find_import(module, "env", "sender");
+        if Some(f_ind) != sender_index {
+            println!("not sender");
+            return false;
+        }
+    } else {
+        println!("not call2");
+        return false;
+    }
+    //   2. get_local 0
+    if let Instruction::GetLocal(0) = instructions[2] {
+    } else {
+        println!("not get_local 0");
+        return false;
+    }
+    //   3. get_local 1
+    if let Instruction::GetLocal(1) = instructions[3] {
+    } else {
+        println!("not get_local 1");
+        return false;
+    }
+    //   4. get_local 2
+    if let Instruction::GetLocal(2) = instructions[4] {
+    } else {
+        println!("not get_local 2");
+        return false;
+    }
+    //   5. get_local 3
+    if let Instruction::GetLocal(3) = instructions[5] {
+    } else {
+        println!("not get_local 3");
+        return false;
+    }
+
+    //   6. call dcall
+    if let Instruction::Call(f_ind) = instructions[6] {
+        // Check that f_ind is the function index of "dcall"
+        let dcall_index = find_import(module, "env", "dcall");
+        if Some(f_ind) != dcall_index {
+            println!("not dcall");
+            return false;
+        }
+    } else {
+        println!("not call3");
+        return false;
+    }
+    //   7. END
+    if let Instruction::End = instructions[7] {
+    } else {
+        println!("not end");
+        return false;
+    }
+
+    // Check that no locals are used
+    if code.locals().len() > 0 {
+        println!("locals used");
+        return false;
+    }
+    // Check that the type signature is correct
+    if let parity_wasm::elements::Type::Function(f_type) = this_type {
+        if f_type.return_type() != Some(ValueType::I32) {
+            println!("incorrect return type");
+            return false;
+        }
+        if Vec::from(f_type.params()) != vec![ ValueType::I32, ValueType::I32, ValueType::I32, ValueType::I32] {
+            println!("incorrect params");
+            return false;
+        }
+        if f_type.form() != 0x60 {
+            println!("incorrect form");
+            return false;
+        }
+    } else {
+        println!("not function type");
+        return false;
+    }
+
+    true
 }
