@@ -1,6 +1,0 @@
-[package]
-description = "Cap9 Ewasm Procedure Validator"
-name = "ewasm-validator"
-version = "0.1.0"
-authors = ["Daohub Inc <info@daohub.io>"]
-edition = "2018"

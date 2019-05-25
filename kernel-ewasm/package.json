@@ -4,11 +4,13 @@
   "description": "## Development",
   "main": "index.js",
   "scripts": {
-    "deploy": "node script/deploy.js"
+    "deploy": "node script/deploy.js",
+    "test": "mocha tests/**/**.js"
   },
   "author": "",
   "license": "ISC",
-  "dev-dependencies": {
-    "web3": "^1.0.0-beta.54"
+  "devDependencies": {
+    "web3": "^1.0.0-beta.55",
+    "mocha": "6.1.4"
   }
 }
