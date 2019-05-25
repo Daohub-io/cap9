@@ -12,6 +12,11 @@ pwasm-ethereum = "0.8"
 pwasm-abi = "0.2"
 pwasm-abi-derive = "0.2"
 lazy_static = { version = "1.2.0", features = ["spin_no_std"] }
+parity-wasm = "0.35"
+validator = { path = "./validator" }
+
+[dev-dependencies]
+wabt = "0.7.1"
 
 [dev-dependencies.pwasm-test]
 git = "https://github.com/paritytech/pwasm-test"

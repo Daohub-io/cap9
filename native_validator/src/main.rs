@@ -5,7 +5,7 @@ use parity_wasm::elements::Instruction;
 use parity_wasm::elements::{ValueType};
 use std::fs::File;
 use std::io::Read;
-use native_validator::*;
+use validator::*;
 
 fn main() {
 
@@ -14,7 +14,7 @@ fn main() {
     let mut buffer = Vec::new();
     // read the whole file
     f.read_to_end(&mut buffer).expect("read file");
-    let module: Module = parity_wasm::deserialize_buffer(buffer.as_slice()).expect("desrialise wasm");
+    let module: Module = parity_wasm::deserialize_buffer(buffer.as_slice()).expect("deserialise wasm");
     assert!(module.code_section().is_some());
 
     // We have now located the bad imports, but this does not establish if they

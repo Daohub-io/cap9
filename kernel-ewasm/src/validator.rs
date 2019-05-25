@@ -6,6 +6,8 @@ extern crate pwasm_abi_derive;
 use pwasm_abi::types::*;
 use pwasm_abi_derive::eth_abi;
 
+use validator::*;
+
 pub fn check_contract(bytecode: &[u8]) -> bool {
     false
 }
