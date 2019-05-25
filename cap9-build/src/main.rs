@@ -1,8 +1,8 @@
 extern crate parity_wasm;
 extern crate pwasm_utils;
 
-use parity_wasm::elements::{ImportEntry, Module};
-use clap::{Arg, App, SubCommand};
+use parity_wasm::elements::{Module};
+use clap::{Arg, App};
 use parity_wasm::elements::Instruction;
 
 fn main() {
@@ -76,39 +76,16 @@ fn main() {
             // Search though the code of each function, if we encounter a
             // Call(syscall_index), replace it with Call(added_syscall_index).
             // TODO: investigate the use of CallIndirect
-            for mut f in new_module.code_section_mut().unwrap().bodies_mut().iter_mut() {
-                for (i, mut instruction) in f.code_mut().elements_mut().iter_mut().enumerate() {
-                    if (instruction == &mut Instruction::Call(syscall_index)) {
-                        println!("replacing {} with {}",syscall_index,added_syscall_index);
-                        instruction = &mut Instruction::Call(added_syscall_index as u32);
-                        // f.code_mut().elements_mut()[i] = Instruction::Call(added_syscall_index as u32);
-                    }
-                }
-            }
-            for mut f in new_module.code_section_mut().unwrap().bodies_mut().iter_mut() {
+            for f in new_module.code_section_mut().unwrap().bodies_mut().iter_mut() {
                 for i in 0..f.code().elements().len() {
-                    println!("i: {} len: {} len_mut: {} range: {:?}",i,f.code().elements().len(),f.code_mut().elements_mut().len(),0..f.code().elements().len());
                     let instruction = &f.code().elements()[i];
-                    if (instruction == &Instruction::Call(syscall_index)) {
-                        println!("replacing {} with {}",syscall_index,added_syscall_index);
-                        // TODO: this line breaks the future optmization pass
+                    if instruction == &Instruction::Call(syscall_index) {
                         f.code_mut().elements_mut()[i] = Instruction::Call(added_syscall_index as u32);
-                        // f.code_mut().elements_mut()[i] = Instruction::Call(syscall_index as u32);
-                    }
-                }
-            }
-            for mut f in new_module.code_section_mut().unwrap().bodies_mut().iter_mut() {
-                for (i, mut instruction) in f.code_mut().elements_mut().iter_mut().enumerate() {
-                    if (instruction == &mut Instruction::Call(syscall_index)) {
-                        println!("replacing {} with {}",syscall_index,added_syscall_index);
-                        instruction = &mut Instruction::Call(added_syscall_index as u32);
-                        // f.code_mut().elements_mut()[i] = Instruction::Call(added_syscall_index as u32);
                     }
                 }
             }
         }
     }
-    println!("Done");
 
     // Next we want to delete dummy_syscall if it exists. First we find it among
     // the exports (if it doesn't exist we don't need to do anything). We take
@@ -125,9 +102,7 @@ fn main() {
     //    can't use the same remove procedure without screwing up the internal
     //    references, so we will just run the parity optmizer again for now to
     //    let it deal with that.
-    println!("Before optimization");
-    pwasm_utils::optimize(&mut new_module, vec!["call"]);
-    println!("Done optimization");
+    pwasm_utils::optimize(&mut new_module, vec!["call"]).unwrap();
 
     parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
 }
