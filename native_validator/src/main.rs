@@ -47,7 +47,7 @@ fn main() {
 ///  * Whitelisted: Functions which can be run with no state effects and we
 ///      don't care about them. Examples include getting addresses, returning,
 ///      reverting etc.
-///  * Greylisted: Functions that _do_ perform dangerous operations, by that we
+///  * Greylisted: Functions that _do_ perform dangerous operations, but that we
 ///      need for the operation of syscalls etc. These calls need to be
 ///      surrounded by the correct protections. These are permitted to be
 ///      imported, but must be checked for safety.
@@ -183,7 +183,7 @@ fn check_grey(module: &Module, grey_index: usize) -> Vec<(u32, u32)> {
     let this_call = parity_wasm::elements::Instruction::Call(grey_index as u32);
     for (func_index, func_body) in codes.iter().enumerate() {
         for (instruction_index, instruction) in func_body.code().elements().iter().enumerate() {
-            if instruction == &this_call && is_syscall(module, func_index as u32) {
+            if instruction == &this_call && !is_syscall(module, func_index as u32) {
                 uses.push((func_index as u32, instruction_index as u32));
             }
         }
