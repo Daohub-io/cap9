@@ -5,10 +5,10 @@ const http = require('http')
 const assert = require('assert')
 
 // Get BuildPath
-const BUILD_PATH = path.resolve(process.env.PWD, './build')
+const BUILD_PATH = path.resolve(process.cwd(), './build')
 
 // Get Dev Chain Config
-const CHAIN_CONFIG = require(path.resolve(process.env.PWD, './wasm-dev-chain.json'));
+const CHAIN_CONFIG = require(path.resolve(process.cwd(), './wasm-dev-chain.json'));
 
 // Web3 Config
 const WEB3_OPTIONS = {
