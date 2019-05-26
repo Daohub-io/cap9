@@ -64,11 +64,6 @@ jobs:
       #       curl -sL https://deb.nodesource.com/setup_9.x | sudo bash -
       #       sudo apt-get -y install nodejs
             # sudo npm install -g ganache-cli
-      # - run:
-      #     name: Seupt SolC
-      #     command: |
-      #       curl -sL https://github.com/ethereum/solidity/releases/download/v0.4.25/solc-static-linux -o solc
-      #       chmod 755 solc
       - run:
           name: Install Parity
           command: |
