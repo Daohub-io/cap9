@@ -10,6 +10,7 @@ pub fn check_contract(bytecode: &[u8]) -> bool {
     false
 }
 
+#[cfg(test)]
 pub mod contract {
     use super::*;
 
@@ -45,7 +46,7 @@ mod tests {
     fn should_reject_invalid_address() {
         let mut contract = contract::ValidatorContract {};
         let owner_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
-        let invalid_address = Address::from_str("0").unwrap();
+        let invalid_address = Address::from_str("db6fd484cfa46eeeb73c71edee823e4812f9e2e1").unwrap();
 
         // Here we're creating an External context using ExternalBuilder and set the `sender` to the `owner_address`
         // so `pwasm_ethereum::sender()` in TokenInterface::constructor() will return that `owner_address`
