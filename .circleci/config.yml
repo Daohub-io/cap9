@@ -74,10 +74,11 @@ jobs:
           command: |
             # we need to run parity once to set up the accounts and keys
             # this only needs to be active for a few seconds (hence timeout)
+            ./parity  --config dev --chain ./wasm-dev-chain.json db kill
             timeout 5 ./parity --config dev || true
             # We then run parity properly, now unlocking the previously setup
             # account
-            ./parity --config dev --force-sealing --reseal-min-period 2000 --reseal-max-period 10000 --unlock 0x00a329c0648769a73afac7f9381e08fb43dbea72 --password empty.txt
+            ./parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
           background: true
       - run:
           name: Wait for Parity startup
