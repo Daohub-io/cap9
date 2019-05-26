@@ -89,7 +89,7 @@ jobs:
           command: |
             cd kernel-ewasm && ./build.sh
       - save_cache:
-          key: deps3-{{ .Branch }}-cargo-{{ checksum "Cargo.lock" }}
+          key: deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
       - run:
