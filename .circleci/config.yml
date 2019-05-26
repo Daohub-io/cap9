@@ -53,17 +53,8 @@ jobs:
       - restore_cache:
           keys:
             - deps3-{{ .Branch }}-{{ .Revision }}
-            - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            # - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
             - deps3-{{ .Branch }}-
-      # - run:
-      #     name: Setup
-      #     command: |
-      #       sudo apt-get -y install gcc
-      #       sudo apt-get -y install libgmp3-dev
-      #       stack setup --no-terminal
-      #       curl -sL https://deb.nodesource.com/setup_9.x | sudo bash -
-      #       sudo apt-get -y install nodejs
-            # sudo npm install -g ganache-cli
       - run:
           name: Install Parity
           command: |
@@ -75,7 +66,6 @@ jobs:
             cd kernel-ewasm
             # we need to run parity once to set up the accounts and keys
             # this only needs to be active for a few seconds (hence timeout)
-            # ../parity  --config dev --chain ./wasm-dev-chain.json db kill
             timeout 5 ./parity --config dev || true
             # We then run parity properly, now unlocking the previously setup
             # account
@@ -89,7 +79,7 @@ jobs:
           command: |
             cd kernel-ewasm && ./build.sh
       - save_cache:
-          key: deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps3-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
       - run:
