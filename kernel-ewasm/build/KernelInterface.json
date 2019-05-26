@@ -1,0 +1,59 @@
+[
+  {
+    "type": "function",
+    "name": "entryProcedure",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "string"
+      }
+    ],
+    "constant": true,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "currentProcedure",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "string"
+      }
+    ],
+    "constant": true,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "getProcedureByKey",
+    "inputs": [
+      {
+        "name": "_proc_key",
+        "type": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "address"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_entry_proc_key",
+        "type": "string"
+      },
+      {
+        "name": "_entry_proc_address",
+        "type": "address"
+      }
+    ]
+  }
+]

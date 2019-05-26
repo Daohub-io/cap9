@@ -77,8 +77,8 @@
     "type": "constructor",
     "inputs": [
       {
-        "name": "_total_supply",
-        "type": "uint256"
+        "name": "_entryProcedure",
+        "type": "address"
       }
     ]
   }
