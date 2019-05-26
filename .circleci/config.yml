@@ -72,6 +72,7 @@ jobs:
       - run:
           name: Start local Ethereum network
           command: |
+            cd kernel-ewasm
             # we need to run parity once to set up the accounts and keys
             # this only needs to be active for a few seconds (hence timeout)
             ./parity  --config dev --chain ./wasm-dev-chain.json db kill
