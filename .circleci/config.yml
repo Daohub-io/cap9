@@ -86,7 +86,7 @@ jobs:
       - run:
           name: Build Rust Component
           command: |
-            ./build.sh
+            cd kernel-ewasm && ./build.sh
       - save_cache:
           key: deps3-{{ .Branch }}-cargo-{{ checksum "Cargo.lock" }}
           paths:
