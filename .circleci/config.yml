@@ -75,7 +75,7 @@ jobs:
             cd kernel-ewasm
             # we need to run parity once to set up the accounts and keys
             # this only needs to be active for a few seconds (hence timeout)
-            ../parity  --config dev --chain ./wasm-dev-chain.json db kill
+            # ../parity  --config dev --chain ./wasm-dev-chain.json db kill
             timeout 5 ./parity --config dev || true
             # We then run parity properly, now unlocking the previously setup
             # account
