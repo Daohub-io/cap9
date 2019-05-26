@@ -4,41 +4,86 @@
 #
 version: 2
 jobs:
+  # build-evm:
+  #   docker:
+  #     # specify the version you desire here
+  #     - image: circleci/node:9
+
+  #     # Specify service dependencies here if necessary
+  #     # CircleCI maintains a library of pre-built images
+  #     # documented at https://circleci.com/docs/2.0/circleci-images/
+  #     # - image: circleci/mongo:3.4.4
+
+  #   working_directory: ~/repo
+
+  #   steps:
+  #     - checkout
+
+  #     # Download and cache dependencies
+  #     - restore_cache:
+  #         keys:
+  #         - v1-dependencies-{{ checksum "evm1/package.json" }}
+  #         # fallback to using the latest cache if no exact match is found
+  #         - v1-dependencies-
+
+  #     - run: cd evm1 && npm install
+  #     - run: cd evm1 && chmod +x ./scripts/test.sh
+
+  #     - save_cache:
+  #         paths:
+  #           - evm1/node_modules
+  #         key: v1-dependencies-{{ checksum "evm1/package.json" }}
+
+  #     # run tests!
+  #     - run:
+  #         name: Running Local EVM Instance
+  #         command: ./evm1/node_modules/.bin/ganache-cli
+  #         background: true
+  #     - run: cd evm1 && ./node_modules/.bin/truffle test
   build:
     docker:
-      # specify the version you desire here
-      - image: circleci/node:9
-      
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mongo:3.4.4
-
-    working_directory: ~/repo
-
+      - image: ccistaging/rust:1-node
+    working_directory: /tmp/my-project
     steps:
       - checkout
-
-      # Download and cache dependencies
+      - run:
+          name: Get Submodules
+          command: |
+            git submodule update --init
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "evm1/package.json" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
-      - run: cd evm1 && npm install
-      - run: cd evm1 && chmod +x ./scripts/test.sh
-
-      - save_cache:
-          paths:
-            - evm1/node_modules
-          key: v1-dependencies-{{ checksum "evm1/package.json" }}
-        
-      # run tests!
-      - run: 
-          name: Running Local EVM Instance
-          command: ./evm1/node_modules/.bin/ganache-cli
+            - deps3-{{ .Branch }}-{{ .Revision }}
+            # - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps3-{{ .Branch }}-
+      - run:
+          name: Install Parity
+          command: |
+            curl -sL https://releases.parity.io/ethereum/v2.4.6/x86_64-unknown-linux-gnu/parity -o parity
+            chmod 755 parity
+      - run:
+          name: Start local Ethereum network
+          command: |
+            cd kernel-ewasm
+            # we need to run parity once to set up the accounts and keys
+            # this only needs to be active for a few seconds (hence timeout)
+            timeout 5 ./parity --config dev || true
+            # We then run parity properly, now unlocking the previously setup
+            # account
+            ../parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
           background: true
-      - run: cd evm1 && ./node_modules/.bin/truffle test
-
-
+      - run:
+          name: Wait for Parity startup
+          command: sleep 10
+      - run:
+          name: Build Rust Component
+          command: |
+            cd kernel-ewasm && ./build.sh
+      - save_cache:
+          key: deps3-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+      - run:
+          name: Test Rust Component
+          command: |
+            cd kernel-ewasm && npm install
+            npm run test
