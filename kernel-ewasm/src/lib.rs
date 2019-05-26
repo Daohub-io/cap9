@@ -8,6 +8,7 @@ extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
 
 pub mod validator;
+pub mod proc_table;
 
 type ProcedureKey = [u8; 24];
 
@@ -71,42 +72,6 @@ pub mod token {
             unimplemented!()
         }
 
-        // fn totalSupply(&mut self) -> U256 {
-        //     U256::from_big_endian(&pwasm_ethereum::read(&TOTAL_SUPPLY_KEY))
-        // }
-
-        // fn balanceOf(&mut self, owner: Address) -> U256 {
-        //     read_balance_of(&owner)
-        // }
-
-        // fn transfer(&mut self, to: Address, amount: U256) -> bool {
-        //     let sender = pwasm_ethereum::sender();
-        //     let senderBalance = read_balance_of(&sender);
-        //     let recipientBalance = read_balance_of(&to);
-        //     if amount == 0.into() || senderBalance < amount || to == sender {
-        //         false
-        //     } else {
-        //         let new_sender_balance = senderBalance - amount;
-        //         let new_recipient_balance = recipientBalance + amount;
-        //         pwasm_ethereum::write(&balance_key(&sender), &new_sender_balance.into());
-        //         pwasm_ethereum::write(&balance_key(&to), &new_recipient_balance.into());
-        //         self.Transfer(sender, to, amount);
-        //         true
-        //     }
-        // }
-    }
-
-    // Reads balance by address
-    fn read_balance_of(owner: &Address) -> U256 {
-        U256::from_big_endian(&pwasm_ethereum::read(&balance_key(owner)))
-    }
-
-    // Generates a balance key for some address.
-    // Used to map balances with their owners.
-    fn balance_key(address: &Address) -> H256 {
-        let mut key = H256::from(*address);
-        key.as_bytes_mut()[0] = 1; // just a naive "namespace";
-        key
     }
 }
 // Declares the dispatch and dispatch_ctor methods
@@ -153,18 +118,5 @@ mod tests {
         assert_eq!(contract.entryProcedure(), entry_proc_key);
         assert_eq!(contract.currentProcedure(), unsafe { String::from_utf8_unchecked([0; 32].to_vec()) } );
     }
-
-    // #[test]
-    // fn should_not_transfer_to_self() {
-    //     let mut contract = token::KernelContract{};
-    //     let owner_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
-    //     ext_reset(|e| e.sender(owner_address.clone()));
-    //     let total_supply = 10000.into();
-    //     contract.constructor(total_supply);
-    //     assert_eq!(contract.balanceOf(owner_address), total_supply);
-    //     assert_eq!(contract.transfer(owner_address, 1000.into()), false);
-    //     assert_eq!(contract.balanceOf(owner_address), 10000.into());
-    //     assert_eq!(ext_get().logs().len(), 0);
-    // }
 
 }
