@@ -156,6 +156,16 @@ fn remove_proc(key: ProcedureKey) -> Result<(), ProcRemoveError> {
     unimplemented!()
 }
 
+fn contains(key: ProcedureKey) -> bool {
+    // Get Procedure Storage
+    let proc_pointer = ProcPointer::from_key(key);
+
+    // Check Procedure Index
+    // If Index Is Greater than zero the procedure already exists
+    let proc_index = pwasm_ethereum::read(&H256(proc_pointer.get_index_ptr()));
+    proc_index[31] != 0
+}
+
 /// Get Procedure Address By Key
 fn get_proc_addr(key: ProcedureKey) -> Option<Address> {
     // Get Procedure Storage
@@ -270,7 +280,15 @@ pub mod contract {
         }
 
         fn contains(&mut self, key: String) -> bool {
-            unimplemented!();
+            let raw_key = {
+                let mut byte_key = key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8;24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            contains(raw_key)
         }
 
         fn get_proc_list_len(&mut self) -> U256 {
@@ -364,6 +382,7 @@ mod tests {
         let new_address = contract.get_proc_addr(String::from("FOO"));
         let new_index = contract.get_proc_index(String::from("FOO"));
         let new_len = contract.get_proc_list_len();
+        let hasFoo = contract.contains(String::from("FOO"));
 
         // Get Id and Truncate
         let mut new_proc_id = contract.get_proc_id(new_index);
@@ -373,7 +392,8 @@ mod tests {
         assert_ne!(new_len, U256::zero());
         assert_eq!(new_len.as_u32(), 1);
         assert_eq!(new_len, new_index);
-        assert_eq!(new_proc_id, String::from("FOO"))
+        assert_eq!(new_proc_id, String::from("FOO"));
+        assert!(hasFoo);
     }
 
     #[test]
@@ -395,17 +415,6 @@ mod tests {
 
         assert_ne!(removed_addr, H160::zero());
         assert_eq!(old_len, U256::zero());
-    }
-
-    #[test]
-    fn should_check_if_proc_id_is_contained() {
-        let mut contract = contract::ProcedureTableContract {};
-        let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
-
-        contract.insert_proc(String::from("FOO"), proc_address);
-
-        let hasFoo = contract.contains(String::from("FOO"));
-        assert!(hasFoo);
     }
 
     #[test]
