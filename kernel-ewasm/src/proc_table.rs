@@ -29,6 +29,7 @@ const KERNEL_CURRENT_ENTRY_PTR: [u8; 32] = [
 ];
 
 type ProcedureKey = [u8; 24];
+type ProcedureIndex = [u8; 24];
 
 // struct CapList(pub Vec<u8>);
 
@@ -48,14 +49,6 @@ type ProcedureKey = [u8; 24];
 
 //     const IS_FIXED: bool = false;
 // }
-
-/// Error or Procedure Insertion
-enum ProcInsertError {
-    /// Procedure Id Already Used
-    UsedId = 2,
-    /// Procedure List length is greater than 255
-    ListFull = 3,
-}
 
 struct ProcPointer(ProcedureKey);
 
@@ -86,12 +79,20 @@ impl ProcPointer {
         pointer
     }
 
-    fn get_list_ptr(&self, index: U256) -> [u8; 32] {
+    fn get_list_ptr(index: U256) -> [u8; 32] {
         let mut result: [u8; 32] = KERNEL_PROC_LIST_PTR;
         let slice: [u8; 32] = index.into();
         result[5..29].copy_from_slice(&slice[8..]);
         result
     }
+}
+
+/// Error or Procedure Insertion
+enum ProcInsertError {
+    /// Procedure Id Already Used
+    UsedId = 2,
+    /// Procedure List length is greater than 255
+    ListFull = 3,
 }
 
 /// Inserts Procedure into procedure table
@@ -129,7 +130,7 @@ fn insert_proc(key: ProcedureKey, address: Address) -> Result<(), ProcInsertErro
     key_input[8..].copy_from_slice(&key);
 
     pwasm_ethereum::write(
-        &H256(proc_pointer.get_list_ptr(new_proc_index)),
+        &H256(ProcPointer::get_list_ptr(new_proc_index)),
         &key_input,
     );
 
@@ -144,6 +145,17 @@ fn insert_proc(key: ProcedureKey, address: Address) -> Result<(), ProcInsertErro
     Ok(())
 }
 
+/// Error on Procedure Removal
+enum ProcRemoveError {
+    /// Procedure Id is not Used
+    InvalidId = 2,
+    /// Procedure is the Entry Procedure which cannot be removed
+    EntryProc = 3,
+}
+fn remove_proc(key: ProcedureKey) -> Result<(), ProcRemoveError> {
+    unimplemented!()
+}
+
 /// Get Procedure Address By Key
 fn get_proc_addr(key: ProcedureKey) -> Option<Address> {
     // Get Procedure Storage
@@ -155,6 +167,41 @@ fn get_proc_addr(key: ProcedureKey) -> Option<Address> {
         None
     } else {
         Some(H256(proc_addr).into())
+    }
+}
+
+/// Get Procedure Index By Key
+fn get_proc_index(key: ProcedureKey) -> Option<ProcedureIndex> {
+    // Get Procedure Storage
+    let proc_pointer = ProcPointer::from_key(key);
+    let proc_index = pwasm_ethereum::read(&H256(proc_pointer.get_index_ptr()));
+
+    if proc_index == [0; 32] {
+        None
+    } else {
+        let mut result = [0; 24];
+        result.copy_from_slice(&proc_index[8..]);
+        Some(result)
+    }
+}
+
+/// Get Procedure Key By Index
+fn get_proc_id(index: ProcedureIndex) -> Option<ProcedureKey> {
+
+    let index = {
+        let mut output = [0u8; 32];
+        output[8..].copy_from_slice(&index);
+        U256::from(output)
+    };
+
+    let proc_id = pwasm_ethereum::read(&H256(ProcPointer::get_list_ptr(index)));
+
+    if proc_id == [0; 32] {
+        None
+    } else {
+        let mut result = [0; 24];
+        result.copy_from_slice(&proc_id[8..]);
+        Some(result)
     }
 }
 
@@ -173,11 +220,32 @@ pub mod contract {
         /// Insert Procedure By Key
         fn insert_proc(&mut self, key: String, address: Address) -> U256;
 
-        /// Get Procedure Address By Key
-        fn get_proc_addr(&mut self, key: String) -> Address;
+        /// Remove Procedure By Key
+        fn remove_proc(&mut self, key: String) -> bool;
+
+        /// Check if Procedure Exists By Key
+        fn contains(&mut self, key: String) -> bool;
 
         /// Get Procedure List Length
         fn get_proc_list_len(&mut self) -> U256;
+
+        /// Get Procedure Address By Key
+        fn get_proc_addr(&mut self, key: String) -> Address;
+
+        /// Get Procedure Index By Key
+        fn get_proc_index(&mut self, key: String) -> U256;
+
+        /// Get Procedure Key By Index
+        fn get_proc_id(&mut self, index: U256) -> String;
+
+        /// Get Procedure Cap List Length By Id and Type
+        fn get_proc_cap_list_len(&mut self, key: String, cap_type: U256) -> U256;
+
+        /// Get Procedure Capability by Id, Type and Index
+        fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<u8>;
+
+        /// Get Entry Procedure Id
+        fn get_entry_proc_id(&mut self) -> String;
     }
 
     pub struct ProcedureTableContract;
@@ -197,6 +265,18 @@ pub mod contract {
             }
         }
 
+        fn remove_proc(&mut self, key: String) -> bool {
+            unimplemented!();
+        }
+
+        fn contains(&mut self, key: String) -> bool {
+            unimplemented!();
+        }
+
+        fn get_proc_list_len(&mut self) -> U256 {
+            get_proc_list_len()
+        }
+
         fn get_proc_addr(&mut self, key: String) -> Address {
             let raw_key = {
                 let mut byte_key = key.as_bytes();
@@ -213,8 +293,49 @@ pub mod contract {
             }
         }
 
-        fn get_proc_list_len(&mut self) -> U256 {
-            get_proc_list_len()
+        fn get_proc_index(&mut self, key: String) -> U256 {
+            let raw_key = {
+                let mut byte_key = key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8;24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            if let Some(index) = get_proc_index(raw_key) {
+                let mut output = [0u8; 32];
+                output[8..].copy_from_slice(&index);
+                U256::from(output)
+            } else {
+                U256::zero()
+            }
+        }
+
+        fn get_proc_id(&mut self, index: U256) -> String {
+            let raw_index = {
+                let mut output = [0u8;24];
+                let temp: [u8; 32] = index.into();
+                output.copy_from_slice(&temp[8..]);
+                output
+            };
+
+            if let Some(id) = get_proc_id(raw_index) {
+                unsafe { String::from_utf8_unchecked(id.to_vec()) }
+            } else {
+                String::new()
+            }
+        }
+
+        fn get_proc_cap_list_len(&mut self, key: String, cap_type: U256) -> U256 {
+            unimplemented!()
+        }
+
+        fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<u8> {
+            unimplemented!()
+        }
+
+        fn get_entry_proc_id(&mut self) -> String {
+            unimplemented!()
         }
 
     }
@@ -241,11 +362,65 @@ mod tests {
         contract.insert_proc(String::from("FOO"), proc_address);
 
         let new_address = contract.get_proc_addr(String::from("FOO"));
+        let new_index = contract.get_proc_index(String::from("FOO"));
+        let new_len = contract.get_proc_list_len();
+
+        // Get Id and Truncate
+        let mut new_proc_id = contract.get_proc_id(new_index);
+        new_proc_id.truncate(3);
+
+        assert_eq!(proc_address, new_address);
+        assert_ne!(new_len, U256::zero());
+        assert_eq!(new_len.as_u32(), 1);
+        assert_eq!(new_len, new_index);
+        assert_eq!(new_proc_id, String::from("FOO"))
+    }
+
+    #[test]
+    fn should_remove_proc_by_key() {
+        let mut contract = contract::ProcedureTableContract {};
+        let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
+
+        contract.insert_proc(String::from("FOO"), proc_address);
+        let new_address = contract.get_proc_addr(String::from("FOO"));
         let new_len = contract.get_proc_list_len();
 
         assert_eq!(proc_address, new_address);
         assert_ne!(new_len, U256::zero());
         assert_eq!(new_len.as_u32(), 1);
+
+        contract.remove_proc(String::from("FOO"));
+        let removed_addr = contract.get_proc_addr(String::from("FOO"));
+        let old_len = contract.get_proc_list_len();
+
+        assert_ne!(removed_addr, H160::zero());
+        assert_eq!(old_len, U256::zero());
+    }
+
+    #[test]
+    fn should_check_if_proc_id_is_contained() {
+        let mut contract = contract::ProcedureTableContract {};
+        let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
+
+        contract.insert_proc(String::from("FOO"), proc_address);
+
+        let hasFoo = contract.contains(String::from("FOO"));
+        assert!(hasFoo);
+    }
+
+    #[test]
+    fn should_get_proc_cap_list_len() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn should_get_proc_cap() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn should_get_entry_proc_id() {
+        unimplemented!()
     }
 
 }
