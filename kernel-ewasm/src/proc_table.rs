@@ -3,8 +3,8 @@ extern crate pwasm_abi_derive;
 extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
-use pwasm_abi::types::*;
 use pwasm_abi::eth;
+use pwasm_abi::types::*;
 use pwasm_abi_derive::eth_abi;
 
 const KERNEL_PROC_HEAP_PTR: [u8; 32] = [
@@ -97,7 +97,6 @@ enum ProcInsertError {
 
 /// Inserts Procedure into procedure table
 fn insert_proc(key: ProcedureKey, address: Address) -> Result<(), ProcInsertError> {
-
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
 
@@ -129,15 +128,12 @@ fn insert_proc(key: ProcedureKey, address: Address) -> Result<(), ProcInsertErro
     let mut key_input = [0; 32];
     key_input[8..].copy_from_slice(&key);
 
-    pwasm_ethereum::write(
-        &H256(ProcPointer::get_list_ptr(new_proc_index)),
-        &key_input,
-    );
+    pwasm_ethereum::write(&H256(ProcPointer::get_list_ptr(new_proc_index)), &key_input);
 
     // Update Proc List Len
     pwasm_ethereum::write(&H256(KERNEL_PROC_LIST_PTR), &new_proc_index.into());
 
-    // // Don't Store CapList For now
+    // TODO: Store CapList
     // if cap_list.0.len() > 0 {
     //     unimplemented!();
     // }
@@ -153,7 +149,55 @@ enum ProcRemoveError {
     EntryProc = 3,
 }
 fn remove_proc(key: ProcedureKey) -> Result<(), ProcRemoveError> {
-    unimplemented!()
+    // Get Procedure Storage
+    let proc_pointer = ProcPointer::from_key(key);
+
+    // Check Procedure Index
+    // If Index Is Greater than zero the procedure already exists
+    let proc_index = pwasm_ethereum::read(&H256(proc_pointer.get_index_ptr()));
+    if proc_index[31] == 0 {
+        return Err(ProcRemoveError::InvalidId);
+    }
+
+    // Check Procedure is not the Entry Procedure
+    let entry_id = get_entry_proc_id();
+    if entry_id == key {
+        return Err(ProcRemoveError::EntryProc);
+    }
+
+    // Check Procedure List Length, it must be greater than 1;
+    let proc_list_len = pwasm_ethereum::read(&H256(KERNEL_PROC_LIST_PTR));
+    assert!(U256::from(proc_list_len) >= U256::one());
+
+    // If Removed Procedure Is not the last
+    // Overwrite the removed procedure key in the list with the last on
+    if proc_index != proc_list_len {
+        let last_proc_id =
+            pwasm_ethereum::read(&H256(ProcPointer::get_list_ptr(U256::from(proc_list_len))));
+        pwasm_ethereum::write(
+            &H256(ProcPointer::get_list_ptr(U256::from(proc_index))),
+            &last_proc_id,
+        );
+    }
+
+    // Decrement Proc List Len
+    let new_proc_index = U256::from(proc_list_len) - 1;
+    pwasm_ethereum::write(&H256(KERNEL_PROC_LIST_PTR), &new_proc_index.into());
+
+    // Remove Last Proc Id From List
+    pwasm_ethereum::write(
+        &H256(ProcPointer::get_list_ptr(U256::from(proc_list_len))),
+        &[0; 32],
+    );
+
+    // Remove Address
+    pwasm_ethereum::write(&H256(proc_pointer.get_addr_ptr()), &[0; 32]);
+
+    // Remove Index
+    pwasm_ethereum::write(&H256(proc_pointer.get_index_ptr()), &[0; 32]);
+
+    // Todo: Remove CapList
+    Ok(())
 }
 
 fn contains(key: ProcedureKey) -> bool {
@@ -197,7 +241,6 @@ fn get_proc_index(key: ProcedureKey) -> Option<ProcedureIndex> {
 
 /// Get Procedure Key By Index
 fn get_proc_id(index: ProcedureIndex) -> Option<ProcedureKey> {
-
     let index = {
         let mut output = [0u8; 32];
         output[8..].copy_from_slice(&index);
@@ -221,6 +264,13 @@ fn get_proc_list_len() -> U256 {
     U256::from(proc_list_len)
 }
 
+fn get_entry_proc_id() -> ProcedureKey {
+    let proc_id = pwasm_ethereum::read(&H256(KERNEL_CURRENT_ENTRY_PTR));
+    let mut result = [0; 24];
+    result.copy_from_slice(&proc_id[8..]);
+    result
+}
+
 #[cfg(test)]
 pub mod contract {
     use super::*;
@@ -231,7 +281,7 @@ pub mod contract {
         fn insert_proc(&mut self, key: String, address: Address) -> U256;
 
         /// Remove Procedure By Key
-        fn remove_proc(&mut self, key: String) -> bool;
+        fn remove_proc(&mut self, key: String) -> U256;
 
         /// Check if Procedure Exists By Key
         fn contains(&mut self, key: String) -> bool;
@@ -265,7 +315,7 @@ pub mod contract {
             let raw_key = {
                 let mut byte_key = key.as_bytes();
                 let len = byte_key.len();
-                let mut output = [0u8;24];
+                let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
                 output
             };
@@ -275,15 +325,26 @@ pub mod contract {
             }
         }
 
-        fn remove_proc(&mut self, key: String) -> bool {
-            unimplemented!();
+        fn remove_proc(&mut self, key: String) -> U256 {
+            let raw_key = {
+                let mut byte_key = key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8; 24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            match remove_proc(raw_key) {
+                Ok(()) => U256::zero(),
+                Err(_) => U256::one(),
+            }
         }
 
         fn contains(&mut self, key: String) -> bool {
             let raw_key = {
                 let mut byte_key = key.as_bytes();
                 let len = byte_key.len();
-                let mut output = [0u8;24];
+                let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
                 output
             };
@@ -299,7 +360,7 @@ pub mod contract {
             let raw_key = {
                 let mut byte_key = key.as_bytes();
                 let len = byte_key.len();
-                let mut output = [0u8;24];
+                let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
                 output
             };
@@ -315,7 +376,7 @@ pub mod contract {
             let raw_key = {
                 let mut byte_key = key.as_bytes();
                 let len = byte_key.len();
-                let mut output = [0u8;24];
+                let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
                 output
             };
@@ -331,7 +392,7 @@ pub mod contract {
 
         fn get_proc_id(&mut self, index: U256) -> String {
             let raw_index = {
-                let mut output = [0u8;24];
+                let mut output = [0u8; 24];
                 let temp: [u8; 32] = index.into();
                 output.copy_from_slice(&temp[8..]);
                 output
@@ -355,7 +416,6 @@ pub mod contract {
         fn get_entry_proc_id(&mut self) -> String {
             unimplemented!()
         }
-
     }
 }
 
@@ -410,11 +470,16 @@ mod tests {
         assert_eq!(new_len.as_u32(), 1);
 
         contract.remove_proc(String::from("FOO"));
-        let removed_addr = contract.get_proc_addr(String::from("FOO"));
-        let old_len = contract.get_proc_list_len();
 
-        assert_ne!(removed_addr, H160::zero());
-        assert_eq!(old_len, U256::zero());
+        let removed_address = contract.get_proc_addr(String::from("FOO"));
+        let removed_index = contract.get_proc_index(String::from("FOO"));
+        let removed_len = contract.get_proc_list_len();
+        let hasFoo = contract.contains(String::from("FOO"));
+
+        assert_eq!(removed_address, H160::zero());
+        assert_eq!(removed_index, U256::zero());
+        assert_eq!(removed_len, U256::zero());
+        assert!(!hasFoo)
     }
 
     #[test]
