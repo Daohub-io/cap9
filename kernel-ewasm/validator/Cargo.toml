@@ -17,7 +17,8 @@ git = "https://github.com/paritytech/pwasm-test"
 default-features = false
 
 [features]
-std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
+default = ["std"]
+std = ["parity-wasm/std", "pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
 
 [lib]
 name = "validator"
