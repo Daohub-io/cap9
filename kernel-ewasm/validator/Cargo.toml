@@ -5,17 +5,20 @@ authors = ["Daohub Inc <info@daohub.io>"]
 edition = "2018"
 
 [dependencies]
-parity-wasm = "0.35"
-pwasm-std = "0.13"
-pwasm-ethereum = "0.8"
-# kernel-ewasm = { path = "../kernel-ewasm" }
+parity-wasm = { version = "0.35", default-features = false }
+pwasm-std = {version = "0.13", default-features = false}
+pwasm-ethereum = {version = "0.8", default-features = false}
 
 [dev-dependencies]
 wabt = "0.7.1"
 
 [dev-dependencies.pwasm-test]
 git = "https://github.com/paritytech/pwasm-test"
-# default-features = false
+default-features = false
 
 [features]
 std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
+
+[lib]
+name = "validator"
+crate-type = ["cdylib"]

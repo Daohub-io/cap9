@@ -115,7 +115,7 @@ pub fn deploy() {
 #[allow(non_snake_case)]
 mod tests {
     extern crate pwasm_test;
-    extern crate std;
+    // extern crate std;
     use super::*;
     use core::str::FromStr;
     use pwasm_abi::types::*;

@@ -1,4 +1,5 @@
-use pwasm_ethereum;
+#![no_std]
+
 use pwasm_std;
 use parity_wasm;
 
@@ -271,7 +272,7 @@ pub fn is_syscall(module: &Module, function_index: u32) -> bool {
 #[cfg(test)]
 mod tests {
     // extern crate pwasm_test;
-    use std;
+    // use std;
     use super::*;
     use wabt::wat2wasm;
     // use core::str::FromStr;
