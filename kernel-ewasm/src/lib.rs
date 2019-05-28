@@ -6,8 +6,21 @@ extern crate pwasm_std;
 extern crate pwasm_ethereum;
 extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
+extern crate validator;
 
-pub mod validator;
+use pwasm_abi::types::*;
+
+// pub mod validator;
+
+pub mod ext {
+    extern "C" {
+            pub fn extcodesize( address: *const u8) -> i32;
+    }
+}
+
+pub fn extcodesize(address: &Address) -> i32 {
+	unsafe { ext::extcodesize(address.as_ptr()) }
+}
 
 pub mod token {
     use pwasm_ethereum;
@@ -42,6 +55,9 @@ pub mod token {
         /// Event declaration
         #[event]
         fn Transfer(&mut self, indexed_from: Address, indexed_to: Address, _value: U256);
+        /// Check if Procedure Contract is Valid
+        fn check_contract(&mut self, _to: Address) -> bool;
+        fn get_code_size(&mut self, _to: Address) -> i32;
     }
 
     pub struct TokenContract;
@@ -79,6 +95,18 @@ pub mod token {
                 self.Transfer(sender, to, amount);
                 true
             }
+        }
+
+        fn check_contract(&mut self, _target: Address) -> bool {
+            if _target == H160::zero() {
+                false
+            } else {
+                true
+            }
+        }
+
+        fn get_code_size(&mut self, to: Address) -> i32 {
+            super::extcodesize(&to)
         }
     }
 

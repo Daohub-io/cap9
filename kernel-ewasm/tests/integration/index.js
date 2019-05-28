@@ -111,6 +111,7 @@ async function newKernelInstance() {
 describe('Kernel', function() {
 
     describe('constructor', function() {
+        this.timeout(20000);
         it('should have initial balance', async function() {
             let contract = await newKernelInstance();
             const accounts = await web3.eth.personal.getAccounts()
@@ -123,5 +124,38 @@ describe('Kernel', function() {
             // assert.strictEqual(web3.utils.hexToNumber(owner_balance), 9999800)
 
         })
+    })
+
+    describe('validator', function() {
+        this.timeout(20000);
+        let kernel;
+        before(async function () {
+            kernel = await newKernelInstance();
+
+        })
+        it('should return false when given the null address', async function() {
+        this.timeout(20000);
+        let rec_validation = await kernel.methods.check_contract('0x0000000000000000000000000000000000000000').call();
+            assert.strictEqual(rec_validation, false)
+        })
+        it('should return true when given a valid address', async function() {
+            const accounts = await web3.eth.personal.getAccounts()
+            assert(web3.utils.isAddress(accounts[0]), "The example should be a valid address")
+            let rec_validation = await kernel.methods.check_contract(accounts[0]).call();
+            assert.strictEqual(rec_validation, true)
+        })
+        it('should return the code size of the kernel', async function() {
+            const kernelAddress = kernel.options.address;
+            assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
+            let rec_validation = await kernel.methods.get_code_size(kernelAddress).call();
+            assert.strictEqual(typeof rec_validation, "number")
+            console.log(rec_validation)
+        })
+        // it('should return false when trying to validate the kernel itself', async function() {
+        //     const kernelAddress = kernel.options.address;
+        //     assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
+        //     let rec_validation = await kernel.methods.check_contract(kernelAddress).call();
+        //     assert.strictEqual(rec_validation, false)
+        // })
     })
 })
