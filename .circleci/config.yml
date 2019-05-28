@@ -58,7 +58,7 @@ jobs:
       - run:
           name: Install Parity
           command: |
-            sudo apt install -y gcc g++ pkg-config file make cmake gflags
+            sudo apt install -y gcc g++ pkg-config file make cmake
             cargo install --git https://github.com/Daohub-io/parity-ethereum.git --bin parity parity-ethereum
       - run:
           name: Start local Ethereum network
