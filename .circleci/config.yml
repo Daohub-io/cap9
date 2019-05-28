@@ -58,7 +58,7 @@ jobs:
       - run:
           name: Install Parity
           command: |
-            yum install -y cmake
+            apt install -y cmake
             cargo install --git https://github.com/Daohub-io/parity-ethereum.git --bin parity parity-ethereum
       - run:
           name: Start local Ethereum network
