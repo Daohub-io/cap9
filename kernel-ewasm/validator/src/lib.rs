@@ -1,6 +1,6 @@
-extern crate pwasm_ethereum;
-extern crate pwasm_std;
-extern crate parity_wasm;
+use pwasm_ethereum;
+use pwasm_std;
+use parity_wasm;
 
 use parity_wasm::elements::{ImportEntry, Module};
 use parity_wasm::elements::Instruction;
@@ -271,7 +271,7 @@ pub fn is_syscall(module: &Module, function_index: u32) -> bool {
 #[cfg(test)]
 mod tests {
     // extern crate pwasm_test;
-    extern crate std;
+    use std;
     use super::*;
     use wabt::wat2wasm;
     // use core::str::FromStr;
