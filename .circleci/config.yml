@@ -1,7 +1,3 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
 version: 2
 jobs:
   # build-evm:
@@ -107,6 +103,7 @@ jobs:
       # - run:
       #     name: Start local Ethereum network
       #     command: |
+      #       . ~/.profile
       #       cd kernel-ewasm
       #       # we need to run parity once to set up the accounts and keys
       #       # this only needs to be active for a few seconds (hence timeout)
@@ -121,6 +118,7 @@ jobs:
       # - run:
       #     name: Build Rust Component
       #     command: |
+      #       . ~/.profile
       #       cd kernel-ewasm && ./build.sh
       # - run:
       #     name: Test Rust Component
