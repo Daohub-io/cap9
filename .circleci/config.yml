@@ -100,7 +100,7 @@ jobs:
             - "~/.cargo"
             - "~/.rustup"
             - /tmp/parity-ethereum
-      - checkout
+      - checkout:
           path: cap9
       - run:
           name: Get Submodules
