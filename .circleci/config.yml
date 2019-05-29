@@ -1,7 +1,3 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
 version: 2
 jobs:
   # build-evm:
@@ -42,27 +38,83 @@ jobs:
   #     - run: cd evm1 && ./node_modules/.bin/truffle test
   build:
     docker:
-      - image: ccistaging/rust:1-node
+      - image: centos:latest
     working_directory: /tmp/my-project
     steps:
-      - checkout
-      - run:
-          name: Get Submodules
-          command: |
-            git submodule update --init
       - restore_cache:
           keys:
-            - deps3-{{ .Branch }}-{{ .Revision }}
-            # - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps3-{{ .Branch }}-
+            - deps6-{{ .Branch }}-{{ .Revision }}
+            # - deps6-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps6-{{ .Branch }}-
+            - deps6-
+      - run:
+          name: Install native build prequisites
+          command: |
+            yum -y update
+            yum install -y systemd-devel git make gcc-c++ gcc file binutils
+            curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
+            tar -xzf cmake.tar.gz
+            cp -r cmake-3.12.0-Linux-x86_64/* /usr/
+            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+            # only update cargo if it is not installed
+            if [ ! -d /root/.rustup ]
+            then
+              echo "Installing rustup"
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              . ~/.profile
+              rustup default stable
+            else
+              echo "rustup already installed"
+              . ~/.profile
+            fi
+            RUST_BACKTRACE=1
+            rustc -vV
+            cargo -V
+            gcc -v
+            g++ -v
+            cmake --version
+            curl -L https://nodejs.org/dist/v12.3.1/node-v12.3.1-linux-x64.tar.xz -o node.tar.xz
+            tar -xJf node.tar.xz
+            cp -r node-v12.3.1-linux-x64/* /usr/
       - run:
           name: Install Parity
           command: |
-            sudo apt install -y cmake
-            cargo install --git https://github.com/Daohub-io/parity-ethereum.git --bin parity parity-ethereum
+            . ~/.profile
+            cd ..
+            # If the parity-ethereum directory does not exist, clone it
+            pwd
+            ls
+            if [ ! -d parity-ethereum ]
+            then
+              echo "Parity not installed, cloning..."
+              git clone https://github.com/Daohub-io/parity-ethereum.git
+            fi
+            cd parity-ethereum
+            git fetch --all
+            git checkout master
+            # cargo build -j 1
+            # cargo build --verbose --release --features final
+            # strip target/debug/parity
+            # file target/debug/parity
+            cargo install --bin parity -j 1 --path . --bin parity parity-ethereum --force
+      - save_cache:
+          key: deps6-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+            - "~/.rustup"
+            - /tmp/parity-ethereum
+      - checkout:
+          path: cap9
+      - run:
+          name: Get Submodules
+          command: |
+            cd cap9
+            git submodule update --init
       - run:
           name: Start local Ethereum network
           command: |
+            . ~/.profile
+            cd cap9
             cd kernel-ewasm
             # we need to run parity once to set up the accounts and keys
             # this only needs to be active for a few seconds (hence timeout)
@@ -77,13 +129,12 @@ jobs:
       - run:
           name: Build Rust Component
           command: |
+            . ~/.profile
+            cd cap9
             cd kernel-ewasm && ./build.sh
-      - save_cache:
-          key: deps3-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
-          paths:
-            - "~/.cargo"
       - run:
           name: Test Rust Component
           command: |
+            cd cap9
             cd kernel-ewasm && npm install
             npm run test
