@@ -62,7 +62,10 @@ jobs:
             # only update cargo if it is not installed
             if [ ! -d /root/.cargo/bin ]
             then
+              echo "Installing rustup"
               curl https://sh.rustup.rs -sSf | sh -s -- -y
+            else
+              echo "rustup already installed"
             fi
             echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
             . ~/.profile
