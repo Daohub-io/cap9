@@ -72,11 +72,11 @@ jobs:
             # cargo build --verbose --release --features final
             # strip /build/parity-ethereum/target/release/parity
             # file /build/parity-ethereum/target/release/parity
+      - checkout
       - save_cache:
           key: deps3-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
-      # - checkout
       # - run:
       #     name: Get Submodules
       #     command: |
