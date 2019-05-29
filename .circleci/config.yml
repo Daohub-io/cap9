@@ -61,12 +61,13 @@ jobs:
             then
               echo "Installing rustup"
               curl https://sh.rustup.rs -sSf | sh -s -- -y
+              echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+              . ~/.profile
               rustup default stable
             else
               echo "rustup already installed"
+              . ~/.profile
             fi
-            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
-            . ~/.profile
             RUST_BACKTRACE=1
             rustc -vV
             cargo -V
