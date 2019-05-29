@@ -43,9 +43,10 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps4-{{ .Branch }}-{{ .Revision }}
-            # - deps4-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps4-{{ .Branch }}-
+            - deps5-{{ .Branch }}-{{ .Revision }}
+            # - deps5-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps5-{{ .Branch }}-
+            - deps5-
             - deps4-
       - run:
           name: Install native build prequisites
@@ -56,16 +57,16 @@ jobs:
             tar -xzf cmake.tar.gz
             cp -r cmake-3.12.0-Linux-x86_64/* /usr/
             # only update cargo if it is not installed
-            if [ ! -d /root/.cargo/bin ]
+            if [ ! -d /root/.rustup ]
             then
               echo "Installing rustup"
               curl https://sh.rustup.rs -sSf | sh -s -- -y
+              rustup default stable
             else
               echo "rustup already installed"
             fi
             echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
             . ~/.profile
-            # rustup default stable
             RUST_BACKTRACE=1
             rustc -vV
             cargo -V
@@ -92,9 +93,10 @@ jobs:
             cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
       # - checkout
       - save_cache:
-          key: deps4-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps5-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
+            - "~/.rustup"
             - ./parity-ethereum
       # - run:
       #     name: Get Submodules
