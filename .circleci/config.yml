@@ -82,7 +82,7 @@ jobs:
             # If the parity-ethereum directory does not exist, clone it
             if [ ! -d ./parity-ethereum ]
             then
-              git clone https://github.com/Daohub-io/parity-ethereum.git --force
+              git clone https://github.com/Daohub-io/parity-ethereum.git
             fi
             cd parity-ethereum
             git fetch --all
@@ -91,7 +91,7 @@ jobs:
             # cargo build --verbose --release --features final
             # strip target/debug/parity
             # file target/debug/parity
-            cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
+            cargo install --bin parity -j 1 --path . --bin parity parity-ethereum --force
       - checkout
       - save_cache:
           key: deps5-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
