@@ -42,7 +42,7 @@ jobs:
   #     - run: cd evm1 && ./node_modules/.bin/truffle test
   build:
     docker:
-      - image: ccistaging/rust:1-node
+      - image: parity/parity-ci-linux:latest
     working_directory: /tmp/my-project
     steps:
       - checkout
