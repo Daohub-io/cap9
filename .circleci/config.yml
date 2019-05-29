@@ -61,6 +61,7 @@ jobs:
             gcc -v && \
             g++ -v && \
             cmake --version && \
+            git clone https://github.com/paritytech/parity-ethereum.git && \
             cd parity-ethereum && \
             cargo build --verbose --release --features final && \
             strip /build/parity-ethereum/target/release/parity && \
