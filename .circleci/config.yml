@@ -82,7 +82,7 @@ jobs:
             # If the parity-ethereum directory does not exist, clone it
             if [ ! -d ./parity-ethereum ]
             then
-              git clone https://github.com/Daohub-io/parity-ethereum.git
+              git clone https://github.com/Daohub-io/parity-ethereum.git --force
             fi
             cd parity-ethereum
             git fetch --all
