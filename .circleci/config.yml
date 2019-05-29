@@ -92,17 +92,17 @@ jobs:
             # strip target/debug/parity
             # file target/debug/parity
             cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
-      # - checkout
+      - checkout
       - save_cache:
           key: deps5-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
             - ./parity-ethereum
-      # - run:
-      #     name: Get Submodules
-      #     command: |
-      #       git submodule update --init
+      - run:
+          name: Get Submodules
+          command: |
+            git submodule update --init
       # - run:
       #     name: Start local Ethereum network
       #     command: |
