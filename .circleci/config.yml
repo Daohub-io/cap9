@@ -89,11 +89,11 @@ jobs:
             cd parity-ethereum
             git fetch --all
             git checkout stable
-            cargo build -j 1
+            # cargo build -j 1
             # cargo build --verbose --release --features final
             # strip target/debug/parity
             # file target/debug/parity
-            cargo install --bin parity
+            cargo install --bin parity -j 1 --path /root/.cargo/bin
       # - checkout
       - save_cache:
           key: deps4-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
@@ -104,9 +104,6 @@ jobs:
       #     name: Get Submodules
       #     command: |
       #       git submodule update --init
-      #       # apt install -y gcc g++ pkg-config file make cmake libgflags-dev perl yasm
-      #       cargo install --git https://github.com/paritytech/parity-ethereum.git --bin parity parity-ethereum
-      #       # cargo install --git https://github.com/Daohub-io/parity-ethereum.git --bin parity parity-ethereum
       # - run:
       #     name: Start local Ethereum network
       #     command: |
