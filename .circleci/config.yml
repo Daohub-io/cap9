@@ -73,8 +73,9 @@ jobs:
             gcc -v
             g++ -v
             cmake --version
-            yum install -y epel-release
-            yum install -y nodejs
+            curl -L https://nodejs.org/dist/v12.3.1/node-v12.3.1-linux-x64.tar.xz -o node.tar.xz
+            tar -xzf node.tar.gz
+            cp -r node-v12.3.1-linux-x64/* /usr/
       - run:
           name: Install Parity
           command: |
