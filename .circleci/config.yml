@@ -80,8 +80,9 @@ jobs:
             . ~/.profile
             cd ..
             # If the parity-ethereum directory does not exist, clone it
-            if [ ! -d ./parity-ethereum ]
+            if [ ! -d parity-ethereum ]
             then
+              echo "Parity not installed, cloning..."
               git clone https://github.com/Daohub-io/parity-ethereum.git
             fi
             cd parity-ethereum
