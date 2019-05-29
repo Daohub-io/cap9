@@ -80,6 +80,8 @@ jobs:
             . ~/.profile
             cd ..
             # If the parity-ethereum directory does not exist, clone it
+            pwd
+            ls
             if [ ! -d parity-ethereum ]
             then
               echo "Parity not installed, cloning..."
