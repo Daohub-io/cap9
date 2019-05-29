@@ -47,9 +47,9 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps3-{{ .Branch }}-{{ .Revision }}
-            # - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps3-{{ .Branch }}-
+            - deps4-{{ .Branch }}-{{ .Revision }}
+            # - deps4-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps4-{{ .Branch }}-
       - run:
           name: Install build prequisites
           command: |
@@ -85,7 +85,7 @@ jobs:
             # file /build/parity-ethereum/target/release/parity
       # - checkout
       - save_cache:
-          key: deps3-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps4-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - ./parity-ethereum
