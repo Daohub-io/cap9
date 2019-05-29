@@ -43,11 +43,10 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps5-{{ .Branch }}-{{ .Revision }}
-            # - deps5-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps5-{{ .Branch }}-
-            - deps5-
-            - deps4-
+            - deps6-{{ .Branch }}-{{ .Revision }}
+            # - deps6-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps6-{{ .Branch }}-
+            - deps6-
       - run:
           name: Install native build prequisites
           command: |
@@ -97,37 +96,37 @@ jobs:
             cargo install --bin parity -j 1 --path . --bin parity parity-ethereum --force
       - checkout
       - save_cache:
-          key: deps5-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps6-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
-            - ./parity-ethereum
+            - /tmp/parity-ethereum
       - run:
           name: Get Submodules
           command: |
             git submodule update --init
-      # - run:
-      #     name: Start local Ethereum network
-      #     command: |
-      #       . ~/.profile
-      #       cd kernel-ewasm
-      #       # we need to run parity once to set up the accounts and keys
-      #       # this only needs to be active for a few seconds (hence timeout)
-      #       timeout 5 parity --config dev || true
-      #       # We then run parity properly, now unlocking the previously setup
-      #       # account
-      #       parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
-      #     background: true
-      # - run:
-      #     name: Wait for Parity startup
-      #     command: sleep 10
-      # - run:
-      #     name: Build Rust Component
-      #     command: |
-      #       . ~/.profile
-      #       cd kernel-ewasm && ./build.sh
-      # - run:
-      #     name: Test Rust Component
-      #     command: |
-      #       cd kernel-ewasm && npm install
-      #       npm run test
+      - run:
+          name: Start local Ethereum network
+          command: |
+            . ~/.profile
+            cd kernel-ewasm
+            # we need to run parity once to set up the accounts and keys
+            # this only needs to be active for a few seconds (hence timeout)
+            timeout 5 parity --config dev || true
+            # We then run parity properly, now unlocking the previously setup
+            # account
+            parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
+          background: true
+      - run:
+          name: Wait for Parity startup
+          command: sleep 10
+      - run:
+          name: Build Rust Component
+          command: |
+            . ~/.profile
+            cd kernel-ewasm && ./build.sh
+      - run:
+          name: Test Rust Component
+          command: |
+            cd kernel-ewasm && npm install
+            npm run test
