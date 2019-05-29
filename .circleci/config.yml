@@ -93,7 +93,7 @@ jobs:
             # cargo build --verbose --release --features final
             # strip target/debug/parity
             # file target/debug/parity
-            cargo install --bin parity -j 1 --path /root/.cargo/bin
+            cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
       # - checkout
       - save_cache:
           key: deps4-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
