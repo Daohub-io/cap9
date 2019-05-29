@@ -65,7 +65,7 @@ jobs:
             fi
             echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
             . ~/.profile
-            rustup default stable
+            # rustup default stable
             RUST_BACKTRACE=1
             rustc -vV
             cargo -V
