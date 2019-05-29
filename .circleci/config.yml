@@ -50,8 +50,9 @@ jobs:
             - deps4-{{ .Branch }}-{{ .Revision }}
             # - deps4-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
             - deps4-{{ .Branch }}-
+            - deps4-
       - run:
-          name: Install build prequisites
+          name: Install native build prequisites
           command: |
             yum -y update
             yum install -y systemd-devel git make gcc-c++ gcc file binutils
@@ -67,6 +68,11 @@ jobs:
             gcc -v
             g++ -v
             cmake --version
+      - run:
+          name: Install Parity
+          command: |
+            . ~/.profile
+            cd ..
             # If the parity-ethereum directory does not exist, clone it
             if [ ! -d ./parity-ethereum ]
             then
@@ -75,14 +81,11 @@ jobs:
             cd parity-ethereum
             git fetch --all
             git checkout stable
-            # cd ..
-            # git clone https://github.com/dtolnay/syn.git
-            # cd syn
-            # cargo build
             cargo build -j 1
             # cargo build --verbose --release --features final
-            # strip /build/parity-ethereum/target/release/parity
-            # file /build/parity-ethereum/target/release/parity
+            # strip target/debug/parity
+            # file target/debug/parity
+            cargo install --bin parity
       # - checkout
       - save_cache:
           key: deps4-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
@@ -93,9 +96,6 @@ jobs:
       #     name: Get Submodules
       #     command: |
       #       git submodule update --init
-      # - run:
-      #     name: Install Parity
-      #     command: |
       #       # apt install -y gcc g++ pkg-config file make cmake libgflags-dev perl yasm
       #       cargo install --git https://github.com/paritytech/parity-ethereum.git --bin parity parity-ethereum
       #       # cargo install --git https://github.com/Daohub-io/parity-ethereum.git --bin parity parity-ethereum
