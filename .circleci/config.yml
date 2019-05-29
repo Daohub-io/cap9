@@ -45,6 +45,11 @@ jobs:
       - image: centos:latest
     working_directory: /tmp/my-project
     steps:
+      - restore_cache:
+          keys:
+            - deps3-{{ .Branch }}-{{ .Revision }}
+            # - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps3-{{ .Branch }}-
       - run:
           name: Install build prequisites
           command: |
