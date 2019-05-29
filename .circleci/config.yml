@@ -72,46 +72,46 @@ jobs:
             # cargo build --verbose --release --features final
             # strip /build/parity-ethereum/target/release/parity
             # file /build/parity-ethereum/target/release/parity
-      - checkout
-      - run:
-          name: Get Submodules
-          command: |
-            git submodule update --init
-      - restore_cache:
-          keys:
-            - deps3-{{ .Branch }}-{{ .Revision }}
-            # - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps3-{{ .Branch }}-
-      - run:
-          name: Install Parity
-          command: |
-            # apt install -y gcc g++ pkg-config file make cmake libgflags-dev perl yasm
-            cargo install --git https://github.com/paritytech/parity-ethereum.git --bin parity parity-ethereum
-            # cargo install --git https://github.com/Daohub-io/parity-ethereum.git --bin parity parity-ethereum
-      - run:
-          name: Start local Ethereum network
-          command: |
-            cd kernel-ewasm
-            # we need to run parity once to set up the accounts and keys
-            # this only needs to be active for a few seconds (hence timeout)
-            timeout 5 parity --config dev || true
-            # We then run parity properly, now unlocking the previously setup
-            # account
-            parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
-          background: true
-      - run:
-          name: Wait for Parity startup
-          command: sleep 10
-      - run:
-          name: Build Rust Component
-          command: |
-            cd kernel-ewasm && ./build.sh
       - save_cache:
           key: deps3-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
-      - run:
-          name: Test Rust Component
-          command: |
-            cd kernel-ewasm && npm install
-            npm run test
+      # - checkout
+      # - run:
+      #     name: Get Submodules
+      #     command: |
+      #       git submodule update --init
+      # - restore_cache:
+      #     keys:
+      #       - deps3-{{ .Branch }}-{{ .Revision }}
+      #       # - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+      #       - deps3-{{ .Branch }}-
+      # - run:
+      #     name: Install Parity
+      #     command: |
+      #       # apt install -y gcc g++ pkg-config file make cmake libgflags-dev perl yasm
+      #       cargo install --git https://github.com/paritytech/parity-ethereum.git --bin parity parity-ethereum
+      #       # cargo install --git https://github.com/Daohub-io/parity-ethereum.git --bin parity parity-ethereum
+      # - run:
+      #     name: Start local Ethereum network
+      #     command: |
+      #       cd kernel-ewasm
+      #       # we need to run parity once to set up the accounts and keys
+      #       # this only needs to be active for a few seconds (hence timeout)
+      #       timeout 5 parity --config dev || true
+      #       # We then run parity properly, now unlocking the previously setup
+      #       # account
+      #       parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
+      #     background: true
+      # - run:
+      #     name: Wait for Parity startup
+      #     command: sleep 10
+      # - run:
+      #     name: Build Rust Component
+      #     command: |
+      #       cd kernel-ewasm && ./build.sh
+      # - run:
+      #     name: Test Rust Component
+      #     command: |
+      #       cd kernel-ewasm && npm install
+      #       npm run test
