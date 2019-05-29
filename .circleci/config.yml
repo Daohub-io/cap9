@@ -73,6 +73,8 @@ jobs:
             gcc -v
             g++ -v
             cmake --version
+            yum install -y epel-release
+            yum install -y nodejs
       - run:
           name: Install Parity
           command: |
@@ -133,7 +135,5 @@ jobs:
           name: Test Rust Component
           command: |
             cd cap9
-            yum install epel-release
-            yum install nodejs
             cd kernel-ewasm && npm install
             npm run test
