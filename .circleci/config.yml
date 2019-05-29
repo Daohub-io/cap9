@@ -59,15 +59,21 @@ jobs:
             tar -xzf cmake.tar.gz
             cp -r cmake-3.12.0-Linux-x86_64/* /usr/
             curl https://sh.rustup.rs -sSf | sh -s -- -y
-            PATH=/root/.cargo/bin:$PATH
+            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+            . ~/.profile
             RUST_BACKTRACE=1
             rustc -vV
             cargo -V
             gcc -v
             g++ -v
             cmake --version
-            git clone https://github.com/paritytech/parity-ethereum.git
+            # If the parity-ethereum directory does not exist, clone it
+            if [ ! -d ./parity-ethereum ]
+            then
+              git clone https://github.com/Daohub-io/parity-ethereum.git
+            fi
             cd parity-ethereum
+            git fetch --all
             git checkout stable
             # cd ..
             # git clone https://github.com/dtolnay/syn.git
@@ -77,20 +83,16 @@ jobs:
             # cargo build --verbose --release --features final
             # strip /build/parity-ethereum/target/release/parity
             # file /build/parity-ethereum/target/release/parity
-      - checkout
+      # - checkout
       - save_cache:
           key: deps3-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
+            - ./parity-ethereum
       # - run:
       #     name: Get Submodules
       #     command: |
       #       git submodule update --init
-      # - restore_cache:
-      #     keys:
-      #       - deps3-{{ .Branch }}-{{ .Revision }}
-      #       # - deps3-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-      #       - deps3-{{ .Branch }}-
       # - run:
       #     name: Install Parity
       #     command: |
