@@ -64,13 +64,14 @@ jobs:
             git clone https://github.com/paritytech/parity-ethereum.git
             cd parity-ethereum
             git checkout stable
-            cd ..
-            git clone https://github.com/dtolnay/syn.git
-            cd syn
+            # cd ..
+            # git clone https://github.com/dtolnay/syn.git
+            # cd syn
+            # cargo build
             cargo build
-            cargo build --verbose --release --features final
-            strip /build/parity-ethereum/target/release/parity
-            file /build/parity-ethereum/target/release/parity
+            # cargo build --verbose --release --features final
+            # strip /build/parity-ethereum/target/release/parity
+            # file /build/parity-ethereum/target/release/parity
       - checkout
       - run:
           name: Get Submodules
