@@ -64,9 +64,9 @@ jobs:
             then
               curl https://sh.rustup.rs -sSf | sh -s -- -y
             fi
-            rustup default stable
             echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
             . ~/.profile
+            rustup default stable
             RUST_BACKTRACE=1
             rustc -vV
             cargo -V
