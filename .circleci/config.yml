@@ -133,7 +133,7 @@ jobs:
           name: Test Rust Component
           command: |
             cd cap9
-            # yum install epel-release
+            yum install epel-release
             yum install nodejs
             cd kernel-ewasm && npm install
             npm run test
