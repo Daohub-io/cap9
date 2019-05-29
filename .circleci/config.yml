@@ -94,21 +94,24 @@ jobs:
             # strip target/debug/parity
             # file target/debug/parity
             cargo install --bin parity -j 1 --path . --bin parity parity-ethereum --force
-      - checkout
       - save_cache:
           key: deps6-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
             - /tmp/parity-ethereum
+      - checkout
+          path: cap9
       - run:
           name: Get Submodules
           command: |
+            cd cap9
             git submodule update --init
       - run:
           name: Start local Ethereum network
           command: |
             . ~/.profile
+            cd cap9
             cd kernel-ewasm
             # we need to run parity once to set up the accounts and keys
             # this only needs to be active for a few seconds (hence timeout)
@@ -124,9 +127,11 @@ jobs:
           name: Build Rust Component
           command: |
             . ~/.profile
+            cd cap9
             cd kernel-ewasm && ./build.sh
       - run:
           name: Test Rust Component
           command: |
+            cd cap9
             cd kernel-ewasm && npm install
             npm run test
