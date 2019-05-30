@@ -96,16 +96,22 @@ mod cap {
         AccountCall(AccountCallCap),
     }
 
-    #[derive(Debug)]
-    pub struct CapList(pub Vec<Capability>);
+    #[derive(Clone, Debug)]
+    pub struct NewCapability {
+        pub cap: Capability,
+        pub parent_index: u8,
+    }
 
-    impl CapList {
+    #[derive(Debug)]
+    pub struct NewCapList(pub Vec<NewCapability>);
+
+    impl NewCapList {
         /// Create Empty CapList
-        pub fn empty() -> CapList {
-            CapList(Vec::new())
+        pub fn empty() -> NewCapList {
+            NewCapList(Vec::new())
         }
 
-        pub fn inner(self) -> Vec<Capability> {
+        pub fn inner(self) -> Vec<NewCapability> {
             self.0
         }
     }
@@ -114,11 +120,13 @@ mod cap {
         InvalidCapLen = 2,
     }
 
-    impl eth::AbiType for CapList {
+    impl eth::AbiType for NewCapList {
         const IS_FIXED: bool = false;
 
         fn decode(stream: &mut eth::Stream) -> Result<Self, eth::Error> {
             let cap_size = U256::decode(stream)?;
+            let cap_type = U256::decode(stream)?;
+            let cap_index = U256::decode(stream)?;
             unimplemented!();
         }
 
@@ -584,8 +592,10 @@ mod tests {
         use pwasm_abi::eth;
         use pwasm_abi::eth::AbiType;
 
-        let sample_cap = cap::StoreWriteCap { location: U256::from(1234).into(), size: U256::from(2345).into()};
-        let SAMPLE_WRITE_CAP: Vec<u8> = [
+        let sample_cap = StoreWriteCap { location: U256::from(1234).into(), size: U256::from(2345).into()};
+        let sample_new_cap = NewCapability { cap: Capability::StoreWrite(sample_cap), parent_index: 0};
+
+        let ENCODED_SAMPLE_WRITE_CAP: Vec<u8> = [
             U256::from(5),
             U256::from(3 + 2),
             U256::from(0),
@@ -598,12 +608,12 @@ mod tests {
 
         let mut sink = eth::Sink::new(10*256);
 
-        cap::CapList([Capability::StoreWrite(sample_cap)].to_vec()).encode(&mut sink);
+        NewCapList([sample_new_cap].to_vec()).encode(&mut sink);
         let mut result = Vec::new();
 
         sink.drain_to(&mut result);
 
-        assert_eq!(result, SAMPLE_WRITE_CAP);
+        assert_eq!(result, ENCODED_SAMPLE_WRITE_CAP);
     }
 
     fn should_decode_cap_list() {
@@ -623,8 +633,8 @@ mod tests {
         .flat_map(|&x| <[u8; 32]>::from(x).to_vec())
         .collect();
 
-        let cap_list_result = cap::CapList::decode(&mut eth::Stream::new(&SAMPLE_WRITE_CAP)).expect("Should decode to a capability");
-        let write_cap = match &cap_list_result.0[0] {
+        let cap_list_result = cap::NewCapList::decode(&mut eth::Stream::new(&SAMPLE_WRITE_CAP)).expect("Should decode to a capability");
+        let write_cap = match &cap_list_result.0[0].cap {
             cap::Capability::StoreWrite(write_cap) => write_cap,
             cap => panic!("Invalid Cap")
         };
