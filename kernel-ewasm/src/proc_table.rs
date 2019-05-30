@@ -31,26 +31,104 @@ const KERNEL_CURRENT_ENTRY_PTR: [u8; 32] = [
 type ProcedureKey = [u8; 24];
 type ProcedureIndex = [u8; 24];
 
-// struct CapList(pub Vec<u8>);
+mod cap {
+    use super::*;
 
-// impl CapList {
-//     /// Create Empty CapList
-//     fn empty() -> CapList {
-//         CapList(Vec::new())
-//     }
-// }
+    const CAP_PROC_CALL: u8 = 3;
+    const CAP_PROC_REGISTER: u8 = 4;
+    const CAP_PROC_DELETE: u8 = 5;
+    const CAP_PROC_ENTRY: u8 = 6;
+    const CAP_STORE_WRITE: u8 = 7;
+    const CAP_LOG: u8 = 8;
+    const CAP_ACC_CALL: u8 = 9;
 
-// impl eth::AbiType for CapList {
-//     fn decode(stream: &mut eth::Stream) -> Result<CapList, eth::Error> {
-//         Ok(CapList::empty())
-//     }
+    #[derive(Clone, Debug)]
+    pub struct ProcedureCallCap {
+        pub prefix: u8,
+        pub key: ProcedureKey,
+    }
 
-//     fn encode(self, sink: &mut eth::Sink) {}
+    #[derive(Clone, Debug)]
+    pub struct ProcedureRegisterCap {
+        pub prefix: u8,
+        pub key: ProcedureKey,
+    }
 
-//     const IS_FIXED: bool = false;
-// }
+    #[derive(Clone, Debug)]
+    pub struct ProcedureDeleteCap {
+        pub prefix: u8,
+        pub key: ProcedureKey,
+    }
 
-struct ProcPointer(ProcedureKey);
+    #[derive(Clone, Debug)]
+    pub struct ProcedureEntryCap;
+
+    #[derive(Clone, Debug)]
+    pub struct StoreWriteCap {
+        pub location: [u8; 32],
+        pub size: [u8; 32],
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct LogCap {
+        pub topics: u8,
+        pub t1: Option<[u8; 32]>,
+        pub t2: Option<[u8; 32]>,
+        pub t3: Option<[u8; 32]>,
+        pub t4: Option<[u8; 32]>,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct AccountCallCap {
+        pub can_call_any: bool,
+        pub can_send: bool,
+        pub address: Address,
+    }
+
+    #[derive(Clone, Debug)]
+    pub enum Capability {
+        ProcedureCall(ProcedureCallCap),
+        ProcedureRegister(ProcedureRegisterCap),
+        ProcedureDelete(ProcedureDeleteCap),
+        ProcedureEntry(ProcedureEntryCap),
+        StoreWrite(StoreWriteCap),
+        Log(LogCap),
+        AccountCall(AccountCallCap),
+    }
+
+    #[derive(Debug)]
+    pub struct CapList(pub Vec<Capability>);
+
+    impl CapList {
+        /// Create Empty CapList
+        pub fn empty() -> CapList {
+            CapList(Vec::new())
+        }
+
+        pub fn inner(self) -> Vec<Capability> {
+            self.0
+        }
+    }
+    enum CapDecodeErr {
+        InvalidCapType = 1,
+        InvalidCapLen = 2,
+    }
+
+    impl eth::AbiType for CapList {
+        const IS_FIXED: bool = false;
+
+        fn decode(stream: &mut eth::Stream) -> Result<Self, eth::Error> {
+            let cap_size = U256::decode(stream)?;
+            unimplemented!();
+        }
+
+        fn encode(self, stream: &mut eth::Sink) {
+            unimplemented!();
+        }
+    }
+}
+
+pub struct ProcPointer(ProcedureKey);
 
 impl ProcPointer {
     fn from_key(key: ProcedureKey) -> ProcPointer {
@@ -88,7 +166,7 @@ impl ProcPointer {
 }
 
 /// Error or Procedure Insertion
-enum ProcInsertError {
+pub enum ProcInsertError {
     /// Procedure Id Already Used
     UsedId = 2,
     /// Procedure List length is greater than 255
@@ -96,7 +174,7 @@ enum ProcInsertError {
 }
 
 /// Inserts Procedure into procedure table
-fn insert_proc(key: ProcedureKey, address: Address) -> Result<(), ProcInsertError> {
+pub fn insert_proc(key: ProcedureKey, address: Address) -> Result<(), ProcInsertError> {
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
 
@@ -142,13 +220,13 @@ fn insert_proc(key: ProcedureKey, address: Address) -> Result<(), ProcInsertErro
 }
 
 /// Error on Procedure Removal
-enum ProcRemoveError {
+pub enum ProcRemoveError {
     /// Procedure Id is not Used
     InvalidId = 2,
     /// Procedure is the Entry Procedure which cannot be removed
     EntryProc = 3,
 }
-fn remove_proc(key: ProcedureKey) -> Result<(), ProcRemoveError> {
+pub fn remove_proc(key: ProcedureKey) -> Result<(), ProcRemoveError> {
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
 
@@ -258,12 +336,14 @@ fn get_proc_id(index: ProcedureIndex) -> Option<ProcedureKey> {
     }
 }
 
+/// Get Procedure List Length
 fn get_proc_list_len() -> U256 {
     // Check Procedure List Length, it must be less than 8^24
     let proc_list_len = pwasm_ethereum::read(&H256(KERNEL_PROC_LIST_PTR));
     U256::from(proc_list_len)
 }
 
+/// Get Entry Procedure Id
 fn get_entry_proc_id() -> ProcedureKey {
     let proc_id = pwasm_ethereum::read(&H256(KERNEL_CURRENT_ENTRY_PTR));
     let mut result = [0; 24];
@@ -495,6 +575,67 @@ mod tests {
     #[test]
     fn should_get_entry_proc_id() {
         unimplemented!()
+    }
+
+    #[test]
+    fn should_encode_cap_list() {
+        use super::*;
+        use super::cap::*;
+        use pwasm_abi::eth;
+        use pwasm_abi::eth::AbiType;
+
+        let sample_cap = cap::StoreWriteCap { location: U256::from(1234).into(), size: U256::from(2345).into()};
+        let SAMPLE_WRITE_CAP: Vec<u8> = [
+            U256::from(5),
+            U256::from(3 + 2),
+            U256::from(0),
+            U256::from(1234),
+            U256::from(2345),
+        ]
+        .into_iter()
+        .flat_map(|&x| <[u8; 32]>::from(x).to_vec())
+        .collect();
+
+        let mut sink = eth::Sink::new(10*256);
+
+        cap::CapList([Capability::StoreWrite(sample_cap)].to_vec()).encode(&mut sink);
+        let mut result = Vec::new();
+
+        sink.drain_to(&mut result);
+
+        assert_eq!(result, SAMPLE_WRITE_CAP);
+    }
+
+    fn should_decode_cap_list() {
+        use super::*;
+        use super::cap::*;
+        use pwasm_abi::eth;
+        use pwasm_abi::eth::AbiType;
+
+        let SAMPLE_WRITE_CAP: Vec<u8> = [
+            U256::from(5),
+            U256::from(3 + 2),
+            U256::from(0),
+            U256::from(1234),
+            U256::from(2345),
+        ]
+        .into_iter()
+        .flat_map(|&x| <[u8; 32]>::from(x).to_vec())
+        .collect();
+
+        let cap_list_result = cap::CapList::decode(&mut eth::Stream::new(&SAMPLE_WRITE_CAP)).expect("Should decode to a capability");
+        let write_cap = match &cap_list_result.0[0] {
+            cap::Capability::StoreWrite(write_cap) => write_cap,
+            cap => panic!("Invalid Cap")
+        };
+
+        // Get Location and Size
+        let loc = U256::from(write_cap.location);
+        let size = U256::from(write_cap.size);
+
+        assert_eq!(loc, U256::from(1234));
+        assert_eq!(size, U256::from(2345));
+    
     }
 
 }
