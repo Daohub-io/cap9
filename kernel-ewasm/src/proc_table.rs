@@ -137,7 +137,92 @@ mod cap {
 
     impl NewCapList {
         pub fn to_u256_list(&self) -> Vec<U256> {
-            unimplemented!();
+            
+            // Allocate Vector with Max Cap Size
+            let mut res = Vec::with_capacity(self.0.len() * (CAP_LOG_SIZE + 3) as usize);
+            
+            for new_cap in self.0.iter() {
+                let raw_cap_slice = match &new_cap.cap {
+                    Capability::ProcedureCall(proc_call_cap) => {
+                        let cap_size = U256::from(CAP_PROC_CALL_SIZE + 3);
+                        let cap_type = U256::from(CAP_PROC_CALL);
+                        let parent_index = U256::from(new_cap.parent_index);
+
+                        let mut res = [0u8; 32];
+                        res[0] = proc_call_cap.prefix;
+                        res[8..].copy_from_slice(&proc_call_cap.key);
+
+                        [cap_size, cap_type, parent_index, U256::from(res)].to_vec()
+                    },
+                    Capability::ProcedureRegister(proc_register_cap) => {
+                        let cap_size = U256::from(CAP_PROC_REGISTER_SIZE + 3);
+                        let cap_type = U256::from(CAP_PROC_REGISTER);
+                        let parent_index = U256::from(new_cap.parent_index);
+
+                        let mut res = [0u8; 32];
+                        res[0] = proc_register_cap.prefix;
+                        res[8..].copy_from_slice(&proc_register_cap.key);
+
+                        [cap_size, cap_type, parent_index, U256::from(res)].to_vec()
+                    },
+                    Capability::ProcedureDelete(proc_delete_cap) => {
+                        let cap_size = U256::from(CAP_PROC_DELETE_SIZE + 3);
+                        let cap_type = U256::from(CAP_PROC_DELETE);
+                        let parent_index = U256::from(new_cap.parent_index);
+
+                        let mut res = [0u8; 32];
+                        res[0] = proc_delete_cap.prefix;
+                        res[8..].copy_from_slice(&proc_delete_cap.key);
+
+                        [cap_size, cap_type, parent_index, U256::from(res)].to_vec()
+                    },
+                    Capability::ProcedureEntry(_) => {
+                        let cap_size = U256::from(CAP_PROC_ENTRY_SIZE + 3);
+                        let cap_type = U256::from(CAP_PROC_ENTRY);
+                        let parent_index = U256::from(new_cap.parent_index);
+
+                        [cap_size, cap_type, parent_index].to_vec()
+                    },
+                    Capability::StoreWrite(store_write_cap) => {
+                        let cap_size = U256::from(CAP_STORE_WRITE_SIZE + 3);
+                        let cap_type = U256::from(CAP_STORE_WRITE);
+                        let parent_index = U256::from(new_cap.parent_index);
+
+                        [cap_size, cap_type, parent_index, U256::from(store_write_cap.location), U256::from(store_write_cap.size)].to_vec()
+                    },
+                    Capability::Log(log_cap) => {
+                        let cap_size = U256::from(CAP_LOG_SIZE + 3);
+                        let cap_type = U256::from(CAP_LOG);
+                        let parent_index = U256::from(new_cap.parent_index);
+
+                        let topics_len = U256::from(log_cap.topics);
+                        let t1 = U256::from(log_cap.t1);
+                        let t2 = U256::from(log_cap.t2);
+                        let t3 = U256::from(log_cap.t3);
+                        let t4 = U256::from(log_cap.t4);
+
+                        [cap_size, cap_type, parent_index, topics_len, t1, t2, t3, t4].to_vec()
+                        
+                    },
+                    Capability::AccountCall(account_call_cap) => {
+                        let cap_size = U256::from(CAP_ACC_CALL_SIZE + 3);
+                        let cap_type = U256::from(CAP_ACC_CALL);
+                        let parent_index = U256::from(new_cap.parent_index);
+
+                        let mut res = [0u8; 32];
+                        res[0] |= if account_call_cap.can_call_any { 0x80 } else { 0 };
+                        res[0] |= if account_call_cap.can_send { 0x40 } else { 0 };
+
+                        res[12..].copy_from_slice(account_call_cap.address.as_fixed_bytes());
+
+                        [cap_size, cap_type, parent_index, U256::from(res)].to_vec()
+                    }
+                };
+
+                res.extend_from_slice(&raw_cap_slice);
+            }
+
+            res
         }
 
         pub fn from_u256_list(list: &[U256]) -> Result<Self, CapDecodeErr> {
