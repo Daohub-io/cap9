@@ -571,16 +571,7 @@ mod tests {
         let mut contract = contract::ProcedureTableContract {};
         let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
 
-        let sample_cap = StoreWriteCap {
-            location: U256::from(1234).into(),
-            size: U256::from(2345).into(),
-        };
-        let sample_new_cap = NewCapability {
-            cap: Capability::StoreWrite(sample_cap.clone()),
-            parent_index: 0,
-        };
-
-        let cap_list = NewCapList([sample_new_cap].to_vec()).to_u256_list();
+        let cap_list = NewCapList([].to_vec()).to_u256_list();
 
         contract.insert_proc(String::from("FOO"), proc_address, cap_list);
 
@@ -588,22 +579,6 @@ mod tests {
         let new_index = contract.get_proc_index(String::from("FOO"));
         let new_len = contract.get_proc_list_len();
         let hasFoo = contract.contains(String::from("FOO"));
-
-        let new_cap_list_len =
-            contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
-        let new_cap: StoreWriteCap = {
-            let raw_cap = contract.get_proc_cap(
-                String::from("FOO"),
-                U256::from(CAP_STORE_WRITE),
-                U256::zero(),
-            );
-            let cap = Capability::from_u256_list(&raw_cap).expect("Should be Valid StoreWriteCap");
-            if let Capability::StoreWrite(write_cap) = cap {
-                write_cap
-            } else {
-                panic!("Should be a StoreWrite Cap")
-            }
-        };
 
         // Get Id and Truncate
         let mut new_proc_id = contract.get_proc_id(new_index);
@@ -615,8 +590,7 @@ mod tests {
         assert_eq!(new_len, new_index);
         assert_eq!(new_proc_id, String::from("FOO"));
         assert!(hasFoo);
-        assert_eq!(new_cap_list_len, U256::one());
-        assert_eq!(new_cap, sample_cap);
+
     }
 
     #[test]
@@ -658,7 +632,7 @@ mod tests {
         assert_eq!(proc_address, new_address);
         assert_ne!(new_len, U256::zero());
         assert_eq!(new_len.as_u32(), 1);
-        
+
         assert_eq!(new_write_cap_len, U256::one());
         assert_eq!(new_log_cap_len, U256::one());
 
@@ -680,17 +654,94 @@ mod tests {
 
         assert_eq!(removed_write_cap_len, U256::zero());
         assert_eq!(removed_log_cap_len, U256::zero());
-
     }
 
     #[test]
     fn should_get_proc_cap_list_len() {
-        unimplemented!()
+        let mut contract = contract::ProcedureTableContract {};
+        let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
+        let cap_list = {
+            let sample_cap_1 = NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: U256::from(1234).into(),
+                    size: U256::from(2345).into(),
+                }),
+                parent_index: 0,
+            };
+
+            let sample_cap_2 = NewCapability {
+                cap: Capability::Log(LogCap {
+                    topics: 1,
+                    t1: [7u8; 32],
+                    t2: [0u8; 32],
+                    t3: [0u8; 32],
+                    t4: [0u8; 32],
+                }),
+                parent_index: 1,
+            };
+
+            NewCapList([sample_cap_1, sample_cap_2].to_vec()).to_u256_list()
+        };
+
+        contract.insert_proc(String::from("FOO"), proc_address, cap_list);
+
+        let new_write_cap_len =
+            contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
+        let new_log_cap_len =
+            contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_LOG));
+
+        assert_eq!(new_write_cap_len, U256::one());
+        assert_eq!(new_log_cap_len, U256::one());
     }
 
     #[test]
     fn should_get_proc_cap() {
-        unimplemented!()
+        let mut contract = contract::ProcedureTableContract {};
+        let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
+        let sample_write_cap = NewCapability {
+            cap: Capability::StoreWrite(StoreWriteCap {
+                location: U256::from(1234).into(),
+                size: U256::from(2345).into(),
+            }),
+            parent_index: 0,
+        };
+
+        let sample_log_cap = NewCapability {
+            cap: Capability::Log(LogCap {
+                topics: 1,
+                t1: [7u8; 32],
+                t2: [0u8; 32],
+                t3: [0u8; 32],
+                t4: [0u8; 32],
+            }),
+            parent_index: 1,
+        };
+
+        let cap_list = NewCapList([sample_write_cap.clone(), sample_log_cap.clone()].to_vec()).to_u256_list();
+
+        contract.insert_proc(String::from("FOO"), proc_address, cap_list);
+
+        let new_write_cap = {
+            let raw_cap = contract.get_proc_cap(
+                String::from("FOO"),
+                U256::from(CAP_STORE_WRITE),
+                U256::zero(),
+            );
+            Capability::from_u256_list(&raw_cap).expect("Should be Valid StoreWriteCap")
+        };
+
+
+        let new_log_cap = {
+            let raw_cap = contract.get_proc_cap(
+                String::from("FOO"),
+                U256::from(CAP_LOG),
+                U256::zero(),
+            );
+            Capability::from_u256_list(&raw_cap).expect("Should be Valid LogCap")
+        };
+        
+        assert_eq!(new_write_cap, sample_write_cap.cap);
+        assert_eq!(new_log_cap, sample_log_cap.cap);
     }
 
     #[test]
