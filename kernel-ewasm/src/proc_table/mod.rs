@@ -389,6 +389,12 @@ pub mod contract {
         /// Remove Procedure By Key
         fn remove_proc(&mut self, key: String) -> U256;
 
+        /// Set Entry Procedure Id
+        fn set_entry_proc_id(&mut self, key: String) -> U256;
+
+        /// Set Current Procedure Id
+        fn set_current_proc_id(&mut self, key: String) -> U256;
+
         /// Check if Procedure Exists By Key
         fn contains(&mut self, key: String) -> bool;
 
@@ -412,6 +418,9 @@ pub mod contract {
 
         /// Get Entry Procedure Id
         fn get_entry_proc_id(&mut self) -> String;
+
+        /// Get Current Procedure Id
+        fn get_current_proc_id(&mut self) -> String;
     }
 
     pub struct ProcedureTableContract;
@@ -448,6 +457,16 @@ pub mod contract {
                 Ok(()) => U256::zero(),
                 Err(_) => U256::one(),
             }
+        }
+
+        /// Set Entry Procedure Id
+        fn set_entry_proc_id(&mut self, key: String) -> U256 {
+            unimplemented!()
+        }
+
+        /// Set Current Procedure Id
+        fn set_current_proc_id(&mut self, key: String) -> U256 {
+            unimplemented!()
         }
 
         fn contains(&mut self, key: String) -> bool {
@@ -547,6 +566,10 @@ pub mod contract {
         }
 
         fn get_entry_proc_id(&mut self) -> String {
+            unimplemented!()
+        }
+
+        fn get_current_proc_id(&mut self) -> String {
             unimplemented!()
         }
     }
@@ -746,7 +769,41 @@ mod tests {
 
     #[test]
     fn should_get_entry_proc_id() {
-        unimplemented!()
+        let mut contract = contract::ProcedureTableContract {};
+        let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
+
+        let cap_list = NewCapList([].to_vec()).to_u256_list();
+
+        contract.insert_proc(String::from("FOO"), proc_address, cap_list);
+
+        let err = contract.set_entry_proc_id(String::from("FOO"));
+        if err != U256::zero() {
+            panic!("Should return 0 for success, instead got {}", err)
+        }
+
+        let mut new_entry_proc_id = contract.get_entry_proc_id();
+        new_entry_proc_id.truncate(3);
+
+        assert_eq!(new_entry_proc_id, String::from("FOO"));
     }
 
+    #[test]
+    fn should_get_current_proc_id() {
+        let mut contract = contract::ProcedureTableContract {};
+        let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
+
+        let cap_list = NewCapList([].to_vec()).to_u256_list();
+
+        contract.insert_proc(String::from("FOO"), proc_address, cap_list);
+        
+        let err = contract.set_current_proc_id(String::from("FOO"));
+        if err != U256::zero() {
+            panic!("Should return 0 for success, instead got {}", err)
+        }
+
+        let mut new_current_proc_id = contract.get_current_proc_id();
+        new_current_proc_id.truncate(3);
+        
+        assert_eq!(new_current_proc_id, String::from("FOO"));
+    }
 }
