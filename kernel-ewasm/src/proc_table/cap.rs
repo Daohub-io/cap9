@@ -7,6 +7,8 @@ use pwasm_abi::eth;
 use pwasm_abi::types::*;
 use pwasm_abi_derive::eth_abi;
 
+use core::convert::TryFrom;
+
 pub const CAP_PROC_CALL: u8 = 3;
 pub const CAP_PROC_CALL_SIZE: u8 = 1;
 
@@ -31,34 +33,34 @@ pub const CAP_ACC_CALL_SIZE: u8 = 1;
 type ProcedureKey = [u8; 24];
 type ProcedureIndex = [u8; 24];
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ProcedureCallCap {
     pub prefix: u8,
     pub key: ProcedureKey,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ProcedureRegisterCap {
     pub prefix: u8,
     pub key: ProcedureKey,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ProcedureDeleteCap {
     pub prefix: u8,
     pub key: ProcedureKey,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ProcedureEntryCap;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StoreWriteCap {
     pub location: [u8; 32],
     pub size: [u8; 32],
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LogCap {
     pub topics: u8,
     pub t1: [u8; 32],
@@ -67,14 +69,14 @@ pub struct LogCap {
     pub t4: [u8; 32],
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AccountCallCap {
     pub can_call_any: bool,
     pub can_send: bool,
     pub address: Address,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Capability {
     ProcedureCall(ProcedureCallCap),
     ProcedureRegister(ProcedureRegisterCap),
@@ -83,6 +85,116 @@ pub enum Capability {
     StoreWrite(StoreWriteCap),
     Log(LogCap),
     AccountCall(AccountCallCap),
+}
+
+#[derive(Clone, Debug)]
+pub enum CapDecodeErr {
+    InvalidCapType(u8),
+    InvalidCapLen(u8),
+}
+
+impl Capability {
+    pub fn from_u256_list(input: &[U256]) -> Result<Capability, CapDecodeErr> {
+        let cap_type = input[0].byte(0);
+        let start = 1;
+        let new_cap = match (cap_type, input.len() as u8) {
+            (CAP_PROC_CALL, CAP_PROC_CALL_SIZE) => {
+                let val = input[start];
+                let mut key = [0u8; 24];
+                key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
+
+                let proc_call_cap = ProcedureCallCap {
+                    prefix: val.byte(0),
+                    key: key,
+                };
+
+                Capability::ProcedureCall(proc_call_cap)
+            }
+            (CAP_PROC_REGISTER, CAP_PROC_REGISTER_SIZE) => {
+                let val = input[start];
+
+                let mut key = [0u8; 24];
+                key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
+
+                let proc_reg_cap = ProcedureRegisterCap {
+                    prefix: val.byte(0),
+                    key: key,
+                };
+
+                Capability::ProcedureRegister(proc_reg_cap)
+            }
+            (CAP_PROC_DELETE, CAP_PROC_DELETE_SIZE) => {
+                let val = input[start];
+
+                let mut key = [0u8; 24];
+                key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
+
+                let proc_del_cap = ProcedureDeleteCap {
+                    prefix: val.byte(0),
+                    key: key,
+                };
+
+                Capability::ProcedureDelete(proc_del_cap)
+            }
+            (CAP_PROC_ENTRY, CAP_PROC_ENTRY_SIZE) => {
+                Capability::ProcedureEntry(ProcedureEntryCap)
+            },
+            (CAP_STORE_WRITE, CAP_STORE_WRITE_SIZE) => {
+                let location: [u8; 32] = input[start].into();
+                let size: [u8; 32] = input[start + 1].into();
+
+                let store_write_cap = StoreWriteCap {
+                    location: location,
+                    size: size,
+                };
+
+                Capability::StoreWrite(store_write_cap)
+            }
+            (CAP_LOG, CAP_LOG_SIZE) => {
+                let topics_len: usize = input[start].byte(0) as usize;
+                let mut topics = [[0; 32]; 4];
+                if topics_len != 0 {
+                    match topics_len {
+                        1...4 => {
+                            for i in 0..topics_len {
+                                topics[i] = input[start + i + 1].into()
+                            }
+                        }
+                        _ => return Err(CapDecodeErr::InvalidCapLen(topics_len as u8)),
+                    }
+                }
+
+                Capability::Log(LogCap {
+                        topics: topics_len as u8,
+                        t1: topics[0],
+                        t2: topics[1],
+                        t3: topics[2],
+                        t4: topics[3],
+                    })
+            }
+            (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
+                let val = input[start];
+
+                let can_call_any = val.bit(0);
+                let can_send = val.bit(1);
+
+                let mut address = [0u8; 20];
+                address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
+                let address = H160::from(address);
+
+                let account_call_cap = AccountCallCap {
+                    can_call_any: can_call_any,
+                    can_send: can_send,
+                    address: address,
+                };
+
+                Capability::AccountCall(account_call_cap)
+            }
+            _ => return Err(CapDecodeErr::InvalidCapType(cap_type)),
+        };
+
+        Ok(new_cap)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -103,12 +215,6 @@ impl NewCapList {
     pub fn inner(self) -> Vec<NewCapability> {
         self.0
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum CapDecodeErr {
-    InvalidCapType(u8),
-    InvalidCapLen(u8),
 }
 
 impl NewCapList {
@@ -377,6 +483,20 @@ mod tests {
     use pwasm_abi::eth::AbiType;
 
     #[test]
+    fn should_encode_empty_cap_list() {
+        let EMPTY_LIST = Vec::new();
+        let result = NewCapList(EMPTY_LIST).to_u256_list();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn should_decode_empty_cap_list() {
+        let result = NewCapList::from_u256_list(&Vec::new()).expect("An Empty CapList is a Valid List");
+        assert_eq!(result.inner().len(), 0);
+    }
+
+    #[test]
     fn should_encode_cap_list() {
 
         let sample_cap = StoreWriteCap {
@@ -396,8 +516,6 @@ mod tests {
             U256::from(2345),
         ]
         .to_vec();
-
-        let mut sink = eth::Sink::new(10 * 256);
 
         let result = NewCapList([sample_new_cap].to_vec()).to_u256_list();
 

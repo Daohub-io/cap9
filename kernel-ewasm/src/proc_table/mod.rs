@@ -79,7 +79,7 @@ pub enum ProcInsertError {
 }
 
 /// Inserts Procedure into procedure table
-pub fn insert_proc(key: ProcedureKey, address: Address) -> Result<(), ProcInsertError> {
+pub fn insert_proc(key: ProcedureKey, address: Address, cap_list: cap::NewCapList) -> Result<(), ProcInsertError> {
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
 
@@ -263,7 +263,7 @@ pub mod contract {
     #[eth_abi(ProcedureEndpoint, ProcedureClient)]
     pub trait ProcedureTableInterface {
         /// Insert Procedure By Key
-        fn insert_proc(&mut self, key: String, address: Address) -> U256;
+        fn insert_proc(&mut self, key: String, address: Address, cap_list: Vec<U256>) -> U256;
 
         /// Remove Procedure By Key
         fn remove_proc(&mut self, key: String) -> U256;
@@ -287,7 +287,7 @@ pub mod contract {
         fn get_proc_cap_list_len(&mut self, key: String, cap_type: U256) -> U256;
 
         /// Get Procedure Capability by Id, Type and Index
-        fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<u8>;
+        fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256>;
 
         /// Get Entry Procedure Id
         fn get_entry_proc_id(&mut self) -> String;
@@ -296,7 +296,7 @@ pub mod contract {
     pub struct ProcedureTableContract;
 
     impl ProcedureTableInterface for ProcedureTableContract {
-        fn insert_proc(&mut self, key: String, address: Address) -> U256 {
+        fn insert_proc(&mut self, key: String, address: Address, cap_list: Vec<U256>) -> U256 {
             let raw_key = {
                 let mut byte_key = key.as_bytes();
                 let len = byte_key.len();
@@ -304,7 +304,10 @@ pub mod contract {
                 output[..len].copy_from_slice(byte_key);
                 output
             };
-            match insert_proc(raw_key, address) {
+
+            let decoded_cap_list = cap::NewCapList::from_u256_list(&cap_list).expect("Caplist should be valid");
+
+            match insert_proc(raw_key, address, decoded_cap_list) {
                 Ok(()) => U256::zero(),
                 Err(_) => U256::one(),
             }
@@ -394,7 +397,7 @@ pub mod contract {
             unimplemented!()
         }
 
-        fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<u8> {
+        fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256> {
             unimplemented!()
         }
 
@@ -412,6 +415,7 @@ mod tests {
 
     use super::contract;
     use super::contract::*;
+    use super::cap::*;
 
     use self::pwasm_test::{ext_get, ext_reset};
     use core::str::FromStr;
@@ -421,13 +425,35 @@ mod tests {
     fn should_insert_proc_by_key() {
         let mut contract = contract::ProcedureTableContract {};
         let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
+        
+        let sample_cap = StoreWriteCap {
+            location: U256::from(1234).into(),
+            size: U256::from(2345).into(),
+        };
+        let sample_new_cap = NewCapability {
+            cap: Capability::StoreWrite(sample_cap.clone()),
+            parent_index: 0,
+        };
+        
+        let cap_list = NewCapList([sample_new_cap].to_vec()).to_u256_list();
 
-        contract.insert_proc(String::from("FOO"), proc_address);
+        contract.insert_proc(String::from("FOO"), proc_address, cap_list);
 
         let new_address = contract.get_proc_addr(String::from("FOO"));
         let new_index = contract.get_proc_index(String::from("FOO"));
         let new_len = contract.get_proc_list_len();
         let hasFoo = contract.contains(String::from("FOO"));
+
+        let new_cap_list_len = contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
+        let new_cap: StoreWriteCap = {
+            let raw_cap = contract.get_proc_cap(String::from("FOO"), U256::from(CAP_STORE_WRITE), U256::zero());
+            let cap = Capability::from_u256_list(&raw_cap).expect("Should be Valid StoreWriteCap");
+            if let Capability::StoreWrite(write_cap) = cap {
+                write_cap
+            } else {
+                panic!("Should be a StoreWrite Cap")
+            }
+        };
 
         // Get Id and Truncate
         let mut new_proc_id = contract.get_proc_id(new_index);
@@ -439,20 +465,36 @@ mod tests {
         assert_eq!(new_len, new_index);
         assert_eq!(new_proc_id, String::from("FOO"));
         assert!(hasFoo);
+        assert_eq!(new_cap_list_len, U256::one());
+        assert_eq!(new_cap, sample_cap);
     }
 
     #[test]
     fn should_remove_proc_by_key() {
         let mut contract = contract::ProcedureTableContract {};
         let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
+        let cap_list = {
+            let sample_cap = StoreWriteCap {
+                location: U256::from(1234).into(),
+                size: U256::from(2345).into(),
+            };
+            let sample_new_cap = NewCapability {
+                cap: Capability::StoreWrite(sample_cap),
+                parent_index: 0,
+            };
+            NewCapList([sample_new_cap].to_vec()).to_u256_list()
+        };
 
-        contract.insert_proc(String::from("FOO"), proc_address);
+        contract.insert_proc(String::from("FOO"), proc_address, cap_list);
+
         let new_address = contract.get_proc_addr(String::from("FOO"));
         let new_len = contract.get_proc_list_len();
+        let new_cap_len = contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
 
         assert_eq!(proc_address, new_address);
         assert_ne!(new_len, U256::zero());
         assert_eq!(new_len.as_u32(), 1);
+        assert_eq!(new_cap_len, U256::one());
 
         contract.remove_proc(String::from("FOO"));
 
@@ -460,11 +502,13 @@ mod tests {
         let removed_index = contract.get_proc_index(String::from("FOO"));
         let removed_len = contract.get_proc_list_len();
         let hasFoo = contract.contains(String::from("FOO"));
+        let removed_cap_len = contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
 
         assert_eq!(removed_address, H160::zero());
         assert_eq!(removed_index, U256::zero());
         assert_eq!(removed_len, U256::zero());
-        assert!(!hasFoo)
+        assert!(!hasFoo);
+        assert_eq!(removed_cap_len, U256::zero());
     }
 
     #[test]
