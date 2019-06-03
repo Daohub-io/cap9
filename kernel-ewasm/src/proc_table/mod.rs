@@ -115,7 +115,7 @@ pub fn insert_proc(key: ProcedureKey, address: Address, cap_list: cap::NewCapLis
 
     // Update Proc List Len
     pwasm_ethereum::write(&H256(KERNEL_PROC_LIST_PTR), &new_proc_index.into());
-
+    
     // TODO: Store CapList
     // if cap_list.0.len() > 0 {
     //     unimplemented!();
@@ -248,6 +248,16 @@ fn get_proc_list_len() -> U256 {
     U256::from(proc_list_len)
 }
 
+/// Get Procedure Cap Type Length
+fn get_proc_cap_list_len(key: ProcedureKey, cap_type: u8) -> u8 {
+    unimplemented!();
+}
+
+/// Get Procedure Capability by Id, Type and Index
+fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<cap::Capability> {
+    unimplemented!()
+}
+
 /// Get Entry Procedure Id
 fn get_entry_proc_id() -> ProcedureKey {
     let proc_id = pwasm_ethereum::read(&H256(KERNEL_CURRENT_ENTRY_PTR));
@@ -255,6 +265,7 @@ fn get_entry_proc_id() -> ProcedureKey {
     result.copy_from_slice(&proc_id[8..]);
     result
 }
+
 
 #[cfg(test)]
 pub mod contract {
@@ -394,11 +405,34 @@ pub mod contract {
         }
 
         fn get_proc_cap_list_len(&mut self, key: String, cap_type: U256) -> U256 {
-            unimplemented!()
+            let raw_key = {
+                let mut byte_key = key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8; 24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+            
+            U256::from(get_proc_cap_list_len(raw_key, cap_type.as_u32() as u8))
         }
 
         fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256> {
-            unimplemented!()
+            let raw_key = {
+                let mut byte_key = key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8; 24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            let cap_type = cap_type.as_u32() as u8;
+            let cap_index = cap_index.as_u32() as u8;
+
+            if let Some(cap) = get_proc_cap(raw_key, cap_type, cap_index) {
+                cap.into_u256_list()
+            } else {
+                Vec::new()
+            }
         }
 
         fn get_entry_proc_id(&mut self) -> String {

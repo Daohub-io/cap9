@@ -94,6 +94,80 @@ pub enum CapDecodeErr {
 }
 
 impl Capability {
+    pub fn into_u256_list(&self) -> Vec<U256> {
+        match self {
+            Capability::ProcedureCall(proc_call_cap) => {
+                    let cap_size = U256::from(CAP_PROC_CALL_SIZE + 3);
+                    let cap_type = U256::from(CAP_PROC_CALL);
+
+                    let mut res = [0u8; 32];
+                    res[0] = proc_call_cap.prefix;
+                    res[8..].copy_from_slice(&proc_call_cap.key);
+
+                    [cap_type, U256::from(res)].to_vec()
+                }
+                Capability::ProcedureRegister(proc_register_cap) => {
+                    let cap_size = U256::from(CAP_PROC_REGISTER_SIZE + 3);
+                    let cap_type = U256::from(CAP_PROC_REGISTER);
+
+                    let mut res = [0u8; 32];
+                    res[0] = proc_register_cap.prefix;
+                    res[8..].copy_from_slice(&proc_register_cap.key);
+
+                    [cap_type, U256::from(res)].to_vec()
+                }
+                Capability::ProcedureDelete(proc_delete_cap) => {
+                    let cap_size = U256::from(CAP_PROC_DELETE_SIZE + 3);
+                    let cap_type = U256::from(CAP_PROC_DELETE);
+
+                    let mut res = [0u8; 32];
+                    res[0] = proc_delete_cap.prefix;
+                    res[8..].copy_from_slice(&proc_delete_cap.key);
+
+                    [cap_type, U256::from(res)].to_vec()
+                }
+                Capability::ProcedureEntry(_) => {
+                    let cap_size = U256::from(CAP_PROC_ENTRY_SIZE + 3);
+                    let cap_type = U256::from(CAP_PROC_ENTRY);
+
+                    [cap_size, cap_type].to_vec()
+                }
+                Capability::StoreWrite(store_write_cap) => {
+                    let cap_size = U256::from(CAP_STORE_WRITE_SIZE + 3);
+                    let cap_type = U256::from(CAP_STORE_WRITE);
+
+                    [cap_type,U256::from(store_write_cap.location),U256::from(store_write_cap.size)].to_vec()
+                }
+                Capability::Log(log_cap) => {
+                    let cap_size = U256::from(CAP_LOG_SIZE + 3);
+                    let cap_type = U256::from(CAP_LOG);
+
+                    let topics_len = U256::from(log_cap.topics);
+                    let t1 = U256::from(log_cap.t1);
+                    let t2 = U256::from(log_cap.t2);
+                    let t3 = U256::from(log_cap.t3);
+                    let t4 = U256::from(log_cap.t4);
+
+                    [cap_type, topics_len, t1, t2, t3, t4].to_vec()
+                }
+                Capability::AccountCall(account_call_cap) => {
+                    let cap_size = U256::from(CAP_ACC_CALL_SIZE + 3);
+                    let cap_type = U256::from(CAP_ACC_CALL);
+
+                    let mut res = [0u8; 32];
+                    res[0] |= if account_call_cap.can_call_any {
+                        0x80
+                    } else {
+                        0
+                    };
+                    res[0] |= if account_call_cap.can_send { 0x40 } else { 0 };
+
+                    res[12..].copy_from_slice(account_call_cap.address.as_fixed_bytes());
+
+                    [cap_type, U256::from(res)].to_vec()
+                }
+        }
+    }
     pub fn from_u256_list(input: &[U256]) -> Result<Capability, CapDecodeErr> {
         let cap_type = input[0].byte(0);
         let start = 1;
