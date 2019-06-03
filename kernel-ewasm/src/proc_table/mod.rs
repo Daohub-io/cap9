@@ -40,12 +40,16 @@ impl ProcPointer {
         ProcPointer(key)
     }
 
+    /// Get Procedure Storage Pointer
     fn get_store_ptr(&self) -> [u8; 32] {
         let mut result: [u8; 32] = KERNEL_PROC_HEAP_PTR;
         result[5..29].copy_from_slice(&self.0);
         result
     }
 
+    /// Get Procedure Address Pointer
+    /// 
+    /// (Equivalent to crate::get_store_ptr)
     fn get_addr_ptr(&self) -> [u8; 32] {
         self.get_store_ptr()
     }
@@ -56,9 +60,27 @@ impl ProcPointer {
         pointer
     }
 
+    /// Get the Storage Pointer to the Length of a Capability Type List
     fn get_cap_type_len_ptr(&self, cap_type: u8) -> [u8; 32] {
         let mut pointer = self.get_store_ptr();
-        pointer[29] = 1;
+        pointer[29] = cap_type;
+        pointer
+    }
+
+    /// Get the Storage Pointer to the Index of a Capability
+    fn get_cap_index_ptr(&self, cap_type: u8, cap_index: u8) -> [u8; 32] {
+        let mut pointer = self.get_store_ptr();
+        pointer[29] = cap_type;
+        pointer[30] = cap_index;
+        pointer
+    }
+
+    /// Get the Storage Pointer of a Capability Value at Index
+    fn get_cap_val_ptr(&self, cap_type: u8, cap_index: u8, val_index: u8) -> [u8; 32] {
+        let mut pointer = self.get_store_ptr();
+        pointer[29] = cap_type;
+        pointer[30] = cap_index;
+        pointer[31] = val_index;
         pointer
     }
 
@@ -250,12 +272,30 @@ fn get_proc_list_len() -> U256 {
 
 /// Get Procedure Cap Type Length
 fn get_proc_cap_list_len(key: ProcedureKey, cap_type: u8) -> u8 {
-    unimplemented!();
+    let proc_pointer = ProcPointer::from_key(key);
+    let proc_cap_list_len = pwasm_ethereum::read(&H256(proc_pointer.get_cap_type_len_ptr(cap_type)));
+    proc_cap_list_len[31]
 }
 
 /// Get Procedure Capability by Id, Type and Index
 fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<cap::Capability> {
-    unimplemented!()
+    use cap::*;
+    let proc_pointer = ProcPointer::from_key(key);
+
+    let cap_size = match cap_type {
+        CAP_PROC_CALL => CAP_PROC_CALL_SIZE,
+        CAP_PROC_REGISTER => CAP_PROC_REGISTER_SIZE,
+        CAP_PROC_DELETE => CAP_PROC_DELETE_SIZE,
+        CAP_PROC_ENTRY => CAP_PROC_ENTRY_SIZE,
+        CAP_STORE_WRITE => CAP_STORE_WRITE_SIZE,
+        CAP_LOG => CAP_LOG_SIZE,
+        CAP_ACC_CALL => CAP_ACC_CALL_SIZE,
+        _ => return None
+    };
+
+    let mut raw_val: Vec<U256> = (0..cap_size).map(|i| U256::from(pwasm_ethereum::read(&H256(proc_pointer.get_cap_val_ptr(cap_type,cap_index, i))))).collect();
+    raw_val.insert(0, U256::from(cap_type));
+    Capability::from_u256_list(&raw_val).ok()
 }
 
 /// Get Entry Procedure Id

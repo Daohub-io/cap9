@@ -171,7 +171,7 @@ impl Capability {
     pub fn from_u256_list(input: &[U256]) -> Result<Capability, CapDecodeErr> {
         let cap_type = input[0].byte(0);
         let start = 1;
-        let new_cap = match (cap_type, input.len() as u8) {
+        let new_cap = match (cap_type, input.len() as u8 - 1) {
             (CAP_PROC_CALL, CAP_PROC_CALL_SIZE) => {
                 let val = input[start];
                 let mut key = [0u8; 24];
