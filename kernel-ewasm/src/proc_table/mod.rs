@@ -71,7 +71,7 @@ impl ProcPointer {
     fn get_cap_index_ptr(&self, cap_type: u8, cap_index: u8) -> [u8; 32] {
         let mut pointer = self.get_store_ptr();
         pointer[29] = cap_type;
-        pointer[30] = cap_index;
+        pointer[30] = cap_index + 1;
         pointer
     }
 
@@ -79,7 +79,7 @@ impl ProcPointer {
     fn get_cap_val_ptr(&self, cap_type: u8, cap_index: u8, val_index: u8) -> [u8; 32] {
         let mut pointer = self.get_store_ptr();
         pointer[29] = cap_type;
-        pointer[30] = cap_index;
+        pointer[30] = cap_index + 1;
         pointer[31] = val_index;
         pointer
     }
@@ -138,10 +138,28 @@ pub fn insert_proc(key: ProcedureKey, address: Address, cap_list: cap::NewCapLis
     // Update Proc List Len
     pwasm_ethereum::write(&H256(KERNEL_PROC_LIST_PTR), &new_proc_index.into());
     
-    // TODO: Store CapList
-    // if cap_list.0.len() > 0 {
-    //     unimplemented!();
-    // }
+    // Use a static array for cap_type len
+    let mut proc_type_len = [0u8; 9];
+    let cap_list = cap_list.inner();
+
+    for new_cap in cap_list.iter() {
+        let raw_val = new_cap.cap.into_u256_list();
+        let cap_type = raw_val[0].as_u32() as u8;
+
+        for (i, val) in raw_val[1..].iter().enumerate() {
+            let cap_index = proc_type_len[cap_type as usize];
+            pwasm_ethereum::write(&H256(proc_pointer.get_cap_val_ptr(cap_type, cap_index, i as u8)), &(*val).into());
+        }
+        proc_type_len[cap_type as usize] += 1;
+    }
+
+    if cap_list.len() > 0 {
+        // Update Proc Type Length
+        for (cap_type, total_len) in proc_type_len.into_iter().enumerate() {
+            if cap_type < 3 { continue; }
+            pwasm_ethereum::write(&H256(proc_pointer.get_cap_type_len_ptr(cap_type as u8)), &U256::from(*total_len).into())
+        }
+    }
 
     Ok(())
 }
