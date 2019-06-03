@@ -32,6 +32,7 @@ type ProcedureKey = [u8; 24];
 type ProcedureIndex = [u8; 24];
 
 pub mod cap;
+use cap::*;
 
 pub struct ProcPointer(ProcedureKey);
 
@@ -48,7 +49,7 @@ impl ProcPointer {
     }
 
     /// Get Procedure Address Pointer
-    /// 
+    ///
     /// (Equivalent to crate::get_store_ptr)
     fn get_addr_ptr(&self) -> [u8; 32] {
         self.get_store_ptr()
@@ -101,7 +102,11 @@ pub enum ProcInsertError {
 }
 
 /// Inserts Procedure into procedure table
-pub fn insert_proc(key: ProcedureKey, address: Address, cap_list: cap::NewCapList) -> Result<(), ProcInsertError> {
+pub fn insert_proc(
+    key: ProcedureKey,
+    address: Address,
+    cap_list: cap::NewCapList,
+) -> Result<(), ProcInsertError> {
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
 
@@ -137,9 +142,9 @@ pub fn insert_proc(key: ProcedureKey, address: Address, cap_list: cap::NewCapLis
 
     // Update Proc List Len
     pwasm_ethereum::write(&H256(KERNEL_PROC_LIST_PTR), &new_proc_index.into());
-    
+
     // Use a static array for cap_type len
-    let mut proc_type_len = [0u8; 9];
+    let mut proc_type_len = [0u8; 10];
     let cap_list = cap_list.inner();
 
     for new_cap in cap_list.iter() {
@@ -148,7 +153,10 @@ pub fn insert_proc(key: ProcedureKey, address: Address, cap_list: cap::NewCapLis
 
         for (i, val) in raw_val[1..].iter().enumerate() {
             let cap_index = proc_type_len[cap_type as usize];
-            pwasm_ethereum::write(&H256(proc_pointer.get_cap_val_ptr(cap_type, cap_index, i as u8)), &(*val).into());
+            pwasm_ethereum::write(
+                &H256(proc_pointer.get_cap_val_ptr(cap_type, cap_index, i as u8)),
+                &(*val).into(),
+            );
         }
         proc_type_len[cap_type as usize] += 1;
     }
@@ -156,8 +164,13 @@ pub fn insert_proc(key: ProcedureKey, address: Address, cap_list: cap::NewCapLis
     if cap_list.len() > 0 {
         // Update Proc Type Length
         for (cap_type, total_len) in proc_type_len.into_iter().enumerate() {
-            if cap_type < 3 { continue; }
-            pwasm_ethereum::write(&H256(proc_pointer.get_cap_type_len_ptr(cap_type as u8)), &U256::from(*total_len).into())
+            if cap_type < 3 {
+                continue;
+            }
+            pwasm_ethereum::write(
+                &H256(proc_pointer.get_cap_type_len_ptr(cap_type as u8)),
+                &U256::from(*total_len).into(),
+            )
         }
     }
 
@@ -213,13 +226,46 @@ pub fn remove_proc(key: ProcedureKey) -> Result<(), ProcRemoveError> {
         &[0; 32],
     );
 
+    // Remove CapList
+    for cap_type in 3..10 {
+        let cap_type_len =
+            pwasm_ethereum::read(&H256(proc_pointer.get_cap_type_len_ptr(cap_type)))[31];
+        if cap_type_len == 0 {
+            continue;
+        };
+
+        let cap_size = match cap_type {
+            CAP_PROC_CALL => CAP_PROC_CALL_SIZE,
+            CAP_PROC_REGISTER => CAP_PROC_REGISTER_SIZE,
+            CAP_PROC_DELETE => CAP_PROC_DELETE_SIZE,
+            CAP_PROC_ENTRY => CAP_PROC_ENTRY_SIZE,
+            CAP_STORE_WRITE => CAP_STORE_WRITE_SIZE,
+            CAP_LOG => CAP_LOG_SIZE,
+            CAP_ACC_CALL => CAP_ACC_CALL_SIZE,
+            _ => unreachable!(),
+        };
+
+        // Remove Each Cap
+        for cap_index in 0..cap_type_len {
+            for val_index in 0..cap_size {
+                let val_pointer = proc_pointer.get_cap_val_ptr(cap_type, cap_index, val_index);
+                pwasm_ethereum::write(&H256(val_pointer), &[0u8; 32]);
+            }
+        }
+
+        // Zero Cap Len
+        pwasm_ethereum::write(
+            &H256(proc_pointer.get_cap_type_len_ptr(cap_type)),
+            &[0u8; 32],
+        );
+    }
+
     // Remove Address
     pwasm_ethereum::write(&H256(proc_pointer.get_addr_ptr()), &[0; 32]);
 
     // Remove Index
     pwasm_ethereum::write(&H256(proc_pointer.get_index_ptr()), &[0; 32]);
 
-    // Todo: Remove CapList
     Ok(())
 }
 
@@ -291,7 +337,8 @@ fn get_proc_list_len() -> U256 {
 /// Get Procedure Cap Type Length
 fn get_proc_cap_list_len(key: ProcedureKey, cap_type: u8) -> u8 {
     let proc_pointer = ProcPointer::from_key(key);
-    let proc_cap_list_len = pwasm_ethereum::read(&H256(proc_pointer.get_cap_type_len_ptr(cap_type)));
+    let proc_cap_list_len =
+        pwasm_ethereum::read(&H256(proc_pointer.get_cap_type_len_ptr(cap_type)));
     proc_cap_list_len[31]
 }
 
@@ -308,10 +355,16 @@ fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<cap::C
         CAP_STORE_WRITE => CAP_STORE_WRITE_SIZE,
         CAP_LOG => CAP_LOG_SIZE,
         CAP_ACC_CALL => CAP_ACC_CALL_SIZE,
-        _ => return None
+        _ => return None,
     };
 
-    let mut raw_val: Vec<U256> = (0..cap_size).map(|i| U256::from(pwasm_ethereum::read(&H256(proc_pointer.get_cap_val_ptr(cap_type,cap_index, i))))).collect();
+    let mut raw_val: Vec<U256> = (0..cap_size)
+        .map(|i| {
+            U256::from(pwasm_ethereum::read(&H256(
+                proc_pointer.get_cap_val_ptr(cap_type, cap_index, i),
+            )))
+        })
+        .collect();
     raw_val.insert(0, U256::from(cap_type));
     Capability::from_u256_list(&raw_val).ok()
 }
@@ -323,7 +376,6 @@ fn get_entry_proc_id() -> ProcedureKey {
     result.copy_from_slice(&proc_id[8..]);
     result
 }
-
 
 #[cfg(test)]
 pub mod contract {
@@ -374,7 +426,8 @@ pub mod contract {
                 output
             };
 
-            let decoded_cap_list = cap::NewCapList::from_u256_list(&cap_list).expect("Caplist should be valid");
+            let decoded_cap_list =
+                cap::NewCapList::from_u256_list(&cap_list).expect("Caplist should be valid");
 
             match insert_proc(raw_key, address, decoded_cap_list) {
                 Ok(()) => U256::zero(),
@@ -470,7 +523,7 @@ pub mod contract {
                 output[..len].copy_from_slice(byte_key);
                 output
             };
-            
+
             U256::from(get_proc_cap_list_len(raw_key, cap_type.as_u32() as u8))
         }
 
@@ -505,9 +558,9 @@ mod tests {
     extern crate pwasm_test;
     extern crate std;
 
+    use super::cap::*;
     use super::contract;
     use super::contract::*;
-    use super::cap::*;
 
     use self::pwasm_test::{ext_get, ext_reset};
     use core::str::FromStr;
@@ -517,7 +570,7 @@ mod tests {
     fn should_insert_proc_by_key() {
         let mut contract = contract::ProcedureTableContract {};
         let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
-        
+
         let sample_cap = StoreWriteCap {
             location: U256::from(1234).into(),
             size: U256::from(2345).into(),
@@ -526,7 +579,7 @@ mod tests {
             cap: Capability::StoreWrite(sample_cap.clone()),
             parent_index: 0,
         };
-        
+
         let cap_list = NewCapList([sample_new_cap].to_vec()).to_u256_list();
 
         contract.insert_proc(String::from("FOO"), proc_address, cap_list);
@@ -536,9 +589,14 @@ mod tests {
         let new_len = contract.get_proc_list_len();
         let hasFoo = contract.contains(String::from("FOO"));
 
-        let new_cap_list_len = contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
+        let new_cap_list_len =
+            contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
         let new_cap: StoreWriteCap = {
-            let raw_cap = contract.get_proc_cap(String::from("FOO"), U256::from(CAP_STORE_WRITE), U256::zero());
+            let raw_cap = contract.get_proc_cap(
+                String::from("FOO"),
+                U256::from(CAP_STORE_WRITE),
+                U256::zero(),
+            );
             let cap = Capability::from_u256_list(&raw_cap).expect("Should be Valid StoreWriteCap");
             if let Capability::StoreWrite(write_cap) = cap {
                 write_cap
@@ -566,27 +624,43 @@ mod tests {
         let mut contract = contract::ProcedureTableContract {};
         let proc_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
         let cap_list = {
-            let sample_cap = StoreWriteCap {
-                location: U256::from(1234).into(),
-                size: U256::from(2345).into(),
-            };
-            let sample_new_cap = NewCapability {
-                cap: Capability::StoreWrite(sample_cap),
+            let sample_cap_1 = NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: U256::from(1234).into(),
+                    size: U256::from(2345).into(),
+                }),
                 parent_index: 0,
             };
-            NewCapList([sample_new_cap].to_vec()).to_u256_list()
+
+            let sample_cap_2 = NewCapability {
+                cap: Capability::Log(LogCap {
+                    topics: 1,
+                    t1: [7u8; 32],
+                    t2: [0u8; 32],
+                    t3: [0u8; 32],
+                    t4: [0u8; 32],
+                }),
+                parent_index: 1,
+            };
+
+            NewCapList([sample_cap_1, sample_cap_2].to_vec()).to_u256_list()
         };
 
         contract.insert_proc(String::from("FOO"), proc_address, cap_list);
 
         let new_address = contract.get_proc_addr(String::from("FOO"));
         let new_len = contract.get_proc_list_len();
-        let new_cap_len = contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
+        let new_write_cap_len =
+            contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
+        let new_log_cap_len =
+            contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_LOG));
 
         assert_eq!(proc_address, new_address);
         assert_ne!(new_len, U256::zero());
         assert_eq!(new_len.as_u32(), 1);
-        assert_eq!(new_cap_len, U256::one());
+        
+        assert_eq!(new_write_cap_len, U256::one());
+        assert_eq!(new_log_cap_len, U256::one());
 
         contract.remove_proc(String::from("FOO"));
 
@@ -594,13 +668,19 @@ mod tests {
         let removed_index = contract.get_proc_index(String::from("FOO"));
         let removed_len = contract.get_proc_list_len();
         let hasFoo = contract.contains(String::from("FOO"));
-        let removed_cap_len = contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
+        let removed_write_cap_len =
+            contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_STORE_WRITE));
+        let removed_log_cap_len =
+            contract.get_proc_cap_list_len(String::from("FOO"), U256::from(CAP_LOG));
 
         assert_eq!(removed_address, H160::zero());
         assert_eq!(removed_index, U256::zero());
         assert_eq!(removed_len, U256::zero());
         assert!(!hasFoo);
-        assert_eq!(removed_cap_len, U256::zero());
+
+        assert_eq!(removed_write_cap_len, U256::zero());
+        assert_eq!(removed_log_cap_len, U256::zero());
+
     }
 
     #[test]

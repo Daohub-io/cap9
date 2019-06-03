@@ -419,7 +419,7 @@ impl NewCapList {
             let parent_index = list[start + 2].byte(0);
 
             // Check Cap Size
-            if end - start > cap_size as usize {
+            if end - start < cap_size as usize {
                 return Err(CapDecodeErr::InvalidCapLen(cap_size));
             }
 
