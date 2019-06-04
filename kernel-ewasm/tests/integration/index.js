@@ -149,7 +149,6 @@ describe('Kernel', function() {
             assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
             let rec_validation = await kernel.methods.get_code_size(kernelAddress).call();
             assert.strictEqual(typeof rec_validation, "number")
-            console.log(rec_validation)
         })
         // it('should return false when trying to validate the kernel itself', async function() {
         //     const kernelAddress = kernel.options.address;
@@ -157,5 +156,14 @@ describe('Kernel', function() {
         //     let rec_validation = await kernel.methods.check_contract(kernelAddress).call();
         //     assert.strictEqual(rec_validation, false)
         // })
+
+        it('should copy the code of the kernel', async function() {
+            const kernelAddress = kernel.options.address;
+            assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
+            const code_size = await kernel.methods.get_code_size(kernelAddress).call();
+            const code_hex = await kernel.methods.code_copy(kernelAddress).call();
+            const code = web3.utils.hexToBytes(code_hex);
+            assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
+        })
     })
 })
