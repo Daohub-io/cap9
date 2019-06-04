@@ -23,7 +23,7 @@ const KERNEL_CURRENT_PROC_PTR: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0,
 ];
-const KERNEL_CURRENT_ENTRY_PTR: [u8; 32] = [
+const KERNEL_ENTRY_PROC_PTR: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0,
 ];
@@ -91,6 +91,7 @@ impl ProcPointer {
         result[5..29].copy_from_slice(&slice[8..]);
         result
     }
+    
 }
 
 /// Error or Procedure Insertion
@@ -269,6 +270,28 @@ pub fn remove_proc(key: ProcedureKey) -> Result<(), ProcRemoveError> {
     Ok(())
 }
 
+#[derive(Debug, Clone)]
+struct InvalidProcId;
+
+/// Set Entry Procedure Id
+fn set_entry_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
+    if key == [0; 24] {return Err(InvalidProcId);}
+    let mut result = [0u8; 32];
+    result[8..].copy_from_slice(&key);
+    pwasm_ethereum::write(&H256(KERNEL_ENTRY_PROC_PTR), &result);
+    Ok(())
+}
+
+/// Set Current Procedure Id
+fn set_current_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
+    if key == [0; 24] {return Err(InvalidProcId);}
+    let mut result = [0u8; 32];
+    result[8..].copy_from_slice(&key);
+    pwasm_ethereum::write(&H256(KERNEL_CURRENT_PROC_PTR), &result);
+    Ok(())
+}
+
+
 fn contains(key: ProcedureKey) -> bool {
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
@@ -371,7 +394,15 @@ fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<cap::C
 
 /// Get Entry Procedure Id
 fn get_entry_proc_id() -> ProcedureKey {
-    let proc_id = pwasm_ethereum::read(&H256(KERNEL_CURRENT_ENTRY_PTR));
+    let proc_id = pwasm_ethereum::read(&H256(KERNEL_ENTRY_PROC_PTR));
+    let mut result = [0; 24];
+    result.copy_from_slice(&proc_id[8..]);
+    result
+}
+
+/// Get Current Procedure Id
+fn get_current_proc_id() -> ProcedureKey {
+    let proc_id = pwasm_ethereum::read(&H256(KERNEL_CURRENT_PROC_PTR));
     let mut result = [0; 24];
     result.copy_from_slice(&proc_id[8..]);
     result
@@ -461,12 +492,34 @@ pub mod contract {
 
         /// Set Entry Procedure Id
         fn set_entry_proc_id(&mut self, key: String) -> U256 {
-            unimplemented!()
+            let raw_key = {
+                let mut byte_key = key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8; 24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            match set_entry_proc_id(raw_key) {
+                Err(_) => U256::one(),
+                Ok(_) => U256::zero()
+            }
         }
 
         /// Set Current Procedure Id
         fn set_current_proc_id(&mut self, key: String) -> U256 {
-            unimplemented!()
+            let raw_key = {
+                let mut byte_key = key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8; 24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            match set_current_proc_id(raw_key) {
+                Err(_) => U256::one(),
+                Ok(_) => U256::zero()
+            }
         }
 
         fn contains(&mut self, key: String) -> bool {
@@ -566,11 +619,21 @@ pub mod contract {
         }
 
         fn get_entry_proc_id(&mut self) -> String {
-            unimplemented!()
+            let id = get_entry_proc_id();
+            if id != [0u8; 24] {
+                unsafe { String::from_utf8_unchecked(id.to_vec()) }
+            } else {
+                String::new()
+            }
         }
 
         fn get_current_proc_id(&mut self) -> String {
-            unimplemented!()
+            let id = get_current_proc_id();
+            if id != [0u8; 24] {
+                unsafe { String::from_utf8_unchecked(id.to_vec()) }
+            } else {
+                String::new()
+            }
         }
     }
 }
