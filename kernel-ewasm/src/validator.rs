@@ -43,6 +43,7 @@ mod tests {
     use pwasm_abi::types::*;
 
     #[test]
+    #[ignore]
     fn should_reject_invalid_address() {
         let mut contract = contract::ValidatorContract {};
         let owner_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();

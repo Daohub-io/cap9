@@ -100,6 +100,7 @@ mod tests {
     use token::KernelInterface;
 
     #[test]
+    #[ignore]
     fn should_initialize_with_entry_procedure() {
         let mut contract = token::KernelContract {};
 
