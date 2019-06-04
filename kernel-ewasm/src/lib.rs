@@ -15,11 +15,27 @@ use pwasm_abi::types::*;
 pub mod ext {
     extern "C" {
             pub fn extcodesize( address: *const u8) -> i32;
+            pub fn extcodecopy( dest: *mut u8, address: *const u8);
     }
 }
 
 pub fn extcodesize(address: &Address) -> i32 {
 	unsafe { ext::extcodesize(address.as_ptr()) }
+}
+
+pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
+	let len = unsafe { ext::extcodesize(address.as_ptr()) };
+    match len {
+		0 => pwasm_std::Vec::new(),
+		non_zero => {
+			let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
+			unsafe {
+				data.set_len(non_zero as usize);
+				ext::extcodecopy(data.as_mut_ptr(), address.as_ptr());
+			}
+			data
+		}
+	}
 }
 
 pub mod token {
@@ -58,6 +74,7 @@ pub mod token {
         /// Check if Procedure Contract is Valid
         fn check_contract(&mut self, _to: Address) -> bool;
         fn get_code_size(&mut self, _to: Address) -> i32;
+        fn code_copy(&mut self, _to: Address) -> pwasm_std::Vec<u8>;
     }
 
     pub struct TokenContract;
@@ -107,6 +124,10 @@ pub mod token {
 
         fn get_code_size(&mut self, to: Address) -> i32 {
             super::extcodesize(&to)
+        }
+
+        fn code_copy(&mut self, to: Address) -> pwasm_std::Vec<u8> {
+            super::extcodecopy(&to)
         }
     }
 
