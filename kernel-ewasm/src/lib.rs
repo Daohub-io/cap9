@@ -43,8 +43,8 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
 pub mod token {
     use pwasm_ethereum;
     use pwasm_abi::types::*;
-    use parity_wasm::elements::{Module};
-    use validator::Validity;
+    // use parity_wasm::elements::{Module};
+    use validator::{Validity, Module, deserialize_buffer};
 
 
     // eth_abi is a procedural macros https://doc.rust-lang.org/book/first-edition/procedural-macros.html
@@ -135,26 +135,15 @@ pub mod token {
                 let code_slice = &[0, 97, 115, 109, 1, 0, 0, 0];
                 let big_code_slice = &[0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x03, 0x01, 0x00, 0x01, 0x0B, 0x07, 0x01, 0x00, 0x41, 0x01, 0x0B, 0x01, 0x54, 0x00, 0x08, 0x04, 0x6E, 0x61, 0x6D, 0x65, 0x02, 0x01, 0x00];
 
-                // let module: Module = Default::default();
-                // let code_slice = code.as_slice()
-
-                let module: Result<Module,_> = parity_wasm::deserialize_buffer(code_slice);
-
-                // let module: Result<Module,_> = Ok(Default::default());
-                // let n = code.as_slice();
-                // if n.len() > 11000 {
-                //     return false;
-                // } else {
-                //     return true;
-                // }
-                // let module: Module = match parity_wasm::deserialize_buffer(code.as_slice()) {
-                //     Ok(module) => module,
-                //     // If we are unable to decode the contract, we assume it is
-                //     // not valid.
-                //     Err(_) => return false,
-                // };
+                // let module: Module = match deserialize_buffer(code.as_slice()) {
+                let module: Module = match deserialize_buffer(code_slice) {
+                    Ok(module) => module,
+                    // If we are unable to decode the contract, we assume it is
+                    // not valid.
+                    Err(_) => panic!("invalid wasm module"),
+                };
                 // // Then we perform a boolen is_valid() check.
-                // module.is_valid()
+                module.is_valid();
                 true
             }
         }
