@@ -89,17 +89,49 @@ fn dummy_syscall() {
 /// The call function is the main function of the *deployed* contract
 #[no_mangle]
 pub fn call() {
-    // // write some value
-    // pwasm_ethereum::write(&pwasm_std::types::H256::zero(), &[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]);
-    // // call another contract
-    // pwasm_ethereum::call(0, &Address::zero(), pwasm_std::types::U256::zero(), &[], &mut [] );
-    // // delegate call another contract (under the hood this version of call_code
-    // // uses delgate call).
-    // pwasm_ethereum::gas_left();
+    // write some value
+    pwasm_ethereum::write(&pwasm_std::types::H256::zero(), &[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]);
+    // call another contract
+    pwasm_ethereum::call(0, &Address::zero(), pwasm_std::types::U256::zero(), &[], &mut [] );
+    // delegate call another contract (under the hood this version of call_code
+    // uses delgate call).
+    pwasm_ethereum::gas_left();
     pwasm_ethereum::sender();
 
     // An example syscall (empty input and output)
     cap9_syscall(&[], &mut []);
 
     pwasm_ethereum::ret(&b"result"[..]);
+    let mut endpoint = contract::ExampleContract1Endpoint::new(contract::ExampleContract1{});
+    pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
+}
+
+// Declares the dispatch and dispatch_ctor methods
+use pwasm_abi::eth::EndpointInterface;
+
+#[no_mangle]
+pub fn deploy() {
+    let mut endpoint = contract::ExampleContract1Endpoint::new(contract::ExampleContract1{});
+    endpoint.dispatch_ctor(&pwasm_ethereum::input());
+}
+
+
+pub mod contract {
+    use super::*;
+    use pwasm_abi_derive::eth_abi;
+
+    #[eth_abi(ExampleContract1Endpoint, ExampleContract1Client)]
+    pub trait ExampleContract1Interface {
+        /// Check if Procedure Contract is Valid
+        fn check_contract(&mut self, _to: Address) -> bool;
+    }
+
+    pub struct ExampleContract1;
+
+    impl ExampleContract1Interface for ExampleContract1 {
+        fn check_contract(&mut self, _target: Address) -> bool {
+            // unimplemented!()
+            false
+        }
+    }
 }
