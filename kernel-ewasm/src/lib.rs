@@ -130,11 +130,12 @@ pub mod token {
                 // Next we get the code of the contract, using EXTCODECOPY under
                 // the hood.
                 let code: pwasm_std::Vec<u8> = self.code_copy(target);
-                // Next we deserialise the code from Vec<u8> into a Module.
-                // TODO: this is causing an out of bounds memory access error
+                // code_slice is magic number and version number only
                 let code_slice = &[0, 97, 115, 109, 1, 0, 0, 0];
+                // big_code_slice is magic number, version number and a simple
+                // data section.
                 let big_code_slice = &[0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x03, 0x01, 0x00, 0x01, 0x0B, 0x07, 0x01, 0x00, 0x41, 0x01, 0x0B, 0x01, 0x54, 0x00, 0x08, 0x04, 0x6E, 0x61, 0x6D, 0x65, 0x02, 0x01, 0x00];
-
+                // Next we deserialise the code from Vec<u8> into a Module.
                 let module: Module = match deserialize_buffer(code.as_slice()) {
                 // let module: Module = match deserialize_buffer(code_slice) {
                     Ok(module) => module,
@@ -145,7 +146,7 @@ pub mod token {
                 };
                 // // Then we perform a boolen is_valid() check.
                 module.is_valid();
-                true
+                false
             }
         }
 
