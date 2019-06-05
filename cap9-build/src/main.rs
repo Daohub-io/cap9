@@ -1,52 +1,75 @@
 extern crate parity_wasm;
 extern crate pwasm_utils;
 
-use parity_wasm::elements::{Module};
-use clap::{Arg, App};
-use parity_wasm::elements::Instruction;
+use parity_wasm::elements::{Module,MemoryType};
+use clap::{Arg, App, SubCommand, ArgMatches};
+use parity_wasm::elements::{Instructions, Instruction};
 
 fn main() {
     let matches = App::new("cap9-build")
             .version("0.2.0")
             .author("Cap9 <info@daohub.io>")
             .about("A command-line interface for linking Cap9 procedures.")
-            .arg(Arg::with_name("INPUT-FILE")
-                .required(true)
-                .help("input file"))
-            .arg(Arg::with_name("OUTPUT-FILE")
-                .required(false)
-                .help("input file"))
+            .subcommand(SubCommand::with_name("build-proc")
+                .about("Convert a regular contract into a cap9 procedure.")
+                .arg(Arg::with_name("INPUT-FILE")
+                    .required(true)
+                    .help("input file"))
+                .arg(Arg::with_name("OUTPUT-FILE")
+                    .required(true)
+                    .help("output file")))
+            .subcommand(SubCommand::with_name("set-mem")
+                .about("Set the number of memory pages in a procedure.")
+                .arg(Arg::with_name("INPUT-FILE")
+                    .required(true)
+                    .help("input file"))
+                .arg(Arg::with_name("OUTPUT-FILE")
+                    .required(true)
+                    .help("output file"))
+                .arg(Arg::with_name("pages")
+                    .short("p")
+                    .long("pages")
+                    .value_name("PAGES")
+                    .required(true)
+                    .help("Number of pages to set the memory to")))
             .get_matches();
 
-    let input_path = matches.value_of("INPUT-FILE").expect("input file is required");
-    let output_path = matches.value_of("OUTPUT-FILE").expect("output path is required");
+    match matches.subcommand() {
+        ("build-proc",  Some(opts)) => {
+            let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
+            let output_path = opts.value_of("OUTPUT-FILE").expect("output path is required");
 
-    let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
-    assert!(module.code_section().is_some());
+            let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
+            let new_module = contract_build(module);
+            parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
+        },
+        ("set-mem",  Some(opts)) => {
+            let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
+            let output_path = opts.value_of("OUTPUT-FILE").expect("output path is required");
+            let mem_pages = opts.value_of("pages").expect("number of memory pages is required");
+
+            let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
+            let new_module = set_mem(module, mem_pages.parse().expect("expected number for number of pages"));
+            parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
+        },
+        _ => panic!("unknown subcommand")
+    }
+}
+
+
+/// Perform the operations necessary for cap9 procedures.
+fn contract_build(module: Module) -> Module {
 
     // TODO: we need to make sure these values never change between now and when
     // we use them. In the current set up they will not, but it is fragile,
     // there are changes that could be introduced which would change this.
-    let dcall_index = find_import(&module, "env", "dcall").expect("No dcall import found");
-    let gasleft_index = find_import(&module, "env", "gasleft").expect("No gasleft import found");
-    let sender_index = find_import(&module, "env", "sender").expect("No sender import found");
-    let syscall_instructions = parity_wasm::elements::Instructions::new(vec![
-        // Call gas
-        Instruction::Call(gasleft_index),
-        // Call sender
-        Instruction::Call(sender_index),
-        Instruction::GetLocal(0),
-        Instruction::GetLocal(1),
-        Instruction::GetLocal(2),
-        Instruction::GetLocal(3),
-        // Do the delegate call
-        Instruction::Call(dcall_index),
-        // End function
-        Instruction::End,
-        ]);
+    let syscall_instructions_res = get_syscall_instructions(&module);
 
     // TODO: what is the index of this newly added function?
-    let mut new_module = parity_wasm::builder::from_module(module)
+    let mut new_module_builder = parity_wasm::builder::from_module(module);
+    // Add the syscall function, if applicable.
+    let mut new_module = if let Ok(syscall_instructions) = syscall_instructions_res {
+        new_module_builder
             .function()
                 .signature()
                     .with_param(parity_wasm::elements::ValueType::I32)
@@ -59,7 +82,10 @@ fn main() {
                     .with_instructions(syscall_instructions)
                     .build()
                 .build()
-            .build();
+            .build()
+    } else {
+        new_module_builder.build()
+    };
 
     // TODO: robustly determine the function index of the function we just
     // added. I think at this point it's simply the last funciton added, thereby
@@ -102,9 +128,16 @@ fn main() {
     //    can't use the same remove procedure without screwing up the internal
     //    references, so we will just run the parity optmizer again for now to
     //    let it deal with that.
-    pwasm_utils::optimize(&mut new_module, vec!["call"]).unwrap();
+    pwasm_utils::optimize(&mut new_module, vec!["call","deploy"]).unwrap();
+    new_module
+}
 
-    parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
+fn set_mem(mut module: Module, num_pages: u32) -> Module {
+    // We want to find the single memory section, and change it from its current
+    // value to the one we've requested.
+    let mut mem_entry: &mut Vec<MemoryType> = module.memory_section_mut().unwrap().entries_mut();
+    mem_entry[0] = parity_wasm::elements::MemoryType::new(5,None);
+    module
 }
 
 // Find the function index of an import
@@ -127,4 +160,33 @@ fn find_export(module: &Module, field_name: &str) -> Option<u32> {
         }
     }
     return None;
+}
+
+enum SysCallError {
+    NoDCall,
+    NoGasLeft,
+    NoSender,
+}
+
+fn get_syscall_instructions(module: &Module) -> Result<Instructions,SysCallError> {
+    // If any of these three environments are not pulled in from the
+    // environment, we cannot have syscalls.
+    let dcall_index = find_import(module, "env", "dcall").ok_or(SysCallError::NoDCall)?;
+    let gasleft_index = find_import(module, "env", "gasleft").ok_or(SysCallError::NoGasLeft)?;
+    let sender_index = find_import(module, "env", "sender").ok_or(SysCallError::NoSender)?;
+    let syscall_instructions = parity_wasm::elements::Instructions::new(vec![
+        // Call gas
+        Instruction::Call(gasleft_index),
+        // Call sender
+        Instruction::Call(sender_index),
+        Instruction::GetLocal(0),
+        Instruction::GetLocal(1),
+        Instruction::GetLocal(2),
+        Instruction::GetLocal(3),
+        // Do the delegate call
+        Instruction::Call(dcall_index),
+        // End function
+        Instruction::End,
+        ]);
+    Ok(syscall_instructions)
 }
