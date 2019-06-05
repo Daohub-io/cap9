@@ -135,11 +135,12 @@ pub mod token {
                 let code_slice = &[0, 97, 115, 109, 1, 0, 0, 0];
                 let big_code_slice = &[0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x03, 0x01, 0x00, 0x01, 0x0B, 0x07, 0x01, 0x00, 0x41, 0x01, 0x0B, 0x01, 0x54, 0x00, 0x08, 0x04, 0x6E, 0x61, 0x6D, 0x65, 0x02, 0x01, 0x00];
 
-                // let module: Module = match deserialize_buffer(code.as_slice()) {
-                let module: Module = match deserialize_buffer(code_slice) {
+                let module: Module = match deserialize_buffer(code.as_slice()) {
+                // let module: Module = match deserialize_buffer(code_slice) {
                     Ok(module) => module,
                     // If we are unable to decode the contract, we assume it is
-                    // not valid.
+                    // not valid, but for now we will panic for testing
+                    // purposes.
                     Err(_) => panic!("invalid wasm module"),
                 };
                 // // Then we perform a boolen is_valid() check.

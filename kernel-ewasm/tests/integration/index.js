@@ -146,11 +146,15 @@ describe('Kernel', function() {
         let rec_validation = await kernel.methods.check_contract('0x0000000000000000000000000000000000000000').call();
             assert.strictEqual(rec_validation, false)
         })
-        it('should return false when given an account addeess (as there is no code)', async function() {
+        it('should return panic when given an account addeess (as there is no code)', async function() {
             const accounts = await web3.eth.personal.getAccounts()
             assert(web3.utils.isAddress(accounts[0]), "The example should be a valid address")
-            let rec_validation = await kernel.methods.check_contract(accounts[0]).call();
-            assert.strictEqual(rec_validation, false)
+            try {
+                let rec_validation = await kernel.methods.check_contract(accounts[0]).call();
+                throw new Error("check_contract should no succeed");
+            } catch (e) {
+                // console.log(e)
+            }
         })
         it('should return the code size of the kernel', async function() {
             const kernelAddress = kernel.options.address;
@@ -174,7 +178,7 @@ describe('Kernel', function() {
             assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
         })
 
-        it.skip('should correctly validate an example contract', async function() {
+        it('should correctly validate an example contract', async function() {
             const contract = await deployContract("example_contract_1/build/ExampleContract1Interface.json", "example_contract_1/build/example_contract_1.wasm");
             assert(web3.utils.isAddress(contract.address), "The contract address should be a valid address")
             const code_size = await kernel.methods.get_code_size(contract.address).call();
