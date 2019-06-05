@@ -136,7 +136,7 @@ fn set_mem(mut module: Module, num_pages: u32) -> Module {
     // We want to find the single memory section, and change it from its current
     // value to the one we've requested.
     let mut mem_entry: &mut Vec<MemoryType> = module.memory_section_mut().unwrap().entries_mut();
-    mem_entry[0] = parity_wasm::elements::MemoryType::new(5,None);
+    mem_entry[0] = parity_wasm::elements::MemoryType::new(num_pages,None);
     module
 }
 
