@@ -2,16 +2,19 @@
 #![allow(non_snake_case)]
 #![feature(proc_macro_hygiene)]
 
-extern crate pwasm_std;
-extern crate pwasm_ethereum;
 extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
+extern crate pwasm_ethereum;
+extern crate pwasm_std;
 
+pub mod proc_table;
 pub mod validator;
 
+type ProcedureKey = [u8; 24];
+
 pub mod token {
-    use pwasm_ethereum;
     use pwasm_abi::types::*;
+    use pwasm_ethereum;
 
     // eth_abi is a procedural macros https://doc.rust-lang.org/book/first-edition/procedural-macros.html
     use pwasm_abi_derive::eth_abi;
@@ -27,72 +30,46 @@ pub mod token {
             );
     }
 
-    #[eth_abi(TokenEndpoint, TokenClient)]
-    pub trait TokenInterface {
-        /// The constructor
-        fn constructor(&mut self, _total_supply: U256);
-        /// Total amount of tokens
+    #[eth_abi(TokenEndpoint, KernelClient)]
+    pub trait KernelInterface {
+        /// The constructor set with Initial Entry Procedure
+        fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address);
+        /// Get Entry Procedure
         #[constant]
-        fn totalSupply(&mut self) -> U256;
-        /// What is the balance of a particular account?
+        fn entryProcedure(&mut self) -> String;
+        /// Get Current Executing Procedure
         #[constant]
-        fn balanceOf(&mut self, _owner: Address) -> U256;
-        /// Transfer the balance from owner's account to another account
-        fn transfer(&mut self, _to: Address, _amount: U256) -> bool;
-        /// Event declaration
-        #[event]
-        fn Transfer(&mut self, indexed_from: Address, indexed_to: Address, _value: U256);
+        fn currentProcedure(&mut self) -> String;
+
+        /// Get Procedure Address By Key
+        /// Returns 0 if Procedure Not Found
+        fn getProcedureByKey(&mut self, _proc_key: String) -> Address;
     }
 
-    pub struct TokenContract;
+    pub struct KernelContract;
 
-    impl TokenInterface for TokenContract {
-        fn constructor(&mut self, total_supply: U256) {
-            let sender = pwasm_ethereum::sender();
-            // Set up the total supply for the token
-            pwasm_ethereum::write(&TOTAL_SUPPLY_KEY, &total_supply.into());
-            // Give all tokens to the contract owner
-            pwasm_ethereum::write(&balance_key(&sender), &total_supply.into());
-            // Set the contract owner
-            pwasm_ethereum::write(&OWNER_KEY, &H256::from(sender).into());
+    impl KernelInterface for KernelContract {
+        fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address) {
+            // // Set up the total supply for the token
+            // pwasm_ethereum::write(&TOTAL_SUPPLY_KEY, &total_supply.into());
+            // // Give all tokens to the contract owner
+            // pwasm_ethereum::write(&balance_key(&sender), &total_supply.into());
+            // // Set the contract owner
+            // pwasm_ethereum::write(&OWNER_KEY, &H256::from(sender).into());
+            unimplemented!()
         }
 
-        fn totalSupply(&mut self) -> U256 {
-            U256::from_big_endian(&pwasm_ethereum::read(&TOTAL_SUPPLY_KEY))
+        fn entryProcedure(&mut self) -> String {
+            unimplemented!()
         }
 
-        fn balanceOf(&mut self, owner: Address) -> U256 {
-            read_balance_of(&owner)
+        fn currentProcedure(&mut self) -> String {
+            unimplemented!()
         }
 
-        fn transfer(&mut self, to: Address, amount: U256) -> bool {
-            let sender = pwasm_ethereum::sender();
-            let senderBalance = read_balance_of(&sender);
-            let recipientBalance = read_balance_of(&to);
-            if amount == 0.into() || senderBalance < amount || to == sender {
-                false
-            } else {
-                let new_sender_balance = senderBalance - amount;
-                let new_recipient_balance = recipientBalance + amount;
-                pwasm_ethereum::write(&balance_key(&sender), &new_sender_balance.into());
-                pwasm_ethereum::write(&balance_key(&to), &new_recipient_balance.into());
-                self.Transfer(sender, to, amount);
-                true
-            }
+        fn getProcedureByKey(&mut self, _proc_key: String) -> Address {
+            unimplemented!()
         }
-    }
-
-    // Reads balance by address
-    fn read_balance_of(owner: &Address) -> U256 {
-        U256::from_big_endian(&pwasm_ethereum::read(&balance_key(owner)))
-    }
-
-    // Generates a balance key for some address.
-    // Used to map balances with their owners.
-    fn balance_key(address: &Address) -> H256 {
-        let mut key = H256::from(*address);
-        key.as_bytes_mut()[0] = 1; // just a naive "namespace";
-        key
     }
 }
 // Declares the dispatch and dispatch_ctor methods
@@ -100,14 +77,14 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut endpoint = token::TokenEndpoint::new(token::TokenContract{});
+    let mut endpoint = token::TokenEndpoint::new(token::KernelContract {});
     // Read http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding for details
     pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
 }
 
 #[no_mangle]
 pub fn deploy() {
-    let mut endpoint = token::TokenEndpoint::new(token::TokenContract{});
+    let mut endpoint = token::TokenEndpoint::new(token::KernelContract {});
     endpoint.dispatch_ctor(&pwasm_ethereum::input());
 }
 
@@ -116,41 +93,32 @@ pub fn deploy() {
 mod tests {
     extern crate pwasm_test;
     extern crate std;
+    use self::pwasm_test::{ext_get, ext_reset};
     use super::*;
     use core::str::FromStr;
     use pwasm_abi::types::*;
-    use self::pwasm_test::{ext_reset, ext_get};
-    use token::TokenInterface;
+    use token::KernelInterface;
 
     #[test]
-    fn should_succeed_transfering_1000_from_owner_to_another_address() {
-        let mut contract = token::TokenContract{};
+    #[ignore]
+    fn should_initialize_with_entry_procedure() {
+        let mut contract = token::KernelContract {};
+
         let owner_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
-        let sam_address = Address::from_str("db6fd484cfa46eeeb73c71edee823e4812f9e2e1").unwrap();
+        let entry_proc_key = pwasm_abi::types::String::from("init");
+        let entry_proc_address =
+            Address::from_str("db6fd484cfa46eeeb73c71edee823e4812f9e2e1").unwrap();
+
         // Here we're creating an External context using ExternalBuilder and set the `sender` to the `owner_address`
-        // so `pwasm_ethereum::sender()` in TokenInterface::constructor() will return that `owner_address`
+        // so `pwasm_ethereum::sender()` in KernelInterface::constructor() will return that `owner_address`
         ext_reset(|e| e.sender(owner_address.clone()));
-        let total_supply = 10000.into();
-        contract.constructor(total_supply);
-        assert_eq!(contract.balanceOf(owner_address), total_supply);
-        assert_eq!(contract.transfer(sam_address, 1000.into()), true);
-        assert_eq!(contract.balanceOf(owner_address), 9000.into());
-        assert_eq!(contract.balanceOf(sam_address), 1000.into());
-        // 1 log entry should be created
-        assert_eq!(ext_get().logs().len(), 1);
-    }
 
-    #[test]
-    fn should_not_transfer_to_self() {
-        let mut contract = token::TokenContract{};
-        let owner_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
-        ext_reset(|e| e.sender(owner_address.clone()));
-        let total_supply = 10000.into();
-        contract.constructor(total_supply);
-        assert_eq!(contract.balanceOf(owner_address), total_supply);
-        assert_eq!(contract.transfer(owner_address, 1000.into()), false);
-        assert_eq!(contract.balanceOf(owner_address), 10000.into());
-        assert_eq!(ext_get().logs().len(), 0);
+        contract.constructor(entry_proc_key.clone(), entry_proc_address.clone());
+
+        assert_eq!(contract.entryProcedure(), entry_proc_key);
+        assert_eq!(contract.currentProcedure(), unsafe {
+            String::from_utf8_unchecked([0; 32].to_vec())
+        });
     }
 
 }
