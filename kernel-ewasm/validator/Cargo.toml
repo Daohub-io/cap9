@@ -5,7 +5,7 @@ authors = ["Daohub Inc <info@daohub.io>"]
 edition = "2018"
 
 [dependencies]
-parity-wasm = { version = "0.35", default-features = false }
+# parity-wasm = { version = "0.35", default-features = false }
 pwasm-std = {version = "0.13", default-features = false}
 pwasm-ethereum = {version = "0.8", default-features = false}
 
@@ -18,7 +18,7 @@ default-features = false
 
 [features]
 default = ["std"]
-std = ["parity-wasm/std", "pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
+std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
 
 [lib]
 name = "validator"
