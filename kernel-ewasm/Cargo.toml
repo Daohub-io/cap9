@@ -11,7 +11,7 @@ pwasm-std = {version = "0.13", default-features = false}
 pwasm-ethereum = {version = "0.8", default-features = false}
 pwasm-abi = "0.2"
 pwasm-abi-derive = "0.2"
-parity-wasm = { path = "../../parity-wasm", default-features = false }
+parity-wasm = { git = "https://github.com/paritytech/parity-wasm.git", default-features = false }
 lazy_static = { version = "1.2.0", features = ["spin_no_std"] }
 validator = { path = "./validator", default-features = false }
 
@@ -29,6 +29,5 @@ std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
 
 [profile.release]
 panic = "abort"
-# LTO needs to be false in order to avoid a memory access bug.
 lto = false
-opt-level = "z"
+# opt-level = "z"
