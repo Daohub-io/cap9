@@ -11,9 +11,9 @@ pwasm-ethereum = "0.8"
 wabt = "0.7.1"
 validator = { path = "../kernel-ewasm/validator" }
 
-[dev-dependencies.pwasm-test]
-git = "https://github.com/paritytech/pwasm-test"
+# [dev-dependencies.pwasm-test]
+# git = "https://github.com/paritytech/pwasm-test"
 # default-features = false
 
-[features]
-std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
+# [features]
+# std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]

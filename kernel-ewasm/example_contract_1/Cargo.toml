@@ -15,6 +15,7 @@ cap9-build = { path = "../../cap9-build" }
 pwasm-utils-cli = "0.7.0"
 
 [features]
+default = []
 std = ["pwasm-std/std", "pwasm-ethereum/std"]
 
 [lib]

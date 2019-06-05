@@ -3,7 +3,7 @@
 use pwasm_std;
 use parity_wasm;
 
-use parity_wasm::elements::{ImportEntry, Module};
+pub use parity_wasm::elements::{ImportEntry, Module};
 use parity_wasm::elements::Instruction;
 use parity_wasm::elements::{ValueType};
 
@@ -340,7 +340,7 @@ mod tests {
     unreachable)
   (export "call" (func $call)))
 "#;
-        let wasm = wat2wasm(wat).unwrap();
+        let wasm: pwasm_std::Vec<u8> = wat2wasm(wat).unwrap();
         let module: Module = parity_wasm::deserialize_buffer(wasm.as_slice()).expect("deserialise wasm");
         assert!(!module.is_valid());
     }

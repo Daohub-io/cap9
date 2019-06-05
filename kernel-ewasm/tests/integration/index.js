@@ -66,46 +66,49 @@ function createAccount(name, password) {
 async function newKernelInstance() {
        // Create Account
        const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
-    //    console.log(`Created account: ${newAccount}`)
-
-    //    console.log(`Fetching addresss`)
        const accounts = await web3.eth.personal.getAccounts()
-    //    console.log(`Got ${accounts.length} accounts`)
        if (accounts.length == 0) throw `Got zero accounts`;
-
        const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
-    //    console.log(`Set Account: ${account}`)
-
        web3.eth.defaultAccount = account;
-
        // read JSON ABI
        const abi = JSON.parse(fs.readFileSync(path.resolve(BUILD_PATH, "./TokenInterface.json")));
        // convert Wasm binary to hex format
        const codeHex = '0x' + fs.readFileSync(path.resolve(BUILD_PATH, "./kernel-ewasm.wasm")).toString('hex');
-
        const TokenContract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 });
        const TokenDeployTransaction = TokenContract.deploy({ data: codeHex, arguments: [355] });
-
        await web3.eth.personal.unlockAccount(accounts[0], "user", null)
-    //    console.log(`Unlocked Account: ${accounts[0]}`);
-
        let gas = await TokenDeployTransaction.estimateGas()
-    //    console.log(`Estimated Gas Cost: ${gas}`)
-
        let contract_tx = TokenDeployTransaction.send({ gasLimit: gas, from: account })
-
        let tx_hash = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
-
        let tx_receipt = await web3.eth.getTransactionReceipt(tx_hash);
        let contract_addr = tx_receipt.contractAddress;
-
-    //    console.log("Address of new contract: " + contract_addr);
-
        let contract = TokenContract.clone();
        contract.address = contract_addr;
-
        return contract;
+}
 
+async function deployContract(interfacePath, codePath) {
+    // Create Account
+    const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
+    const accounts = await web3.eth.personal.getAccounts()
+    if (accounts.length == 0) throw `Got zero accounts`;
+    const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
+    web3.eth.defaultAccount = account;
+    // read JSON ABI
+    const abi = JSON.parse(fs.readFileSync(path.resolve(interfacePath)));
+    // convert Wasm binary to hex format
+    const codeHex = '0x' + fs.readFileSync(path.resolve(codePath)).toString('hex');
+    const Contract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 });
+    const DeployTransaction = Contract.deploy({ data: codeHex, arguments: [] });
+    await web3.eth.personal.unlockAccount(accounts[0], "user", null)
+    let gas = await DeployTransaction.estimateGas()
+    let contract_tx = DeployTransaction.send({ gasLimit: gas, from: account })
+    let tx_hash = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
+    let tx_receipt = await web3.eth.getTransactionReceipt(tx_hash);
+    let contract_addr = tx_receipt.contractAddress;
+    let contract = Contract.clone();
+    contract.address = contract_addr;
+    return contract;
 }
 
 describe('Kernel', function() {
@@ -133,16 +136,21 @@ describe('Kernel', function() {
             kernel = await newKernelInstance();
 
         })
+
+        // it.only('should deploy a kernel', async function () {
+        //     await newKernelInstance();
+        // })
+
         it('should return false when given the null address', async function() {
         this.timeout(20000);
         let rec_validation = await kernel.methods.check_contract('0x0000000000000000000000000000000000000000').call();
             assert.strictEqual(rec_validation, false)
         })
-        it('should return true when given a valid address', async function() {
+        it('should return false when given an account addeess (as there is no code)', async function() {
             const accounts = await web3.eth.personal.getAccounts()
             assert(web3.utils.isAddress(accounts[0]), "The example should be a valid address")
             let rec_validation = await kernel.methods.check_contract(accounts[0]).call();
-            assert.strictEqual(rec_validation, true)
+            assert.strictEqual(rec_validation, false)
         })
         it('should return the code size of the kernel', async function() {
             const kernelAddress = kernel.options.address;
@@ -150,12 +158,12 @@ describe('Kernel', function() {
             let rec_validation = await kernel.methods.get_code_size(kernelAddress).call();
             assert.strictEqual(typeof rec_validation, "number")
         })
-        // it('should return false when trying to validate the kernel itself', async function() {
-        //     const kernelAddress = kernel.options.address;
-        //     assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
-        //     let rec_validation = await kernel.methods.check_contract(kernelAddress).call();
-        //     assert.strictEqual(rec_validation, false)
-        // })
+        it.only('should return false when trying to validate the kernel itself', async function() {
+            const kernelAddress = kernel.options.address;
+            assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
+            let rec_validation = await kernel.methods.check_contract(kernelAddress).call();
+            assert.strictEqual(rec_validation, false)
+        })
 
         it('should copy the code of the kernel', async function() {
             const kernelAddress = kernel.options.address;
@@ -164,6 +172,17 @@ describe('Kernel', function() {
             const code_hex = await kernel.methods.code_copy(kernelAddress).call();
             const code = web3.utils.hexToBytes(code_hex);
             assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
+        })
+
+        it('should correctly validate an example contract', async function() {
+            const contract = await deployContract("example_contract_1/build/ExampleContract1Interface.json", "example_contract_1/build/example_contract_1.wasm");
+            assert(web3.utils.isAddress(contract.address), "The contract address should be a valid address")
+            const code_size = await kernel.methods.get_code_size(contract.address).call();
+            const code_hex = await kernel.methods.code_copy(contract.address).call();
+            const code = web3.utils.hexToBytes(code_hex);
+            assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
+            let rec_validation = await kernel.methods.check_contract(contract.address).call();
+            assert.strictEqual(rec_validation, true);
         })
     })
 })
