@@ -465,11 +465,13 @@ fn parse_import(cursor: &mut Cursor, index: u32) -> ImportEntry {
         body: cursor.body,
     };
     let import: import_entry::ImportEntry = import_entry::ImportEntry::deserialize(&mut reader).expect("counted list");
-    ImportEntry {
+    let val = ImportEntry {
         index,
         mod_name: String::from(import.module()),
         field_name: String::from(import.field()),
-    }
+    };
+    cursor.current_offset = reader.current_offset;
+    val
 }
 
 // pub fn is_syscall(module: &Module, function_index: u32) -> bool {
