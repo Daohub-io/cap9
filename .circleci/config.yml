@@ -139,6 +139,7 @@ jobs:
       - run:
           name: Test Rust Component
           command: |
+            . ~/.profile
             cd cap9
             cd kernel-ewasm && npm install
             npm run test
