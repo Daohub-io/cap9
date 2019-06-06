@@ -9,6 +9,21 @@ use pwasm_std;
 
 use pwasm_std::vec::Vec;
 
+mod instructions;
+mod primitives;
+pub mod io;
+pub mod serialization;
+pub mod types;
+
+pub use self::io::{Error};
+pub use self::serialization::{Serialize, Deserialize};
+
+
+pub use self::primitives::{
+	VarUint32, VarUint7, Uint8, VarUint1, VarInt7, Uint32, VarInt32, VarInt64,
+	Uint64, VarUint64, CountedList, CountedWriter, CountedListWriter,
+};
+
 // pub use parity_wasm::deserialize_buffer;
 
 /// As per the wasm spec:
@@ -49,50 +64,75 @@ pub trait Listed {
     fn listing(&self) -> Listing;
 }
 
-// impl Listed for ImportEntry {
-//     fn listing(&self) -> Listing {
-//         // Nothing should need to be imported from outside "env", but let's
-//         // blacklist it just in case.
-//         if self.module() != "env" {
-//             Listing::Black
-//         } else {
-//             // Tehcnically we don't have to list blacklisted items here, but we
-//             // do just for clarity.
-//             match self.field() {
-//                 "memory" => Listing::White,
-//                 "storage_read" => Listing::White,
-//                 "storage_write" => Listing::Black,
-//                 "ret" => Listing::White,
-//                 "gas" => Listing::White,
-//                 "input_length" => Listing::White,
-//                 "fetch_input" => Listing::White,
-//                 "panic" => Listing::White,
-//                 "debug" => Listing::White,
-//                 "ccall" => Listing::Black,
-//                 "dcall" => Listing::Grey,
-//                 "scall" => Listing::White,
-//                 "value" => Listing::White,
-//                 "create" => Listing::Black,
-//                 "suicide" => Listing::White,
-//                 "blockhash" => Listing::White,
-//                 "blocknumber" => Listing::White,
-//                 "coinbase" => Listing::White,
-//                 "difficulty" => Listing::White,
-//                 "gaslimit" => Listing::White,
-//                 "timestamp" => Listing::White,
-//                 "address" => Listing::White,
-//                 "sender" => Listing::White,
-//                 "origin" => Listing::White,
-//                 "elog" => Listing::Black,
-//                 "extcodesize" => Listing::White,
-//                 "extcodecopy" => Listing::White,
-//                 "create2" => Listing::Black,
-//                 "gasleft" => Listing::White,
-//                 _ => Listing::Black,
-//             }
-//         }
-//     }
+// A webassembly module is a series of sections. From reading the spec it seems
+// that each section can occur only once, except for the custom sections, of
+// which there may be multiple.
+// struct Module {
+//     custom_sections: Vec<Section>,
+//     Type,
+//     Import,
+//     Function,
+//     Table,
+//     Memory,
+//     Global,
+//     Export,
+//     Start,
+//     Element,
+//     Code,
+//     Data,
 // }
+
+#[derive(Debug, Clone)]
+pub struct ImportEntry {
+    index: u32,
+    mod_name: String,
+    field_name: String,
+}
+
+impl Listed for ImportEntry {
+    fn listing(&self) -> Listing {
+        // Nothing should need to be imported from outside "env", but let's
+        // blacklist it just in case.
+        if self.mod_name != "env" {
+            Listing::Black
+        } else {
+            // Tehcnically we don't have to list blacklisted items here, but we
+            // do just for clarity.
+            match self.field_name.as_ref() {
+                "memory" => Listing::White,
+                "storage_read" => Listing::White,
+                "storage_write" => Listing::Black,
+                "ret" => Listing::White,
+                "gas" => Listing::White,
+                "input_length" => Listing::White,
+                "fetch_input" => Listing::White,
+                "panic" => Listing::White,
+                "debug" => Listing::White,
+                "ccall" => Listing::Black,
+                "dcall" => Listing::Grey,
+                "scall" => Listing::White,
+                "value" => Listing::White,
+                "create" => Listing::Black,
+                "suicide" => Listing::White,
+                "blockhash" => Listing::White,
+                "blocknumber" => Listing::White,
+                "coinbase" => Listing::White,
+                "difficulty" => Listing::White,
+                "gaslimit" => Listing::White,
+                "timestamp" => Listing::White,
+                "address" => Listing::White,
+                "sender" => Listing::White,
+                "origin" => Listing::White,
+                "elog" => Listing::Black,
+                "extcodesize" => Listing::White,
+                "extcodecopy" => Listing::White,
+                "create2" => Listing::Black,
+                "gasleft" => Listing::White,
+                _ => Listing::Black,
+            }
+        }
+    }
+}
 
 /// Information on why the contract was considered invalid.
 #[derive(Debug)]
@@ -113,7 +153,6 @@ pub enum ValidityError {
 /// Be able to determine a contracts validity.
 pub trait Validity {
     fn is_valid(&self) -> bool;
-    fn validity(&self) -> ValidityReport;
 }
 
 // Seek does not seem to be implemented in core, so we'll reimplement what we
@@ -137,71 +176,213 @@ impl<'a> Cursor {
         self.i += n;
         val
     }
+
+    fn skip(&mut self, n: usize) {
+        self.i += n;
+    }
 }
 
 impl Validity for &[u8] {
     fn is_valid(&self) -> bool {
-        self.validity().validation_errors.len() == 0
-    }
-
-    fn validity(&self) -> ValidityReport {
-        // let imports = get_imports(self);
-        let mut report = ValidityReport {
-            validation_errors: Vec::new()
-        };
-        // First we create a cursor from out data.
-
-        println!("data: {:?}", self);
-        let mut sections = Vec::new();
         // Set an index value, which is our offset into the wasm bytes.
         let mut cursor = Cursor {
             i: 0,
             // data: self,
         };
+        if self.len() < 100 {
+            println!("data: {:?}", &self);
+        } else {
+            println!("data: {:?}", &self[0..100]);
+        }
         // Take the magic number, check that it matches
         if cursor.read_n(4, &self) != &[0, 97, 115, 109] {
             panic!("magic number not found");
         }
 
-        // println!("cursor4: {:?}", cursor.read_n(4));
 
         // Take the version, check that it matches
         if cursor.read_n(4, &self) != &[1, 0, 0, 0] {
             panic!("proper version number not found");
         }
 
-        // Now we should be at the first section
+        // Now we should be at the first section. We care about 4 sections:
+        // types, imports, functions, and code. The first thing we want to do is
+        // to find the offsets of these 4 sections. We assume the wasm is well
+        // formed and there are no duplicate sections and the like. It is also
+        // possible some of these sections don't exist.
+        let mut type_section_offset: Option<usize> = None;
+        let mut import_section_offset: Option<usize> = None;
+        let mut function_section_offset: Option<usize> = None;
+        let mut code_section_offset: Option<usize> = None;
         while cursor.i < self.len() {
             // let section: Section = parse_section(&mut i, &self[d..]);
             // println!("i: {:?}", cursor.i);
             let section: Section = parse_section(&mut cursor, &self);
-            println!("section: {:?}", section);
-            sections.push(section);
+            println!("section: {:?}: index: {}", section.type_, section.offset);
+            // There are many section types we don't care about, for example,
+            // Custom sections generally contain debugging symbols and
+            // meaningful function names which are irrelevant to the current
+            // process. We care only about types, imports, functions, and code.
+            match section.type_ {
+                SectionType::Type => {
+                    if type_section_offset.is_some() {panic!("multiple type sections");}
+                    type_section_offset = Some(section.offset);
+                },
+                SectionType::Import => {
+                    if import_section_offset.is_some() {panic!("multiple import sections");}
+                    import_section_offset = Some(section.offset);
+                },
+                SectionType::Function => {
+                    if function_section_offset.is_some() {panic!("multiple function sections");}
+                    function_section_offset = Some(section.offset);
+                },
+                SectionType::Code => {
+                    if code_section_offset.is_some() {panic!("multiple code sections");}
+                    code_section_offset = Some(section.offset);
+                },
+                // We ignore any section we are not interested in.
+                _ => (),
+            }
         }
         if cursor.i != self.len() {
             panic!("mismatched length");
         }
 
-        // for (import_index, import) in imports.iter().enumerate() {
-        //     match import.listing() {
-        //         Listing::White => (),
-        //         Listing::Grey => {
-        //             // Check that this grey import is called safely, wherever is
-        //             // is called.
-        //             for (function_index,instruction_index) in check_grey(self, import_index) {
-        //                 report.validation_errors.push(ValidityError::UnsafeGreylistedCall {
-        //                     import: import.clone(),
-        //                     function_index,
-        //                     instruction_index,
-        //                 });
-        //             }
-        //         },
-        //         Listing::Black => {
-        //             report.validation_errors.push(ValidityError::BlacklistedImport(import.clone()));
-        //         },
-        //     }
-        // }
-        report
+        // Now that we have our hooks into the module, let's iterate over the
+        // imports to determine white/grey/black listings. We need to remember
+        // where the function and code data starts.
+
+        // There is only one greylisted item (dcall) so we will just reserve a
+        // place for that rather than maintain a list.
+        let mut dcall_index: Option<usize> = None;
+        if let Some(imports_offset) = import_section_offset {
+         // Make a new cursor for imports
+            let mut imports_cursor = Cursor {i:imports_offset};
+            let section_size = parse_varuint_32(&mut imports_cursor, &self);
+            // How many imports do we have?
+            let n_imports = parse_varuint_32(&mut imports_cursor, &self);
+            println!("n_imports: {}", n_imports);
+            for i in 0..n_imports {
+                // let mut cursor = Cursor {i:0};
+
+                // Here we parse the names of the import, and its function
+                // index.
+                let import = parse_import(&mut imports_cursor, &self, i);
+
+                println!("mod_name: {}, field_name: {}, f_index: {}, listing: {:?}",
+                    import.mod_name, import.field_name, import.index, import.listing());
+                match import.listing() {
+                    Listing::White => (),
+                    Listing::Grey => {
+                        if dcall_index.is_some() {panic!("dcall imported multiple times");}
+                        // Document here why this is the case
+                        dcall_index = Some(import.index as usize);
+                    },
+                    Listing::Black => {
+                        // If we encounter a blacklisted import we can return
+                        // early.
+                        println!("{:?} is blacklisted", import);
+                        // return false;
+                    },
+                }
+            }
+        }
+
+        // The functions index into types. In fact the function section is just
+        // a vector of type ids. We don't care about types at this stage.
+        if let (Some(functions_offset), Some(code_offset)) = (function_section_offset, code_section_offset) {
+            // Make a new cursor for functions
+            let mut functions_cursor = Cursor {i:functions_offset};
+            // Make a new cursor for code
+            let mut code_cursor = Cursor {i:code_offset};
+            // We will have to try and update these in parallel
+            let function_section_size = parse_varuint_32(&mut functions_cursor, &self);
+            let code_section_size = parse_varuint_32(&mut code_cursor, &self);
+            println!("functions_offset: {:?}", functions_offset);
+            println!("code_offset: {:?}", code_offset);
+            let n_functions = parse_varuint_32(&mut functions_cursor, &self);
+            let n_bodies = parse_varuint_32(&mut code_cursor, &self);
+
+            println!("functions_size: {:?}", function_section_size);
+            println!("code_size: {:?}", code_section_size);
+
+            assert_eq!(n_functions,n_bodies);
+
+            // Next we iterate through the function bodies and check if they
+            // violate any of our rules.
+            for i in 0..n_bodies {
+                let body_size = parse_varuint_32(&mut code_cursor, &self);
+                // First we check if it is a system call
+                if is_syscall(&self[(code_cursor.i)..(code_cursor.i+body_size as usize)]) {
+                    // If the function is a system call we can continue past it
+                    continue;
+                }
+                // let body = parse_varuint_32(&mut code_cursor, &self);
+                println!("function[{}] is {} bytes", i, body_size);
+                code_cursor.skip(body_size as usize);
+                // As the function is not a system call, it is not permitted to
+                // have a dcall in it, so we iterate through all the
+                // instructions. If we encounter a dcall, we return with a
+                // false, as this is invalid.
+
+
+            }
+
+            // // How many imports do we have?
+            // let n_imports = parse_varuint_32(&mut imports_cursor, &self);
+            // for i in 0..n_imports {
+            //     let mut cursor = Cursor {i:0};
+
+            //     // Here we parse the names of the import, and its function
+            //     // index.
+            //     let import = parse_import(&mut cursor, data, n);
+
+            //     println!("mod_name: {}, field_name: {}, f_index: {}, listing: {:?}",
+            //         import.mod_name, import.field_name, import.index, import.listing());
+            //     match import.listing() {
+            //         Listing::White => (),
+            //         Listing::Grey => {
+            //             if dcall_index.is_some() {panic!("dcall imported multiple times");}
+            //             // Document here why this is the case
+            //             dcall_index = Some(import.index);
+            //         },
+            //         Listing::Black => {
+            //             // If we encounter a blacklisted import we can return
+            //             // early.
+            //             println!("{:?} is blacklisted", import);
+            //             return false;
+            //         },
+            //     }
+            // }
+        }
+
+            // We now know the location of dcall, if there is one.
+            // We need to iterate over every function and read its code. A
+            // function can be one of three things:
+            //
+            //     * A syscall that follows the format
+            //     * A function which is not a syscall and features a greylisted call.
+            //     * A function which does not contain a greylisted call or a blacklistd call.
+            // The possiblities are checked in that order.
+
+            // Let's find the functions:
+            // for section in sections {
+            // }
+
+            // for function in functions {
+
+            // }
+
+
+            // for import in greys {
+            //     // If the grey test does not pass return early with false.
+            //     if !check_grey(&self, import.index) {
+            //         return false;
+            //     }
+            // }
+
+        // All the tests have passed so we can return true.
+        true
     }
 }
 
@@ -222,21 +403,25 @@ enum SectionType {
 }
 
 #[derive(Debug)]
-struct Section<'a> {
+struct Section {
     type_: SectionType,
-    data: &'a [u8],
+    // The offset is the byte offset of the start of this
+    // section, i.e. it points directly to the length byte.
+    offset: usize,
 }
 
-fn parse_section<'a>(cursor: &mut Cursor, data: &'a [u8]) -> Section<'a> {
+fn parse_section(cursor: &mut Cursor, data: &[u8]) -> Section {
     let type_n = cursor.read(data);
+    let offset = cursor.i;
     // println!("type_n: {:?}", type_n);
     let size_n = parse_varuint_32(cursor, data);
-    // println!("size_n: {:?}", size_n);
+    println!("size_n: {:?}", size_n);
     let type_ = n_to_section(type_n);
     let section = Section {
         type_,
         // data: &cursor.data[0..0],
-        data: &data[(cursor.i)..(cursor.i+size_n as usize)],
+        // data: &data[(cursor.i)..(cursor.i+size_n as usize)],
+        offset,
     };
     cursor.i += size_n as usize;
     section
@@ -278,6 +463,65 @@ fn parse_varuint_32(cursor: &mut Cursor, data: &[u8]) -> u32 {
     }
     res
 }
+
+fn parse_import(cursor: &mut Cursor, data: &[u8], index: u32) -> ImportEntry {
+    // An import comes in 3 sections, mod_name, field_name, and importdesc.
+    // Both mod_name and field_name are *names* which are vectors of bytes (UTF-8).
+    let mod_name = parse_name(cursor, data);
+    let field_name = parse_name(cursor, data);
+    println!("mod_name: {}, field_name: {}", mod_name, field_name);
+    // Parse the import description, we don't care about it at this stage so we
+    // ignore it. We still need to call this in order to skip over the data.
+    let _type_spec = parse_type_spec(cursor, data);
+    ImportEntry {
+        index,
+        mod_name,
+        field_name,
+    }
+}
+
+
+/// A type is a 'kind' specifier (0,3) followed by an index. Don't return
+/// anything for now.
+fn parse_type_spec(cursor: &mut Cursor, data: &[u8]) {
+    // Just read a single byte as the kind specifier.
+    let kind = cursor.read(data);
+    // Currently we only support typeids (0x00) so panic on anything else.
+    match kind {
+        0x00 => (),
+        _ => panic!("unsupported type spec: {}", kind),
+    }
+    let type_index = parse_varuint_32(cursor, data);
+
+}
+
+fn parse_name(cursor: &mut Cursor, data: &[u8]) -> String {
+    let length = parse_varuint_32(cursor, data);
+    let string_slice: &[u8] = &data[(cursor.i)..(cursor.i+length as usize)];
+    cursor.i += length as usize;
+    String::from_utf8(string_slice.into()).unwrap()
+}
+
+fn parse_vec_imports(data: &[u8]) -> Vec<ImportEntry> {
+    let mut cursor = Cursor {i:0};
+    // The length is the number of encoded elements (as opposed to bytes)
+    let length = parse_varuint_32(&mut cursor, data);
+    let mut elems = Vec::new();
+    for n in 0..length {
+        let entry = parse_import(&mut cursor, data, n);
+        elems.push(entry);
+    }
+    elems
+}
+
+/// This is our desrialisation trait.
+// trait WasmDeserialize {
+//     fn deserialize(data: &[u8]) -> Self;
+// }
+
+// impl WasmDeserialize for char {
+
+// }
 
 
 // fn get_imports(module: &Module) -> Vec<ImportEntry> {
@@ -420,6 +664,139 @@ fn parse_varuint_32(cursor: &mut Cursor, data: &[u8]) -> u32 {
 //     true
 // }
 
+/// An iterator which counts from one to five
+struct Code<'a> {
+    current_offset: usize,
+    body: &'a [u8],
+}
+
+// we want our count to start at one, so let's add a new() method to help.
+// This isn't strictly necessary, but is convenient. Note that we start
+// `count` at zero, we'll see why in `next()`'s implementation below.
+impl<'a> Code<'a> {
+    fn new(body: &'a [u8]) -> Code {
+        Code {
+            current_offset: 0,
+            body: body,
+        }
+    }
+}
+
+impl<'a> Iterator for Code<'a> {
+    // we will be counting with usize
+    type Item = u8;
+
+    // next() is the only required method
+    fn next(&mut self) -> Option<Self::Item> {
+        // Increment our count. This is why we started at zero.
+
+        // Check to see if we've finished counting or not.
+        if self.current_offset < self.body.len() {
+            // We need to parse the code into something meaningful
+            let val = Some(self.body[self.current_offset]);
+            self.current_offset += 1;
+            val
+        } else {
+            None
+        }
+    }
+}
+
+pub fn is_syscall(body: &[u8]) -> bool {
+    let code_iter = Code::new(body);
+    for (i,d) in code_iter.enumerate() {
+        println!("code_iter[{}]: {:#x}", i, d);
+    }
+    // // First we need to check that the instructions are correct, that is:
+    // //   0. call $a
+    // //   1. call $b
+    // //   2. get_local 0
+    // //   3. get_local 1
+    // //   4. get_local 2
+    // //   5. get_local 3
+    // //   6. call $c
+    // // $a, $b, and $c will be used later.
+    // // First we simply check the length
+    // if instructions.len() != 8 {
+    //     return false;
+    // }
+    // //   0. call gasleft
+    // if let Instruction::Call(f_ind) = instructions[0] {
+    //     // Check that f_ind is the function index of "gasleft"
+    //     let gasleft_index = find_import(module, "env", "gasleft");
+    //     if Some(f_ind) != gasleft_index {
+    //         return false;
+    //     }
+    // } else {
+    //     return false;
+    // }
+    // //   1. call sender
+    // if let Instruction::Call(f_ind) = instructions[1] {
+    //     // Check that f_ind is the function index of "sender"
+    //     let sender_index = find_import(module, "env", "sender");
+    //     if Some(f_ind) != sender_index {
+    //         return false;
+    //     }
+    // } else {
+    //     return false;
+    // }
+    // //   2. get_local 0
+    // if let Instruction::GetLocal(0) = instructions[2] {
+    // } else {
+    //     return false;
+    // }
+    // //   3. get_local 1
+    // if let Instruction::GetLocal(1) = instructions[3] {
+    // } else {
+    //     return false;
+    // }
+    // //   4. get_local 2
+    // if let Instruction::GetLocal(2) = instructions[4] {
+    // } else {
+    //     return false;
+    // }
+    // //   5. get_local 3
+    // if let Instruction::GetLocal(3) = instructions[5] {
+    // } else {
+    //     return false;
+    // }
+
+    // //   6. call dcall
+    // if let Instruction::Call(f_ind) = instructions[6] {
+    //     // Check that f_ind is the function index of "dcall"
+    //     let dcall_index = find_import(module, "env", "dcall");
+    //     if Some(f_ind) != dcall_index {
+    //         return false;
+    //     }
+    // } else {
+    //     return false;
+    // }
+    // //   7. END
+    // if let Instruction::End = instructions[7] {
+    // } else {
+    //     return false;
+    // }
+
+    // // Check that no locals are used
+    // if code.locals().len() > 0 {
+    //     return false;
+    // }
+    // // Check that the type signature is correct
+    // let parity_wasm::elements::Type::Function(f_type) = this_type;
+    // if f_type.return_type() != Some(ValueType::I32) {
+    //     return false;
+    // }
+    // if f_type.params() != [ ValueType::I32, ValueType::I32, ValueType::I32, ValueType::I32] {
+    //     return false;
+    // }
+    // if f_type.form() != 0x60 {
+    //     return false;
+    // }
+
+    // true
+    false
+}
+
 #[cfg(test)]
 mod tests {
     // extern crate pwasm_test;
@@ -430,6 +807,9 @@ mod tests {
     // use pwasm_abi::types::*;
     // use self::pwasm_test::{ext_reset, ext_get};
     // use token::TokenInterface;
+    use std::io;
+    use std::io::prelude::*;
+    use std::fs::File;
 
     #[test]
     fn module_only_pass() {
@@ -451,6 +831,15 @@ mod tests {
 "#;
         let wasm = wat2wasm(wat).unwrap();
         assert!(wasm.as_slice().is_valid());
+    }
+
+    #[test]
+    fn example_contract_1_pass() {
+        let mut f = File::open("../example_contract_1/target/wasm32-unknown-unknown/release/example_contract_1.wasm").expect("could not open file");
+        let mut wasm = Vec::new();
+        f.read_to_end(&mut wasm).unwrap();
+        println!("big example", );
+        assert!(!wasm.as_slice().is_valid());
     }
 
 //     #[test]
