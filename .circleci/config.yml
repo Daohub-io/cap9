@@ -122,7 +122,7 @@ jobs:
             cd kernel-ewasm
             # we need to run parity once to set up the accounts and keys
             # this only needs to be active for a few seconds (hence timeout)
-            timeout 5 parity --config dev || true
+            # timeout 5 parity --config dev || true
             # We then run parity properly, now unlocking the previously setup
             # account
             parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
