@@ -441,7 +441,7 @@ fn parse_varuint_32(cursor: &mut Cursor) -> u32 {
 }
 
 fn parse_import(cursor: &mut Cursor, index: u32) -> ImportEntry {
-    let mut reader = CodeCursor {
+    let mut reader = Cursor {
         current_offset: cursor.current_offset,
         body: cursor.body,
     };
@@ -604,7 +604,7 @@ struct Code<'a> {
 // `count` at zero, we'll see why in `next()`'s implementation below.
 impl<'a> Code<'a> {
     fn new(body: &'a [u8]) -> Code {
-        let mut reader = CodeCursor {
+        let mut reader = Cursor {
             current_offset: 0,
             body: body,
         };
@@ -617,37 +617,13 @@ impl<'a> Code<'a> {
     }
 }
 
-struct CodeCursor<'a> {
-    current_offset: usize,
-    body: &'a [u8],
-}
-
-// This is basically the rust definition of read for slice
-impl<'a> io::Read for CodeCursor<'a> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<()> {
-        let actual_self = &self.body[self.current_offset..];
-        let amt = core::cmp::min(buf.len(), actual_self.len());
-        let (a, _) = actual_self.split_at(amt);
-
-        if amt == 1 {
-            buf[0] = a[0];
-        } else {
-            buf[..amt].copy_from_slice(a);
-        }
-
-        self.current_offset += amt;
-        Ok(())
-    }
-}
-
-
 impl<'a> Iterator for Code<'a> {
     type Item = crate::instructions::Instruction;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.current_offset < self.body.len() {
             // We need to parse the code into something meaningful
-            let mut reader = CodeCursor {
+            let mut reader = Cursor {
                 current_offset: self.current_offset,
                 body: self.body,
             };
