@@ -235,6 +235,8 @@ impl Validity for &[u8] {
         // There is only one greylisted item (dcall) so we will just reserve a
         // place for that rather than maintain a list.
         let mut dcall_index: Option<usize> = None;
+        let mut gasleft_index: Option<usize> = None;
+        let mut sender_index: Option<usize> = None;
         if let Some(imports_offset) = import_section_offset {
          // Make a new cursor for imports
             let mut imports_cursor = Cursor {current_offset:imports_offset,body:&self};
@@ -248,6 +250,16 @@ impl Validity for &[u8] {
                 // Here we parse the names of the import, and its function
                 // index.
                 let import = parse_import(&mut imports_cursor, i);
+
+                if import.mod_name == "env" && import.field_name == "sender" {
+                    if sender_index.is_some() {panic!("sender imported multiple times");}
+                    sender_index = Some(import.index as usize);
+                }
+
+                if import.mod_name == "env" && import.field_name == "gasleft" {
+                    if gasleft_index.is_some() {panic!("gasleft imported multiple times");}
+                    gasleft_index = Some(import.index as usize);
+                }
 
                 // println!("mod_name: {}, field_name: {}, f_index: {}, listing: {:?}",
                     // import.mod_name, import.field_name, import.index, import.listing());
@@ -288,14 +300,21 @@ impl Validity for &[u8] {
 
             assert_eq!(n_functions,n_bodies);
 
+            let dcall_index: Option<usize> = None;
+            let gasleft_index: Option<usize> = None;
+            let sender_index: Option<usize> = None;
+
             // Next we iterate through the function bodies and check if they
             // violate any of our rules.
             for _i in 0..n_bodies {
                 let body_size = parse_varuint_32(&mut code_cursor);
-                // First we check if it is a system call
-                if is_syscall(&self[(code_cursor.current_offset)..(code_cursor.current_offset+body_size as usize)]) {
-                    // If the function is a system call we can continue past it
-                    continue;
+                // First we check if it is a system call, this is only possible
+                // if we have the three required imports.
+                if let (Some(dcall_i),Some(gasleft_i),Some(sender_i)) = (dcall_index,gasleft_index,sender_index) {
+                    if is_syscall(dcall_i as u32, gasleft_i as u32, sender_i as u32, &self[(code_cursor.current_offset)..(code_cursor.current_offset+body_size as usize)]) {
+                        // If the function is a system call we can continue past it
+                        continue;
+                    }
                 }
                 // let body = parse_varuint_32(&mut code_cursor, &self);
                 // println!("function[{}] is {} bytes", i, body_size);
@@ -453,41 +472,6 @@ fn parse_import(cursor: &mut Cursor, index: u32) -> ImportEntry {
     }
 }
 
-// fn get_imports(module: &Module) -> Vec<ImportEntry> {
-//     if let Some(import_section) = module.import_section() {
-//         import_section.entries().to_vec()
-//     } else {
-//         Vec::new()
-//     }
-// }
-
-// fn check_grey(module: &Module, grey_index: usize) -> Vec<(u32, u32)> {
-//     let mut uses = Vec::new();
-//     let code_section = module.code_section().unwrap();
-//     let codes = Vec::from(code_section.bodies());
-//     // If the instruction Call(grey_index) exists in the body of the function, that is a dangerous function.
-//     let this_call = parity_wasm::elements::Instruction::Call(grey_index as u32);
-//     for (func_index, func_body) in codes.iter().enumerate() {
-//         for (instruction_index, instruction) in func_body.code().elements().iter().enumerate() {
-//             if instruction == &this_call && !is_syscall(module, func_index as u32) {
-//                 uses.push((func_index as u32, instruction_index as u32));
-//             }
-//         }
-//     }
-//     uses
-// }
-
-// // Find the function index of an import
-// pub fn find_import(module: &Module, mod_name: &str, field_name: &str) -> Option<u32> {
-//     let imports = module.import_section().unwrap().entries();
-//     for (i,import) in imports.iter().enumerate() {
-//         if import.module() == mod_name && import.field() == field_name {
-//             return Some(i as u32);
-//         }
-//     }
-//     return None;
-// }
-
 // pub fn is_syscall(module: &Module, function_index: u32) -> bool {
 
 //     let function_section = module.function_section().unwrap();
@@ -638,10 +622,10 @@ impl<'a> Iterator for Code<'a> {
 
 // TODO: we need to provide the indices of the various necessary functions for
 // the system call.
-pub fn is_syscall(body: &[u8]) -> bool {
+pub fn is_syscall(dcall_i: u32, gasleft_i: u32, sender_i: u32, body: &[u8]) -> bool {
     // println!("body: {:?}", body);
-    let code_iter = Code::new(body);
-    let mut indexed_iter = code_iter.enumerate();
+    let mut code_iter = Code::new(body);
+    // let mut indexed_iter = code_iter.enumerate();
 
     // First we need to check that the instructions are correct, that is:
     //   0. call $a
@@ -655,64 +639,55 @@ pub fn is_syscall(body: &[u8]) -> bool {
 
 
     //   0. call gasleft
-    if let Some((_instr_index, instructions::Instruction::Call(_f_ind))) = indexed_iter.next() {
-        // Check that f_ind is the function index of "gasleft"
-        // println!("call_index: {}", f_ind);
+    if let Some(instructions::Instruction::Call(f_ind)) = code_iter.next() {
+        if f_ind != gasleft_i {
+            return false;
+        }
+    } else {
+        return false;
     }
-    // if let Instruction::Call(f_ind) = instructions[0] {
-    //     let gasleft_index = find_import(module, "env", "gasleft");
-    //     if Some(f_ind) != gasleft_index {
-    //         return false;
-    //     }
-    // } else {
-    //     return false;
-    // }
-    // //   1. call sender
-    // if let Instruction::Call(f_ind) = instructions[1] {
-    //     // Check that f_ind is the function index of "sender"
-    //     let sender_index = find_import(module, "env", "sender");
-    //     if Some(f_ind) != sender_index {
-    //         return false;
-    //     }
-    // } else {
-    //     return false;
-    // }
-    // //   2. get_local 0
-    // if let Instruction::GetLocal(0) = instructions[2] {
-    // } else {
-    //     return false;
-    // }
-    // //   3. get_local 1
-    // if let Instruction::GetLocal(1) = instructions[3] {
-    // } else {
-    //     return false;
-    // }
-    // //   4. get_local 2
-    // if let Instruction::GetLocal(2) = instructions[4] {
-    // } else {
-    //     return false;
-    // }
-    // //   5. get_local 3
-    // if let Instruction::GetLocal(3) = instructions[5] {
-    // } else {
-    //     return false;
-    // }
+    //   1. call sender
+    if let Some(instructions::Instruction::Call(f_ind)) = code_iter.next() {
+        if f_ind != sender_i {
+            return false;
+        }
+    } else {
+        return false;
+    }
+    //   2. get_local 0
+    if let Some(instructions::Instruction::GetLocal(0)) = code_iter.next() {
+    } else {
+        return false;
+    }
+    //   3. get_local 1
+    if let Some(instructions::Instruction::GetLocal(1)) = code_iter.next() {
+    } else {
+        return false;
+    }
+    //   4. get_local 2
+    if let Some(instructions::Instruction::GetLocal(2)) = code_iter.next() {
+    } else {
+        return false;
+    }
+    //   5. get_local 3
+    if let Some(instructions::Instruction::GetLocal(3)) = code_iter.next() {
+    } else {
+        return false;
+    }
 
-    // //   6. call dcall
-    // if let Instruction::Call(f_ind) = instructions[6] {
-    //     // Check that f_ind is the function index of "dcall"
-    //     let dcall_index = find_import(module, "env", "dcall");
-    //     if Some(f_ind) != dcall_index {
-    //         return false;
-    //     }
-    // } else {
-    //     return false;
-    // }
-    // //   7. END
-    // if let Instruction::End = instructions[7] {
-    // } else {
-    //     return false;
-    // }
+    //   6. call dcall
+    if let Some(instructions::Instruction::Call(f_ind)) = code_iter.next() {
+        if f_ind != dcall_i {
+            return false;
+        }
+    } else {
+        return false;
+    }
+    //   7. END
+    if let Some(instructions::Instruction::End) = code_iter.next() {
+    } else {
+        return false;
+    }
 
     // // Check that no locals are used
     // if code.locals().len() > 0 {
