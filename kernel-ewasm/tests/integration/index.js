@@ -201,7 +201,7 @@ describe('Kernel', function() {
             const code = web3.utils.hexToBytes(code_hex);
             assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
             let rec_validation = await kernel.methods.check_contract(contract.address).call();
-            assert.strictEqual(rec_validation, true);
+            assert.strictEqual(rec_validation, false);
         })
     })
 })

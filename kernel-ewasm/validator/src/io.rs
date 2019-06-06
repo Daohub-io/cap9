@@ -5,8 +5,8 @@
 
 // use crate::rust::result;
 
-// #[cfg(feature="std")]
-// use std::io;
+#[cfg(feature="std")]
+use std::io;
 
 use pwasm_std::vec::Vec;
 use pwasm_std::String;

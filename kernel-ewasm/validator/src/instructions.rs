@@ -1,20 +1,10 @@
 // This file is based on parity-wasm from parity, MIT & Apache Licensed
-
-
 use pwasm_std;
-// use parity_wasm;
-
-// pub use parity_wasm::elements::{ImportEntry, Module};
-// use parity_wasm::elements::Instruction;
-// use parity_wasm::elements::{ValueType};
-
 use pwasm_std::vec::Vec;
 use pwasm_std::String;
 use pwasm_std::Box;
 
-// use crate::rust::{fmt, vec::Vec, boxed::Box};
 use crate::io;
-// mod primitives;
 use crate::{
 	Serialize, Deserialize,
 	Uint8, VarUint32, CountedList,
@@ -589,6 +579,7 @@ impl Instruction {
 }
 
 #[allow(missing_docs)]
+#[allow(dead_code)]
 pub mod opcodes {
 	pub const UNREACHABLE: u8 = 0x00;
 	pub const NOP: u8 = 0x01;

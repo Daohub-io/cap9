@@ -21,6 +21,7 @@ pub mod func;
 mod primitives;
 pub mod io;
 pub mod serialization;
+pub mod import_entry;
 pub mod types;
 use io::Read;
 pub use self::io::{Error};
@@ -71,24 +72,6 @@ pub enum Listing {
 pub trait Listed {
     fn listing(&self) -> Listing;
 }
-
-// A webassembly module is a series of sections. From reading the spec it seems
-// that each section can occur only once, except for the custom sections, of
-// which there may be multiple.
-// struct Module {
-//     custom_sections: Vec<Section>,
-//     Type,
-//     Import,
-//     Function,
-//     Table,
-//     Memory,
-//     Global,
-//     Export,
-//     Start,
-//     Element,
-//     Code,
-//     Data,
-// }
 
 #[derive(Debug, Clone)]
 pub struct ImportEntry {
@@ -473,64 +456,17 @@ fn parse_varuint_32(cursor: &mut Cursor, data: &[u8]) -> u32 {
 }
 
 fn parse_import(cursor: &mut Cursor, data: &[u8], index: u32) -> ImportEntry {
-    // An import comes in 3 sections, mod_name, field_name, and importdesc.
-    // Both mod_name and field_name are *names* which are vectors of bytes (UTF-8).
-    let mod_name = parse_name(cursor, data);
-    let field_name = parse_name(cursor, data);
-    // println!("mod_name: {}, field_name: {}", mod_name, field_name);
-    // Parse the import description, we don't care about it at this stage so we
-    // ignore it. We still need to call this in order to skip over the data.
-    let _type_spec = parse_type_spec(cursor, data);
+    let mut reader = CodeCursor {
+        current_offset: cursor.i,
+        body: data,
+    };
+    let import: import_entry::ImportEntry = import_entry::ImportEntry::deserialize(&mut reader).expect("counted list");
     ImportEntry {
         index,
-        mod_name,
-        field_name,
+        mod_name: String::from(import.module()),
+        field_name: String::from(import.field()),
     }
 }
-
-
-/// A type is a 'kind' specifier (0,3) followed by an index. Don't return
-/// anything for now.
-fn parse_type_spec(cursor: &mut Cursor, data: &[u8]) {
-    // Just read a single byte as the kind specifier.
-    let kind = cursor.read(data);
-    // Currently we only support typeids (0x00) so panic on anything else.
-    match kind {
-        0x00 => (),
-        _ => panic!("unsupported type spec: {}", kind),
-    }
-    let type_index = parse_varuint_32(cursor, data);
-
-}
-
-fn parse_name(cursor: &mut Cursor, data: &[u8]) -> String {
-    let length = parse_varuint_32(cursor, data);
-    let string_slice: &[u8] = &data[(cursor.i)..(cursor.i+length as usize)];
-    cursor.i += length as usize;
-    String::from_utf8(string_slice.into()).unwrap()
-}
-
-fn parse_vec_imports(data: &[u8]) -> Vec<ImportEntry> {
-    let mut cursor = Cursor {i:0};
-    // The length is the number of encoded elements (as opposed to bytes)
-    let length = parse_varuint_32(&mut cursor, data);
-    let mut elems = Vec::new();
-    for n in 0..length {
-        let entry = parse_import(&mut cursor, data, n);
-        elems.push(entry);
-    }
-    elems
-}
-
-/// This is our desrialisation trait.
-// trait WasmDeserialize {
-//     fn deserialize(data: &[u8]) -> Self;
-// }
-
-// impl WasmDeserialize for char {
-
-// }
-
 
 // fn get_imports(module: &Module) -> Vec<ImportEntry> {
 //     if let Some(import_section) = module.import_section() {
