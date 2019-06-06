@@ -26,6 +26,7 @@ crate-type = ["cdylib"]
 [features]
 default = ["std"]
 std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
+panic_with_msg = ["pwasm-std/panic_with_msg"]
 
 [profile.release]
 panic = "abort"
