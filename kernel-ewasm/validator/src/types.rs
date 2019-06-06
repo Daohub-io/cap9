@@ -1,6 +1,7 @@
 // use crate::rust::{fmt, vec::Vec};
 pub use core::fmt;
 use pwasm_std::vec::Vec;
+use pwasm_std::String;
 use crate::io;
 use super::{
 	Deserialize, Serialize, VarUint7, VarInt7, VarUint1, CountedList,
@@ -60,7 +61,8 @@ impl Deserialize for ValueType {
 			-0x03 => Ok(ValueType::F32),
 			-0x04 => Ok(ValueType::F64),
 			-0x05 => Ok(ValueType::V128),
-			_ => Err(Error::UnknownValueType(val.into())),
+			// _ => Err(Error::UnknownValueType(val.into())),
+			_ => panic!("unknown value type")
 		}
 	}
 }
@@ -115,7 +117,8 @@ impl Deserialize for BlockType {
 			-0x04 => Ok(BlockType::Value(ValueType::F64)),
 			0x7b => Ok(BlockType::Value(ValueType::V128)),
 			-0x40 => Ok(BlockType::NoResult),
-			_ => Err(Error::UnknownValueType(val.into())),
+			// _ => Err(Error::UnknownValueType(val.into())),
+			_ => panic!("unknown value type")
 		}
 	}
 }

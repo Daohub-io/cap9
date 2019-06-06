@@ -44,7 +44,7 @@ pub mod token {
     use pwasm_ethereum;
     use pwasm_abi::types::*;
     // use parity_wasm::elements::{Module};
-    use validator::{Validity, Module, deserialize_buffer};
+    use validator::{Validity};
 
 
     // eth_abi is a procedural macros https://doc.rust-lang.org/book/first-edition/procedural-macros.html
@@ -136,16 +136,16 @@ pub mod token {
                 // data section.
                 let big_code_slice = &[0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x03, 0x01, 0x00, 0x01, 0x0B, 0x07, 0x01, 0x00, 0x41, 0x01, 0x0B, 0x01, 0x54, 0x00, 0x08, 0x04, 0x6E, 0x61, 0x6D, 0x65, 0x02, 0x01, 0x00];
                 // Next we deserialise the code from Vec<u8> into a Module.
-                let module: Module = match deserialize_buffer(code.as_slice()) {
-                // let module: Module = match deserialize_buffer(code_slice) {
-                    Ok(module) => module,
-                    // If we are unable to decode the contract, we assume it is
-                    // not valid, but for now we will panic for testing
-                    // purposes.
-                    Err(_) => panic!("invalid wasm module"),
-                };
+                // let module: Module = match deserialize_buffer(code.as_slice()) {
+                // // let module: Module = match deserialize_buffer(code_slice) {
+                //     Ok(module) => module,
+                //     // If we are unable to decode the contract, we assume it is
+                //     // not valid, but for now we will panic for testing
+                //     // purposes.
+                //     Err(_) => panic!("invalid wasm module"),
+                // };
                 // // Then we perform a boolen is_valid() check.
-                module.is_valid();
+                code.as_slice().is_valid();
                 false
             }
         }

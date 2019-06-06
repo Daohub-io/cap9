@@ -9,6 +9,8 @@ use pwasm_std;
 // use parity_wasm::elements::{ValueType};
 
 use pwasm_std::vec::Vec;
+use pwasm_std::String;
+use pwasm_std::Box;
 
 // use crate::rust::{fmt, vec::Vec, boxed::Box};
 use crate::io;
@@ -22,99 +24,99 @@ use crate::{
 use crate::types::{BlockType};
 use crate::serialization::{Error};
 
-// /// List of instructions (usually inside a block section).
-// #[derive(Debug, Clone, PartialEq)]
-// pub struct Instructions(Vec<Instruction>);
+/// List of instructions (usually inside a block section).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Instructions(Vec<Instruction>);
 
-// impl Instructions {
-// 	/// New list of instructions from vector of instructions.
-// 	pub fn new(elements: Vec<Instruction>) -> Self {
-// 		Instructions(elements)
-// 	}
+impl Instructions {
+	/// New list of instructions from vector of instructions.
+	pub fn new(elements: Vec<Instruction>) -> Self {
+		Instructions(elements)
+	}
 
-// 	/// Empty expression with only `Instruction::End` instruction.
-// 	pub fn empty() -> Self {
-// 		Instructions(vec![Instruction::End])
-// 	}
+	/// Empty expression with only `Instruction::End` instruction.
+	pub fn empty() -> Self {
+		Instructions(vec![Instruction::End])
+	}
 
-// 	/// List of individual instructions.
-// 	pub fn elements(&self) -> &[Instruction] { &self.0 }
+	/// List of individual instructions.
+	pub fn elements(&self) -> &[Instruction] { &self.0 }
 
-// 	/// Individual instructions, mutable.
-// 	pub fn elements_mut(&mut self) -> &mut Vec<Instruction> { &mut self.0 }
-// }
+	/// Individual instructions, mutable.
+	pub fn elements_mut(&mut self) -> &mut Vec<Instruction> { &mut self.0 }
+}
 
-// impl Deserialize for Instructions {
-// 	type Error = Error;
+impl Deserialize for Instructions {
+	type Error = Error;
 
-// 	fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
-// 		let mut instructions = Vec::new();
-// 		let mut block_count = 1usize;
+	fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+		let mut instructions = Vec::new();
+		let mut block_count = 1usize;
 
-// 		loop {
-// 			let instruction = Instruction::deserialize(reader)?;
-// 			if instruction.is_terminal() {
-// 				block_count -= 1;
-// 			} else if instruction.is_block() {
-// 				block_count = block_count.checked_add(1).ok_or(Error::Other("too many instructions"))?;
-// 			}
+		loop {
+			let instruction = Instruction::deserialize(reader)?;
+			if instruction.is_terminal() {
+				block_count -= 1;
+			} else if instruction.is_block() {
+				block_count = block_count.checked_add(1).ok_or(Error::Other("too many instructions"))?;
+			}
 
-// 			instructions.push(instruction);
-// 			if block_count == 0 {
-// 				break;
-// 			}
-// 		}
+			instructions.push(instruction);
+			if block_count == 0 {
+				break;
+			}
+		}
 
-// 		Ok(Instructions(instructions))
-// 	}
-// }
+		Ok(Instructions(instructions))
+	}
+}
 
-// /// Initialization expression.
-// #[derive(Debug, Clone, PartialEq)]
-// pub struct InitExpr(Vec<Instruction>);
+/// Initialization expression.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InitExpr(Vec<Instruction>);
 
-// impl InitExpr {
-// 	/// New initialization expression from instruction list.
-// 	///
-// 	/// `code` must end with the `Instruction::End` instruction!
-// 	pub fn new(code: Vec<Instruction>) -> Self {
-// 		InitExpr(code)
-// 	}
+impl InitExpr {
+	/// New initialization expression from instruction list.
+	///
+	/// `code` must end with the `Instruction::End` instruction!
+	pub fn new(code: Vec<Instruction>) -> Self {
+		InitExpr(code)
+	}
 
-// 	/// Empty expression with only `Instruction::End` instruction.
-// 	pub fn empty() -> Self {
-// 		InitExpr(vec![Instruction::End])
-// 	}
+	/// Empty expression with only `Instruction::End` instruction.
+	pub fn empty() -> Self {
+		InitExpr(vec![Instruction::End])
+	}
 
-// 	/// List of instructions used in the expression.
-// 	pub fn code(&self) -> &[Instruction] {
-// 		&self.0
-// 	}
+	/// List of instructions used in the expression.
+	pub fn code(&self) -> &[Instruction] {
+		&self.0
+	}
 
-// 	/// List of instructions used in the expression.
-// 	pub fn code_mut(&mut self) -> &mut Vec<Instruction> {
-// 		&mut self.0
-// 	}
-// }
+	/// List of instructions used in the expression.
+	pub fn code_mut(&mut self) -> &mut Vec<Instruction> {
+		&mut self.0
+	}
+}
 
-// impl Deserialize for InitExpr {
-// 	type Error = Error;
+impl Deserialize for InitExpr {
+	type Error = Error;
 
-// 	fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
-// 		let mut instructions = Vec::new();
+	fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+		let mut instructions = Vec::new();
 
-// 		loop {
-// 			let instruction = Instruction::deserialize(reader)?;
-// 			let is_terminal = instruction.is_terminal();
-// 			instructions.push(instruction);
-// 			if is_terminal {
-// 				break;
-// 			}
-// 		}
+		loop {
+			let instruction = Instruction::deserialize(reader)?;
+			let is_terminal = instruction.is_terminal();
+			instructions.push(instruction);
+			if is_terminal {
+				break;
+			}
+		}
 
-// 		Ok(InitExpr(instructions))
-// 	}
-// }
+		Ok(InitExpr(instructions))
+	}
+}
 
 /// Instruction.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

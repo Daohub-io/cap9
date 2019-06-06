@@ -6,7 +6,10 @@
 // use crate::rust::result;
 
 // #[cfg(feature="std")]
-use std::io;
+// use std::io;
+
+use pwasm_std::vec::Vec;
+use pwasm_std::String;
 
 // #[cfg(not(feature="std"))]
 // use crate::rust::vec::Vec;
@@ -28,7 +31,7 @@ pub enum Error {
 }
 
 /// IO specific Result.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 pub trait Write {
 	/// Write a buffer of data into this write.

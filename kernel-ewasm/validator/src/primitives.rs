@@ -3,6 +3,7 @@
 use crate::{io};
 use crate::{Deserialize, Serialize};
 use pwasm_std::vec::Vec;
+use pwasm_std::String;
 use crate::serialization::{Error};
 use crate::serialization::{deserialize_buffer};
 

@@ -1,6 +1,9 @@
 use crate::{io};
 use crate::primitives::*;
 pub use core::fmt;
+use pwasm_std::vec::{Vec};
+
+use pwasm_std::String;
 
 /// Deserialization from serial i/o.
 pub trait Deserialize : Sized {

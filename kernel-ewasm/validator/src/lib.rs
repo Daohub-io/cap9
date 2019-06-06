@@ -1,4 +1,10 @@
-// #![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#![cfg_attr(not(feature = "std"), feature(alloc))]
+
+#[cfg(not(feature="std"))]
+#[macro_use]
+extern crate alloc;
 
 use pwasm_std;
 // use parity_wasm;
@@ -8,13 +14,15 @@ use pwasm_std;
 // use parity_wasm::elements::{ValueType};
 
 use pwasm_std::vec::Vec;
+use pwasm_std::String;
 
 mod instructions;
+pub mod func;
 mod primitives;
 pub mod io;
 pub mod serialization;
 pub mod types;
-
+use io::Read;
 pub use self::io::{Error};
 pub use self::serialization::{Serialize, Deserialize};
 
@@ -190,9 +198,9 @@ impl Validity for &[u8] {
             // data: self,
         };
         if self.len() < 100 {
-            println!("data: {:?}", &self);
+            // println!("data: {:?}", &self);
         } else {
-            println!("data: {:?}", &self[0..100]);
+            // println!("data: {:?}", &self[0..100]);
         }
         // Take the magic number, check that it matches
         if cursor.read_n(4, &self) != &[0, 97, 115, 109] {
@@ -218,7 +226,7 @@ impl Validity for &[u8] {
             // let section: Section = parse_section(&mut i, &self[d..]);
             // println!("i: {:?}", cursor.i);
             let section: Section = parse_section(&mut cursor, &self);
-            println!("section: {:?}: index: {}", section.type_, section.offset);
+            // println!("section: {:?}: index: {}", section.type_, section.offset);
             // There are many section types we don't care about, for example,
             // Custom sections generally contain debugging symbols and
             // meaningful function names which are irrelevant to the current
@@ -261,7 +269,7 @@ impl Validity for &[u8] {
             let section_size = parse_varuint_32(&mut imports_cursor, &self);
             // How many imports do we have?
             let n_imports = parse_varuint_32(&mut imports_cursor, &self);
-            println!("n_imports: {}", n_imports);
+            // println!("n_imports: {}", n_imports);
             for i in 0..n_imports {
                 // let mut cursor = Cursor {i:0};
 
@@ -269,8 +277,8 @@ impl Validity for &[u8] {
                 // index.
                 let import = parse_import(&mut imports_cursor, &self, i);
 
-                println!("mod_name: {}, field_name: {}, f_index: {}, listing: {:?}",
-                    import.mod_name, import.field_name, import.index, import.listing());
+                // println!("mod_name: {}, field_name: {}, f_index: {}, listing: {:?}",
+                    // import.mod_name, import.field_name, import.index, import.listing());
                 match import.listing() {
                     Listing::White => (),
                     Listing::Grey => {
@@ -281,8 +289,8 @@ impl Validity for &[u8] {
                     Listing::Black => {
                         // If we encounter a blacklisted import we can return
                         // early.
-                        println!("{:?} is blacklisted", import);
-                        // return false;
+                        // println!("{:?} is blacklisted", import);
+                        return false;
                     },
                 }
             }
@@ -298,13 +306,13 @@ impl Validity for &[u8] {
             // We will have to try and update these in parallel
             let function_section_size = parse_varuint_32(&mut functions_cursor, &self);
             let code_section_size = parse_varuint_32(&mut code_cursor, &self);
-            println!("functions_offset: {:?}", functions_offset);
-            println!("code_offset: {:?}", code_offset);
+            // println!("functions_offset: {:?}", functions_offset);
+            // println!("code_offset: {:?}", code_offset);
             let n_functions = parse_varuint_32(&mut functions_cursor, &self);
             let n_bodies = parse_varuint_32(&mut code_cursor, &self);
 
-            println!("functions_size: {:?}", function_section_size);
-            println!("code_size: {:?}", code_section_size);
+            // println!("functions_size: {:?}", function_section_size);
+            // println!("code_size: {:?}", code_section_size);
 
             assert_eq!(n_functions,n_bodies);
 
@@ -318,7 +326,7 @@ impl Validity for &[u8] {
                     continue;
                 }
                 // let body = parse_varuint_32(&mut code_cursor, &self);
-                println!("function[{}] is {} bytes", i, body_size);
+                // println!("function[{}] is {} bytes", i, body_size);
                 code_cursor.skip(body_size as usize);
                 // As the function is not a system call, it is not permitted to
                 // have a dcall in it, so we iterate through all the
@@ -415,7 +423,7 @@ fn parse_section(cursor: &mut Cursor, data: &[u8]) -> Section {
     let offset = cursor.i;
     // println!("type_n: {:?}", type_n);
     let size_n = parse_varuint_32(cursor, data);
-    println!("size_n: {:?}", size_n);
+    // println!("size_n: {:?}", size_n);
     let type_ = n_to_section(type_n);
     let section = Section {
         type_,
@@ -469,7 +477,7 @@ fn parse_import(cursor: &mut Cursor, data: &[u8], index: u32) -> ImportEntry {
     // Both mod_name and field_name are *names* which are vectors of bytes (UTF-8).
     let mod_name = parse_name(cursor, data);
     let field_name = parse_name(cursor, data);
-    println!("mod_name: {}, field_name: {}", mod_name, field_name);
+    // println!("mod_name: {}, field_name: {}", mod_name, field_name);
     // Parse the import description, we don't care about it at this stage so we
     // ignore it. We still need to call this in order to skip over the data.
     let _type_spec = parse_type_spec(cursor, data);
@@ -675,16 +683,45 @@ struct Code<'a> {
 // `count` at zero, we'll see why in `next()`'s implementation below.
 impl<'a> Code<'a> {
     fn new(body: &'a [u8]) -> Code {
-        Code {
+        let mut reader = CodeCursor {
             current_offset: 0,
+            body: body,
+        };
+        let locals: Vec<func::Local> = CountedList::<func::Local>::deserialize(&mut reader).expect("counted list").into_inner();
+        // println!("locals: {:?}", locals);
+        Code {
+            current_offset: reader.current_offset,
             body: body,
         }
     }
 }
 
+struct CodeCursor<'a> {
+    current_offset: usize,
+    body: &'a [u8],
+}
+
+impl<'a> io::Read for CodeCursor<'a> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<()> {
+        let actual_self = &self.body[self.current_offset..];
+        let amt = core::cmp::min(buf.len(), actual_self.len());
+        let (a, b) = actual_self.split_at(amt);
+
+        if amt == 1 {
+            buf[0] = a[0];
+        } else {
+            buf[..amt].copy_from_slice(a);
+        }
+
+        self.current_offset += amt;
+        Ok(())
+    }
+}
+
+
 impl<'a> Iterator for Code<'a> {
     // we will be counting with usize
-    type Item = u8;
+    type Item = crate::instructions::Instruction;
 
     // next() is the only required method
     fn next(&mut self) -> Option<Self::Item> {
@@ -693,8 +730,12 @@ impl<'a> Iterator for Code<'a> {
         // Check to see if we've finished counting or not.
         if self.current_offset < self.body.len() {
             // We need to parse the code into something meaningful
-            let val = Some(self.body[self.current_offset]);
-            self.current_offset += 1;
+            let mut reader = CodeCursor {
+                current_offset: self.current_offset,
+                body: self.body,
+            };
+            let val = Some(crate::instructions::Instruction::deserialize(&mut reader).expect("expected valid instruction"));
+            self.current_offset = reader.current_offset;
             val
         } else {
             None
@@ -702,27 +743,30 @@ impl<'a> Iterator for Code<'a> {
     }
 }
 
+// TODO: we need to provide the indices of the various necessary functions for
+// the system call.
 pub fn is_syscall(body: &[u8]) -> bool {
+    // println!("body: {:?}", body);
     let code_iter = Code::new(body);
-    for (i,d) in code_iter.enumerate() {
-        println!("code_iter[{}]: {:#x}", i, d);
+    let mut indexed_iter = code_iter.enumerate();
+
+    // First we need to check that the instructions are correct, that is:
+    //   0. call $a
+    //   1. call $b
+    //   2. get_local 0
+    //   3. get_local 1
+    //   4. get_local 2
+    //   5. get_local 3
+    //   6. call $c
+    // $a, $b, and $c will be used later.
+
+
+    //   0. call gasleft
+    if let Some((instr_index, instructions::Instruction::Call(f_ind))) = indexed_iter.next() {
+        // Check that f_ind is the function index of "gasleft"
+        // println!("call_index: {}", f_ind);
     }
-    // // First we need to check that the instructions are correct, that is:
-    // //   0. call $a
-    // //   1. call $b
-    // //   2. get_local 0
-    // //   3. get_local 1
-    // //   4. get_local 2
-    // //   5. get_local 3
-    // //   6. call $c
-    // // $a, $b, and $c will be used later.
-    // // First we simply check the length
-    // if instructions.len() != 8 {
-    //     return false;
-    // }
-    // //   0. call gasleft
     // if let Instruction::Call(f_ind) = instructions[0] {
-    //     // Check that f_ind is the function index of "gasleft"
     //     let gasleft_index = find_import(module, "env", "gasleft");
     //     if Some(f_ind) != gasleft_index {
     //         return false;
@@ -838,7 +882,6 @@ mod tests {
         let mut f = File::open("../example_contract_1/target/wasm32-unknown-unknown/release/example_contract_1.wasm").expect("could not open file");
         let mut wasm = Vec::new();
         f.read_to_end(&mut wasm).unwrap();
-        println!("big example", );
         assert!(!wasm.as_slice().is_valid());
     }
 
