@@ -96,7 +96,7 @@ jobs:
             # cargo build --verbose --release --features final
             # strip target/debug/parity
             # file target/debug/parity
-            cargo install --bin parity -j 1 --path . --bin parity parity-ethereum --force
+            cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
       - save_cache:
           key: deps6-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
