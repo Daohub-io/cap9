@@ -1,8 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature="std"))]
-#[macro_use]
-extern crate alloc;
 
 use pwasm_std;
 use pwasm_std::vec::Vec;
@@ -16,11 +14,11 @@ pub mod serialization;
 pub mod import_entry;
 pub mod types;
 pub use self::io::{Error};
-pub use self::serialization::{Serialize, Deserialize};
+pub use self::serialization::{Deserialize};
 
 pub use self::primitives::{
-	VarUint32, VarUint7, Uint8, VarUint1, VarInt7, Uint32, VarInt32, VarInt64,
-	Uint64, VarUint64, CountedList, CountedWriter, CountedListWriter,
+    VarUint32, VarUint7, Uint8, VarUint1, VarInt7, Uint32, VarInt32, VarInt64,
+    Uint64, VarUint64, CountedList
 };
 
 /// As per the wasm spec:
@@ -122,26 +120,45 @@ pub trait Validity {
 // need.
 #[derive(Debug)]
 struct Cursor<'a> {
-    i: usize,
-    data: &'a [u8],
+    current_offset: usize,
+    body: &'a [u8],
 }
 
 impl<'a> Cursor<'a> {
     // Read the byte at the cusor, and increment the pointer by 1.
-    fn read(&mut self) -> &'a u8 {
-        let val = &self.data[self.i];
-        self.i += 1;
+    fn read_ref(&mut self) -> &'a u8 {
+        let val = &self.body[self.current_offset];
+        self.current_offset += 1;
         val
     }
 
-    fn read_n(&mut self, n: usize) -> &'a [u8] {
-        let val = &self.data[self.i..(self.i+n)];
-        self.i += n;
+    fn read_ref_n(&mut self, n: usize) -> &'a [u8] {
+        let val = &self.body[self.current_offset..(self.current_offset+n)];
+        self.current_offset += n;
         val
     }
 
     fn skip(&mut self, n: usize) {
-        self.i += n;
+        self.current_offset += n;
+    }
+}
+
+/// Implement standard read definition (which clones). This is basically the
+/// rust definition of read for slice.
+impl<'a> io::Read for Cursor<'a> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<()> {
+        let actual_self = &self.body[self.current_offset..];
+        let amt = core::cmp::min(buf.len(), actual_self.len());
+        let (a, _) = actual_self.split_at(amt);
+
+        if amt == 1 {
+            buf[0] = a[0];
+        } else {
+            buf[..amt].copy_from_slice(a);
+        }
+
+        self.current_offset += amt;
+        Ok(())
     }
 }
 
@@ -149,8 +166,8 @@ impl Validity for &[u8] {
     fn is_valid(&self) -> bool {
         // Set an index value, which is our offset into the wasm bytes.
         let mut cursor = Cursor {
-            i: 0,
-            data: self,
+            current_offset: 0,
+            body: self,
         };
 
         // The first two steps are to take the magic number and version to check
@@ -160,12 +177,12 @@ impl Validity for &[u8] {
         // wasm code being deployed (for which our assumptions may not hold).
 
         // Take the magic number, check that it matches
-        if cursor.read_n(4) != &[0, 97, 115, 109] {
+        if cursor.read_ref_n(4) != &[0, 97, 115, 109] {
             panic!("magic number not found");
         }
 
         // Take the version, check that it matches
-        if cursor.read_n(4) != &[1, 0, 0, 0] {
+        if cursor.read_ref_n(4) != &[1, 0, 0, 0] {
             panic!("proper version number not found");
         }
 
@@ -178,7 +195,7 @@ impl Validity for &[u8] {
         let mut import_section_offset: Option<usize> = None;
         let mut function_section_offset: Option<usize> = None;
         let mut code_section_offset: Option<usize> = None;
-        while cursor.i < self.len() {
+        while cursor.current_offset < self.len() {
             let section: Section = parse_section(&mut cursor);
             // There are many section types we don't care about, for example,
             // Custom sections generally contain debugging symbols and
@@ -205,7 +222,7 @@ impl Validity for &[u8] {
                 _ => (),
             }
         }
-        if cursor.i != self.len() {
+        if cursor.current_offset != self.len() {
             panic!("mismatched length");
         }
 
@@ -218,7 +235,7 @@ impl Validity for &[u8] {
         let mut dcall_index: Option<usize> = None;
         if let Some(imports_offset) = import_section_offset {
          // Make a new cursor for imports
-            let mut imports_cursor = Cursor {i:imports_offset,data:&self};
+            let mut imports_cursor = Cursor {current_offset:imports_offset,body:&self};
             let _section_size = parse_varuint_32(&mut imports_cursor);
             // How many imports do we have?
             let n_imports = parse_varuint_32(&mut imports_cursor);
@@ -253,9 +270,9 @@ impl Validity for &[u8] {
         // a vector of type ids. We don't care about types at this stage.
         if let (Some(functions_offset), Some(code_offset)) = (function_section_offset, code_section_offset) {
             // Make a new cursor for functions
-            let mut functions_cursor = Cursor {i:functions_offset,data:&self};
+            let mut functions_cursor = Cursor {current_offset:functions_offset,body:&self};
             // Make a new cursor for code
-            let mut code_cursor = Cursor {i:code_offset,data:&self};
+            let mut code_cursor = Cursor {current_offset:code_offset,body:&self};
             // We will have to try and update these in parallel
             let _function_section_size = parse_varuint_32(&mut functions_cursor);
             let _code_section_size = parse_varuint_32(&mut code_cursor);
@@ -274,7 +291,7 @@ impl Validity for &[u8] {
             for _i in 0..n_bodies {
                 let body_size = parse_varuint_32(&mut code_cursor);
                 // First we check if it is a system call
-                if is_syscall(&self[(code_cursor.i)..(code_cursor.i+body_size as usize)]) {
+                if is_syscall(&self[(code_cursor.current_offset)..(code_cursor.current_offset+body_size as usize)]) {
                     // If the function is a system call we can continue past it
                     continue;
                 }
@@ -372,15 +389,15 @@ struct Section {
 }
 
 fn parse_section(cursor: &mut Cursor) -> Section {
-    let type_n = cursor.read();
-    let offset = cursor.i;
+    let type_n = cursor.read_ref();
+    let offset = cursor.current_offset;
     let size_n = parse_varuint_32(cursor);
     let type_ = n_to_section(type_n);
     let section = Section {
         type_,
         offset,
     };
-    cursor.i += size_n as usize;
+    cursor.current_offset += size_n as usize;
     section
 }
 
@@ -408,7 +425,7 @@ fn parse_varuint_32(cursor: &mut Cursor) -> u32 {
     loop {
         if shift > 31 { panic!("invalid varuint32"); }
 
-        let b = cursor.read().clone() as u32;
+        let b = cursor.read_ref().clone() as u32;
         res |= (b & 0x7f).checked_shl(shift).expect("invalid varuint32");
         shift += 7;
         if (b >> 7) == 0 {
@@ -423,8 +440,8 @@ fn parse_varuint_32(cursor: &mut Cursor) -> u32 {
 
 fn parse_import(cursor: &mut Cursor, index: u32) -> ImportEntry {
     let mut reader = CodeCursor {
-        current_offset: cursor.i,
-        body: cursor.data,
+        current_offset: cursor.current_offset,
+        body: cursor.body,
     };
     let import: import_entry::ImportEntry = import_entry::ImportEntry::deserialize(&mut reader).expect("counted list");
     ImportEntry {
