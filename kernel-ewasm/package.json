@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "deploy": "node script/deploy.js",
-    "test": "test.sh"
+    "test": "sh ./test.sh"
   },
   "author": "",
   "license": "ISC",
