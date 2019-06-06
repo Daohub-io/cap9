@@ -43,10 +43,10 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps6-{{ .Branch }}-{{ .Revision }}
-            # - deps6-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps6-{{ .Branch }}-
-            - deps6-
+            - deps7-{{ .Branch }}-{{ .Revision }}
+            # - deps7-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps7-{{ .Branch }}-
+            - deps7-
       - run:
           name: Install native build prequisites
           command: |
@@ -102,7 +102,7 @@ jobs:
               cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
             fi
       - save_cache:
-          key: deps6-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps7-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
