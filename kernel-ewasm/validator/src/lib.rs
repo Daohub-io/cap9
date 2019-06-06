@@ -1,6 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature="std"))]
+#[macro_use]
+extern crate alloc;
 
 use pwasm_std;
 use pwasm_std::vec::Vec;
