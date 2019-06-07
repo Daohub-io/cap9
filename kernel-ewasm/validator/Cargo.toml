@@ -1,0 +1,20 @@
+[package]
+name = "validator"
+version = "0.1.0"
+authors = ["Daohub Inc <info@daohub.io>"]
+edition = "2018"
+
+[dependencies]
+pwasm-std = {version = "0.13", default-features = false}
+pwasm-ethereum = {version = "0.8", default-features = false}
+
+[dev-dependencies]
+wabt = "0.7.1"
+
+[features]
+default = ["std"]
+std = ["pwasm-std/std", "pwasm-ethereum/std"]
+
+[lib]
+name = "validator"
+# crate-type = ["cdylib"]
