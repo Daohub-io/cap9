@@ -86,7 +86,7 @@ impl<'a> Validity for modules::Module<'a> {
 
         if let Some(funcs) = self.functions() {
             for (_i, func) in funcs.enumerate() {
-                // println!("func[{}]: {:?}", i, func);
+                // println!("func[{}]: {:?}", _i, func);
                 if let (Some(dcall_i), Some(gasleft_i), Some(sender_i)) =
                     (dcall_index, gasleft_index, sender_index)
                 {
@@ -95,17 +95,18 @@ impl<'a> Validity for modules::Module<'a> {
                         // it
                         continue;
                     }
-                    // At this point we know that the function is not a syscall.
-                    // We must now check that it has no black or grey listed
-                    // calls. We only care about calls here. We only need to do
-                    // this if dcall is imported in the first place.
-                    if let Some(dcall_i) = dcall_index {
-                        if func.contains_grey_call(dcall_i as u32) {
-                            // This function contains a greylisted call (i.e.
-                            // dcall), so we must return with false as the
-                            // contract is invalid.
-                            return false;
-                        }
+                }
+                // At this point we know that the function is not a syscall.
+                // We must now check that it has no black or grey listed
+                // calls. We only care about calls here. We only need to do
+                // this if dcall is imported in the first place.
+                if let Some(dcall_i) = dcall_index {
+                    if func.contains_grey_call(dcall_i as u32) {
+                        // This function contains a greylisted call (i.e.
+                        // dcall), so we must return with false as the
+                        // contract is invalid.
+                        // println!("false because bad greycall");
+                        return false;
                     }
                 }
             }
@@ -283,6 +284,30 @@ mod tests {
     call $env.storage_write
     unreachable)
   (export "call" (func $call)))
+"#;
+        let wasm = wat2wasm(wat).unwrap();
+        let validation_result = Module::new(wasm.as_slice()).is_valid();
+        assert_eq!(validation_result, false);
+    }
+
+        #[test]
+    fn with_call_indirect_fail() {
+        let wat = r#"
+;; Perform an indirect call via a table
+(module
+  (type $dcall_type (func (param i32 i32)))
+  (import "env" "dcall" (func $env.dcall (type $dcall_type)))
+  (table 2 anyfunc)
+  (func $f1 (result i32)
+    i32.const 42)
+  (func $f2 (result i32)
+    i32.const 13)
+  (elem (i32.const 0) $f1 $f2)
+  (type $return_i32 (func (result i32)))
+  (func (export "callByIndex") (param $i i32) (result i32)
+    get_local $i
+    call_indirect (type $return_i32))
+)
 "#;
         let wasm = wat2wasm(wat).unwrap();
         let validation_result = Module::new(wasm.as_slice()).is_valid();
