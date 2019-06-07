@@ -14,7 +14,6 @@ use pwasm_std::String;
 /// format in the buffer. All of the functions simply access this buffer. These
 /// fields are private as they need initialisation. Currently it only holds
 /// references to the sections we care about.
-/// TODO: these fields are currently private, but should be exposed through methods
 #[derive(Debug, Default)]
 pub struct Module<'a> {
     /// A reference to the buffer that actually holds the WASM data.
@@ -117,7 +116,7 @@ impl<'a> Module<'a> {
         }
     }
 
-    /// Return an iterator over the import in the import section. The
+    /// Return an iterator over the imports in the import section. The
     /// imports are in order.
     pub fn imports(&self) -> Option<ImportIterator> {
         // TODO: generalise to SectionIter

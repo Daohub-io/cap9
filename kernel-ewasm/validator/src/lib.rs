@@ -1,6 +1,8 @@
 //! # Validator
 //!
-//! Module for parsing and validating pwasm contracts on-chain.
+//! Crate for parsing WASM modules and validating pwasm contracts on-chain
+//! according to the cap9 spec. This validates the contract in a buffer rather
+//! than parsing into native data structure.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature = "std"))]
@@ -26,7 +28,7 @@ pub use modules::Module;
 pub use modules::Function;
 use listing::*;
 
-/// Be able to determine a contracts validity.
+/// A trait for types which can be validated against the cap9 spec.
 pub trait Validity {
     /// Tests the object for validity.
     fn is_valid(&self) -> bool;
