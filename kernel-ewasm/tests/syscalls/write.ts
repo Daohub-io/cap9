@@ -1,14 +1,14 @@
 const Web3 = require('web3')
 const assert = require('assert')
 
-import {newKernelInstance, web3, createAccount, KernelInstance, newTestProcedure } from '../integration/utils'
+import {newKernelInstance, web3, createAccount, KernelInstance, newTestContract } from '../utils'
 
 
 describe('Write Syscall', function () {
     describe('#getNum', function () {
         it('should return correct value', async function () {
 
-            let newProc = await newTestProcedure("writer_test", "TestWriterInterface");
+            let newProc = await newTestContract("writer_test", "TestWriterInterface");
             let kernel = await newKernelInstance("init", newProc.address);
 
             let kernel_asWriter = newProc.clone();

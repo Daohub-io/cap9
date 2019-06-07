@@ -643,7 +643,6 @@ pub mod contract {
 #[allow(non_snake_case)]
 mod tests {
     extern crate pwasm_test;
-    extern crate std;
 
     use super::cap::*;
     use super::contract;

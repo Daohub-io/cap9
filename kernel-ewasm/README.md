@@ -43,7 +43,7 @@ cd kernel-ewasm
 
 # For Unit Tests:
 # Do cargo test with "std" feature
-cargo test --features std
+cargo test --package cap9-kernel --features std
 ```
 
 #### Integration Tests
@@ -59,6 +59,6 @@ parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=
 curl --data '{"jsonrpc":"2.0","method":"parity_newAccountFromPhrase","params":["user", "user"],"id":0}' -H "Content-Type: application/json" -X POST localhost:8545
 
 # Run Npm 
-npm run test
+npm test
 
 ```

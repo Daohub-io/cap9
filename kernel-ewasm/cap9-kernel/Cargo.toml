@@ -1,0 +1,25 @@
+[package]
+description = "Cap9 Ewasm Kernel Library"
+name = "cap9-kernel"
+version = "0.1.0"
+authors = ["Daohub Inc <info@daohub.io>"]
+edition = "2018"
+
+[dependencies]
+tiny-keccak = "1.4.2"
+pwasm-std = "0.13"
+pwasm-ethereum = "0.8"
+pwasm-abi = "0.2"
+pwasm-abi-derive = "0.2"
+lazy_static = { version = "1.2.0", features = ["spin_no_std"] }
+cap9-std = { path= "../cap9-std" }
+
+[dev-dependencies.pwasm-test]
+git = "https://github.com/paritytech/pwasm-test"
+default-features = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]

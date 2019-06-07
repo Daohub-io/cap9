@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![allow(non_snake_case)]
 
 extern crate cap9_std;
 extern crate pwasm_std;

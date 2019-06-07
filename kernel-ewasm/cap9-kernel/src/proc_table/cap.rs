@@ -553,7 +553,6 @@ impl NewCapList {
 #[allow(non_snake_case)]
 mod tests {
     extern crate pwasm_test;
-    extern crate std;
 
     use self::pwasm_test::{ext_get, ext_reset};
     use core::str::FromStr;

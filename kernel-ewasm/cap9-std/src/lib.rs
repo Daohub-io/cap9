@@ -1,3 +1,5 @@
+#![no_std]
+
 /// Generic wasm error
 #[derive(Debug)]
 pub struct Error;

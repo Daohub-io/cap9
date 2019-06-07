@@ -5,3 +5,15 @@ authors = ["DaoHub <info@daohub.io>"]
 edition = "2018"
 
 [dependencies]
+pwasm-std = "0.13"
+pwasm-ethereum = "0.8"
+
+[dev-dependencies]
+pwasm-abi = "0.2"
+pwasm-abi-derive = "0.2"
+
+[[examples]]
+crate-type = ["cdylib"]
+
+[features]
+std = ["pwasm-std/std", "pwasm-ethereum/std"]

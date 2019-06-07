@@ -1,7 +1,7 @@
 const Web3 = require('web3')
 const assert = require('assert')
 
-import {newKernelInstance, web3, createAccount, KernelInstance, newTestProcedure } from './utils'
+import {newKernelInstance, web3, createAccount, KernelInstance, newTestContract } from '../utils'
 
 describe('Kernel', function () {
     describe('#constructor', function () {
@@ -20,7 +20,7 @@ describe('Kernel', function () {
 
     describe('entry_proc', function() {
         it('should forward call to entry procedure', async function() {
-            let newProc = await newTestProcedure("entry_test", "TestWriterInterface");
+            let newProc = await newTestContract("entry_test", "TestWriterInterface");
             let kernel = await newKernelInstance("init", newProc.address);
 
             let kernel_asWriter = newProc.clone();

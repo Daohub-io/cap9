@@ -6,13 +6,18 @@ const path = require("path")
 const http = require('http')
 
 // Get BuildPath
-const BUILD_PATH = path.resolve(process.cwd(), './build');
+const TARGET_PATH = path.resolve(process.cwd(), './target');
 // Get Dev Chain Config
 const CHAIN_CONFIG = require(path.resolve(process.cwd(), './wasm-dev-chain.json'));
 // Web3 Config
 const WEB3_OPTIONS = {
     transactionConfirmationBlocks: 1
 };
+
+// Kernel Code
+const KERNEL_WASM =  '0x' + fs.readFileSync(path.resolve(TARGET_PATH, "./cap9-kernel.wasm")).toString('hex');
+const KERNEL_WASM_ABI =  JSON.parse(fs.readFileSync(path.resolve(TARGET_PATH, "./json/KernelInterface.json")))
+
 const DEFAULT_ACCOUNT = {
     NAME: 'user',
     PASSWORD: 'user'
@@ -69,7 +74,7 @@ export function createAccount(name, password): Promise<string> {
     });
 }
 
-export async function newTestProcedure(file_name: string, abi_name: string): Promise<Contract> {
+export async function newTestContract(file_name: string, abi_name: string): Promise<Contract> {
     // Create Account
     const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
     const accounts = await web3.eth.personal.getAccounts();
@@ -80,10 +85,10 @@ export async function newTestProcedure(file_name: string, abi_name: string): Pro
     web3.eth.defaultAccount = account;
 
     // read JSON ABI
-    const abi = JSON.parse(fs.readFileSync(path.resolve(BUILD_PATH,`./examples/${abi_name}.json`)));
+    const abi = JSON.parse(fs.readFileSync(path.resolve(TARGET_PATH,`./json/${abi_name}.json`)));
 
     // convert Wasm binary to hex format
-    const codeHex = '0x' + fs.readFileSync(path.resolve(BUILD_PATH, `./examples/${file_name}.wasm`)).toString('hex');
+    const codeHex = '0x' + fs.readFileSync(path.resolve(TARGET_PATH, `./${file_name}.wasm`)).toString('hex');
     const Contract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 } as any);
     const DeploymentTx = Contract.deploy({ data: codeHex });
 
@@ -107,10 +112,10 @@ export async function newKernelInstance(proc_key: string, proc_address: string):
         throw `Got zero accounts`;
     const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
     web3.eth.defaultAccount = account;
-    // read JSON ABI
-    const abi = JSON.parse(fs.readFileSync(path.resolve(BUILD_PATH, "./KernelInterface.json")));
-    // convert Wasm binary to hex format
-    const codeHex = '0x' + fs.readFileSync(path.resolve(BUILD_PATH, "./kernel-ewasm.wasm")).toString('hex');
+
+    const abi = KERNEL_WASM_ABI
+    const codeHex = KERNEL_WASM
+
     const KernelContract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 } as any);
     const TokenDeployTransaction = KernelContract.deploy({ data: codeHex, arguments: [proc_key, proc_address] });
     await web3.eth.personal.unlockAccount(accounts[0], "user", null);

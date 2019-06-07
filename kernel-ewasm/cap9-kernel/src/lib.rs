@@ -1,11 +1,11 @@
-#![no_std]
 #![allow(non_snake_case)]
 #![feature(proc_macro_hygiene)]
+#![no_std]
 
+extern crate pwasm_std;
 extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
 extern crate pwasm_ethereum;
-extern crate pwasm_std;
 
 pub mod proc_table;
 pub mod validator;
@@ -106,7 +106,6 @@ pub fn deploy() {
 #[allow(non_snake_case)]
 mod tests {
     extern crate pwasm_test;
-    extern crate std;
     use self::pwasm_test::{ext_get, ext_reset};
     use super::*;
     use core::str::FromStr;
