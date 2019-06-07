@@ -63,28 +63,48 @@ function createAccount(name, password) {
     })
 }
 
-async function newKernelInstance() {
-       // Create Account
-       const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
-       const accounts = await web3.eth.personal.getAccounts()
-       if (accounts.length == 0) throw `Got zero accounts`;
-       const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
-       web3.eth.defaultAccount = account;
-       // read JSON ABI
-       const abi = JSON.parse(fs.readFileSync(path.resolve(BUILD_PATH, "./TokenInterface.json")));
-       // convert Wasm binary to hex format
-       const codeHex = '0x' + fs.readFileSync(path.resolve(BUILD_PATH, "./kernel-ewasm.wasm")).toString('hex');
-       const TokenContract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 });
-       const TokenDeployTransaction = TokenContract.deploy({ data: codeHex, arguments: [355] });
-       await web3.eth.personal.unlockAccount(accounts[0], "user", null)
-       let gas = await TokenDeployTransaction.estimateGas()
-       let contract_tx = TokenDeployTransaction.send({ gasLimit: gas, from: account })
-       let tx_hash = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
-       let tx_receipt = await web3.eth.getTransactionReceipt(tx_hash);
-       let contract_addr = tx_receipt.contractAddress;
-       let contract = TokenContract.clone();
-       contract.address = contract_addr;
-       return contract;
+async function newKernelInstance(proc_key, proc_address) {
+    // Create Account
+    const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
+    //    console.log(`Created account: ${newAccount}`)
+
+    //    console.log(`Fetching addresss`)
+    const accounts = await web3.eth.personal.getAccounts()
+    //    console.log(`Got ${accounts.length} accounts`)
+    if (accounts.length == 0) throw `Got zero accounts`;
+
+    const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
+    //    console.log(`Set Account: ${account}`)
+
+    web3.eth.defaultAccount = account;
+
+    // read JSON ABI
+    const abi = JSON.parse(fs.readFileSync(path.resolve(BUILD_PATH, "./KernelInterface.json")));
+    // convert Wasm binary to hex format
+    const codeHex = '0x' + fs.readFileSync(path.resolve(BUILD_PATH, "./kernel-ewasm.wasm")).toString('hex');
+
+    const KernelContract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 });
+    const TokenDeployTransaction = KernelContract.deploy({ data: codeHex, arguments: [proc_key, proc_address] });
+
+    await web3.eth.personal.unlockAccount(accounts[0], "user", null)
+    //    console.log(`Unlocked Account: ${accounts[0]}`);
+
+    let gas = await TokenDeployTransaction.estimateGas()
+    //    console.log(`Estimated Gas Cost: ${gas}`)
+
+    let contract_tx = TokenDeployTransaction.send({ gasLimit: gas, from: account })
+
+    let tx_hash = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
+
+    let tx_receipt = await web3.eth.getTransactionReceipt(tx_hash);
+    let contract_addr = tx_receipt.contractAddress;
+
+    //    console.log("Address of new contract: " + contract_addr);
+
+    let contract = KernelContract.clone();
+    contract.address = contract_addr;
+
+    return contract;
 }
 
 async function deployContract(interfacePath, codePath) {
@@ -116,35 +136,31 @@ async function deployContract(interfacePath, codePath) {
     }
 }
 
-describe('Kernel', function() {
+describe('Kernel', function () {
 
     describe('constructor', function() {
         this.timeout(20000);
-        it('should have initial balance', async function() {
-            let contract = await newKernelInstance();
-            const accounts = await web3.eth.personal.getAccounts()
-            // Check balance of recipient. Should print 355
-            let rec_balance = await contract.methods.balanceOf(accounts[0]).call();
-            assert.strictEqual(web3.utils.hexToNumber(rec_balance), 355)
+        it('should have correct Initial Entry Procedure', async function () {
+            let contract = await newKernelInstance("init", "0xc1912fee45d61c87cc5ea59dae31190fffff232d");
 
-             // Check balance of sender (owner of the contract). Should print 10000000 - 355 = 9999645
-            // let owner_balance = await contract.methods.balanceOf(web3.eth.defaultAccount).call();
-            // assert.strictEqual(web3.utils.hexToNumber(owner_balance), 9999800)
+            // Check entryProcedure
+            const entryProcedureKey = await contract.methods.entryProcedure().call()
+            assert.strictEqual(entryProcedureKey, "init")
 
+            // Check entryProcedure
+            const currentProcedureKey = await contract.methods.currentProcedure().call()
+            assert.strictEqual(currentProcedureKey, "")
         })
     })
 
     describe('validator', function() {
         this.timeout(20000);
         let kernel;
+
         before(async function () {
-            kernel = await newKernelInstance();
+            kernel = await newKernelInstance("init", "0xc1912fee45d61c87cc5ea59dae31190fffff232d");
 
         })
-
-        // it.only('should deploy a kernel', async function () {
-        //     await newKernelInstance();
-        // })
 
         it('should return false when given the null address', async function() {
         this.timeout(20000);
