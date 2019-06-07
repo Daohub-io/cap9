@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature="std"))]
+#[cfg(not(feature = "std"))]
 #[macro_use]
 extern crate alloc;
 
@@ -8,19 +8,19 @@ use pwasm_std;
 use pwasm_std::vec::Vec;
 use pwasm_std::String;
 
-pub mod instructions;
 pub mod func;
-mod primitives;
-pub mod io;
-pub mod serialization;
 pub mod import_entry;
+pub mod instructions;
+pub mod io;
+mod primitives;
+pub mod serialization;
 pub mod types;
-pub use self::io::{Error};
-pub use self::serialization::{Deserialize};
+pub use self::io::Error;
+pub use self::serialization::Deserialize;
 
 pub use self::primitives::{
-    VarUint32, VarUint7, Uint8, VarUint1, VarInt7, Uint32, VarInt32, VarInt64,
-    Uint64, VarUint64, CountedList
+    CountedList, Uint32, Uint64, Uint8, VarInt32, VarInt64, VarInt7, VarUint1, VarUint32,
+    VarUint64, VarUint7,
 };
 
 /// As per the wasm spec:
@@ -135,7 +135,7 @@ impl<'a> Cursor<'a> {
     }
 
     fn read_ref_n(&mut self, n: usize) -> &'a [u8] {
-        let val = &self.body[self.current_offset..(self.current_offset+n)];
+        let val = &self.body[self.current_offset..(self.current_offset + n)];
         self.current_offset += n;
         val
     }
@@ -205,21 +205,29 @@ impl Validity for &[u8] {
             // process. We care only about types, imports, functions, and code.
             match section.type_ {
                 SectionType::Type => {
-                    if type_section_offset.is_some() {panic!("multiple type sections");}
+                    if type_section_offset.is_some() {
+                        panic!("multiple type sections");
+                    }
                     type_section_offset = Some(section.offset);
-                },
+                }
                 SectionType::Import => {
-                    if import_section_offset.is_some() {panic!("multiple import sections");}
+                    if import_section_offset.is_some() {
+                        panic!("multiple import sections");
+                    }
                     import_section_offset = Some(section.offset);
-                },
+                }
                 SectionType::Function => {
-                    if function_section_offset.is_some() {panic!("multiple function sections");}
+                    if function_section_offset.is_some() {
+                        panic!("multiple function sections");
+                    }
                     function_section_offset = Some(section.offset);
-                },
+                }
                 SectionType::Code => {
-                    if code_section_offset.is_some() {panic!("multiple code sections");}
+                    if code_section_offset.is_some() {
+                        panic!("multiple code sections");
+                    }
                     code_section_offset = Some(section.offset);
-                },
+                }
                 // We ignore any section we are not interested in.
                 _ => (),
             }
@@ -238,8 +246,11 @@ impl Validity for &[u8] {
         let mut gasleft_index: Option<usize> = None;
         let mut sender_index: Option<usize> = None;
         if let Some(imports_offset) = import_section_offset {
-         // Make a new cursor for imports
-            let mut imports_cursor = Cursor {current_offset:imports_offset,body:&self};
+            // Make a new cursor for imports
+            let mut imports_cursor = Cursor {
+                current_offset: imports_offset,
+                body: &self,
+            };
             let _section_size = parse_varuint_32(&mut imports_cursor);
             // How many imports do we have?
             let n_imports = parse_varuint_32(&mut imports_cursor);
@@ -252,41 +263,55 @@ impl Validity for &[u8] {
                 let import = parse_import(&mut imports_cursor, i);
 
                 if import.mod_name == "env" && import.field_name == "sender" {
-                    if sender_index.is_some() {panic!("sender imported multiple times");}
+                    if sender_index.is_some() {
+                        panic!("sender imported multiple times");
+                    }
                     sender_index = Some(import.index as usize);
                 }
 
                 if import.mod_name == "env" && import.field_name == "gasleft" {
-                    if gasleft_index.is_some() {panic!("gasleft imported multiple times");}
+                    if gasleft_index.is_some() {
+                        panic!("gasleft imported multiple times");
+                    }
                     gasleft_index = Some(import.index as usize);
                 }
 
                 // println!("mod_name: {}, field_name: {}, f_index: {}, listing: {:?}",
-                    // import.mod_name, import.field_name, import.index, import.listing());
+                // import.mod_name, import.field_name, import.index, import.listing());
                 match import.listing() {
                     Listing::White => (),
                     Listing::Grey => {
-                        if dcall_index.is_some() {panic!("dcall imported multiple times");}
+                        if dcall_index.is_some() {
+                            panic!("dcall imported multiple times");
+                        }
                         // Document here why this is the case
                         dcall_index = Some(import.index as usize);
-                    },
+                    }
                     Listing::Black => {
                         // If we encounter a blacklisted import we can return
                         // early.
                         // println!("{:?} is blacklisted", import);
                         return false;
-                    },
+                    }
                 }
             }
         }
 
         // The functions index into types. In fact the function section is just
         // a vector of type ids. We don't care about types at this stage.
-        if let (Some(functions_offset), Some(code_offset)) = (function_section_offset, code_section_offset) {
+        if let (Some(functions_offset), Some(code_offset)) =
+            (function_section_offset, code_section_offset)
+        {
             // Make a new cursor for functions
-            let mut functions_cursor = Cursor {current_offset:functions_offset,body:&self};
+            let mut functions_cursor = Cursor {
+                current_offset: functions_offset,
+                body: &self,
+            };
             // Make a new cursor for code
-            let mut code_cursor = Cursor {current_offset:code_offset,body:&self};
+            let mut code_cursor = Cursor {
+                current_offset: code_offset,
+                body: &self,
+            };
             // We will have to try and update these in parallel
             let _function_section_size = parse_varuint_32(&mut functions_cursor);
             let _code_section_size = parse_varuint_32(&mut code_cursor);
@@ -295,65 +320,13 @@ impl Validity for &[u8] {
             let n_functions = parse_varuint_32(&mut functions_cursor);
             let n_bodies = parse_varuint_32(&mut code_cursor);
 
-            // println!("functions_size: {:?}", function_section_size);
-            // println!("code_size: {:?}", code_section_size);
+            // println!("functions_size: {:?}", _function_section_size);
+            // println!("code_size: {:?}", _code_section_size);
 
-            assert_eq!(n_functions,n_bodies);
-
-            let dcall_index: Option<usize> = None;
-            let gasleft_index: Option<usize> = None;
-            let sender_index: Option<usize> = None;
+            assert_eq!(n_functions, n_bodies);
 
             // Next we iterate through the function bodies and check if they
             // violate any of our rules.
-            for _i in 0..n_bodies {
-                let body_size = parse_varuint_32(&mut code_cursor);
-                // First we check if it is a system call, this is only possible
-                // if we have the three required imports.
-                if let (Some(dcall_i),Some(gasleft_i),Some(sender_i)) = (dcall_index,gasleft_index,sender_index) {
-                    if is_syscall(dcall_i as u32, gasleft_i as u32, sender_i as u32, &self[(code_cursor.current_offset)..(code_cursor.current_offset+body_size as usize)]) {
-                        // If the function is a system call we can continue past it
-                        continue;
-                    }
-                }
-                // let body = parse_varuint_32(&mut code_cursor, &self);
-                // println!("function[{}] is {} bytes", i, body_size);
-                code_cursor.skip(body_size as usize);
-                // As the function is not a system call, it is not permitted to
-                // have a dcall in it, so we iterate through all the
-                // instructions. If we encounter a dcall, we return with a
-                // false, as this is invalid.
-
-
-            }
-
-            // // How many imports do we have?
-            // let n_imports = parse_varuint_32(&mut imports_cursor, &self);
-            // for i in 0..n_imports {
-            //     let mut cursor = Cursor {i:0};
-
-            //     // Here we parse the names of the import, and its function
-            //     // index.
-            //     let import = parse_import(&mut cursor, data, n);
-
-            //     println!("mod_name: {}, field_name: {}, f_index: {}, listing: {:?}",
-            //         import.mod_name, import.field_name, import.index, import.listing());
-            //     match import.listing() {
-            //         Listing::White => (),
-            //         Listing::Grey => {
-            //             if dcall_index.is_some() {panic!("dcall imported multiple times");}
-            //             // Document here why this is the case
-            //             dcall_index = Some(import.index);
-            //         },
-            //         Listing::Black => {
-            //             // If we encounter a blacklisted import we can return
-            //             // early.
-            //             println!("{:?} is blacklisted", import);
-            //             return false;
-            //         },
-            //     }
-            // }
-        }
 
             // We now know the location of dcall, if there is one.
             // We need to iterate over every function and read its code. A
@@ -363,23 +336,46 @@ impl Validity for &[u8] {
             //     * A function which is not a syscall and features a greylisted call.
             //     * A function which does not contain a greylisted call or a blacklistd call.
             // The possiblities are checked in that order.
-
-            // Let's find the functions:
-            // for section in sections {
-            // }
-
-            // for function in functions {
-
-            // }
-
-
-            // for import in greys {
-            //     // If the grey test does not pass return early with false.
-            //     if !check_grey(&self, import.index) {
-            //         return false;
-            //     }
-            // }
-
+            for _i in 0..n_bodies {
+                let body_size = parse_varuint_32(&mut code_cursor);
+                // First we check if it is a system call, this is only possible
+                // if we have the three required imports.
+                if let (Some(dcall_i), Some(gasleft_i), Some(sender_i)) =
+                    (dcall_index, gasleft_index, sender_index)
+                {
+                    if is_syscall(
+                        dcall_i as u32,
+                        gasleft_i as u32,
+                        sender_i as u32,
+                        &self[(code_cursor.current_offset)
+                            ..(code_cursor.current_offset + body_size as usize)],
+                    ) {
+                        // If the function is a system call we can continue past it
+                        continue;
+                    }
+                }
+                // At this point we know that the function is not a syscall. We
+                // must now check that it has no black or grey listed calls. We
+                // only care about calls here. We only need to do this if dcall
+                // is imported in the first place.
+                if let Some(dcall_i) = dcall_index {
+                    if contains_grey_call(
+                        dcall_i as u32,
+                        &self[(code_cursor.current_offset)
+                            ..(code_cursor.current_offset + body_size as usize)],
+                    ) {
+                        // This function contains a greylisted call (i.e.
+                        // dcall), so we must return with false as the contract
+                        // is invalid.
+                        return false;
+                    }
+                }
+                // We need to skip over the code body in the main cursor.
+                code_cursor.skip(body_size as usize);
+            }
+        } else {
+            panic!("no code");
+        }
         // All the tests have passed so we can return true.
         true
     }
@@ -414,10 +410,7 @@ fn parse_section(cursor: &mut Cursor) -> Section {
     let offset = cursor.current_offset;
     let size_n = parse_varuint_32(cursor);
     let type_ = n_to_section(type_n);
-    let section = Section {
-        type_,
-        offset,
-    };
+    let section = Section { type_, offset };
     cursor.current_offset += size_n as usize;
     section
 }
@@ -444,7 +437,9 @@ fn parse_varuint_32(cursor: &mut Cursor) -> u32 {
     let mut res = 0;
     let mut shift = 0;
     loop {
-        if shift > 31 { panic!("invalid varuint32"); }
+        if shift > 31 {
+            panic!("invalid varuint32");
+        }
 
         let b = cursor.read_ref().clone() as u32;
         res |= (b & 0x7f).checked_shl(shift).expect("invalid varuint32");
@@ -464,7 +459,8 @@ fn parse_import(cursor: &mut Cursor, index: u32) -> ImportEntry {
         current_offset: cursor.current_offset,
         body: cursor.body,
     };
-    let import: import_entry::ImportEntry = import_entry::ImportEntry::deserialize(&mut reader).expect("counted list");
+    let import: import_entry::ImportEntry =
+        import_entry::ImportEntry::deserialize(&mut reader).expect("counted list");
     let val = ImportEntry {
         index,
         mod_name: String::from(import.module()),
@@ -474,113 +470,9 @@ fn parse_import(cursor: &mut Cursor, index: u32) -> ImportEntry {
     val
 }
 
-// pub fn is_syscall(module: &Module, function_index: u32) -> bool {
-
-//     let function_section = module.function_section().unwrap();
-//     let functions = Vec::from(function_section.entries());
-//     let function = functions.get(function_index as usize).unwrap();
-//     let type_index = function.type_ref();
-
-//     let type_section = module.type_section().unwrap();
-//     let types = Vec::from(type_section.types());
-//     let this_type = types.get(type_index as usize).unwrap();
-
-//     let code_section = module.code_section().unwrap();
-//     let codes = Vec::from(code_section.bodies());
-//     let code = codes.get(function_index as usize).unwrap();
-//     let instructions = Vec::from(code.code().elements());
-
-//     // First we need to check that the instructions are correct, that is:
-//     //   0. call $a
-//     //   1. call $b
-//     //   2. get_local 0
-//     //   3. get_local 1
-//     //   4. get_local 2
-//     //   5. get_local 3
-//     //   6. call $c
-//     // $a, $b, and $c will be used later.
-//     // First we simply check the length
-//     if instructions.len() != 8 {
-//         return false;
-//     }
-//     //   0. call gasleft
-//     if let Instruction::Call(f_ind) = instructions[0] {
-//         // Check that f_ind is the function index of "gasleft"
-//         let gasleft_index = find_import(module, "env", "gasleft");
-//         if Some(f_ind) != gasleft_index {
-//             return false;
-//         }
-//     } else {
-//         return false;
-//     }
-//     //   1. call sender
-//     if let Instruction::Call(f_ind) = instructions[1] {
-//         // Check that f_ind is the function index of "sender"
-//         let sender_index = find_import(module, "env", "sender");
-//         if Some(f_ind) != sender_index {
-//             return false;
-//         }
-//     } else {
-//         return false;
-//     }
-//     //   2. get_local 0
-//     if let Instruction::GetLocal(0) = instructions[2] {
-//     } else {
-//         return false;
-//     }
-//     //   3. get_local 1
-//     if let Instruction::GetLocal(1) = instructions[3] {
-//     } else {
-//         return false;
-//     }
-//     //   4. get_local 2
-//     if let Instruction::GetLocal(2) = instructions[4] {
-//     } else {
-//         return false;
-//     }
-//     //   5. get_local 3
-//     if let Instruction::GetLocal(3) = instructions[5] {
-//     } else {
-//         return false;
-//     }
-
-//     //   6. call dcall
-//     if let Instruction::Call(f_ind) = instructions[6] {
-//         // Check that f_ind is the function index of "dcall"
-//         let dcall_index = find_import(module, "env", "dcall");
-//         if Some(f_ind) != dcall_index {
-//             return false;
-//         }
-//     } else {
-//         return false;
-//     }
-//     //   7. END
-//     if let Instruction::End = instructions[7] {
-//     } else {
-//         return false;
-//     }
-
-//     // Check that no locals are used
-//     if code.locals().len() > 0 {
-//         return false;
-//     }
-//     // Check that the type signature is correct
-//     let parity_wasm::elements::Type::Function(f_type) = this_type;
-//     if f_type.return_type() != Some(ValueType::I32) {
-//         return false;
-//     }
-//     if f_type.params() != [ ValueType::I32, ValueType::I32, ValueType::I32, ValueType::I32] {
-//         return false;
-//     }
-//     if f_type.form() != 0x60 {
-//         return false;
-//     }
-
-//     true
-// }
-
 /// An iterator which counts from one to five
 struct Code<'a> {
+    locals: Vec<func::Local>,
     current_offset: usize,
     body: &'a [u8],
 }
@@ -594,9 +486,11 @@ impl<'a> Code<'a> {
             current_offset: 0,
             body: body,
         };
-        // We currently don't care about locals
-        let _locals: Vec<func::Local> = CountedList::<func::Local>::deserialize(&mut reader).expect("counted list").into_inner();
+        let locals: Vec<func::Local> = CountedList::<func::Local>::deserialize(&mut reader)
+            .expect("counted list")
+            .into_inner();
         Code {
+            locals,
             current_offset: reader.current_offset,
             body: body,
         }
@@ -613,7 +507,10 @@ impl<'a> Iterator for Code<'a> {
                 current_offset: self.current_offset,
                 body: self.body,
             };
-            let val = Some(crate::instructions::Instruction::deserialize(&mut reader).expect("expected valid instruction"));
+            let val = Some(
+                crate::instructions::Instruction::deserialize(&mut reader)
+                    .expect("expected valid instruction"),
+            );
             self.current_offset = reader.current_offset;
             val
         } else {
@@ -622,12 +519,13 @@ impl<'a> Iterator for Code<'a> {
     }
 }
 
-// TODO: we need to provide the indices of the various necessary functions for
-// the system call.
 pub fn is_syscall(dcall_i: u32, gasleft_i: u32, sender_i: u32, body: &[u8]) -> bool {
-    // println!("body: {:?}", body);
     let mut code_iter = Code::new(body);
-    // let mut indexed_iter = code_iter.enumerate();
+
+    // Check that no locals are used
+    if code_iter.locals.len() > 0 {
+        return false;
+    }
 
     // First we need to check that the instructions are correct, that is:
     //   0. call $a
@@ -638,7 +536,6 @@ pub fn is_syscall(dcall_i: u32, gasleft_i: u32, sender_i: u32, body: &[u8]) -> b
     //   5. get_local 3
     //   6. call $c
     // $a, $b, and $c will be used later.
-
 
     //   0. call gasleft
     if let Some(instructions::Instruction::Call(f_ind)) = code_iter.next() {
@@ -690,40 +587,42 @@ pub fn is_syscall(dcall_i: u32, gasleft_i: u32, sender_i: u32, body: &[u8]) -> b
     } else {
         return false;
     }
+    // We have checked locals and code, we don't really care abou the type, so
+    // we can return true.
+    true
+}
 
-    // // Check that no locals are used
-    // if code.locals().len() > 0 {
-    //     return false;
-    // }
-    // // Check that the type signature is correct
-    // let parity_wasm::elements::Type::Function(f_type) = this_type;
-    // if f_type.return_type() != Some(ValueType::I32) {
-    //     return false;
-    // }
-    // if f_type.params() != [ ValueType::I32, ValueType::I32, ValueType::I32, ValueType::I32] {
-    //     return false;
-    // }
-    // if f_type.form() != 0x60 {
-    //     return false;
-    // }
-
-    // true
+// TODO: we need to account for indirect calls too.
+pub fn contains_grey_call(dcall_i: u32, body: &[u8]) -> bool {
+    let code_iter = Code::new(body);
+    for instruction in code_iter {
+        // We only care about Call instructions
+        if let instructions::Instruction::Call(f_ind) = instruction {
+            // if f_ind is a grey call then we return true, as we are asking the
+            // question "Does this function contain a call to a greylisted
+            // import?".
+            if f_ind == dcall_i {
+                return true;
+            }
+        }
+    }
+    // No instructions were greylisted, so we can return false.
     false
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wabt::wat2wasm;
     use std::fs::File;
     use std::io::Read;
+    use wabt::wat2wasm;
 
     #[test]
     fn module_only_pass() {
         let wat = "(module)";
         let wasm = wat2wasm(wat).unwrap();
-        // let module: Module = parity_wasm::deserialize_buffer(wasm.as_slice()).expect("deserialise wasm");
-        assert!(wasm.as_slice().is_valid());
+        let validation_result = wasm.as_slice().is_valid();
+        assert_eq!(validation_result, true);
     }
 
     #[test]
@@ -737,46 +636,83 @@ mod tests {
   (export "call" (func $call)))
 "#;
         let wasm = wat2wasm(wat).unwrap();
-        assert!(wasm.as_slice().is_valid());
+        let validation_result = wasm.as_slice().is_valid();
+        assert_eq!(validation_result, true);
     }
 
     #[test]
     fn example_contract_1_pass() {
-        let mut f = File::open("../example_contract_1/target/wasm32-unknown-unknown/release/example_contract_1.wasm").expect("could not open file");
+        let mut f = File::open(
+            "../example_contract_1/target/wasm32-unknown-unknown/release/example_contract_1.wasm",
+        )
+        .expect("could not open file");
         let mut wasm = Vec::new();
         f.read_to_end(&mut wasm).unwrap();
-        assert!(!wasm.as_slice().is_valid());
+        let validation_result = wasm.as_slice().is_valid();
+        assert_eq!(validation_result, true);
     }
 
-//     #[test]
-//     fn minimal_contract_with_write_fail() {
-//         let wat = r#"
-// ;; Minimal contract with a single storage write call
-// (module
-//   (type $t0 (func))
-//   (type $t1 (func (param i32 i32)))
-//   (import "env" "storage_write" (func $env.storage_write (type $t1)))
-//   (func $call (type $t0)
-//     i32.const 5
-//     i32.const 15
-//     call $env.storage_write
-//     unreachable)
-//   (export "call" (func $call)))
-// "#;
-//         let wasm: pwasm_std::Vec<u8> = wat2wasm(wat).unwrap();
-//         let module: Module = parity_wasm::deserialize_buffer(wasm.as_slice()).expect("deserialise wasm");
-//         assert!(!module.is_valid());
-//     }
+    #[test]
+    fn with_syscall_compliant_pass() {
+        let mut f =
+            File::open("test_files/with_syscall_compliant.wat").expect("could not open file");
+        let mut wat = Vec::new();
+        f.read_to_end(&mut wat).unwrap();
+        let wasm = wat2wasm(wat).unwrap();
+        let validation_result = wasm.as_slice().is_valid();
+        assert_eq!(validation_result, true);
+    }
 
-    // #[test]
-    // fn should_reject_invalid_address() {
-    //     let mut contract = contract::ValidatorContract {};
-    //     let owner_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
-    //     let invalid_address = Address::from_str("0").unwrap();
+    #[test]
+    fn with_syscall_noncompliant_notpass() {
+        let mut f =
+            File::open("test_files/with_syscall_noncompliant.wat").expect("could not open file");
+        let mut wat = Vec::new();
+        f.read_to_end(&mut wat).unwrap();
+        let wasm = wat2wasm(wat).unwrap();
+        let validation_result = wasm.as_slice().is_valid();
+        assert_eq!(validation_result, false);
+    }
 
-    //     // Here we're creating an External context using ExternalBuilder and set the `sender` to the `owner_address`
-    //     // so `pwasm_ethereum::sender()` in TokenInterface::constructor() will return that `owner_address`
-    //     ext_reset(|e| e.sender(owner_address.clone()));
-    //     assert_eq!(contract.check_contract(invalid_address), false);
-    // }
+    #[test]
+    fn with_syscall_noncompliant_locals_notpass() {
+        let mut f = File::open("test_files/with_syscall_noncompliant_locals.wat")
+            .expect("could not open file");
+        let mut wat = Vec::new();
+        f.read_to_end(&mut wat).unwrap();
+        let wasm = wat2wasm(wat).unwrap();
+        let validation_result = wasm.as_slice().is_valid();
+        assert_eq!(validation_result, false);
+    }
+
+    #[test]
+    fn with_syscall_extra_dcall_notpass() {
+        let mut f =
+            File::open("test_files/with_syscall_extra_dcall.wat").expect("could not open file");
+        let mut wat = Vec::new();
+        f.read_to_end(&mut wat).unwrap();
+        let wasm = wat2wasm(wat).unwrap();
+        let validation_result = wasm.as_slice().is_valid();
+        assert_eq!(validation_result, false);
+    }
+
+    #[test]
+    fn minimal_contract_with_write_fail() {
+        let wat = r#"
+;; Minimal contract with a single storage write call
+(module
+  (type $t0 (func))
+  (type $t1 (func (param i32 i32)))
+  (import "env" "storage_write" (func $env.storage_write (type $t1)))
+  (func $call (type $t0)
+    i32.const 5
+    i32.const 15
+    call $env.storage_write
+    unreachable)
+  (export "call" (func $call)))
+"#;
+        let wasm = wat2wasm(wat).unwrap();
+        let validation_result = wasm.as_slice().is_valid();
+        assert_eq!(validation_result, false);
+    }
 }
