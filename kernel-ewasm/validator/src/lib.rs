@@ -61,8 +61,6 @@ impl<'a> Validity for modules::Module<'a> {
                     gasleft_index = Some(index as usize);
                 }
 
-                // println!("mod_name: {}, field_name: {}, f_index: {}, listing: {:?}",
-                // import.mod_name, import.field_name, import.index, import.listing());
                 match import.listing() {
                     Listing::White => (),
                     Listing::Grey => {
@@ -75,18 +73,14 @@ impl<'a> Validity for modules::Module<'a> {
                     Listing::Black => {
                         // If we encounter a blacklisted import we can return
                         // early.
-                        // println!("{:?} is blacklisted", import);
                         return false;
                     }
                 }
             }
-        } else {
-            // println!("no imports",);
         }
 
         if let Some(funcs) = self.functions() {
             for (_i, func) in funcs.enumerate() {
-                // println!("func[{}]: {:?}", _i, func);
                 if let (Some(dcall_i), Some(gasleft_i), Some(sender_i)) =
                     (dcall_index, gasleft_index, sender_index)
                 {
@@ -105,7 +99,6 @@ impl<'a> Validity for modules::Module<'a> {
                         // This function contains a greylisted call (i.e.
                         // dcall), so we must return with false as the
                         // contract is invalid.
-                        // println!("false because bad greycall");
                         return false;
                     }
                 }

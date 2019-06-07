@@ -7,9 +7,9 @@ use crate::instructions;
 use crate::primitives::CountedList;
 use crate::serialization::Deserialize;
 #[cfg(not(feature = "std"))]
-use pwasm_std::Vec;
-#[cfg(not(feature = "std"))]
 use pwasm_std::String;
+#[cfg(not(feature = "std"))]
+use pwasm_std::Vec;
 /// A read-only representation of a WASM module. The data is held in WASM binary
 /// format in the buffer. All of the functions simply access this buffer. These
 /// fields are private as they need initialisation. Currently it only holds
@@ -34,6 +34,10 @@ pub struct Module<'a> {
     /// (excluding the section type byte). It therefore points to the size
     /// of the section.
     code_section_offset: Option<usize>,
+    /// The offset into the buffer of the start of the table section
+    /// (excluding the section type byte). It therefore points to the size
+    /// of the section.
+    table_section_offset: Option<usize>,
 }
 
 impl<'a> Module<'a> {
@@ -68,6 +72,7 @@ impl<'a> Module<'a> {
         let mut import_section_offset: Option<usize> = None;
         let mut function_section_offset: Option<usize> = None;
         let mut code_section_offset: Option<usize> = None;
+        let mut table_section_offset: Option<usize> = None;
         while cursor.current_offset < buffer.len() {
             let section: Section = parse_section(&mut cursor);
             // There are many section types we don't care about, for
@@ -100,6 +105,12 @@ impl<'a> Module<'a> {
                     }
                     code_section_offset = Some(section.offset);
                 }
+                SectionType::Table => {
+                    if table_section_offset.is_some() {
+                        panic!("multiple code sections");
+                    }
+                    table_section_offset = Some(section.offset);
+                }
                 // We ignore any section we are not interested in.
                 _ => (),
             }
@@ -113,6 +124,7 @@ impl<'a> Module<'a> {
             import_section_offset,
             function_section_offset,
             code_section_offset,
+            table_section_offset,
         }
     }
 
@@ -235,8 +247,6 @@ impl<'a> FunctionIterator<'a> {
         // these, we just need to skip past them.
         let _function_section_size = parse_varuint_32(&mut functions_cursor);
         let _code_section_size = parse_varuint_32(&mut code_cursor);
-        // println!("functions_offset: {:?}", functions_offset);
-        // println!("code_offset: {:?}", code_offset);
         let n_functions = parse_varuint_32(&mut functions_cursor);
         let n_bodies = parse_varuint_32(&mut code_cursor);
 
@@ -260,10 +270,6 @@ impl<'a> Iterator for FunctionIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.current_entry < self.n {
-            // let mut reader = Cursor {
-            //     current_offset: self.section_offset + self.offset_into_section,
-            //     body: self.buffer,
-            // };
             let mut functions_cursor = Cursor {
                 current_offset: self.function_section_offset + self.offset_into_function_section,
                 body: self.buffer,
@@ -272,11 +278,6 @@ impl<'a> Iterator for FunctionIterator<'a> {
                 current_offset: self.code_section_offset + self.offset_into_code_section,
                 body: self.buffer,
             };
-            // let body_size = parse_varuint_32(&mut code_cursor);
-            // let val = parse_import(&mut reader);
-            // self.offset_into_section = reader.current_offset - self.section_offset;
-            // println!("import: {:?}", val);
-
             let val = Function {
                 function_entry_offset: functions_cursor.current_offset,
                 code_entry_offset: code_cursor.current_offset,
@@ -398,7 +399,6 @@ impl<'a> Function<'a> {
             [(code_cursor.current_offset)..(code_cursor.current_offset + body_size as usize)];
         let code_iter = Code::new(body);
         for instruction in code_iter {
-            // println!("instruction: {:?}", instruction);
             // We only care about Call or CallIndirect instructions
             match instruction {
                 instructions::Instruction::Call(f_ind) => {
@@ -408,14 +408,14 @@ impl<'a> Function<'a> {
                     if f_ind == dcall_i {
                         return true;
                     }
-                },
+                }
                 instructions::Instruction::CallIndirect(_type_index, _table_index) => {
                     // We currently don't have the functionality to check that
                     // tables are safe. For now we will just forbid indirect
                     // calls by assuming any indirect call could be a dcall.
                     return true;
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
         // No instructions were greylisted, so we can return false.
