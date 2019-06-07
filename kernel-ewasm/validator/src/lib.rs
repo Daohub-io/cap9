@@ -24,9 +24,9 @@ use self::primitives::{
 
 mod listing;
 pub mod modules;
-pub use modules::Module;
-pub use modules::Function;
 use listing::*;
+pub use modules::Function;
+pub use modules::Module;
 
 /// A trait for types which can be validated against the cap9 spec.
 pub trait Validity {
@@ -41,10 +41,20 @@ impl<'a> Validity for modules::Module<'a> {
         // where the function and code data starts.
 
         // There is only one greylisted item (dcall) so we will just reserve a
-        // place for that rather than maintain a list.
+        // place for that rather than maintain a list. We also want to track the
+        // function indices of `gasleft` and `sender` for later, as they form
+        // part of the syscall.
         let mut dcall_index: Option<usize> = None;
         let mut gasleft_index: Option<usize> = None;
         let mut sender_index: Option<usize> = None;
+
+        // Iterate through each of the imports. If we find one of the imports of
+        // entry (as above) we note its index. If the import is a blacklisted
+        // import we know immediately that the contract is invalid so we return
+        // false early. If the import is neither of those (i.e. it's
+        // whitelisted) we simply skip over it. Import indices come before
+        // function indices, so we can just consider them the same while we are
+        // iterating through imports.
         if let Some(imports) = self.imports() {
             for (index, import) in imports.enumerate() {
                 if import.mod_name == "env" && import.field_name == "sender" {
@@ -67,7 +77,6 @@ impl<'a> Validity for modules::Module<'a> {
                         if dcall_index.is_some() {
                             panic!("dcall imported multiple times");
                         }
-                        // Document here why this is the case
                         dcall_index = Some(index as usize);
                     }
                     Listing::Black => {
@@ -78,23 +87,27 @@ impl<'a> Validity for modules::Module<'a> {
                 }
             }
         }
-
-        if let Some(funcs) = self.functions() {
-            for (_i, func) in funcs.enumerate() {
-                if let (Some(dcall_i), Some(gasleft_i), Some(sender_i)) =
-                    (dcall_index, gasleft_index, sender_index)
-                {
-                    if func.is_syscall(dcall_i as u32, gasleft_i as u32, sender_i as u32) {
-                        // If the function is a system call we can continue past
-                        // it
-                        continue;
+        // If there is no dcall imported (therefore dcall_index is
+        // None) then we know all functions must be valid so we can skip
+        // iterating through the functions.
+        if let Some(dcall_i) = dcall_index {
+            if let Some(funcs) = self.functions() {
+                // Iterate through each of the functions and determine if it is
+                // valid.
+                for (_i, func) in funcs.enumerate() {
+                    // Check if the function is a system call, this is only
+                    // worth doing if we have indices for gasleft and sender, as
+                    // they are necessary for the syscall.
+                    if let (Some(gasleft_i), Some(sender_i)) = (gasleft_index, sender_index) {
+                        if func.is_syscall(dcall_i as u32, gasleft_i as u32, sender_i as u32) {
+                            // If the function is a system call we can continue
+                            // past it as it is valid.
+                            continue;
+                        }
                     }
-                }
-                // At this point we know that the function is not a syscall.
-                // We must now check that it has no black or grey listed
-                // calls. We only care about calls here. We only need to do
-                // this if dcall is imported in the first place.
-                if let Some(dcall_i) = dcall_index {
+                    // At this point we know that the function is not a syscall.
+                    // We must now check that it has no grey listed calls (i.e.
+                    // dcall). We only care about calls here.
                     if func.contains_grey_call(dcall_i as u32) {
                         // This function contains a greylisted call (i.e.
                         // dcall), so we must return with false as the
@@ -109,6 +122,8 @@ impl<'a> Validity for modules::Module<'a> {
     }
 }
 
+/// Parse a variable size VarUint32 (i.e. LEB) as per the WASM spec. TODO: let's
+/// see if we can import this from parity-wasm.
 fn parse_varuint_32(cursor: &mut Cursor) -> u32 {
     let mut res = 0;
     let mut shift = 0;
@@ -224,10 +239,8 @@ mod tests {
 
     #[test]
     fn raw_kernel_pass() {
-        let mut f = File::open(
-            "../target/wasm32-unknown-unknown/release/kernel_ewasm.wasm",
-        )
-        .expect("could not open file");
+        let mut f = File::open("../target/wasm32-unknown-unknown/release/kernel_ewasm.wasm")
+            .expect("could not open file");
         let mut wasm = Vec::new();
         f.read_to_end(&mut wasm).unwrap();
         let validation_result = Module::new(wasm.as_slice()).is_valid();
@@ -300,7 +313,7 @@ mod tests {
         assert_eq!(validation_result, false);
     }
 
-        #[test]
+    #[test]
     fn with_call_indirect_fail() {
         let wat = r#"
 ;; Perform an indirect call via a table
