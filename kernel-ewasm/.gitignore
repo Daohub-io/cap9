@@ -4,3 +4,6 @@ node_modules
 #CARGO
 target
 **/*.rs.bk
+
+#Built Contracts
+build/

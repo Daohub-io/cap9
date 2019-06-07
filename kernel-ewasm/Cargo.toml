@@ -7,11 +7,13 @@ edition = "2018"
 
 [dependencies]
 tiny-keccak = "1.4.2"
-pwasm-std = "0.13"
-pwasm-ethereum = "0.8"
+pwasm-std = {version = "0.13", default-features = false}
+pwasm-ethereum = {version = "0.8", default-features = false}
 pwasm-abi = "0.2"
 pwasm-abi-derive = "0.2"
+parity-wasm = { git = "https://github.com/paritytech/parity-wasm.git", default-features = false }
 lazy_static = { version = "1.2.0", features = ["spin_no_std"] }
+validator = { path = "./validator", default-features = false }
 
 [dev-dependencies.pwasm-test]
 git = "https://github.com/paritytech/pwasm-test"
@@ -22,9 +24,11 @@ name = "kernel_ewasm"
 crate-type = ["cdylib"]
 
 [features]
+default = ["std"]
 std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
+panic_with_msg = ["pwasm-std/panic_with_msg"]
 
 [profile.release]
 panic = "abort"
-lto = true
-opt-level = "z"
+lto = false
+# opt-level = "z"

@@ -74,11 +74,65 @@
     ]
   },
   {
+    "type": "function",
+    "name": "check_contract",
+    "inputs": [
+      {
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "bool"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "get_code_size",
+    "inputs": [
+      {
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "int32"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "code_copy",
+    "inputs": [
+      {
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "bytes"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
     "type": "constructor",
     "inputs": [
       {
-        "name": "_entryProcedure",
-        "type": "address"
+        "name": "_total_supply",
+        "type": "uint256"
       }
     ]
   }

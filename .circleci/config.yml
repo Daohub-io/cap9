@@ -1,44 +1,145 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
 version: 2
 jobs:
+  # build-evm:
+  #   docker:
+  #     # specify the version you desire here
+  #     - image: circleci/node:9
+
+  #     # Specify service dependencies here if necessary
+  #     # CircleCI maintains a library of pre-built images
+  #     # documented at https://circleci.com/docs/2.0/circleci-images/
+  #     # - image: circleci/mongo:3.4.4
+
+  #   working_directory: ~/repo
+
+  #   steps:
+  #     - checkout
+
+  #     # Download and cache dependencies
+  #     - restore_cache:
+  #         keys:
+  #         - v1-dependencies-{{ checksum "evm1/package.json" }}
+  #         # fallback to using the latest cache if no exact match is found
+  #         - v1-dependencies-
+
+  #     - run: cd evm1 && npm install
+  #     - run: cd evm1 && chmod +x ./scripts/test.sh
+
+  #     - save_cache:
+  #         paths:
+  #           - evm1/node_modules
+  #         key: v1-dependencies-{{ checksum "evm1/package.json" }}
+
+  #     # run tests!
+  #     - run:
+  #         name: Running Local EVM Instance
+  #         command: ./evm1/node_modules/.bin/ganache-cli
+  #         background: true
+  #     - run: cd evm1 && ./node_modules/.bin/truffle test
   build:
     docker:
-      # specify the version you desire here
-      - image: circleci/node:9
-      
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mongo:3.4.4
-
-    working_directory: ~/repo
-
+      - image: centos:latest
+    working_directory: /tmp/my-project
     steps:
-      - checkout
-
-      # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "evm1/package.json" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
-      - run: cd evm1 && npm install
-      - run: cd evm1 && chmod +x ./scripts/test.sh
-
+            - deps7-{{ .Branch }}-{{ .Revision }}
+            # - deps7-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps7-{{ .Branch }}-
+            - deps7-
+      - run:
+          name: Install native build prequisites
+          command: |
+            yum -y update
+            yum install -y systemd-devel git make gcc-c++ gcc file binutils
+            curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
+            tar -xzf cmake.tar.gz
+            cp -r cmake-3.12.0-Linux-x86_64/* /usr/
+            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+            # only update cargo if it is not installed
+            if [ ! -d /root/.rustup ]
+            then
+              echo "Installing rustup"
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              . ~/.profile
+              rustup default stable
+            else
+              echo "rustup already installed"
+              . ~/.profile
+            fi
+            RUST_BACKTRACE=1
+            rustc -vV
+            cargo -V
+            gcc -v
+            g++ -v
+            cmake --version
+            curl -L https://nodejs.org/dist/v12.3.1/node-v12.3.1-linux-x64.tar.xz -o node.tar.xz
+            tar -xJf node.tar.xz
+            cp -r node-v12.3.1-linux-x64/* /usr/
+      - run:
+          name: Install Parity
+          command: |
+            . ~/.profile
+            cd ..
+            # If the parity-ethereum directory does not exist, clone it
+            pwd
+            ls
+            if [ ! -d parity-ethereum ]
+            then
+              echo "Parity not installed, cloning..."
+              git clone https://github.com/Daohub-io/parity-ethereum.git
+            fi
+            cd parity-ethereum
+            git fetch --all
+            git checkout master
+            # cargo build -j 1
+            # cargo build --verbose --release --features final
+            # strip target/debug/parity
+            # file target/debug/parity
+            if parity --version; then
+              echo "Parity node installed"
+            else
+              cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
+            fi
       - save_cache:
+          key: deps7-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
-            - evm1/node_modules
-          key: v1-dependencies-{{ checksum "evm1/package.json" }}
-        
-      # run tests!
-      - run: 
-          name: Running Local EVM Instance
-          command: ./evm1/node_modules/.bin/ganache-cli
+            - "~/.cargo"
+            - "~/.rustup"
+            - /tmp/parity-ethereum
+      - checkout:
+          path: cap9
+      - run:
+          name: Get Submodules
+          command: |
+            cd cap9
+            git submodule update --init
+      - run:
+          name: Start local Ethereum network
+          command: |
+            . ~/.profile
+            cd cap9
+            cd kernel-ewasm
+            # we need to run parity once to set up the accounts and keys
+            # this only needs to be active for a few seconds (hence timeout)
+            # timeout 5 parity --config dev || true
+            # We then run parity properly, now unlocking the previously setup
+            # account
+            parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
           background: true
-      - run: cd evm1 && ./node_modules/.bin/truffle test
-
-
+      - run:
+          name: Wait for Parity startup
+          command: sleep 10
+      - run:
+          name: Build Rust Component
+          command: |
+            . ~/.profile
+            cd cap9
+            cd kernel-ewasm && ./build.sh
+      - run:
+          name: Test Rust Component
+          command: |
+            . ~/.profile
+            cd cap9
+            cd kernel-ewasm && npm install
+            npm run test
