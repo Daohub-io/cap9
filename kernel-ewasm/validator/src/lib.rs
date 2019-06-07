@@ -114,15 +114,14 @@ fn parse_varuint_32(cursor: &mut Cursor) -> u32 {
     let mut shift = 0;
     loop {
         if shift > 31 {
-            panic!("invalid varuint32");
+            panic!("invalid varuint32 {}", shift);
         }
-
-        let b = cursor.read_ref().clone() as u32;
+        let b = cursor.read_ref().unwrap().clone() as u32;
         res |= (b & 0x7f).checked_shl(shift).expect("invalid varuint32");
         shift += 7;
         if (b >> 7) == 0 {
             if shift >= 32 && (b as u8).leading_zeros() < 4 {
-                panic!("invalid varuint32");
+                panic!("invalid varuint32, b: {}", b);
             }
             break;
         }
@@ -140,10 +139,14 @@ struct Cursor<'a> {
 
 impl<'a> Cursor<'a> {
     // Read the byte at the cusor, and increment the pointer by 1.
-    fn read_ref(&mut self) -> &'a u8 {
-        let val = &self.body[self.current_offset];
-        self.current_offset += 1;
-        val
+    fn read_ref(&mut self) -> Option<&'a u8> {
+        if self.current_offset < self.body.len() {
+            let val = &self.body[self.current_offset];
+            self.current_offset += 1;
+            Some(val)
+        } else {
+            None
+        }
     }
 
     fn read_ref_n(&mut self, n: usize) -> &'a [u8] {
@@ -208,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn example_contract_1_pass() {
+    fn example_contract_1_notpass() {
         let mut f = File::open(
             "../example_contract_1/target/wasm32-unknown-unknown/release/example_contract_1.wasm",
         )
@@ -217,6 +220,20 @@ mod tests {
         f.read_to_end(&mut wasm).unwrap();
         let validation_result = Module::new(wasm.as_slice()).is_valid();
         assert_eq!(validation_result, false);
+    }
+
+    #[test]
+    fn raw_kernel_pass() {
+        let mut f = File::open(
+            "../target/wasm32-unknown-unknown/release/kernel_ewasm.wasm",
+        )
+        .expect("could not open file");
+        let mut wasm = Vec::new();
+        f.read_to_end(&mut wasm).unwrap();
+        let validation_result = Module::new(wasm.as_slice()).is_valid();
+        // NB: the kernel currently passes because it doesn't do any syscalls.
+        // This will change.
+        assert_eq!(validation_result, true);
     }
 
     #[test]

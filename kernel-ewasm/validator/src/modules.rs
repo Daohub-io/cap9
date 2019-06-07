@@ -494,7 +494,7 @@ struct Section {
 }
 
 fn parse_section(cursor: &mut Cursor) -> Section {
-    let type_n = cursor.read_ref();
+    let type_n = cursor.read_ref().expect("no bytes left to parse section type");
     let offset = cursor.current_offset;
     let size_n = parse_varuint_32(cursor);
     let type_ = n_to_section(type_n);
