@@ -399,14 +399,23 @@ impl<'a> Function<'a> {
         let code_iter = Code::new(body);
         for instruction in code_iter {
             // println!("instruction: {:?}", instruction);
-            // We only care about Call instructions
-            if let instructions::Instruction::Call(f_ind) = instruction {
-                // if f_ind is a grey call then we return true, as we are asking the
-                // question "Does this function contain a call to a greylisted
-                // import?".
-                if f_ind == dcall_i {
+            // We only care about Call or CallIndirect instructions
+            match instruction {
+                instructions::Instruction::Call(f_ind) => {
+                    // if f_ind is a grey call then we return true, as we are asking the
+                    // question "Does this function contain a call to a greylisted
+                    // import?".
+                    if f_ind == dcall_i {
+                        return true;
+                    }
+                },
+                instructions::Instruction::CallIndirect(_type_index, _table_index) => {
+                    // We currently don't have the functionality to check that
+                    // tables are safe. For now we will just forbid indirect
+                    // calls by assuming any indirect call could be a dcall.
                     return true;
-                }
+                },
+                _ => {},
             }
         }
         // No instructions were greylisted, so we can return false.
