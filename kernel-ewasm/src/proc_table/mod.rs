@@ -95,6 +95,7 @@ impl ProcPointer {
 }
 
 /// Error or Procedure Insertion
+#[derive(Debug, Clone)]
 pub enum ProcInsertError {
     /// Procedure Id Already Used
     UsedId = 2,
@@ -271,10 +272,10 @@ pub fn remove_proc(key: ProcedureKey) -> Result<(), ProcRemoveError> {
 }
 
 #[derive(Debug, Clone)]
-struct InvalidProcId;
+pub struct InvalidProcId;
 
 /// Set Entry Procedure Id
-fn set_entry_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
+pub fn set_entry_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
     if key == [0; 24] {return Err(InvalidProcId);}
     let mut result = [0u8; 32];
     result[8..].copy_from_slice(&key);
@@ -283,7 +284,7 @@ fn set_entry_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
 }
 
 /// Set Current Procedure Id
-fn set_current_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
+pub fn set_current_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
     if key == [0; 24] {return Err(InvalidProcId);}
     let mut result = [0u8; 32];
     result[8..].copy_from_slice(&key);
@@ -292,7 +293,7 @@ fn set_current_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
 }
 
 
-fn contains(key: ProcedureKey) -> bool {
+pub fn contains(key: ProcedureKey) -> bool {
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
 
@@ -303,7 +304,7 @@ fn contains(key: ProcedureKey) -> bool {
 }
 
 /// Get Procedure Address By Key
-fn get_proc_addr(key: ProcedureKey) -> Option<Address> {
+pub fn get_proc_addr(key: ProcedureKey) -> Option<Address> {
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
     let proc_addr = pwasm_ethereum::read(&H256(proc_pointer.get_addr_ptr()));
@@ -317,7 +318,7 @@ fn get_proc_addr(key: ProcedureKey) -> Option<Address> {
 }
 
 /// Get Procedure Index By Key
-fn get_proc_index(key: ProcedureKey) -> Option<ProcedureIndex> {
+pub fn get_proc_index(key: ProcedureKey) -> Option<ProcedureIndex> {
     // Get Procedure Storage
     let proc_pointer = ProcPointer::from_key(key);
     let proc_index = pwasm_ethereum::read(&H256(proc_pointer.get_index_ptr()));
@@ -332,7 +333,7 @@ fn get_proc_index(key: ProcedureKey) -> Option<ProcedureIndex> {
 }
 
 /// Get Procedure Key By Index
-fn get_proc_id(index: ProcedureIndex) -> Option<ProcedureKey> {
+pub fn get_proc_id(index: ProcedureIndex) -> Option<ProcedureKey> {
     let index = {
         let mut output = [0u8; 32];
         output[8..].copy_from_slice(&index);
@@ -351,14 +352,14 @@ fn get_proc_id(index: ProcedureIndex) -> Option<ProcedureKey> {
 }
 
 /// Get Procedure List Length
-fn get_proc_list_len() -> U256 {
+pub fn get_proc_list_len() -> U256 {
     // Check Procedure List Length, it must be less than 8^24
     let proc_list_len = pwasm_ethereum::read(&H256(KERNEL_PROC_LIST_PTR));
     U256::from(proc_list_len)
 }
 
 /// Get Procedure Cap Type Length
-fn get_proc_cap_list_len(key: ProcedureKey, cap_type: u8) -> u8 {
+pub fn get_proc_cap_list_len(key: ProcedureKey, cap_type: u8) -> u8 {
     let proc_pointer = ProcPointer::from_key(key);
     let proc_cap_list_len =
         pwasm_ethereum::read(&H256(proc_pointer.get_cap_type_len_ptr(cap_type)));
@@ -366,7 +367,7 @@ fn get_proc_cap_list_len(key: ProcedureKey, cap_type: u8) -> u8 {
 }
 
 /// Get Procedure Capability by Id, Type and Index
-fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<cap::Capability> {
+pub fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<cap::Capability> {
     use cap::*;
     let proc_pointer = ProcPointer::from_key(key);
 
@@ -393,7 +394,7 @@ fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<cap::C
 }
 
 /// Get Entry Procedure Id
-fn get_entry_proc_id() -> ProcedureKey {
+pub fn get_entry_proc_id() -> ProcedureKey {
     let proc_id = pwasm_ethereum::read(&H256(KERNEL_ENTRY_PROC_PTR));
     let mut result = [0; 24];
     result.copy_from_slice(&proc_id[8..]);
@@ -401,7 +402,7 @@ fn get_entry_proc_id() -> ProcedureKey {
 }
 
 /// Get Current Procedure Id
-fn get_current_proc_id() -> ProcedureKey {
+pub fn get_current_proc_id() -> ProcedureKey {
     let proc_id = pwasm_ethereum::read(&H256(KERNEL_CURRENT_PROC_PTR));
     let mut result = [0; 24];
     result.copy_from_slice(&proc_id[8..]);

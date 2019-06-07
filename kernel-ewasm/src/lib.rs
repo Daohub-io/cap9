@@ -15,6 +15,8 @@ type ProcedureKey = [u8; 24];
 pub mod token {
     use pwasm_abi::types::*;
     use pwasm_ethereum;
+    use crate::proc_table;
+    use crate::proc_table::cap;
 
     // eth_abi is a procedural macros https://doc.rust-lang.org/book/first-edition/procedural-macros.html
     use pwasm_abi_derive::eth_abi;
@@ -36,10 +38,10 @@ pub mod token {
         fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address);
         /// Get Entry Procedure
         #[constant]
-        fn entryProcedure(&mut self) -> String;
+        fn entryProcedure(&mut self) -> [u8; 24];
         /// Get Current Executing Procedure
         #[constant]
-        fn currentProcedure(&mut self) -> String;
+        fn currentProcedure(&mut self) -> [u8; 24];
 
         /// Get Procedure Address By Key
         /// Returns 0 if Procedure Not Found
@@ -49,26 +51,38 @@ pub mod token {
     pub struct KernelContract;
 
     impl KernelInterface for KernelContract {
+        
         fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address) {
-            // // Set up the total supply for the token
-            // pwasm_ethereum::write(&TOTAL_SUPPLY_KEY, &total_supply.into());
-            // // Give all tokens to the contract owner
-            // pwasm_ethereum::write(&balance_key(&sender), &total_supply.into());
-            // // Set the contract owner
-            // pwasm_ethereum::write(&OWNER_KEY, &H256::from(sender).into());
-            unimplemented!()
+            let _entry_proc_key = {
+                let byte_key = _entry_proc_key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8; 24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            proc_table::insert_proc(_entry_proc_key, _entry_proc_address, cap::NewCapList::empty()).unwrap();
+            proc_table::set_entry_proc_id(_entry_proc_key).unwrap();
         }
 
-        fn entryProcedure(&mut self) -> String {
-            unimplemented!()
+        fn entryProcedure(&mut self) -> [u8; 24] {
+            proc_table::get_entry_proc_id()
         }
 
-        fn currentProcedure(&mut self) -> String {
-            unimplemented!()
+        fn currentProcedure(&mut self) -> [u8; 24] {
+            proc_table::get_current_proc_id()
         }
 
         fn getProcedureByKey(&mut self, _proc_key: String) -> Address {
-            unimplemented!()
+            let _proc_key = {
+                let byte_key = _proc_key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8; 24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            proc_table::get_proc_addr(_proc_key).unwrap_or(H160::zero())
         }
     }
 }
@@ -100,7 +114,6 @@ mod tests {
     use token::KernelInterface;
 
     #[test]
-    #[ignore]
     fn should_initialize_with_entry_procedure() {
         let mut contract = token::KernelContract {};
 
@@ -115,10 +128,8 @@ mod tests {
 
         contract.constructor(entry_proc_key.clone(), entry_proc_address.clone());
 
-        assert_eq!(contract.entryProcedure(), entry_proc_key);
-        assert_eq!(contract.currentProcedure(), unsafe {
-            String::from_utf8_unchecked([0; 32].to_vec())
-        });
+        assert_eq!(&contract.entryProcedure()[0..4], entry_proc_key.as_bytes());
+        assert_eq!(contract.currentProcedure(), [0u8; 24]);
     }
 
 }

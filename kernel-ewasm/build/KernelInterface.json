@@ -6,7 +6,7 @@
     "outputs": [
       {
         "name": "returnValue0",
-        "type": "string"
+        "type": "bytes24"
       }
     ],
     "constant": true,
@@ -19,7 +19,7 @@
     "outputs": [
       {
         "name": "returnValue0",
-        "type": "string"
+        "type": "bytes24"
       }
     ],
     "constant": true,
