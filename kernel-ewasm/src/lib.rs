@@ -12,7 +12,6 @@ extern crate validator;
 use pwasm_abi::types::*;
 use core::default::Default;
 
-// pub mod validator;
 
 pub mod ext {
     extern "C" {
@@ -43,8 +42,7 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
 pub mod token {
     use pwasm_ethereum;
     use pwasm_abi::types::*;
-    // use parity_wasm::elements::{Module};
-    use validator::{Validity};
+    use validator::{Validity, Module};
 
 
     // eth_abi is a procedural macros https://doc.rust-lang.org/book/first-edition/procedural-macros.html
@@ -130,7 +128,7 @@ pub mod token {
                 // Next we get the code of the contract, using EXTCODECOPY under
                 // the hood.
                 let code: pwasm_std::Vec<u8> = self.code_copy(target);
-                code.as_slice().is_valid()
+                Module::new(code.as_slice()).is_valid()
             }
         }
 

@@ -26,7 +26,6 @@
     i32.const 8
     i32.const 9
     i32.const 10
-    i32.const 11
     ;; This is the non-compliant dcall, the preceeding 6 constants are just
     ;; dummy inputs to pass validation.
     call $env.dcall
