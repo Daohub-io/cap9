@@ -18,12 +18,12 @@ use pwasm_ethereum::Error;
 /// module.
 extern "C" {
     pub fn dcall(
-			gas: i64,
-			address: *const u8,
-			input_ptr: *const u8,
-			input_len: u32,
-			result_ptr: *mut u8,
-			result_len: u32,
+            gas: i64,
+            address: *const u8,
+            input_ptr: *const u8,
+            input_len: u32,
+            result_ptr: *mut u8,
+            result_len: u32,
 ) -> i32;
 }
 

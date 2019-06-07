@@ -19,22 +19,22 @@ pub mod ext {
 }
 
 pub fn extcodesize(address: &Address) -> i32 {
-	unsafe { ext::extcodesize(address.as_ptr()) }
+    unsafe { ext::extcodesize(address.as_ptr()) }
 }
 
 pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
-	let len = unsafe { ext::extcodesize(address.as_ptr()) };
+    let len = unsafe { ext::extcodesize(address.as_ptr()) };
     match len {
-		0 => pwasm_std::Vec::new(),
-		non_zero => {
-			let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
-			unsafe {
-				data.set_len(non_zero as usize);
-				ext::extcodecopy(data.as_mut_ptr(), address.as_ptr());
-			}
-			data
-		}
-	}
+        0 => pwasm_std::Vec::new(),
+        non_zero => {
+            let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
+            unsafe {
+                data.set_len(non_zero as usize);
+                ext::extcodecopy(data.as_mut_ptr(), address.as_ptr());
+            }
+            data
+        }
+    }
 }
 
 type ProcedureKey = [u8; 24];

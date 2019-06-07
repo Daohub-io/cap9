@@ -91,7 +91,7 @@ impl ProcPointer {
         result[5..29].copy_from_slice(&slice[8..]);
         result
     }
-    
+
 }
 
 /// Error or Procedure Insertion
@@ -825,7 +825,7 @@ mod tests {
             );
             Capability::from_u256_list(&raw_cap).expect("Should be Valid LogCap")
         };
-        
+
         assert_eq!(new_write_cap, sample_write_cap.cap);
         assert_eq!(new_log_cap, sample_log_cap.cap);
     }
@@ -858,7 +858,7 @@ mod tests {
         let cap_list = NewCapList([].to_vec()).to_u256_list();
 
         contract.insert_proc(String::from("FOO"), proc_address, cap_list);
-        
+
         let err = contract.set_current_proc_id(String::from("FOO"));
         if err != U256::zero() {
             panic!("Should return 0 for success, instead got {}", err)
@@ -866,7 +866,7 @@ mod tests {
 
         let mut new_current_proc_id = contract.get_current_proc_id();
         new_current_proc_id.truncate(3);
-        
+
         assert_eq!(new_current_proc_id, String::from("FOO"));
     }
 }
