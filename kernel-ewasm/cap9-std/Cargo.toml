@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 pwasm-std = "0.13"
-pwasm-ethereum = "0.8"
+pwasm-ethereum = { version = "0.8", features = ["kip6"] }
 
 [dev-dependencies]
 pwasm-abi = "0.2"

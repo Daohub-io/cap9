@@ -13,14 +13,14 @@ pwasm-abi = "0.2"
 pwasm-abi-derive = "0.2"
 parity-wasm = { git = "https://github.com/paritytech/parity-wasm.git", default-features = false }
 lazy_static = { version = "1.2.0", features = ["spin_no_std"] }
-validator = { path = "./validator", default-features = false }
+validator = { path = "../validator", default-features = false }
 
 [dev-dependencies.pwasm-test]
 git = "https://github.com/paritytech/pwasm-test"
 default-features = false
 
 [lib]
-name = "kernel_ewasm"
+name = "cap9_kernel"
 crate-type = ["cdylib"]
 
 [features]

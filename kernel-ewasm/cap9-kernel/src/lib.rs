@@ -45,22 +45,11 @@ pub mod token {
     use pwasm_abi::types::*;
     use validator::{Validity, Module};
     use pwasm_ethereum;
+    
     use crate::proc_table;
     use crate::proc_table::cap;
 
-    // eth_abi is a procedural macros https://doc.rust-lang.org/book/first-edition/procedural-macros.html
     use pwasm_abi_derive::eth_abi;
-
-    lazy_static::lazy_static! {
-        static ref TOTAL_SUPPLY_KEY: H256 =
-            H256::from(
-                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-            );
-        static ref OWNER_KEY: H256 =
-            H256::from(
-                [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-            );
-    }
 
     #[eth_abi(TokenEndpoint, KernelClient)]
     pub trait KernelInterface {

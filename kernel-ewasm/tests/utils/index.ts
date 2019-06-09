@@ -74,7 +74,7 @@ export function createAccount(name, password): Promise<string> {
     });
 }
 
-export async function newTestContract(file_name: string, abi_name: string): Promise<Contract> {
+export async function deployContract(file_name: string, abi_name: string): Promise<Contract> {
     // Create Account
     const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
     const accounts = await web3.eth.personal.getAccounts();

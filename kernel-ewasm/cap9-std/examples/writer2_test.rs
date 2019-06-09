@@ -1,18 +1,17 @@
 #![cfg_attr(not(feature="std"), no_std)]
-
+#![no_main]
 #![allow(non_snake_case)]
 
-extern crate tiny_keccak;
 extern crate pwasm_std;
 extern crate pwasm_ethereum;
 extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
 
-use tiny_keccak::Keccak;
-use pwasm_ethereum as eth;
 use pwasm_abi::types::*;
 use pwasm_abi_derive::eth_abi;
 use pwasm_ethereum::Error;
+
+fn main() {}
 
 /// TODO: this is duplicated from pwasm_ethereum as it is currently in a private
 /// module.
