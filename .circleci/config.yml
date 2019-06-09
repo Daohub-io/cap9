@@ -135,7 +135,7 @@ jobs:
           command: |
             . ~/.profile
             cd cap9
-            cd kernel-ewasm && ./build.sh
+            cd kernel-ewasm && ./scripts/build.sh
       - run:
           name: Test Rust Component
           command: |
