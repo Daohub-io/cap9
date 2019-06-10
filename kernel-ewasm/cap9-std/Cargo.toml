@@ -1,0 +1,17 @@
+[package]
+name = "cap9-std"
+version = "0.1.0"
+authors = ["DaoHub <info@daohub.io>"]
+edition = "2018"
+
+[dependencies]
+pwasm-std = { version = "0.13", features = ["std"] }
+pwasm-ethereum = { version = "0.8", features = ["kip6"] }
+pwasm-abi = "0.2"
+
+[dev-dependencies]
+pwasm-abi-derive = "0.2"
+
+[dev-dependencies.pwasm-test]
+git = "https://github.com/paritytech/pwasm-test"
+default-features = true

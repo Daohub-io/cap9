@@ -226,6 +226,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn example_contract_1_notpass() {
         let mut f = File::open(
             "../example_contract_1/target/wasm32-unknown-unknown/release/example_contract_1.wasm",
@@ -238,6 +239,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn raw_kernel_pass() {
         let mut f = File::open("../target/wasm32-unknown-unknown/release/kernel_ewasm.wasm")
             .expect("could not open file");
