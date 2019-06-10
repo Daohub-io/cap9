@@ -95,4 +95,12 @@ pub fn cap9_syscall(input: &[u8], result: &mut [u8]) -> Result<(), Error> {
     }
 }
 
+pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
+    let mut input = Vec::with_capacity(1 + 32 + 32);
+    input.push(cap_index);
+    input.extend_from_slice(key);
+    input.extend_from_slice(value);
+
+    cap9_syscall(&input, &mut Vec::new())
+}
 
