@@ -84,7 +84,7 @@ describe('Kernel', function () {
         })
     })
 
-    describe('entry_proc', function () {
+    describe.skip('entry_proc', function () {
         it('should forward call to entry procedure', async function () {
             const accounts = await web3.eth.personal.getAccounts()
 
