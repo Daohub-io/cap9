@@ -86,15 +86,26 @@ describe('Kernel', function () {
 
     describe('entry_proc', function () {
         it('should forward call to entry procedure', async function () {
+            const accounts = await web3.eth.personal.getAccounts()
+
             let newProc = await deployContract("entry_test", "TestEntryInterface");
             let kernel = await newKernelInstance("init", newProc.address);
+            
+            // Toggle Entry Proc Interface
+            await kernel.contract.methods.toggle_syscall();
+            
+            // Check Entry Proc is Valid
+            let check_entry_result = await newProc.methods.getNum().call();
+            assert.equal(check_entry_result, 6);
 
-            let kernel_asWriter = newProc.clone();
-            kernel_asWriter.address = kernel.contract.address;
+            let raw_data = newProc.methods.getNum().encodeABI()
 
-            let result = await kernel_asWriter.methods.getNum().call();
+            let result = await web3.eth.call({
+                from: accounts[0],
+                data: raw_data
+            })
 
-            assert.equal(result, 1);
+            assert.equal(result, 6);
         })
     })
 

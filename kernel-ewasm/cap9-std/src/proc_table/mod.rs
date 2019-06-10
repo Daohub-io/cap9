@@ -1,11 +1,9 @@
 extern crate pwasm_abi;
-extern crate pwasm_abi_derive;
 extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
 use pwasm_abi::eth;
 use pwasm_abi::types::*;
-use pwasm_abi_derive::eth_abi;
 
 const KERNEL_PROC_HEAP_PTR: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -411,6 +409,9 @@ pub fn get_current_proc_id() -> ProcedureKey {
 
 #[cfg(test)]
 pub mod contract {
+    extern crate pwasm_abi_derive;
+
+    use pwasm_abi_derive::eth_abi;
     use super::*;
 
     #[eth_abi(ProcedureEndpoint, ProcedureClient)]
@@ -868,5 +869,8 @@ mod tests {
         new_current_proc_id.truncate(3);
 
         assert_eq!(new_current_proc_id, String::from("FOO"));
+
+        let entry_addr = contract.get_proc_addr(String::from("FOO"));
+        assert_eq!(entry_addr, proc_address);
     }
 }

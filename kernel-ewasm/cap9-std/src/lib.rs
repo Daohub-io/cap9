@@ -1,13 +1,20 @@
 #![no_std]
 
+extern crate pwasm_abi;
+use pwasm_abi::types::*;
+
 /// Generic wasm error
 #[derive(Debug)]
 pub struct Error;
 
+pub mod proc_table;
+
 /// TODO: this is duplicated from pwasm_ethereum as it is currently in a private
 /// module.
-mod external {
+pub mod external {
     extern "C" {
+        pub fn extcodesize( address: *const u8) -> i32;
+        pub fn extcodecopy( dest: *mut u8, address: *const u8);
         pub fn dcall(
                 gas: i64,
                 address: *const u8,
@@ -28,17 +35,38 @@ mod external {
         /// the lowest level, therefore it's arguments are all the non-compulsory
         /// parts of a delgate call. That is, the signature of a delegate call is
         /// this:
-        /// ```rust
+        /// 
         ///   dcall( gas: i64, address: *const u8, input_ptr: *const u8, input_len:
         ///      u32, result_ptr: *mut u8, result_len: u32, ) -> i32
-        ///```
+        ///
         /// The `gas` and `address` are fixed by the system call specification,
         /// therefore we can only set the remaining parameters (`input_ptr`,
         /// `input_len`, `result_ptr`, and `result_len`);
         #[no_mangle]
         pub fn cap9_syscall_low(input_ptr: *const u8, input_len: u32, result_ptr: *mut u8, result_len: u32) -> i32;
+
+        
     }   
 
+}
+
+pub fn extcodesize(address: &Address) -> i32 {
+    unsafe { external::extcodesize(address.as_ptr()) }
+}
+
+pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
+    let len = unsafe { external::extcodesize(address.as_ptr()) };
+    match len {
+        0 => pwasm_std::Vec::new(),
+        non_zero => {
+            let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
+            unsafe {
+                data.set_len(non_zero as usize);
+                external::extcodecopy(data.as_mut_ptr(), address.as_ptr());
+            }
+            data
+        }
+    }
 }
 
 /// This is to replace pwasm_ethereum::call_code, and uses [`cap9_syscall_low`]: fn.cap9_syscall_low.html

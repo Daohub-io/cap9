@@ -14,6 +14,7 @@ pwasm-abi-derive = "0.2"
 parity-wasm = { git = "https://github.com/paritytech/parity-wasm.git", default-features = false }
 lazy_static = { version = "1.2.0", features = ["spin_no_std"] }
 validator = { path = "../validator", default-features = false }
+cap9-std = { path = "../cap9-std" }
 
 [dev-dependencies.pwasm-test]
 git = "https://github.com/paritytech/pwasm-test"

@@ -1,11 +1,9 @@
 extern crate pwasm_abi;
-extern crate pwasm_abi_derive;
 extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
 use pwasm_abi::eth;
 use pwasm_abi::types::*;
-use pwasm_abi_derive::eth_abi;
 
 use core::convert::TryFrom;
 

@@ -23,17 +23,29 @@ RUN rm -rf /opt/yarn-* \
     && echo "deb https://dl.yarnpkg.com/$(lsb_release -is | tr '[:upper:]' '[:lower:]')/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
     && apt-get update \
     && apt-get -y install --no-install-recommends yarn
+ 
+# Rust
+# install tools and dependencies
+RUN apt-get -y update && \
+	apt-get upgrade -y && \
+	apt-get install -y --no-install-recommends \
+		curl make cmake file ca-certificates  \
+		g++ gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+		libc6-dev-arm64-cross binutils-aarch64-linux-gnu \
+		&& \
+	apt-get clean
 
-# Install Rust
-RUN apt-get install -y systemd-devel git make gcc-c++ gcc file binutils \
-    && curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz \
-    && tar -xzf cmake.tar.gz \
-    && cp -r cmake-3.12.0-Linux-x86_64/* /usr/ \
-    && echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile \
-    && curl https://sh.rustup.rs -sSf | sh -s -- -y \
-    && . ~/.profile \
-    && rustup default stable \
-    && RUST_BACKTRACE=1 
+# install rustup
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# rustup directory
+ENV PATH /root/.cargo/bin:$PATH
+
+# multirust add wasm32-unknown-unknown to the toolchain
+RUN rustup target add wasm32-unknown-unknown
+
+# show backtraces
+ENV RUST_BACKTRACE 1
 
 # Install eslint
 RUN npm install -g eslint

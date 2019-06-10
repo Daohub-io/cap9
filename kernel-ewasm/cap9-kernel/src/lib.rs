@@ -8,40 +8,23 @@ extern crate pwasm_abi_derive;
 extern crate pwasm_ethereum;
 extern crate parity_wasm;
 extern crate validator;
+extern crate cap9_std;
 
 use pwasm_abi::types::*;
 use core::default::Default;
-pub mod proc_table;
 
-pub mod ext {
-    extern "C" {
-            pub fn extcodesize( address: *const u8) -> i32;
-            pub fn extcodecopy( dest: *mut u8, address: *const u8);
-    }
-}
+use cap9_std::proc_table;
+use cap9_std::*;
 
-pub fn extcodesize(address: &Address) -> i32 {
-    unsafe { ext::extcodesize(address.as_ptr()) }
-}
-
-pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
-    let len = unsafe { ext::extcodesize(address.as_ptr()) };
-    match len {
-        0 => pwasm_std::Vec::new(),
-        non_zero => {
-            let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
-            unsafe {
-                data.set_len(non_zero as usize);
-                ext::extcodecopy(data.as_mut_ptr(), address.as_ptr());
-            }
-            data
-        }
-    }
-}
+/// This is a temporary storage location for toggling
+const TEST_KERNEL_SYSCALL_TOGGLE_PTR: [u8; 32] = [
+    0xff, 0xff, 0xff, 0xff, 66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+];
 
 type ProcedureKey = [u8; 24];
 
-pub mod token {
+pub mod kernel {
     use pwasm_abi::types::*;
     use validator::{Validity, Module};
     use pwasm_ethereum;
@@ -51,7 +34,7 @@ pub mod token {
 
     use pwasm_abi_derive::eth_abi;
 
-    #[eth_abi(TokenEndpoint, KernelClient)]
+    #[eth_abi(TestKernelEndpoint, KernelClient)]
     pub trait KernelInterface {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address);
@@ -71,6 +54,12 @@ pub mod token {
         fn get_code_size(&mut self, _to: Address) -> i32;
         /// Copy the code of another contract into memory
         fn code_copy(&mut self, _to: Address) -> pwasm_std::Vec<u8>;
+
+        /// Toggle Syscall Mode
+        /// (Forwards all calls to entry procedure)
+        /// 
+        /// _Temporary for debugging purposes_
+        fn toggle_syscall(&mut self);
     }
 
     pub struct KernelContract;
@@ -130,21 +119,47 @@ pub mod token {
         fn code_copy(&mut self, to: Address) -> pwasm_std::Vec<u8> {
             super::extcodecopy(&to)
         }
+
+        fn toggle_syscall(&mut self) {
+            let mut current_val = pwasm_ethereum::read(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR));
+            current_val[0] = if current_val[0] == 0 { 1 } else { 0 };
+            pwasm_ethereum::write(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR), &current_val);
+        }
+
     }
 }
+
 // Declares the dispatch and dispatch_ctor methods
 use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut endpoint = token::TokenEndpoint::new(token::KernelContract {});
-    // Read http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding for details
-    pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
+    let mut current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
+    
+    // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface 
+    //
+    // If Toggled Run Entry Procedure
+    if current_val[0] == 1 {
+        let entry_address = proc_table::get_proc_addr(proc_table::get_entry_proc_id()).expect("No Entry Proc");
+
+        // TODO:
+        // We don't have `returnDataSize` or `returnDataCopy`, https://github.com/ewasm/design/blob/master/eth_interface.md#getreturndatasize
+        // So we'll simply allocate a large result buffer for now
+        let mut result = [0; 32].to_vec();
+        pwasm_ethereum::call_code(1000, &entry_address, &pwasm_ethereum::input(), &mut result).expect("Invalid Entry Proc");
+        pwasm_ethereum::ret(&result);
+
+    } else {
+        // If not toggled expose test interface
+        let mut endpoint = kernel::TestKernelEndpoint::new(kernel::KernelContract {});
+        // Read http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding for details
+        pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
+    }
 }
 
 #[no_mangle]
 pub fn deploy() {
-    let mut endpoint = token::TokenEndpoint::new(token::KernelContract {});
+    let mut endpoint = kernel::TestKernelEndpoint::new(kernel::KernelContract {});
     endpoint.dispatch_ctor(&pwasm_ethereum::input());
 }
 
@@ -156,11 +171,11 @@ mod tests {
     use super::*;
     use core::str::FromStr;
     use pwasm_abi::types::*;
-    use token::KernelInterface;
+    use kernel::KernelInterface;
 
     #[test]
     fn should_initialize_with_entry_procedure() {
-        let mut contract = token::KernelContract {};
+        let mut contract = kernel::KernelContract {};
 
         let owner_address = Address::from_str("ea674fdde714fd979de3edf0f56aa9716b898ec8").unwrap();
         let entry_proc_key = pwasm_abi::types::String::from("init");
