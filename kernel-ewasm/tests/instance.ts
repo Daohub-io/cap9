@@ -6,6 +6,7 @@ import { Contract } from 'web3-eth-contract';
 
 describe('Kernel', function () {
     describe('#constructor', function () {
+        this.timeout(20_000);
         it('should have correct Initial Entry Procedure', async function () {
             let kernel = await newKernelInstance("init", "0xc1912fee45d61c87cc5ea59dae31190fffff232d");
 
@@ -13,7 +14,7 @@ describe('Kernel', function () {
             const entryProcedureKey = await kernel.getEntryProcedure()
             assert.strictEqual(entryProcedureKey, "init")
 
-            // Check entryProcedure
+            // Check currentProcedure
             const currentProcedureKey = await kernel.getCurrentProcedure()
             assert.strictEqual(currentProcedureKey, "")
 
@@ -139,4 +140,3 @@ describe('Kernel', function () {
     })
 
 })
-
