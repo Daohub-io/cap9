@@ -1,10 +1,20 @@
 #![no_std]
-#![no_main]
 #![allow(non_snake_case)]
 
 extern crate cap9_std;
 extern crate pwasm_std;
 extern crate pwasm_abi_derive;
+
+// When we are compiling to WASM, unresolved references are left as (import)
+// expressions. However, under any other target symbols will have to be linked
+// for EVM functions (blocknumber, create, etc.). Therefore, when we are not
+// compiling for WASM (be it test, realse, whatever) we want to link in dummy
+// functions. pwasm_test provides all the builtins provided by parity, while
+// cap9_test covers the few that we have implemented ourselves.
+#[cfg(not(target_arch = "wasm32"))]
+extern crate pwasm_test;
+#[cfg(not(target_arch = "wasm32"))]
+extern crate cap9_test;
 
 fn main() {}
 
@@ -17,7 +27,7 @@ pub mod entry {
     pub trait TestEntryInterface {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self);
-        
+
         /// Get Number
         #[constant]
         fn getNum(&mut self) -> U256;
@@ -27,7 +37,7 @@ pub mod entry {
     pub struct EntryContract;
 
     impl TestEntryInterface for EntryContract {
-        
+
         fn constructor(&mut self) {}
 
         fn getNum(&mut self) -> U256 {
