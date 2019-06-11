@@ -1,0 +1,5 @@
+[package]
+name = "cap9-test"
+version = "0.1.0"
+authors = ["DaoHub <info@daohub.io>"]
+edition = "2018"

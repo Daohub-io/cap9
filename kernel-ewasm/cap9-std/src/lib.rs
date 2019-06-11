@@ -9,6 +9,17 @@ pub struct Error;
 
 pub mod proc_table;
 
+// When we are compiling to WASM, unresolved references are left as (import)
+// expressions. However, under any other target symbols will have to be linked
+// for EVM functions (blocknumber, create, etc.). Therefore, when we are not
+// compiling for WASM (be it test, realse, whatever) we want to link in dummy
+// functions. pwasm_test provides all the builtins provided by parity, while
+// cap9_test covers the few that we have implemented ourselves.
+#[cfg(not(target_arch = "wasm32"))]
+extern crate pwasm_test;
+#[cfg(not(target_arch = "wasm32"))]
+extern crate cap9_test;
+
 /// TODO: this is duplicated from pwasm_ethereum as it is currently in a private
 /// module.
 pub mod external {
@@ -35,7 +46,7 @@ pub mod external {
         /// the lowest level, therefore it's arguments are all the non-compulsory
         /// parts of a delgate call. That is, the signature of a delegate call is
         /// this:
-        /// 
+        ///
         ///   dcall( gas: i64, address: *const u8, input_ptr: *const u8, input_len:
         ///      u32, result_ptr: *mut u8, result_len: u32, ) -> i32
         ///
@@ -45,8 +56,8 @@ pub mod external {
         #[no_mangle]
         pub fn cap9_syscall_low(input_ptr: *const u8, input_len: u32, result_ptr: *mut u8, result_len: u32) -> i32;
 
-        
-    }   
+
+    }
 
 }
 
@@ -74,7 +85,7 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
 /// over cap9_syscall_low that uses Result types and the like. This is by no
 /// means part of the spec, but more ergonomic Rust level library code. Actual
 /// syscalls should be built on top of this.
-/// 
+///
 /// # Errors
 ///
 /// Returns [`Error`] in case syscall returns error
@@ -103,4 +114,3 @@ pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result
 
     cap9_syscall(&input, &mut Vec::new())
 }
-
