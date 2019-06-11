@@ -1,7 +1,7 @@
 const Web3 = require('web3')
 const assert = require('assert')
 
-import { newKernelInstance, web3, createAccount, KernelInstance, deployContract } from './utils'
+import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, NewCap, WriteCap, CAP_TYPE, CallCap, LogCap, RegisterCap, DeleteCap, EntryCap, AccCallCap } from './utils'
 import { Contract } from 'web3-eth-contract';
 
 describe('Kernel', function () {
@@ -16,6 +16,34 @@ describe('Kernel', function () {
             // Check entryProcedure
             const currentProcedureKey = await kernel.getCurrentProcedure()
             assert.strictEqual(currentProcedureKey, "")
+
+            // Check all Cap lists
+            for (const captype in CAP_TYPE) {
+                if (typeof CAP_TYPE[captype] == "number") continue;
+                // Check entryProcedure captype Length
+                const currentCapLen = await kernel.getProcCapTypeLen("init", captype as any);
+                assert.strictEqual(currentCapLen, 0, `There should be 0 of type: ${CAP_TYPE[captype]}`)
+            }
+        })
+
+        it('should insert capability', async function () {
+            let write_cap = new NewCap(0, new WriteCap(0, 100));
+            let call_cap = new NewCap(0, new CallCap(0, "init"));
+            let log_cap = new NewCap(0, new LogCap(["help"]));
+            let reg_cap = new NewCap(0, new RegisterCap(0, "init"));
+            let del_cap = new NewCap(0, new DeleteCap(0, "init"));
+            let entry_cap = new NewCap(0, new EntryCap());
+            let acc_call_cap = new NewCap(0, new AccCallCap(true, true, "0xc1912fee45d61c87cc5ea59dae31190fffff232d"));
+
+            let kernel = await newKernelInstance("init", "0xc1912fee45d61c87cc5ea59dae31190fffff232d", [write_cap, call_cap, log_cap, reg_cap, del_cap, entry_cap, acc_call_cap]);
+
+            // Check all Cap lists
+            for (const captype in CAP_TYPE) {
+                if (typeof CAP_TYPE[captype] == "number") continue;
+                // Check entryProcedure captype Length
+                const currentCapLen = await kernel.getProcCapTypeLen("init", captype as any);
+                assert.strictEqual(currentCapLen, 1, `There should be 1 of type: ${CAP_TYPE[captype]}`)
+            }
         })
     })
 
@@ -70,7 +98,7 @@ describe('Kernel', function () {
         it('should copy the code of an example contract', async function () {
             const contract = await deployContract("entry_test", "TestEntryInterface");
             assert(web3.utils.isAddress(contract.address), "The contract address should be a valid address")
-            
+
             const code_size = await kernel.methods.get_code_size(contract.address).call();
             const code_hex = await kernel.methods.code_copy(contract.address).call();
             const code = web3.utils.hexToBytes(code_hex);
@@ -82,6 +110,7 @@ describe('Kernel', function () {
             let rec_validation = await kernel.methods.check_contract(contract.address).call();
             assert.strictEqual(typeof rec_validation, "boolean");
         })
+
     })
 
     describe.skip('entry_proc', function () {
@@ -90,10 +119,10 @@ describe('Kernel', function () {
 
             let newProc = await deployContract("entry_test", "TestEntryInterface");
             let kernel = await newKernelInstance("init", newProc.address);
-            
+
             // Toggle Entry Proc Interface
             await kernel.contract.methods.toggle_syscall();
-            
+
             // Check Entry Proc is Valid
             let check_entry_result = await newProc.methods.getNum().call();
             assert.equal(check_entry_result, 6);

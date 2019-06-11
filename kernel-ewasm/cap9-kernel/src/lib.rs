@@ -37,7 +37,7 @@ pub mod kernel {
     #[eth_abi(TestKernelEndpoint, KernelClient)]
     pub trait KernelInterface {
         /// The constructor set with Initial Entry Procedure
-        fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address);
+        fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, _cap_list: Vec<U256>);
         /// Get Entry Procedure
         #[constant]
         fn entryProcedure(&mut self) -> [u8; 24];
@@ -55,6 +55,9 @@ pub mod kernel {
         /// Copy the code of another contract into memory
         fn code_copy(&mut self, _to: Address) -> pwasm_std::Vec<u8>;
 
+        /// Get Cap Length by Type
+        fn get_cap_type_len(&mut self, _proc_key: String, _cap_type: U256) -> U256;
+
         /// Toggle Syscall Mode
         /// (Forwards all calls to entry procedure)
         /// 
@@ -66,7 +69,7 @@ pub mod kernel {
 
     impl KernelInterface for KernelContract {
         
-        fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address) {
+        fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, _cap_list: Vec<U256>) {
             let _entry_proc_key = {
                 let byte_key = _entry_proc_key.as_bytes();
                 let len = byte_key.len();
@@ -75,7 +78,9 @@ pub mod kernel {
                 output
             };
 
-            proc_table::insert_proc(_entry_proc_key, _entry_proc_address, cap::NewCapList::empty()).unwrap();
+            let _cap_list = cap::NewCapList::from_u256_list(&_cap_list).expect("Caplist must be valid");
+
+            proc_table::insert_proc(_entry_proc_key, _entry_proc_address, _cap_list).unwrap();
             proc_table::set_entry_proc_id(_entry_proc_key).unwrap();
         }
 
@@ -118,6 +123,18 @@ pub mod kernel {
 
         fn code_copy(&mut self, to: Address) -> pwasm_std::Vec<u8> {
             super::extcodecopy(&to)
+        }
+
+        fn get_cap_type_len(&mut self, _proc_key: String, _cap_type: U256) -> U256 {
+            let _proc_key = {
+                let byte_key = _proc_key.as_bytes();
+                let len = byte_key.len();
+                let mut output = [0u8; 24];
+                output[..len].copy_from_slice(byte_key);
+                output
+            };
+
+            U256::from(proc_table::get_proc_cap_list_len(_proc_key, _cap_type.as_u32() as u8))
         }
 
         fn toggle_syscall(&mut self) {
