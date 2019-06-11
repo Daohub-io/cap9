@@ -203,7 +203,7 @@ mod tests {
         // so `pwasm_ethereum::sender()` in KernelInterface::constructor() will return that `owner_address`
         ext_reset(|e| e.sender(owner_address.clone()));
 
-        contract.constructor(entry_proc_key.clone(), entry_proc_address.clone());
+        contract.constructor(entry_proc_key.clone(), entry_proc_address.clone(), Vec::new());
 
         assert_eq!(&contract.entryProcedure()[0..4], entry_proc_key.as_bytes());
         assert_eq!(contract.currentProcedure(), [0u8; 24]);
