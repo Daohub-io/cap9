@@ -63,6 +63,8 @@ pub mod kernel {
         ///
         /// _Temporary for debugging purposes_
         fn toggle_syscall(&mut self);
+
+        fn panic(&mut self);
     }
 
     pub struct KernelContract;
@@ -143,6 +145,9 @@ pub mod kernel {
             pwasm_ethereum::write(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR), &current_val);
         }
 
+        fn panic(&mut self) {
+            panic!("test-panic")
+        }
     }
 }
 
@@ -151,7 +156,6 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    panic!("call-panic");
     let mut current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
 
     // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface
