@@ -13,9 +13,12 @@ describe('Write Syscall', function () {
             let newProc = await deployContract("writer_test", "TestWriterInterface");
             let kernel = await newKernelInstance("init", newProc.address);
 
+            // Here we make a copy of the "writer_test" contract interface, but
+            // change the address so that it's pointing at the kernel. This
+            // means the web3 library will send a message crafted to be read by
+            // the writer contract directly to the kernel.
             let kernel_asWriter = newProc.clone();
             kernel_asWriter.address = kernel.contract.address;
-
 
             {
                 let raw_data = newProc.methods.writeNum(0, 0, 1).encodeABI()

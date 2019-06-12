@@ -163,6 +163,7 @@ pub fn call() {
         // We don't have `returnDataSize` or `returnDataCopy`, https://github.com/ewasm/design/blob/master/eth_interface.md#getreturndatasize
         // So we'll simply allocate a large result buffer for now
         let mut result = [6; 32].to_vec();
+        // NB: This "call_code" is a DELEGATECALL not a CALLCODE.
         pwasm_ethereum::call_code(1000, &entry_address, &pwasm_ethereum::input(), &mut result).expect("Invalid Entry Proc");
         pwasm_ethereum::ret(&result);
 
