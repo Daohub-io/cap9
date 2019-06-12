@@ -4,7 +4,8 @@ const assert = require('assert')
 import { newKernelInstance, web3, createAccount, KernelInstance, deployContract } from '../utils'
 
 
-describe.skip('Write Syscall', function () {
+describe('Write Syscall', function () {
+    this.timeout(40_000);
     describe('#getNum', function () {
         it('should return correct value', async function () {
             const accounts = await web3.eth.personal.getAccounts()
@@ -18,7 +19,9 @@ describe.skip('Write Syscall', function () {
 
             {
                 let raw_data = newProc.methods.writeNum(0, 0, 1).encodeABI()
-                let result = await web3.eth.call({
+                // This needs to be a "sendTransaction" instead of a "call" in
+                // order for it to be able to change state on the chain.
+                let result = await web3.eth.sendTransaction({
                     from: accounts[0],
                     data: raw_data
                 })
@@ -34,4 +37,3 @@ describe.skip('Write Syscall', function () {
         })
     })
 })
-
