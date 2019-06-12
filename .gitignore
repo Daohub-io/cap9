@@ -15,3 +15,5 @@ chain
 kernel-ewasm/target/*
 **/*.rs.bk
 Cargo.lock
+
+node_modules/
