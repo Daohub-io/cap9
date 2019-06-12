@@ -55,7 +55,7 @@
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{3}
 
-\title{Beaker Specification}\label{beaker-specification}
+\title{Cap9 Specification}\label{Cap9-specification}
 
 \author{Jacob Payne \and Jake O'Shannessy \and Alexey Troitskiy}
 
@@ -81,7 +81,7 @@ models can be built.
 \section{Definitions}\label{definitions}
 
 \subsection{Kernel Instance}
-A kernel instance is an Ethereum contract which using the Beaker kernel. It is
+A kernel instance is an Ethereum contract which using the Cap9 kernel. It is
 this contract that holds the storage data etc. of the system.
 
 \section{Kernel Storage}\label{kernel-storage}
@@ -1138,5 +1138,39 @@ GAS          // Put all the available gas on the stack
 DELEGATECALL // Delegate Call to Caller
 \end{lstlisting}
 \end{minipage}
+
+\section{Initialization}\label{initialization}
+In order to initialize a Cap9 kernel instance, we need to provide the user an initialization routine. The user must provide an entry procedure to act as the initial interface as well as the root capabilities available to the system. Initialization is done as follows:
+
+
+\begin{itemize}
+  \item For the entry procedure, either an already existing procedure is chosen or deployed within the network, including the id.
+  \item A list of capabilities is chosen that will be minted for the entry procedure.
+  \item On deployment of the cap9 kernel code, the address of the entry procedure and the capability list are given as inputs \ref{init-format}, however the parent capability index in each field are ignored.
+  \item Following this the entry procedure id is set as the entry procedure.
+\end{itemize}
+
+
+\begin{table}[H]
+  \caption{Initialization input structure.}
+  \label{init-format}
+  \centering{}%
+  \begin{tabularx}{\textwidth}{c|X}
+    \hline
+    Byte Offset & Description\\
+    \hline
+    \hline
+    \texttt{0x00} & Procedure key; 24 bytes, aligned right in 32 bytes \\
+    \texttt{0x20} & Procedure address; 20 bytes, aligned right in 32 bytes\\
+    \texttt{0x40} & Capabilities; A series of capabilities. Each capability is
+      in the format specified in Table~\ref{reg-cap-format}. The length of
+      this list is not provided.\\
+    ~~~$\vdots$ & \\
+    \hline
+    End &  \\
+    \hline
+  \end{tabularx}
+\end{table}
+
 
 \end{document}
