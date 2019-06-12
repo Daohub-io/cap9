@@ -14,7 +14,7 @@ pwasm-abi-derive = "0.2"
 parity-wasm = { git = "https://github.com/paritytech/parity-wasm.git", default-features = false }
 lazy_static = { version = "1.2.0", features = ["spin_no_std"] }
 validator = { path = "../validator", default-features = false }
-cap9-std = { path = "../cap9-std" }
+cap9-std = { path = "../cap9-std", default-features = false}
 
 [dev-dependencies.pwasm-test]
 git = "https://github.com/paritytech/pwasm-test"
@@ -27,4 +27,4 @@ crate-type = ["cdylib"]
 [features]
 default = ["std"]
 std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
-panic_with_msg = ["pwasm-std/panic_with_msg"]
+panic_with_msg = ["pwasm-std/panic_with_msg", "cap9-std/panic_with_msg"]

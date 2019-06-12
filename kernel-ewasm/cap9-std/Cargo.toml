@@ -5,7 +5,7 @@ authors = ["DaoHub <info@daohub.io>"]
 edition = "2018"
 
 [dependencies]
-pwasm-std = { version = "0.13", features = ["std"] }
+pwasm-std = { version = "0.13", default-features = false }
 pwasm-ethereum = { version = "0.8", features = ["kip6"] }
 pwasm-abi = "0.2"
 
@@ -14,4 +14,9 @@ pwasm-abi-derive = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cap9-test = { path = "../cap9-test" }
-pwasm-test = { git = "https://github.com/paritytech/pwasm-test", default-features = true }
+pwasm-test = { git = "https://github.com/paritytech/pwasm-test", default-features = false }
+
+[features]
+default = ["std"]
+std = ["pwasm-std/std", "pwasm-ethereum/std", "pwasm-test/std"]
+panic_with_msg = ["pwasm-std/panic_with_msg"]

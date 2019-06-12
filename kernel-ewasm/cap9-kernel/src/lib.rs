@@ -28,7 +28,7 @@ pub mod kernel {
     use pwasm_abi::types::*;
     use validator::{Validity, Module};
     use pwasm_ethereum;
-    
+
     use crate::proc_table;
     use crate::proc_table::cap;
 
@@ -60,7 +60,7 @@ pub mod kernel {
 
         /// Toggle Syscall Mode
         /// (Forwards all calls to entry procedure)
-        /// 
+        ///
         /// _Temporary for debugging purposes_
         fn toggle_syscall(&mut self);
     }
@@ -68,7 +68,7 @@ pub mod kernel {
     pub struct KernelContract;
 
     impl KernelInterface for KernelContract {
-        
+
         fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, _cap_list: Vec<U256>) {
             let _entry_proc_key = {
                 let byte_key = _entry_proc_key.as_bytes();
@@ -151,9 +151,10 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
+    panic!("call-panic");
     let mut current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
-    
-    // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface 
+
+    // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface
     //
     // If Toggled Run Entry Procedure
     if current_val[0] == 1 {

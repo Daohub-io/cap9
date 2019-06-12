@@ -8,6 +8,9 @@ set contract_name=cap9_kernel
 cargo build --examples --target wasm32-unknown-unknown --release --features std
 
 cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
+cd cap9-kernel
+cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
+cd ..
 cap9-build set-mem --pages 3 .\target\wasm32-unknown-unknown\release\%contract_name%.wasm .\target\wasm32-unknown-unknown\release\%contract_name%.wasm
 cargo run --package cap9-build -- set-mem --pages 3 .\target\wasm32-unknown-unknown\release\%contract_name%.wasm .\target\wasm32-unknown-unknown\release\%contract_name%.wasm
 wasm-build --target=wasm32-unknown-unknown .\target kernel-ewasm
