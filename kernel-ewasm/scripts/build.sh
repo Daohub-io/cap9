@@ -2,9 +2,12 @@
 rustup target add wasm32-unknown-unknown
 cargo install pwasm-utils-cli --bin wasm-build --version 0.6.0
 
-cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
 cargo build --examples --target wasm32-unknown-unknown --release --features std
 
+cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
+pushd cap9-kernel
+cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
+popd
 cargo run --package cap9-build -- set-mem --pages 3 ./target/wasm32-unknown-unknown/release/cap9_kernel.wasm ./target/wasm32-unknown-unknown/release/cap9_kernel.wasm
 
 # Copy Examples
