@@ -94,7 +94,7 @@ describe('Write Syscall', function () {
             const code_hex = await kernel.contract.methods.code_copy(newProc.address).call();
             const code = Buffer.from(web3.utils.hexToBytes(code_hex));
             // console.log(code)
-            fs.writeFile("t.wasm", code, "binary", ()=>{});
+            // fs.writeFile("t.wasm", code, "binary", ()=>{});
             // assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
 
 

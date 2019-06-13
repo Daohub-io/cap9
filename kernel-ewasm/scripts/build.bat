@@ -18,5 +18,7 @@ wasm-build --target=wasm32-unknown-unknown .\target kernel-ewasm
 COPY .\target\wasm32-unknown-unknown\release\examples\*_test.wasm .\target\wasm32-unknown-unknown\release
 wasm-build --target=wasm32-unknown-unknown .\target cap9-kernel
 
+cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\release\writer_test.wasm .\target\wasm32-unknown-unknown\release\writer_test.wasm
 wasm-build --target=wasm32-unknown-unknown .\target writer_test
+cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\release\entry_test.wasm .\target\wasm32-unknown-unknown\release\entry_test.wasm
 wasm-build --target=wasm32-unknown-unknown .\target entry_test
