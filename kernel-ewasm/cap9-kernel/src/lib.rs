@@ -200,11 +200,7 @@ pub fn call() {
             pwasm_ethereum::call_code(pwasm_ethereum::gas_left()-10000, &entry_address, &pwasm_ethereum::input(), &mut result_buffer).expect("Invalid Entry Proc");
             // Unset the current procedure
             proc_table::set_current_proc_id([0; 24]);
-            if pwasm_ethereum::input()[0] == 0xf3 {
-                pwasm_ethereum::ret(&result_buffer);
-            } else {
-                pwasm_ethereum::ret(&[]);
-            }
+            pwasm_ethereum::ret(&result());
         } else {
             // We are currently executing the procedure identified by
             // 'current_proc', therefore we should interpret this as a system
