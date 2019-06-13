@@ -80,6 +80,22 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
     }
 }
 
+/// This function is the rough shape of a syscall. It's only purpose is to force
+/// the inclusion/import of all the necessay Ethereum functions and prevent them
+/// from being deadcode eliminated. As part of this, it is also necessary to
+/// pass wasm-build "dummy_syscall" as a public api parameter, to ensure that it
+/// is preserved.
+///
+/// TODO: this is something we would like to not have to do
+#[no_mangle]
+fn dummy_syscall() {
+    pwasm_ethereum::gas_left();
+    pwasm_ethereum::sender();
+    unsafe {
+        external::dcall(0,0 as *const u8, 0 as *const u8, 0, 0 as *mut u8, 0);
+    }
+}
+
 /// This is to replace pwasm_ethereum::call_code, and uses [`cap9_syscall_low`]: fn.cap9_syscall_low.html
 /// underneath instead of dcall. This is a slightly higher level abstraction
 /// over cap9_syscall_low that uses Result types and the like. This is by no
