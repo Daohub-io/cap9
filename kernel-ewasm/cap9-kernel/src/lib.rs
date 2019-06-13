@@ -171,15 +171,51 @@ pub fn call() {
     // Once the entry procedure is toggled on, there is no existing mechanism to
     // turn it off.
     if current_val[0] == 1 {
-        let entry_address = proc_table::get_proc_addr(proc_table::get_entry_proc_id()).expect("No Entry Proc");
+        // We need to determine if this is a syscall or not. Because call_code
+        // is not correctly implemented we need to think about this a little.
+        // Because only delegate call is ever used, we can't use a sender
+        // address.
 
-        // TODO:
-        // We don't have `returnDataSize` or `returnDataCopy`, https://github.com/ewasm/design/blob/master/eth_interface.md#getreturndatasize
-        // So we'll simply allocate a large result buffer for now
-        let mut result = [6; 32].to_vec();
-        // NB: This "call_code" is a DELEGATECALL not a CALLCODE.
-        pwasm_ethereum::call_code(1000, &entry_address, &pwasm_ethereum::input(), &mut result).expect("Invalid Entry Proc");
-        pwasm_ethereum::ret(&result);
+        // If the current procedure is set to a non-zero value, we know we are
+        // mid execution. Therefore this must be a system call.
+        let current_proc = proc_table::get_current_proc_id();
+        if current_proc == [0; 24] {
+            // We are starting the kernel, therefore we should execute the entry
+            // procedure.
+            let proc_id: ProcedureKey = proc_table::get_entry_proc_id();
+            let entry_address = proc_table::get_proc_addr(proc_id).expect("No Entry Proc");
+
+            // TODO:
+            // We don't have `returnDataSize` or `returnDataCopy`, https://github.com/ewasm/design/blob/master/eth_interface.md#getreturndatasize
+            // So we'll simply allocate a large result buffer for now
+            let mut result_buffer = [6; 32].to_vec();
+
+            // Save the procedure we are about to call into "current procedure"
+            // (this is still a hack at this point).
+            proc_table::set_current_proc_id(proc_id);
+            // NB: This "call_code" is a DELEGATECALL not a CALLCODE.
+            //
+            // We need to subtract some gas from the limit, because there will
+            // be instructions in-between that need to be run.
+            pwasm_ethereum::call_code(pwasm_ethereum::gas_left()-10000, &entry_address, &pwasm_ethereum::input(), &mut result_buffer).expect("Invalid Entry Proc");
+            // Unset the current procedure
+            proc_table::set_current_proc_id([0; 24]);
+            if pwasm_ethereum::input()[0] == 0xf3 {
+                pwasm_ethereum::ret(&result_buffer);
+            } else {
+                pwasm_ethereum::ret(&[]);
+            }
+        } else {
+            // We are currently executing the procedure identified by
+            // 'current_proc', therefore we should interpret this as a system
+            // call.
+
+            // Currently, this is hardcoded to assume any syscall is a write
+            // syscall.
+            let mut result = [6; 32].to_vec();
+            // panic!("we hit a system call");
+            pwasm_ethereum::ret(&result);
+        }
 
     } else {
         // If not toggled expose test interface

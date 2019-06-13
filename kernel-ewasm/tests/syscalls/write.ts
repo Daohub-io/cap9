@@ -1,11 +1,12 @@
 const Web3 = require('web3')
 const assert = require('assert')
+const fs = require('fs')
 
 import { newKernelInstance, web3, createAccount, KernelInstance, deployContract } from '../utils'
 
 
 describe('Write Syscall', function () {
-    this.timeout(10_000);
+    this.timeout(40_000);
     describe('#getNum', function () {
         it('should return the initial value', async function () {
             const accounts = await web3.eth.personal.getAccounts()
@@ -33,7 +34,7 @@ describe('Write Syscall', function () {
             const key = 0;
 
             // Retrieve the original value.
-            const original_value = await newProc.methods.getNum(key).call();
+            const original_value = await kernel_asWriter.methods.getNum(key).call();
             assert.strictEqual(original_value.toNumber(), 0, "The original value should be 0");
         })
         it('should modify the value directly', async function () {
@@ -65,14 +66,16 @@ describe('Write Syscall', function () {
             const cap_index = 0;
 
             // Retrieve the original value.
-            const original_value = await newProc.methods.getNum(key).call();
+            const original_value = await kernel_asWriter.methods.getNum(key).call();
             assert.strictEqual(original_value.toNumber(), 0, "The original value should be 0");
 
-            // Write a new value (1) into the storage at 'key'
-            await newProc.methods.writeNumDirect(key, 1).send();
+            // Write a new value (1) into the storage at 'key' using the cap at
+            // 'cap_index'
+            await kernel_asWriter.methods.writeNumDirect(key, 1).send();
+            // await kernel_asWriter.methods.writeNum(cap_index, key, 1).call();
 
             // Retrive the value again and ensure that it has changed.
-            const new_value = await newProc.methods.getNum(key).call();
+            const new_value = await kernel_asWriter.methods.getNum(key).call();
             assert.strictEqual(new_value.toNumber(), 1, "The new value should be 1");
         })
         it.skip('should modify the value via the kernel', async function () {
@@ -87,16 +90,6 @@ describe('Write Syscall', function () {
             // the writer contract directly to the kernel.
             let kernel_asWriter = newProc.clone();
             kernel_asWriter.address = kernel.contract.address;
-
-
-            const kernelAddress = kernel.contract.options.address;
-            const code_size = await kernel.contract.methods.get_code_size(newProc.address).call();
-            const code_hex = await kernel.contract.methods.code_copy(newProc.address).call();
-            const code = Buffer.from(web3.utils.hexToBytes(code_hex));
-            // console.log(code)
-            // fs.writeFile("t.wasm", code, "binary", ()=>{});
-            // assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
-
 
             // The writer_test procedure is now set as the entry procedure. In
             // order to execute this procedure, we first have to put the kernel
@@ -114,16 +107,16 @@ describe('Write Syscall', function () {
             const cap_index = 0;
 
             // Retrieve the original value.
-            const original_value = await newProc.methods.getNum(key).call();
+            const original_value = await kernel_asWriter.methods.getNum(key).call();
             assert.strictEqual(original_value.toNumber(), 0, "The original value should be 0");
 
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            // await newProc.methods.writeNum(cap_index, key, 1).send();
+            await kernel_asWriter.methods.writeNum(cap_index, key, 1).call();
 
             // Retrive the value again and ensure that it has changed.
-            // const new_value = await newProc.methods.getNum(key).call();
-            // assert.strictEqual(new_value.toNumber(), 1, "The new value should be 1");
+            const new_value = await kernel_asWriter.methods.getNum(key).call();
+            assert.strictEqual(new_value.toNumber(), 1, "The new value should be 1");
         })
     })
 })

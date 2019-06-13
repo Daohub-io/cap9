@@ -35,6 +35,9 @@ pub mod external {
                 result_len: u32,
         ) -> i32;
 
+        pub fn result_length() -> i32;
+        pub fn fetch_result( dest: *mut u8);
+
         /// This extern marks an external import that we get from linking or
         /// environment. Usually this would be something pulled in from the Ethereum
         /// environement, but in this case we will use a later stage in the build
@@ -78,6 +81,23 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
             data
         }
     }
+}
+
+/// Allocates and requests [`call`] return data (result)
+pub fn result() -> pwasm_std::Vec<u8> {
+	let len = unsafe { external::result_length() };
+
+	match len {
+		0 => pwasm_std::Vec::new(),
+		non_zero => {
+			let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
+			unsafe {
+				data.set_len(non_zero as usize);
+				external::fetch_result(data.as_mut_ptr());
+			}
+			data
+		}
+	}
 }
 
 /// This function is the rough shape of a syscall. It's only purpose is to force

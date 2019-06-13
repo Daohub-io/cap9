@@ -177,8 +177,20 @@ fn get_syscall_instructions(module: &Module) -> Result<Instructions,SysCallError
     let syscall_instructions = parity_wasm::elements::Instructions::new(vec![
         // Call gas
         Instruction::Call(gasleft_index),
-        // Call sender
+        // Call sender, this will place the sender somewhere in memory,
+        // therefore we need to allocate or something. An address is 160 bits
+        // long, and therefore can't fit into a word. We need to place a
+        // location here first.
+        // TODO: allocate this memory rather than picking a random location.
+        //
+        // Place a memory location for the "sender" function to place the
+        // address.
+        Instruction::I32Const(80000),
+        // Call the sender to function to place the address in memory.
         Instruction::Call(sender_index),
+        // Place the same memory location on the stack again for use by the
+        // dcall function.
+        Instruction::I32Const(80000),
         Instruction::GetLocal(0),
         Instruction::GetLocal(1),
         Instruction::GetLocal(2),
