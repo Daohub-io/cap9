@@ -64,6 +64,8 @@ pub mod kernel {
         /// _Temporary for debugging purposes_
         fn toggle_syscall(&mut self);
 
+        fn get_mode(&mut self) -> u32;
+
         fn panic(&mut self);
     }
 
@@ -145,6 +147,11 @@ pub mod kernel {
             pwasm_ethereum::write(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR), &current_val);
         }
 
+        fn get_mode(&mut self) -> u32 {
+            let current_val = pwasm_ethereum::read(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR));
+            current_val[0] as u32
+        }
+
         fn panic(&mut self) {
             panic!("test-panic")
         }
@@ -161,6 +168,8 @@ pub fn call() {
     // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface
     //
     // If Toggled Run Entry Procedure
+    // Once the entry procedure is toggled on, there is no existing mechanism to
+    // turn it off.
     if current_val[0] == 1 {
         let entry_address = proc_table::get_proc_addr(proc_table::get_entry_proc_id()).expect("No Entry Proc");
 

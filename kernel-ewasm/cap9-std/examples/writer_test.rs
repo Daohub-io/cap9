@@ -33,6 +33,8 @@ pub mod writer {
         #[constant]
         fn getNum(&mut self, key: U256) -> U256;
 
+        fn writeNumDirect(&mut self, key: U256, val: U256);
+
         fn writeNum(&mut self, cap_idx: U256, key: U256, val: U256);
 
     }
@@ -45,6 +47,11 @@ pub mod writer {
 
         fn getNum(&mut self, key: U256) -> U256 {
             pwasm_ethereum::read(&key.into()).into()
+        }
+
+        // Write to storage without going through the kernel or cap system
+        fn writeNumDirect(&mut self, key: U256, val: U256) {
+            pwasm_ethereum::write(&key.into(), &val.into());
         }
 
         fn writeNum(&mut self, cap_idx: U256, key: U256, val: U256) {
