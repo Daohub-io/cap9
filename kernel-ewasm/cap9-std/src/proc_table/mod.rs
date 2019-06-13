@@ -283,7 +283,8 @@ pub fn set_entry_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
 
 /// Set Current Procedure Id
 pub fn set_current_proc_id(key: ProcedureKey) -> Result<(), InvalidProcId> {
-    if key == [0; 24] {return Err(InvalidProcId);}
+    // Sometime we want to set this value to null.
+    // if key == [0; 24] {return Err(InvalidProcId);}
     let mut result = [0u8; 32];
     result[8..].copy_from_slice(&key);
     pwasm_ethereum::write(&H256(KERNEL_CURRENT_PROC_PTR), &result);
