@@ -35,6 +35,16 @@ pub mod external {
                 result_len: u32,
         ) -> i32;
 
+        pub fn call_code(
+                gas: i64,
+                address: *const u8,
+                val_ptr: *const u8,
+                input_ptr: *const u8,
+                input_len: u32,
+                result_ptr: *mut u8,
+                result_len: u32,
+        ) -> i32;
+
         pub fn result_length() -> i32;
         pub fn fetch_result( dest: *mut u8);
 
@@ -81,6 +91,26 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
             data
         }
     }
+}
+
+
+pub fn actual_call_code(gas: u64, address: &Address, value: U256, input: &[u8], result: &mut [u8]) -> Result<(), Error> {
+	let mut value_arr = [0u8; 32];
+	value.to_big_endian(&mut value_arr);
+	unsafe {
+		if external::call_code(
+			gas as i64,
+			address.as_ptr(),
+			value_arr.as_ptr(),
+			input.as_ptr(),
+			input.len() as u32,
+			result.as_mut_ptr(), result.len() as u32
+		) == 0 {
+			Ok(())
+		} else {
+			Err(Error)
+		}
+	}
 }
 
 /// Allocates and requests [`call`] return data (result)
@@ -143,10 +173,18 @@ pub fn cap9_syscall(input: &[u8], result: &mut [u8]) -> Result<(), Error> {
 }
 
 pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
-    let mut input = Vec::with_capacity(1 + 32 + 32);
+    let mut input = Vec::with_capacity(1 + 1 + 32 + 32);
+    // Push the 'WRITE' syscall type (1 byte)
+    input.push(0x7);
+    // Push the cap index (1 byte)
     input.push(cap_index);
+    // Push the storage key (32 bytes)
     input.extend_from_slice(key);
+    // Push the value to be stored (32 bytes)
     input.extend_from_slice(value);
 
-    cap9_syscall(&input, &mut Vec::new())
+    let mut result = Vec::with_capacity(32);
+    result.resize(32,0);
+    // input.resize(1+1+32+32, 0);
+    cap9_syscall(&input, &mut result)
 }

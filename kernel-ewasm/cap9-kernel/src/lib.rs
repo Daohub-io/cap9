@@ -197,7 +197,7 @@ pub fn call() {
             //
             // We need to subtract some gas from the limit, because there will
             // be instructions in-between that need to be run.
-            pwasm_ethereum::call_code(pwasm_ethereum::gas_left()-10000, &entry_address, &pwasm_ethereum::input(), &mut result_buffer).expect("Invalid Entry Proc");
+            actual_call_code(pwasm_ethereum::gas_left()-10000, &entry_address, U256::zero(), &pwasm_ethereum::input(), &mut result_buffer).expect("Invalid Entry Proc");
             // Unset the current procedure
             proc_table::set_current_proc_id([0; 24]);
             pwasm_ethereum::ret(&result());
@@ -208,9 +208,29 @@ pub fn call() {
 
             // Currently, this is hardcoded to assume any syscall is a write
             // syscall.
-            let mut result = [6; 32].to_vec();
-            // panic!("we hit a system call");
-            pwasm_ethereum::ret(&result);
+            let input = pwasm_ethereum::input();
+            // panic!("input: {:#x?}", &pwasm_ethereum::input());
+            let syscall_type: u8;
+            let mut key: [u8; 32] = [0; 32];
+            let mut value: [u8; 32] = [0; 32];
+            syscall_type = input[0];
+            // if input.len() < 67 {
+            //     panic!("insufficient data");
+            // }
+            // pwasm_ethereum::ret(&[]);
+            key[..32].copy_from_slice(&input[2..34]);
+            value[..32].copy_from_slice(&input[34..66]);
+            match syscall_type {
+                // WRITE syscall
+                0x7 => {
+                    if input.len() < 66 {
+                        panic!("insufficient data");
+                    }
+                    pwasm_ethereum::write(&key.into(), &value.into());
+                    pwasm_ethereum::ret(&[]);
+                },
+                _ => panic!("{:#x?} is not a known syscall"),
+            }
         }
 
     } else {

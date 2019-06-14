@@ -78,7 +78,7 @@ describe('Write Syscall', function () {
             const new_value = await kernel_asWriter.methods.getNum(key).call();
             assert.strictEqual(new_value.toNumber(), 1, "The new value should be 1");
         })
-        it.skip('should modify the value via the kernel', async function () {
+        it('should modify the value via the kernel', async function () {
             const accounts = await web3.eth.personal.getAccounts()
 
             let newProc = await deployContract("writer_test", "TestWriterInterface");
@@ -112,7 +112,7 @@ describe('Write Syscall', function () {
 
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            await kernel_asWriter.methods.writeNum(cap_index, key, 1).call();
+            await kernel_asWriter.methods.writeNum(cap_index, key, 1).send();
 
             // Retrive the value again and ensure that it has changed.
             const new_value = await kernel_asWriter.methods.getNum(key).call();
