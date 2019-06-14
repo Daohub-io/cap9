@@ -3,7 +3,7 @@
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
 use validator::io;
-use validator::serialization::Deserialize;
+use validator::serialization::{Deserialize, Serialize};
 
 /// Generic wasm error
 #[derive(Debug)]
@@ -176,15 +176,8 @@ pub fn cap9_syscall(input: &[u8], result: &mut [u8]) -> Result<(), Error> {
 
 pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
     let mut input = Vec::with_capacity(1 + 1 + 32 + 32);
-    // Push the 'WRITE' syscall type (1 byte)
-    input.push(0x7);
-    // Push the cap index (1 byte)
-    input.push(cap_index);
-    // Push the storage key (32 bytes)
-    input.extend_from_slice(key);
-    // Push the value to be stored (32 bytes)
-    input.extend_from_slice(value);
-
+    let syscall = SysCall::Write(key.into(), value.into());
+    syscall.serialize(&mut input).unwrap();
     let mut result = Vec::with_capacity(32);
     result.resize(32,0);
     // input.resize(1+1+32+32, 0);
@@ -211,5 +204,49 @@ impl Deserialize for SysCall {
             },
             _ => panic!("unknown syscall"),
         }
+    }
+}
+
+
+impl Serialize for SysCall {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        match self {
+            SysCall::Write(k,v) => {
+                // Write syscall type
+                writer.write(&[0x7])?;
+                // Write cap index
+                writer.write(&[0x00])?;
+                // Write key
+                k.serialize(writer)?;
+                // Write value
+                v.serialize(writer)?;
+                Ok(())
+            }
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pwasm_abi::types::*;
+    use validator::io;
+    use validator::serialization::{Deserialize, Serialize};
+
+    #[test]
+    fn serialize_write() {
+        let key: U256 = U256::zero();
+        let value: U256 = U256::zero();
+        let mut buffer = Vec::with_capacity(1 + 1 + 32 + 32);
+
+        let syscall = SysCall::Write(key.into(), value.into());
+        syscall.serialize(&mut buffer).unwrap();
+        let expected: &[u8] = &[0x7, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00,0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00];
+        assert_eq!(buffer, expected);
     }
 }
