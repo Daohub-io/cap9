@@ -176,7 +176,10 @@ pub fn cap9_syscall(input: &[u8], result: &mut [u8]) -> Result<(), Error> {
 
 pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
     let mut input = Vec::with_capacity(1 + 1 + 32 + 32);
-    let syscall = SysCallAction::Write(WriteCall{key: key.into(), value: value.into()});
+    let syscall = SysCall {
+        cap_index,
+        action: SysCallAction::Write(WriteCall{key: key.into(), value: value.into()}),
+    };
     syscall.serialize(&mut input).unwrap();
     let mut result = Vec::with_capacity(32);
     result.resize(32,0);
@@ -265,10 +268,6 @@ impl Serialize for WriteCall {
     type Error = io::Error;
 
     fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
-        // Write syscall type
-        writer.write(&[0x7])?;
-        // Write cap index
-        writer.write(&[0x00])?;
         // Write key
         self.key.serialize(writer)?;
         // Write value
@@ -291,7 +290,10 @@ mod tests {
         let value: U256 = U256::zero();
         let mut buffer = Vec::with_capacity(1 + 1 + 32 + 32);
 
-        let syscall = SysCallAction::Write(WriteCall{key: key.into(), value: value.into()});
+        let syscall = SysCall {
+            cap_index: 0,
+            action: SysCallAction::Write(WriteCall{key: key.into(), value: value.into()})
+        };
         syscall.serialize(&mut buffer).unwrap();
         let expected: &[u8] = &[0x7, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00,0x00,

@@ -211,6 +211,12 @@ pub fn call() {
             // Attempt to deserialize the input into a syscall. Panic on
             // deserialization failure.
             let syscall: SysCall = SysCall::deserialize(&mut input).unwrap();
+            // Before we perform any actions, we want to check that this
+            // procedure has the correct capabilities. As a smoke test, let's
+            // just check that the cap_index is zero.
+            if syscall.cap_index != 0 {
+                panic!("wrong cap index");
+            }
             match syscall.action {
                 // WRITE syscall
                 SysCallAction::Write(WriteCall{key,value}) => {
