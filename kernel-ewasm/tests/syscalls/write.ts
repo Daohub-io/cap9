@@ -2,7 +2,8 @@ const Web3 = require('web3')
 const assert = require('assert')
 const fs = require('fs')
 
-import { newKernelInstance, web3, createAccount, KernelInstance, deployContract } from '../utils'
+import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize } from '../utils'
+import { notEqual } from 'assert';
 
 
 describe('Write Syscall', function () {
@@ -31,7 +32,7 @@ describe('Write Syscall', function () {
             // back.
 
             // This is the key that we will be modifying in storage.
-            const key = 0;
+            const key = "0xdeadbeef";
 
             // Retrieve the original value.
             const original_value = await kernel_asWriter.methods.getNum(key).call();
@@ -60,7 +61,8 @@ describe('Write Syscall', function () {
             // back.
 
             // This is the key that we will be modifying in storage.
-            const key = 0;
+            const key = "0xdeadbeef";
+            const value = "0xfee";
             // This is the index of the capability (in the procedures capability
             // list) that we will be using to perform the writes.
             const cap_index = 0;
@@ -71,12 +73,12 @@ describe('Write Syscall', function () {
 
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            await kernel_asWriter.methods.writeNumDirect(key, 1).send();
+            await kernel_asWriter.methods.writeNumDirect(key, value).send();
             // await kernel_asWriter.methods.writeNum(cap_index, key, 1).call();
 
             // Retrive the value again and ensure that it has changed.
             const new_value = await kernel_asWriter.methods.getNum(key).call();
-            assert.strictEqual(new_value.toNumber(), 1, "The new value should be 1");
+            assert.strictEqual(normalize(new_value), normalize(value), `The new value should be ${value}`);
         })
         it('should modify the value via the kernel', async function () {
             const accounts = await web3.eth.personal.getAccounts()
@@ -101,7 +103,8 @@ describe('Write Syscall', function () {
             // back.
 
             // This is the key that we will be modifying in storage.
-            const key = 0;
+            const key = "0xdeadbeef";
+            const value = "0xfee";
             // This is the index of the capability (in the procedures capability
             // list) that we will be using to perform the writes.
             const cap_index = 0;
@@ -112,11 +115,11 @@ describe('Write Syscall', function () {
 
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            await kernel_asWriter.methods.writeNum(cap_index, key, 1).send();
+            await kernel_asWriter.methods.writeNum(cap_index, key, value).send();
 
             // Retrive the value again and ensure that it has changed.
             const new_value = await kernel_asWriter.methods.getNum(key).call();
-            assert.strictEqual(new_value.toNumber(), 1, "The new value should be 1");
+            assert.strictEqual(normalize(new_value), normalize(value), `The new value should be ${value}`);
         })
     })
 })

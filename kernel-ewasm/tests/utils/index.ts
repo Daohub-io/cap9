@@ -279,3 +279,9 @@ export async function newKernelInstance(proc_key: string, proc_address: string, 
     contract.address = contract_addr;
     return new KernelInstance(contract);
 }
+
+
+// Given a web3 value, normalize it so we can compare easily.
+export function normalize(value) {
+    return web3.utils.toHex(web3.utils.toBN(value))
+}
