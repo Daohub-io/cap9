@@ -31,3 +31,20 @@ pub extern fn cap9_syscall_low(input_ptr: *const u8, input_len: u32, result_ptr:
 pub extern fn gasleft() -> i64 {
     panic!("gasleft not available");
 }
+
+#[no_mangle]
+pub extern fn call_code() -> i64 {
+    panic!("call_code not available");
+}
+
+
+#[no_mangle]
+pub extern fn result_length() -> i64 {
+    panic!("result_length not available");
+}
+
+
+#[no_mangle]
+pub extern fn fetch_result() -> i64 {
+    panic!("fetch_result not available");
+}
