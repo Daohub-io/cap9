@@ -210,10 +210,10 @@ pub fn call() {
             let mut input = Cursor::new(pwasm_ethereum::input());
             // Attempt to deserialize the input into a syscall. Panic on
             // deserialization failure.
-            let syscall: SysCall = SysCall::deserialize(&mut input).unwrap();
+            let syscall: SysCallAction = SysCallAction::deserialize(&mut input).unwrap();
             match syscall {
                 // WRITE syscall
-                SysCall::Write(k,v) => {
+                SysCallAction::Write(k,v) => {
                     pwasm_ethereum::write(&k.into(), &v.into());
                     pwasm_ethereum::ret(&[]);
                 },
