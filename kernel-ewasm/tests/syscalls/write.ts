@@ -7,7 +7,7 @@ import { newKernelInstance, web3, createAccount, KernelInstance, deployContract 
 
 describe('Write Syscall', function () {
     this.timeout(40_000);
-    describe('#getNum', function () {
+    describe('#get/writeNum', function () {
         it('should return the initial value', async function () {
             const accounts = await web3.eth.personal.getAccounts()
 

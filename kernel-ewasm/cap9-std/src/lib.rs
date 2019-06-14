@@ -2,6 +2,8 @@
 
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
+use validator::io;
+use validator::serialization::Deserialize;
 
 /// Generic wasm error
 #[derive(Debug)]
@@ -187,4 +189,27 @@ pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result
     result.resize(32,0);
     // input.resize(1+1+32+32, 0);
     cap9_syscall(&input, &mut result)
+}
+
+
+#[derive(Debug)]
+pub enum SysCall {
+    Write(U256,U256),
+}
+
+impl Deserialize for SysCall {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let syscall_type = u8::deserialize(reader)?;
+        let _cap_index = u8::deserialize(reader)?;
+        match syscall_type {
+            0x7 => {
+                let key: U256 = U256::deserialize(reader)?;
+                let value: U256 = U256::deserialize(reader)?;
+                Ok(SysCall::Write(key, value))
+            },
+            _ => panic!("unknown syscall"),
+        }
+    }
 }

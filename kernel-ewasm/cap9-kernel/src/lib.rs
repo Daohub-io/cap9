@@ -16,6 +16,9 @@ use core::default::Default;
 use cap9_std::proc_table;
 use cap9_std::*;
 
+use validator::serialization::Deserialize;
+use validator::io::Cursor;
+
 /// This is a temporary storage location for toggling
 const TEST_KERNEL_SYSCALL_TOGGLE_PTR: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -193,8 +196,6 @@ pub fn call() {
             // Save the procedure we are about to call into "current procedure"
             // (this is still a hack at this point).
             proc_table::set_current_proc_id(proc_id);
-            // NB: This "call_code" is a DELEGATECALL not a CALLCODE.
-            //
             // We need to subtract some gas from the limit, because there will
             // be instructions in-between that need to be run.
             actual_call_code(pwasm_ethereum::gas_left()-10000, &entry_address, U256::zero(), &pwasm_ethereum::input(), &mut result_buffer).expect("Invalid Entry Proc");
@@ -206,30 +207,21 @@ pub fn call() {
             // 'current_proc', therefore we should interpret this as a system
             // call.
 
-            // Currently, this is hardcoded to assume any syscall is a write
-            // syscall.
-            let input = pwasm_ethereum::input();
-            // panic!("input: {:#x?}", &pwasm_ethereum::input());
-            let syscall_type: u8;
-            let mut key: [u8; 32] = [0; 32];
-            let mut value: [u8; 32] = [0; 32];
-            syscall_type = input[0];
-            // if input.len() < 67 {
-            //     panic!("insufficient data");
-            // }
-            // pwasm_ethereum::ret(&[]);
-            key[..32].copy_from_slice(&input[2..34]);
-            value[..32].copy_from_slice(&input[34..66]);
-            match syscall_type {
+            let mut input = Cursor::new(pwasm_ethereum::input());
+            let syscall: SysCall = SysCall::deserialize(&mut input).unwrap();
+            // let syscall_type: u8;
+            // let mut key: [u8; 32] = [0; 32];
+            // let mut value: [u8; 32] = [0; 32];
+            // syscall_type = input[0];
+            // key[..32].copy_from_slice(&input[2..34]);
+            // value[..32].copy_from_slice(&input[34..66]);
+            match syscall {
                 // WRITE syscall
-                0x7 => {
-                    if input.len() < 66 {
-                        panic!("insufficient data");
-                    }
-                    pwasm_ethereum::write(&key.into(), &value.into());
+                SysCall::Write(k,v) => {
+                    pwasm_ethereum::write(&k.into(), &v.into());
                     pwasm_ethereum::ret(&[]);
                 },
-                _ => panic!("{:#x?} is not a known syscall"),
+                _ => panic!("not a known syscall"),
             }
         }
 
