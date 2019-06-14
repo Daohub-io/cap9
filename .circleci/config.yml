@@ -143,3 +143,4 @@ jobs:
             cd cap9
             cd kernel-ewasm && npm install
             npm run test
+            cargo test
