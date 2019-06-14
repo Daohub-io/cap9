@@ -11,7 +11,6 @@ extern crate validator;
 extern crate cap9_std;
 
 use pwasm_abi::types::*;
-use core::default::Default;
 
 use cap9_std::proc_table;
 use cap9_std::*;
@@ -166,7 +165,7 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
+    let current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
 
     // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface
     //
@@ -195,33 +194,29 @@ pub fn call() {
 
             // Save the procedure we are about to call into "current procedure"
             // (this is still a hack at this point).
-            proc_table::set_current_proc_id(proc_id);
+            proc_table::set_current_proc_id(proc_id).unwrap();
             // We need to subtract some gas from the limit, because there will
             // be instructions in-between that need to be run.
             actual_call_code(pwasm_ethereum::gas_left()-10000, &entry_address, U256::zero(), &pwasm_ethereum::input(), &mut result_buffer).expect("Invalid Entry Proc");
             // Unset the current procedure
-            proc_table::set_current_proc_id([0; 24]);
+            proc_table::set_current_proc_id([0; 24]).unwrap();
             pwasm_ethereum::ret(&result());
         } else {
             // We are currently executing the procedure identified by
             // 'current_proc', therefore we should interpret this as a system
             // call.
 
+            // Put the input into a cursor for deserialization.
             let mut input = Cursor::new(pwasm_ethereum::input());
+            // Attempt to deserialize the input into a syscall. Panic on
+            // deserialization failure.
             let syscall: SysCall = SysCall::deserialize(&mut input).unwrap();
-            // let syscall_type: u8;
-            // let mut key: [u8; 32] = [0; 32];
-            // let mut value: [u8; 32] = [0; 32];
-            // syscall_type = input[0];
-            // key[..32].copy_from_slice(&input[2..34]);
-            // value[..32].copy_from_slice(&input[34..66]);
             match syscall {
                 // WRITE syscall
                 SysCall::Write(k,v) => {
                     pwasm_ethereum::write(&k.into(), &v.into());
                     pwasm_ethereum::ret(&[]);
                 },
-                _ => panic!("not a known syscall"),
             }
         }
 
@@ -243,10 +238,9 @@ pub fn deploy() {
 #[allow(non_snake_case)]
 mod tests {
     extern crate pwasm_test;
-    use self::pwasm_test::{ext_get, ext_reset};
+    use self::pwasm_test::{ext_reset};
     use super::*;
     use core::str::FromStr;
-    use pwasm_abi::types::*;
     use kernel::KernelInterface;
 
     #[test]

@@ -55,7 +55,7 @@ pub mod writer {
         }
 
         fn writeNum(&mut self, cap_idx: U256, key: U256, val: U256) {
-            cap9_std::raw_proc_write(cap_idx.as_u32() as u8, &key.into(), &val.into());
+            cap9_std::raw_proc_write(cap_idx.as_u32() as u8, &key.into(), &val.into()).unwrap();
         }
     }
 }
