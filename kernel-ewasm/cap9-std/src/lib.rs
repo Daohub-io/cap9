@@ -176,7 +176,7 @@ pub fn cap9_syscall(input: &[u8], result: &mut [u8]) -> Result<(), Error> {
 
 pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
     let mut input = Vec::with_capacity(1 + 1 + 32 + 32);
-    let syscall = SysCallAction::Write(key.into(), value.into());
+    let syscall = SysCallAction::Write(WriteCall{key: key.into(), value: value.into()});
     syscall.serialize(&mut input).unwrap();
     let mut result = Vec::with_capacity(32);
     result.resize(32,0);
@@ -184,26 +184,66 @@ pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result
     cap9_syscall(&input, &mut result)
 }
 
-
-#[derive(Debug)]
-pub enum SysCallAction {
-    Write(U256,U256),
+#[derive(Clone, Debug)]
+pub struct SysCall {
+    pub cap_index: u8,
+    pub action: SysCallAction,
 }
 
-impl Deserialize for SysCallAction {
+
+impl Deserialize for SysCall {
     type Error = io::Error;
 
     fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
         let syscall_type = u8::deserialize(reader)?;
-        let _cap_index = u8::deserialize(reader)?;
+        let cap_index = u8::deserialize(reader)?;
         match syscall_type {
             0x7 => {
-                let key: U256 = U256::deserialize(reader)?;
-                let value: U256 = U256::deserialize(reader)?;
-                Ok(SysCallAction::Write(key, value))
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::Write(WriteCall::deserialize(reader)?)
+                })
             },
             _ => panic!("unknown syscall"),
         }
+    }
+}
+
+
+impl Serialize for SysCall {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        // Write syscall type
+        match self.action {
+            SysCallAction::Write(_) => writer.write(&[0x07])?
+        }
+        // Write cap index
+        writer.write(&[self.cap_index])?;
+        self.action.serialize(writer)?;
+        Ok(())
+    }
+}
+
+
+#[derive(Clone, Debug)]
+pub enum SysCallAction {
+    Write(WriteCall),
+}
+
+#[derive(Clone, Debug)]
+pub struct WriteCall {
+    pub key: U256,
+    pub value: U256,
+}
+
+impl Deserialize for WriteCall {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let key: U256 = U256::deserialize(reader)?;
+        let value: U256 = U256::deserialize(reader)?;
+        Ok(WriteCall{key, value})
     }
 }
 
@@ -213,18 +253,27 @@ impl Serialize for SysCallAction {
 
     fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         match self {
-            SysCallAction::Write(k,v) => {
-                // Write syscall type
-                writer.write(&[0x7])?;
-                // Write cap index
-                writer.write(&[0x00])?;
-                // Write key
-                k.serialize(writer)?;
-                // Write value
-                v.serialize(writer)?;
+            SysCallAction::Write(write_call) => {
+                write_call.serialize(writer)?;
                 Ok(())
             }
         }
+    }
+}
+
+impl Serialize for WriteCall {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        // Write syscall type
+        writer.write(&[0x7])?;
+        // Write cap index
+        writer.write(&[0x00])?;
+        // Write key
+        self.key.serialize(writer)?;
+        // Write value
+        self.value.serialize(writer)?;
+        Ok(())
     }
 }
 
@@ -242,7 +291,7 @@ mod tests {
         let value: U256 = U256::zero();
         let mut buffer = Vec::with_capacity(1 + 1 + 32 + 32);
 
-        let syscall = SysCallAction::Write(key.into(), value.into());
+        let syscall = SysCallAction::Write(WriteCall{key: key.into(), value: value.into()});
         syscall.serialize(&mut buffer).unwrap();
         let expected: &[u8] = &[0x7, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00,0x00,
