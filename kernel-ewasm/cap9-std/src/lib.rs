@@ -99,39 +99,39 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
 
 
 pub fn actual_call_code(gas: u64, address: &Address, value: U256, input: &[u8], result: &mut [u8]) -> Result<(), Error> {
-	let mut value_arr = [0u8; 32];
-	value.to_big_endian(&mut value_arr);
-	unsafe {
-		if external::call_code(
-			gas as i64,
-			address.as_ptr(),
-			value_arr.as_ptr(),
-			input.as_ptr(),
-			input.len() as u32,
-			result.as_mut_ptr(), result.len() as u32
-		) == 0 {
-			Ok(())
-		} else {
-			Err(Error)
-		}
-	}
+    let mut value_arr = [0u8; 32];
+    value.to_big_endian(&mut value_arr);
+    unsafe {
+        if external::call_code(
+            gas as i64,
+            address.as_ptr(),
+            value_arr.as_ptr(),
+            input.as_ptr(),
+            input.len() as u32,
+            result.as_mut_ptr(), result.len() as u32
+        ) == 0 {
+            Ok(())
+        } else {
+            Err(Error)
+        }
+    }
 }
 
 /// Allocates and requests [`call`] return data (result)
 pub fn result() -> pwasm_std::Vec<u8> {
-	let len = unsafe { external::result_length() };
+    let len = unsafe { external::result_length() };
 
-	match len {
-		0 => pwasm_std::Vec::new(),
-		non_zero => {
-			let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
-			unsafe {
-				data.set_len(non_zero as usize);
-				external::fetch_result(data.as_mut_ptr());
-			}
-			data
-		}
-	}
+    match len {
+        0 => pwasm_std::Vec::new(),
+        non_zero => {
+            let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
+            unsafe {
+                data.set_len(non_zero as usize);
+                external::fetch_result(data.as_mut_ptr());
+            }
+            data
+        }
+    }
 }
 
 /// This function is the rough shape of a syscall. It's only purpose is to force
