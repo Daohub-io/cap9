@@ -416,6 +416,7 @@ pub fn get_cap(syscall: &SysCall) -> Option<cap::Capability> {
     get_proc_cap(current_proc_key, syscall.cap_type(), syscall.cap_index)
 }
 
+
 #[cfg(test)]
 pub mod contract {
     extern crate pwasm_abi_derive;

@@ -1,5 +1,3 @@
-#![no_std]
-
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
 use validator::io;
@@ -24,6 +22,7 @@ pub struct SysCall {
 impl SysCall {
     pub fn cap_type(&self) -> u8 {
         match &self.action {
+            SysCallAction::Call(_)  => 0x3,
             SysCallAction::Write(_) => 0x7,
         }
     }
@@ -51,6 +50,12 @@ impl Deserialize for SysCall {
         let syscall_type = u8::deserialize(reader)?;
         let cap_index = u8::deserialize(reader)?;
         match syscall_type {
+            0x3 => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::Call(Call::deserialize(reader)?)
+                })
+            },
             0x7 => {
                 Ok(SysCall {
                     cap_index,
@@ -69,7 +74,8 @@ impl Serialize for SysCall {
     fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write syscall type
         match self.action {
-            SysCallAction::Write(_) => writer.write(&[0x07])?
+            SysCallAction::Call(_) => writer.write(&[self.cap_type()])?,
+            SysCallAction::Write(_) => writer.write(&[self.cap_type()])?,
         }
         // Write cap index
         writer.write(&[self.cap_index])?;
@@ -84,11 +90,44 @@ impl Serialize for SysCall {
 #[derive(Clone, Debug)]
 pub enum SysCallAction {
     Write(WriteCall),
+    Call(Call),
 }
 
 impl SysCallAction {
     pub fn check_cap(&self, cap: Capability) -> bool {
         match self {
+            // CALL syscall
+            SysCallAction::Call(Call{proc_id,payload:_}) => {
+                if let Capability::ProcedureCall(proc_table::cap::ProcedureCallCap {prefix, key}) = cap {
+                    // We only want to keep the first $prefix bits of $key, the
+                    // rest should be zero. We then XOR this value with the
+                    // requested proc id and the value should be zero. TODO:
+                    // consider using the unstable BitVec type. For now we will
+                    // just a u128 and a u64.
+                    let mut mask_a_array = [0;16];
+                    mask_a_array.copy_from_slice(&key[0..16]);
+                    let mut mask_b_array = [0;8];
+                    mask_b_array.copy_from_slice(&key[16..24]);
+
+                    let prefix_mask_a: u128 = u128::max_value().checked_shl(core::cmp::min((128 - prefix) as u32 - 64, 0)).unwrap_or(0);
+                    let prefix_mask_b:u64 = u64::max_value().checked_shl((128 - prefix) as u32).unwrap_or(0);
+
+                    // mask_a + mask_b is the key we are allowed
+                    let mask_a: u128 = u128::from_le_bytes(mask_a_array) & prefix_mask_a;
+                    let mask_b: u64 = u64::from_le_bytes(mask_b_array) & prefix_mask_b;
+
+                    // This is the key we are requesting but cleared
+                    let mut req_a_array = [0;16];
+                    req_a_array.copy_from_slice(&proc_id[0..16]);
+                    let mut req_b_array = [0;8];
+                    req_b_array.copy_from_slice(&proc_id[16..24]);
+                    let req_a: u128 = u128::from_le_bytes(req_a_array) & prefix_mask_a;
+                    let req_b: u64 = u64::from_le_bytes(req_b_array) & prefix_mask_b;
+
+                    return (req_a == mask_a) && (req_b == mask_b);
+                }
+                false
+            },
             // WRITE syscall
             SysCallAction::Write(WriteCall{key,value:_}) => {
                 if let Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size}) = cap {
@@ -111,9 +150,44 @@ impl SysCallAction {
                 pwasm_ethereum::write(&key.into(), &value_h256.as_fixed_bytes());
                 pwasm_ethereum::ret(&[]);
             },
+            // Call syscall
+            SysCallAction::Call(Call{proc_id, payload}) => {
+                // Find the address of the procedure we are about to execute
+                let proc_address = proc_table::get_proc_addr(proc_id.clone()).expect("No Proc");
+                // Remember this procedure which is being executed.
+                let this_proc = proc_table::get_current_proc_id();
+                // Set the "current_proc" value to the procedure we are
+                // about to execute.
+                proc_table::set_current_proc_id(proc_id.clone()).unwrap();
+                // Execute the procedure
+                // We need to subtract some gas from the limit, because there will
+                // be instructions in-between that need to be run.
+                crate::actual_call_code(pwasm_ethereum::gas_left()-10000, &proc_address, U256::zero(), &pwasm_ethereum::input(), &mut Vec::new()).expect("Invalid Procedure Call");
+                // Set the "current_proc" value back to this procedure, as we
+                // have returned to it.
+                proc_table::set_current_proc_id(this_proc).unwrap();
+            }
         }
     }
 }
+
+impl Serialize for SysCallAction {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        match self {
+            SysCallAction::Call(call) => {
+                call.serialize(writer)?;
+                Ok(())
+            },
+            SysCallAction::Write(write_call) => {
+                write_call.serialize(writer)?;
+                Ok(())
+            },
+        }
+    }
+}
+
 
 #[derive(Clone, Debug)]
 pub struct WriteCall {
@@ -131,20 +205,6 @@ impl Deserialize for WriteCall {
     }
 }
 
-
-impl Serialize for SysCallAction {
-    type Error = io::Error;
-
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
-        match self {
-            SysCallAction::Write(write_call) => {
-                write_call.serialize(writer)?;
-                Ok(())
-            }
-        }
-    }
-}
-
 impl Serialize for WriteCall {
     type Error = io::Error;
 
@@ -157,6 +217,102 @@ impl Serialize for WriteCall {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Payload(Vec<u8>);
+
+impl Payload {
+    pub fn new() -> Self {
+        Payload(Vec::new())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Call {
+    pub proc_id: proc_table::ProcedureKey,
+    pub payload: Payload,
+}
+
+impl Deserialize for Call {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
+        let payload = Payload::deserialize(reader)?;
+        Ok(Call{proc_id, payload})
+    }
+}
+
+
+impl Serialize for Call {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        // Write procedure id
+        SysCallProcedureKey(self.proc_id).serialize(writer)?;
+        // Write payload
+        self.payload.serialize(writer)?;
+        Ok(())
+    }
+}
+
+impl Deserialize for Payload {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        // Here we just need to read all remaining bytes TODO: a buffered read
+        // would be better rather than a single byte loop. The Read interface
+        // we're currently using isn't flexible enough here, we should change to
+        // a Read implementeation with a sized buffer. This is sufficient for
+        // correctness.
+        let mut payload: Vec<u8> = Vec::new();
+        let mut u8buf = [0; 1];
+        loop {
+            match reader.read(&mut u8buf) {
+                Ok(_) => {
+                    payload.push(u8buf[0])
+                },
+                Err(_) => break,
+            }
+        }
+        Ok(Payload(payload))
+    }
+}
+
+impl Serialize for Payload {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        writer.write(self.0.as_slice())?;
+        Ok(())
+    }
+}
+
+/// Newtype wrapper over procedure keys for interaction with syscalls.
+pub struct SysCallProcedureKey(proc_table::ProcedureKey);
+
+impl Deserialize for SysCallProcedureKey {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let proc_id_u256: U256 = U256::deserialize(reader)?;
+        let mut proc_id_buffer: [u8; 32] = [0; 32];
+        proc_id_u256.to_big_endian(&mut proc_id_buffer);
+        let mut proc_id: proc_table::ProcedureKey = [0; 24];
+        proc_id.copy_from_slice(&proc_id_buffer[8..32]);
+        Ok(SysCallProcedureKey(proc_id))
+    }
+}
+
+impl Serialize for SysCallProcedureKey {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let mut proc_id_u256: [u8; 32] = [0; 32];
+        proc_id_u256[8..32].copy_from_slice(&self.0);
+        writer.write(&proc_id_u256)?;
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod tests {

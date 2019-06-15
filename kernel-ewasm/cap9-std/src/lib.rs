@@ -2,8 +2,7 @@
 
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
-use validator::io;
-use validator::serialization::{Deserialize, Serialize};
+use validator::serialization::{Serialize};
 
 /// Generic wasm error
 #[derive(Debug)]

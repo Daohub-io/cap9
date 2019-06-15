@@ -189,7 +189,6 @@ pub fn call() {
             let entry_address = proc_table::get_proc_addr(proc_id).expect("No Entry Proc");
 
             // Save the procedure we are about to call into "current procedure"
-            // (this is still a hack at this point).
             proc_table::set_current_proc_id(proc_id).unwrap();
             // We need to subtract some gas from the limit, because there will
             // be instructions in-between that need to be run.
