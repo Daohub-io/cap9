@@ -32,6 +32,8 @@ pub type ProcedureIndex = [u8; 24];
 pub mod cap;
 use cap::*;
 
+use crate::syscalls::*;
+
 pub struct ProcPointer(ProcedureKey);
 
 impl ProcPointer {
@@ -406,6 +408,12 @@ pub fn get_current_proc_id() -> ProcedureKey {
     let mut result = [0; 24];
     result.copy_from_slice(&proc_id[8..]);
     result
+}
+
+/// Given a syscall, get the relevant Capability for the current procedure.
+pub fn get_cap(syscall: &SysCall) -> Option<cap::Capability> {
+    let current_proc_key = get_current_proc_id();
+    get_proc_cap(current_proc_key, syscall.cap_type(), syscall.cap_index)
 }
 
 #[cfg(test)]

@@ -14,6 +14,7 @@ use pwasm_abi::types::*;
 
 use cap9_std::proc_table;
 use cap9_std::*;
+use cap9_std::syscalls::SysCall;
 
 use validator::serialization::Deserialize;
 use validator::io::Cursor;
@@ -187,17 +188,12 @@ pub fn call() {
             let proc_id: ProcedureKey = proc_table::get_entry_proc_id();
             let entry_address = proc_table::get_proc_addr(proc_id).expect("No Entry Proc");
 
-            // TODO:
-            // We don't have `returnDataSize` or `returnDataCopy`, https://github.com/ewasm/design/blob/master/eth_interface.md#getreturndatasize
-            // So we'll simply allocate a large result buffer for now
-            let mut result_buffer = [6; 32].to_vec();
-
             // Save the procedure we are about to call into "current procedure"
             // (this is still a hack at this point).
             proc_table::set_current_proc_id(proc_id).unwrap();
             // We need to subtract some gas from the limit, because there will
             // be instructions in-between that need to be run.
-            actual_call_code(pwasm_ethereum::gas_left()-10000, &entry_address, U256::zero(), &pwasm_ethereum::input(), &mut result_buffer).expect("Invalid Entry Proc");
+            actual_call_code(pwasm_ethereum::gas_left()-10000, &entry_address, U256::zero(), &pwasm_ethereum::input(), &mut Vec::new()).expect("Invalid Entry Proc");
             // Unset the current procedure
             proc_table::set_current_proc_id([0; 24]).unwrap();
             pwasm_ethereum::ret(&result());
@@ -211,31 +207,11 @@ pub fn call() {
             // Attempt to deserialize the input into a syscall. Panic on
             // deserialization failure.
             let syscall: SysCall = SysCall::deserialize(&mut input).unwrap();
-            match syscall {
-                // WRITE syscall
-                SysCall {cap_index, action: SysCallAction::Write(WriteCall{key,value})} => {
-                    // Before we perform any actions, we want to check that this
-                    // procedure has the correct capabilities. First we retrieve
-                    // the capability indicated by cap_index and the syscall
-                    // type.
-                    let current_proc_key = cap9_std::proc_table::get_current_proc_id();
-                    if let Some(cap) = cap9_std::proc_table::get_proc_cap(current_proc_key, 0x7, cap_index) {
-                        if let cap9_std::proc_table::cap::Capability::StoreWrite(cap9_std::proc_table::cap::StoreWriteCap {location, size}) = cap {
-                            let location_u256: U256 = location.into();
-                            let size_u256: U256 = size.into();
-                            if (key >= location_u256) && (key <= (location_u256 + size_u256)) {
-                                pwasm_ethereum::write(&key.into(), &value.into());
-                                pwasm_ethereum::ret(&[]);
-                            } else {
-                                panic!("bad cap params")
-                            }
-                        } else {
-                            panic!("wrong cap type");
-                        }
-                    } else {
-                        panic!("no cap");
-                    }
-                },
+            // Check the relevant cap for this procedure and the given syscall.
+            let cap_ok = syscall.check_cap();
+            // If the cap is ok, execute the syscall.
+            if cap_ok {
+                syscall.execute();
             }
         }
 
