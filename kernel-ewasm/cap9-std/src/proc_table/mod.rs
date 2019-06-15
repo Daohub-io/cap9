@@ -26,8 +26,8 @@ const KERNEL_ENTRY_PROC_PTR: [u8; 32] = [
     0, 0, 0, 0,
 ];
 
-type ProcedureKey = [u8; 24];
-type ProcedureIndex = [u8; 24];
+pub type ProcedureKey = [u8; 24];
+pub type ProcedureIndex = [u8; 24];
 
 pub mod cap;
 use cap::*;

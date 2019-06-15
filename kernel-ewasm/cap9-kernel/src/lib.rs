@@ -211,17 +211,30 @@ pub fn call() {
             // Attempt to deserialize the input into a syscall. Panic on
             // deserialization failure.
             let syscall: SysCall = SysCall::deserialize(&mut input).unwrap();
-            // Before we perform any actions, we want to check that this
-            // procedure has the correct capabilities. As a smoke test, let's
-            // just check that the cap_index is zero.
-            if syscall.cap_index != 0 {
-                panic!("wrong cap index");
-            }
-            match syscall.action {
+            match syscall {
                 // WRITE syscall
-                SysCallAction::Write(WriteCall{key,value}) => {
-                    pwasm_ethereum::write(&key.into(), &value.into());
-                    pwasm_ethereum::ret(&[]);
+                SysCall {cap_index, action: SysCallAction::Write(WriteCall{key,value})} => {
+                    // Before we perform any actions, we want to check that this
+                    // procedure has the correct capabilities. First we retrieve
+                    // the capability indicated by cap_index and the syscall
+                    // type.
+                    let current_proc_key = cap9_std::proc_table::get_current_proc_id();
+                    if let Some(cap) = cap9_std::proc_table::get_proc_cap(current_proc_key, 0x7, cap_index) {
+                        if let cap9_std::proc_table::cap::Capability::StoreWrite(cap9_std::proc_table::cap::StoreWriteCap {location, size}) = cap {
+                            let location_u256: U256 = location.into();
+                            let size_u256: U256 = size.into();
+                            if (key >= location_u256) && (key <= (location_u256 + size_u256)) {
+                                pwasm_ethereum::write(&key.into(), &value.into());
+                                pwasm_ethereum::ret(&[]);
+                            } else {
+                                panic!("bad cap params")
+                            }
+                        } else {
+                            panic!("wrong cap type");
+                        }
+                    } else {
+                        panic!("no cap");
+                    }
                 },
             }
         }
