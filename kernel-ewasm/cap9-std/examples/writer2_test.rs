@@ -18,7 +18,6 @@ extern crate pwasm_test;
 extern crate cap9_test;
 
 use pwasm_abi::types::*;
-use pwasm_abi_derive::eth_abi;
 use pwasm_ethereum::Error;
 
 fn main() {}
@@ -101,16 +100,15 @@ pub fn call() {
     // write some value
     pwasm_ethereum::write(&pwasm_std::types::H256::zero(), &[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]);
     // call another contract
-    pwasm_ethereum::call(0, &Address::zero(), pwasm_std::types::U256::zero(), &[], &mut [] );
+    pwasm_ethereum::call(0, &Address::zero(), pwasm_std::types::U256::zero(), &[], &mut [] ).unwrap();
     // delegate call another contract (under the hood this version of call_code
     // uses delgate call).
     pwasm_ethereum::gas_left();
     pwasm_ethereum::sender();
 
     // An example syscall (empty input and output)
-    cap9_syscall(&[], &mut []);
+    cap9_syscall(&[], &mut []).unwrap();
 
-    pwasm_ethereum::ret(&b"result"[..]);
     let mut endpoint = contract::ExampleContract1Endpoint::new(contract::ExampleContract1{});
     pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
 }

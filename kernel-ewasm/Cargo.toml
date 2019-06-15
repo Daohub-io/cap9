@@ -4,6 +4,7 @@ members = [
     "cap9-build",
     "cap9-kernel",
     "cap9-std",
+    "cap9-test",
     "validator"
 ]
 

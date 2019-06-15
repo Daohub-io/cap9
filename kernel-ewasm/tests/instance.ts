@@ -46,6 +46,17 @@ describe('Kernel', function () {
                 assert.strictEqual(currentCapLen, 1, `There should be 1 of type: ${CAP_TYPE[captype]}`)
             }
         })
+
+        it('should panic properly', async function () {
+            this.timeout(20000);
+            let kernel = await newKernelInstance("init", "0xc1912fee45d61c87cc5ea59dae31190fffff232d");
+            try {
+                await kernel.contract.methods.panic().call();
+                assert(false, "method should panic");
+            } catch (e) {
+                assert(e.message.includes("test-panic"), "the message 'test-panic' should be included in the output");
+            }
+        })
     })
 
     describe('validator', function () {

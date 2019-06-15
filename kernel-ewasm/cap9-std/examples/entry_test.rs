@@ -20,7 +20,6 @@ fn main() {}
 
 pub mod entry {
     use pwasm_abi::types::*;
-    use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
 
     #[eth_abi(TestEntryEndpoint, KernelClient)]

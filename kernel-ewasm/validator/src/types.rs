@@ -4,7 +4,8 @@ use pwasm_std::vec::Vec;
 use crate::io;
 use super::{Deserialize, VarUint7, VarInt7, CountedList,
     VarUint32};
-use crate::serialization::{Error};
+use crate::serialization::{Error, Serialize};
+use pwasm_std::types::U256;
 
 /// Type definition in types section. Currently can be only of the function type.
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -168,5 +169,39 @@ impl Deserialize for TableElementType {
             -0x10 => Ok(TableElementType::AnyFunc),
             _ => Err(Error::UnknownTableElementType(val.into())),
         }
+    }
+}
+
+impl Deserialize for u8 {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut u8buf = [0u8; 1];
+        reader.read(&mut u8buf)?;
+        Ok(u8buf[0])
+    }
+}
+
+impl Deserialize for U256 {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut u8buf = [0u8; 32];
+        // TODO: check that enough bytes were read
+        reader.read(&mut u8buf)?;
+        Ok(u8buf.into())
+    }
+}
+
+
+impl Serialize for U256 {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let mut bytes: Vec<u8> = Vec::new();
+        bytes.resize(32,0);
+        self.to_big_endian(bytes.as_mut_slice());
+        writer.write(&bytes)?;
+        Ok(())
     }
 }

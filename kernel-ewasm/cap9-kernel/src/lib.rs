@@ -11,10 +11,12 @@ extern crate validator;
 extern crate cap9_std;
 
 use pwasm_abi::types::*;
-use core::default::Default;
 
 use cap9_std::proc_table;
 use cap9_std::*;
+
+use validator::serialization::Deserialize;
+use validator::io::Cursor;
 
 /// This is a temporary storage location for toggling
 const TEST_KERNEL_SYSCALL_TOGGLE_PTR: [u8; 32] = [
@@ -28,7 +30,7 @@ pub mod kernel {
     use pwasm_abi::types::*;
     use validator::{Validity, Module};
     use pwasm_ethereum;
-    
+
     use crate::proc_table;
     use crate::proc_table::cap;
 
@@ -60,15 +62,19 @@ pub mod kernel {
 
         /// Toggle Syscall Mode
         /// (Forwards all calls to entry procedure)
-        /// 
+        ///
         /// _Temporary for debugging purposes_
         fn toggle_syscall(&mut self);
+
+        fn get_mode(&mut self) -> u32;
+
+        fn panic(&mut self);
     }
 
     pub struct KernelContract;
 
     impl KernelInterface for KernelContract {
-        
+
         fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, _cap_list: Vec<U256>) {
             let _entry_proc_key = {
                 let byte_key = _entry_proc_key.as_bytes();
@@ -143,6 +149,14 @@ pub mod kernel {
             pwasm_ethereum::write(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR), &current_val);
         }
 
+        fn get_mode(&mut self) -> u32 {
+            let current_val = pwasm_ethereum::read(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR));
+            current_val[0] as u32
+        }
+
+        fn panic(&mut self) {
+            panic!("test-panic")
+        }
     }
 }
 
@@ -151,20 +165,66 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
-    
-    // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface 
+    let current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
+
+    // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface
     //
     // If Toggled Run Entry Procedure
+    // Once the entry procedure is toggled on, there is no existing mechanism to
+    // turn it off.
     if current_val[0] == 1 {
-        let entry_address = proc_table::get_proc_addr(proc_table::get_entry_proc_id()).expect("No Entry Proc");
+        // We need to determine if this is a syscall or not. Because call_code
+        // is not correctly implemented we need to think about this a little.
+        // Because only delegate call is ever used, we can't use a sender
+        // address.
 
-        // TODO:
-        // We don't have `returnDataSize` or `returnDataCopy`, https://github.com/ewasm/design/blob/master/eth_interface.md#getreturndatasize
-        // So we'll simply allocate a large result buffer for now
-        let mut result = [6; 32].to_vec();
-        pwasm_ethereum::call_code(1000, &entry_address, &pwasm_ethereum::input(), &mut result).expect("Invalid Entry Proc");
-        pwasm_ethereum::ret(&result);
+        // If the current procedure is set to a non-zero value, we know we are
+        // mid execution. Therefore this must be a system call.
+        let current_proc = proc_table::get_current_proc_id();
+        if current_proc == [0; 24] {
+            // We are starting the kernel, therefore we should execute the entry
+            // procedure.
+            let proc_id: ProcedureKey = proc_table::get_entry_proc_id();
+            let entry_address = proc_table::get_proc_addr(proc_id).expect("No Entry Proc");
+
+            // TODO:
+            // We don't have `returnDataSize` or `returnDataCopy`, https://github.com/ewasm/design/blob/master/eth_interface.md#getreturndatasize
+            // So we'll simply allocate a large result buffer for now
+            let mut result_buffer = [6; 32].to_vec();
+
+            // Save the procedure we are about to call into "current procedure"
+            // (this is still a hack at this point).
+            proc_table::set_current_proc_id(proc_id).unwrap();
+            // We need to subtract some gas from the limit, because there will
+            // be instructions in-between that need to be run.
+            actual_call_code(pwasm_ethereum::gas_left()-10000, &entry_address, U256::zero(), &pwasm_ethereum::input(), &mut result_buffer).expect("Invalid Entry Proc");
+            // Unset the current procedure
+            proc_table::set_current_proc_id([0; 24]).unwrap();
+            pwasm_ethereum::ret(&result());
+        } else {
+            // We are currently executing the procedure identified by
+            // 'current_proc', therefore we should interpret this as a system
+            // call.
+
+            // Put the input into a cursor for deserialization.
+            let mut input = Cursor::new(pwasm_ethereum::input());
+            // Attempt to deserialize the input into a syscall. Panic on
+            // deserialization failure.
+            let syscall: SysCall = SysCall::deserialize(&mut input).unwrap();
+            // Before we perform any actions, we want to check that this
+            // procedure has the correct capabilities. As a smoke test, let's
+            // just check that the cap_index is zero.
+            if syscall.cap_index != 0 {
+                panic!("wrong cap index");
+            }
+            match syscall.action {
+                // WRITE syscall
+                SysCallAction::Write(WriteCall{key,value}) => {
+                    pwasm_ethereum::write(&key.into(), &value.into());
+                    pwasm_ethereum::ret(&[]);
+                },
+            }
+        }
 
     } else {
         // If not toggled expose test interface
@@ -184,10 +244,9 @@ pub fn deploy() {
 #[allow(non_snake_case)]
 mod tests {
     extern crate pwasm_test;
-    use self::pwasm_test::{ext_get, ext_reset};
+    use self::pwasm_test::{ext_reset};
     use super::*;
     use core::str::FromStr;
-    use pwasm_abi::types::*;
     use kernel::KernelInterface;
 
     #[test]

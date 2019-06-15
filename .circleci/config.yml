@@ -43,10 +43,10 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps7-{{ .Branch }}-{{ .Revision }}
-            # - deps7-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps7-{{ .Branch }}-
-            - deps7-
+            - deps9-{{ .Branch }}-{{ .Revision }}
+            # - deps9-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps9-{{ .Branch }}-
+            - deps9-
       - run:
           name: Install native build prequisites
           command: |
@@ -102,7 +102,7 @@ jobs:
               cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
             fi
       - save_cache:
-          key: deps7-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps9-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -125,7 +125,7 @@ jobs:
             # timeout 5 parity --config dev || true
             # We then run parity properly, now unlocking the previously setup
             # account
-            parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0
+            parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0 --geth
           background: true
       - run:
           name: Wait for Parity startup
@@ -143,3 +143,4 @@ jobs:
             cd cap9
             cd kernel-ewasm && npm install
             npm run test
+            cargo test

@@ -2,6 +2,8 @@
 
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
+use validator::io;
+use validator::serialization::{Deserialize, Serialize};
 
 /// Generic wasm error
 #[derive(Debug)]
@@ -34,6 +36,19 @@ pub mod external {
                 result_ptr: *mut u8,
                 result_len: u32,
         ) -> i32;
+
+        pub fn call_code(
+                gas: i64,
+                address: *const u8,
+                val_ptr: *const u8,
+                input_ptr: *const u8,
+                input_len: u32,
+                result_ptr: *mut u8,
+                result_len: u32,
+        ) -> i32;
+
+        pub fn result_length() -> i32;
+        pub fn fetch_result( dest: *mut u8);
 
         /// This extern marks an external import that we get from linking or
         /// environment. Usually this would be something pulled in from the Ethereum
@@ -80,6 +95,59 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
     }
 }
 
+
+pub fn actual_call_code(gas: u64, address: &Address, value: U256, input: &[u8], result: &mut [u8]) -> Result<(), Error> {
+	let mut value_arr = [0u8; 32];
+	value.to_big_endian(&mut value_arr);
+	unsafe {
+		if external::call_code(
+			gas as i64,
+			address.as_ptr(),
+			value_arr.as_ptr(),
+			input.as_ptr(),
+			input.len() as u32,
+			result.as_mut_ptr(), result.len() as u32
+		) == 0 {
+			Ok(())
+		} else {
+			Err(Error)
+		}
+	}
+}
+
+/// Allocates and requests [`call`] return data (result)
+pub fn result() -> pwasm_std::Vec<u8> {
+	let len = unsafe { external::result_length() };
+
+	match len {
+		0 => pwasm_std::Vec::new(),
+		non_zero => {
+			let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
+			unsafe {
+				data.set_len(non_zero as usize);
+				external::fetch_result(data.as_mut_ptr());
+			}
+			data
+		}
+	}
+}
+
+/// This function is the rough shape of a syscall. It's only purpose is to force
+/// the inclusion/import of all the necessay Ethereum functions and prevent them
+/// from being deadcode eliminated. As part of this, it is also necessary to
+/// pass wasm-build "dummy_syscall" as a public api parameter, to ensure that it
+/// is preserved.
+///
+/// TODO: this is something we would like to not have to do
+#[no_mangle]
+fn dummy_syscall() {
+    pwasm_ethereum::gas_left();
+    pwasm_ethereum::sender();
+    unsafe {
+        external::dcall(0,0 as *const u8, 0 as *const u8, 0, 0 as *mut u8, 0);
+    }
+}
+
 /// This is to replace pwasm_ethereum::call_code, and uses [`cap9_syscall_low`]: fn.cap9_syscall_low.html
 /// underneath instead of dcall. This is a slightly higher level abstraction
 /// over cap9_syscall_low that uses Result types and the like. This is by no
@@ -107,10 +175,129 @@ pub fn cap9_syscall(input: &[u8], result: &mut [u8]) -> Result<(), Error> {
 }
 
 pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
-    let mut input = Vec::with_capacity(1 + 32 + 32);
-    input.push(cap_index);
-    input.extend_from_slice(key);
-    input.extend_from_slice(value);
+    let mut input = Vec::with_capacity(1 + 1 + 32 + 32);
+    let syscall = SysCall {
+        cap_index,
+        action: SysCallAction::Write(WriteCall{key: key.into(), value: value.into()}),
+    };
+    syscall.serialize(&mut input).unwrap();
+    let mut result = Vec::with_capacity(32);
+    result.resize(32,0);
+    // input.resize(1+1+32+32, 0);
+    cap9_syscall(&input, &mut result)
+}
 
-    cap9_syscall(&input, &mut Vec::new())
+#[derive(Clone, Debug)]
+pub struct SysCall {
+    pub cap_index: u8,
+    pub action: SysCallAction,
+}
+
+
+impl Deserialize for SysCall {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let syscall_type = u8::deserialize(reader)?;
+        let cap_index = u8::deserialize(reader)?;
+        match syscall_type {
+            0x7 => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::Write(WriteCall::deserialize(reader)?)
+                })
+            },
+            _ => panic!("unknown syscall"),
+        }
+    }
+}
+
+
+impl Serialize for SysCall {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        // Write syscall type
+        match self.action {
+            SysCallAction::Write(_) => writer.write(&[0x07])?
+        }
+        // Write cap index
+        writer.write(&[self.cap_index])?;
+        self.action.serialize(writer)?;
+        Ok(())
+    }
+}
+
+
+#[derive(Clone, Debug)]
+pub enum SysCallAction {
+    Write(WriteCall),
+}
+
+#[derive(Clone, Debug)]
+pub struct WriteCall {
+    pub key: U256,
+    pub value: U256,
+}
+
+impl Deserialize for WriteCall {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let key: U256 = U256::deserialize(reader)?;
+        let value: U256 = U256::deserialize(reader)?;
+        Ok(WriteCall{key, value})
+    }
+}
+
+
+impl Serialize for SysCallAction {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        match self {
+            SysCallAction::Write(write_call) => {
+                write_call.serialize(writer)?;
+                Ok(())
+            }
+        }
+    }
+}
+
+impl Serialize for WriteCall {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        // Write key
+        self.key.serialize(writer)?;
+        // Write value
+        self.value.serialize(writer)?;
+        Ok(())
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pwasm_abi::types::*;
+    use validator::io;
+    use validator::serialization::{Deserialize, Serialize};
+
+    #[test]
+    fn serialize_write() {
+        let key: U256 = U256::zero();
+        let value: U256 = U256::zero();
+        let mut buffer = Vec::with_capacity(1 + 1 + 32 + 32);
+
+        let syscall = SysCall {
+            cap_index: 0,
+            action: SysCallAction::Write(WriteCall{key: key.into(), value: value.into()})
+        };
+        syscall.serialize(&mut buffer).unwrap();
+        let expected: &[u8] = &[0x7, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00,0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00];
+        assert_eq!(buffer, expected);
+    }
 }

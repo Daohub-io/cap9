@@ -12,9 +12,9 @@ extern crate alloc;
 mod func;
 mod import_entry;
 mod instructions;
-mod io;
+pub mod io;
 mod primitives;
-mod serialization;
+pub mod serialization;
 mod types;
 use self::serialization::Deserialize;
 

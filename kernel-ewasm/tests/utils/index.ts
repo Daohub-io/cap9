@@ -240,7 +240,7 @@ export async function deployContract(file_name: string, abi_name: string): Promi
     const Contract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 } as any);
     const DeploymentTx = Contract.deploy({ data: codeHex });
 
-    await web3.eth.personal.unlockAccount(accounts[0], "user", null);
+    await web3.eth.personal.unlockAccount(accounts[0], DEFAULT_ACCOUNT.PASSWORD, null);
     let gas = await DeploymentTx.estimateGas();
     let contract_tx = DeploymentTx.send({ gasLimit: gas, from: account } as any);
     let tx_hash: string = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
@@ -278,4 +278,10 @@ export async function newKernelInstance(proc_key: string, proc_address: string, 
     let contract = KernelContract.clone();
     contract.address = contract_addr;
     return new KernelInstance(contract);
+}
+
+
+// Given a web3 value, normalize it so we can compare easily.
+export function normalize(value) {
+    return web3.utils.toHex(web3.utils.toBN(value))
 }

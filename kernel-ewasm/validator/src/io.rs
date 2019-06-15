@@ -86,35 +86,30 @@ impl<T: io::Read> Read for T {
     }
 }
 
+#[cfg(not(feature = "std"))]
+impl Read for &[u8] {
+    #[inline]
+    fn read(&mut self, buf: &mut [u8]) -> Result<()> {
+        let amt = core::cmp::min(buf.len(), self.len());
+        let (a, b) = self.split_at(amt);
+
+        // First check if the amount of bytes we want to read is small:
+        // `copy_from_slice` will generally expand to a call to `memcpy`, and
+        // for a single byte the overhead is significant.
+        if amt == 1 {
+            buf[0] = a[0];
+        } else {
+            buf[..amt].copy_from_slice(a);
+        }
+
+        *self = b;
+        Ok(())
+    }
+}
+
 #[cfg(feature = "std")]
 impl<T: io::Write> Write for T {
     fn write(&mut self, buf: &[u8]) -> Result<()> {
         self.write_all(buf).map_err(Error::IoError)
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn cursor() {
-//         let mut cursor = Cursor::new(vec![0xFFu8, 0x7Fu8]);
-//         assert_eq!(cursor.position(), 0);
-
-//         let mut buf = [0u8];
-//         assert!(cursor.read(&mut buf[..]).is_ok());
-//         assert_eq!(cursor.position(), 1);
-//         assert_eq!(buf[0], 0xFFu8);
-//         assert!(cursor.read(&mut buf[..]).is_ok());
-//         assert_eq!(buf[0], 0x7Fu8);
-//         assert_eq!(cursor.position(), 2);
-//     }
-
-//     #[test]
-//     fn overflow_in_cursor() {
-//         let mut cursor = Cursor::new(vec![0u8]);
-//         let mut buf = [0, 1, 2];
-//         assert!(cursor.read(&mut buf[..]).is_err());
-//     }
-// }
