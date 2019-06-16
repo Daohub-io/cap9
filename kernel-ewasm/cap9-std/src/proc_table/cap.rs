@@ -277,13 +277,13 @@ impl Capability {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NewCapability {
     pub cap: Capability,
     pub parent_index: u8,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct NewCapList(pub Vec<NewCapability>);
 
 impl NewCapList {
@@ -431,7 +431,7 @@ impl NewCapList {
                     key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
 
                     let proc_call_cap = ProcedureCallCap {
-                        prefix: val.byte(0),
+                        prefix: val.byte(31),
                         key: key,
                     };
 
@@ -447,7 +447,7 @@ impl NewCapList {
                     key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
 
                     let proc_reg_cap = ProcedureRegisterCap {
-                        prefix: val.byte(0),
+                        prefix: val.byte(31),
                         key: key,
                     };
 
@@ -463,7 +463,7 @@ impl NewCapList {
                     key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
 
                     let proc_del_cap = ProcedureDeleteCap {
-                        prefix: val.byte(0),
+                        prefix: val.byte(31),
                         key: key,
                     };
 
@@ -627,6 +627,29 @@ mod tests {
 
         assert_eq!(loc, U256::from(1234));
         assert_eq!(size, U256::from(2345));
+    }
+
+    #[test]
+    fn should_decode_call_cap() {
+
+        let mut arr = [0; 32];
+        arr[0] = 3;
+        
+        let sample_cap = ProcedureCallCap {
+            prefix: 3,
+            key: [1; 24]
+        };
+        let sample_new_cap = NewCapability {
+            cap: Capability::ProcedureCall(sample_cap),
+            parent_index: 0,
+        };
+
+        let input = NewCapList([sample_new_cap].to_vec());
+        let encoded = input.to_u256_list();
+
+        let decoded = NewCapList::from_u256_list(&encoded).expect("Should decode call cap");
+
+        assert_eq!(input.inner(), decoded.inner());
     }
 
 }
