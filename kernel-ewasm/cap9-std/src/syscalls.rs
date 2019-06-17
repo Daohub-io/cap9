@@ -14,7 +14,7 @@ use proc_table::ProcedureKey;
 
 /// A full system call request, including the cap_index. This is permitted to
 /// access the procedure table as part of the environment.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SysCall {
     pub cap_index: u8,
     pub action: SysCallAction,
@@ -23,8 +23,10 @@ pub struct SysCall {
 impl SysCall {
     pub fn cap_type(&self) -> u8 {
         match &self.action {
+            // TODO: use the constants provided elsewhere
             SysCallAction::Call(_)  => 0x3,
             SysCallAction::Write(_) => 0x7,
+            SysCallAction::Log(_) => 0x8,
         }
     }
 
@@ -63,6 +65,12 @@ impl Deserialize for SysCall {
                     action: SysCallAction::Write(WriteCall::deserialize(reader)?)
                 })
             },
+            0x8 => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::Log(LogCall::deserialize(reader)?)
+                })
+            },
             _ => panic!("unknown syscall"),
         }
     }
@@ -77,6 +85,7 @@ impl Serialize for SysCall {
         match self.action {
             SysCallAction::Call(_) => writer.write(&[self.cap_type()])?,
             SysCallAction::Write(_) => writer.write(&[self.cap_type()])?,
+            SysCallAction::Log(_) => writer.write(&[self.cap_type()])?,
         }
         // Write cap index
         writer.write(&[self.cap_index])?;
@@ -119,10 +128,11 @@ fn matching_keys(prefix: u8, required_key: &ProcedureKey, requested_key: &Proced
 /// The action portion of a SysCall, i.e. WRITE, LOG, etc. without the
 /// permissions information. This is the type where the capability checking and
 /// execution logic is written.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SysCallAction {
     Write(WriteCall),
     Call(Call),
+    Log(LogCall),
 }
 
 impl SysCallAction {
@@ -146,6 +156,44 @@ impl SysCallAction {
                 }
                 false
             },
+            // LOG syscall
+            SysCallAction::Log(LogCall{topics,value:_}) => {
+                if let Capability::Log(proc_table::cap::LogCap {topics: n_required_topics, t1, t2, t3, t4}) = cap {
+                    // Check that all of the topics required by the cap are
+                    // satisfied. That is, for every topic in the capability,
+                    // the corresponding exists in the system call and is set to
+                    // that exact value. First we check that there are enough
+                    // topics in the request.
+                    if topics.len() < n_required_topics as usize {
+                        // The system call specifies an insufficient number of
+                        // topics
+                        return false;
+                    }
+
+                    if topics.len() >= 1 {
+                        if topics[0] != t1.into() {
+                            return false;
+                        }
+                    }
+                    if topics.len() >= 2 {
+                        if topics[1] != t2.into() {
+                            return false;
+                        }
+                    }
+                    if topics.len() >= 3 {
+                        if topics[2] != t3.into() {
+                            return false;
+                        }
+                    }
+                    if topics.len() >= 4 {
+                        if topics[3] != t4.into() {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                false
+            },
         }
     }
 
@@ -155,7 +203,10 @@ impl SysCallAction {
             SysCallAction::Write(WriteCall{key,value}) => {
                 let value_h256: H256 = value.into();
                 pwasm_ethereum::write(&key.into(), &value_h256.as_fixed_bytes());
-                pwasm_ethereum::ret(&[]);
+            },
+            // LOG syscall
+            SysCallAction::Log(LogCall{topics,value}) => {
+                pwasm_ethereum::log(&topics.as_slice(), &value.0.as_slice());
             },
             // Call syscall
             SysCallAction::Call(Call{proc_id, payload}) => {
@@ -192,12 +243,16 @@ impl Serialize for SysCallAction {
                 write_call.serialize(writer)?;
                 Ok(())
             },
+            SysCallAction::Log(log_call) => {
+                log_call.serialize(writer)?;
+                Ok(())
+            },
         }
     }
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WriteCall {
     pub key: U256,
     pub value: U256,
@@ -225,7 +280,43 @@ impl Serialize for WriteCall {
     }
 }
 
-#[derive(Debug, Clone)]
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LogCall {
+    pub topics: Vec<H256>,
+    pub value: Payload,
+}
+
+impl Deserialize for LogCall {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let n_topics = u8::deserialize(reader)?;
+        let mut topics : Vec<H256> = Vec::new();
+        for _i in 0..(n_topics as usize) {
+            topics.push(H256::deserialize(reader)?);
+        }
+        let value: Payload = Payload::deserialize(reader)?;
+        Ok(LogCall{topics, value})
+    }
+}
+
+impl Serialize for LogCall {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let n_topics = self.topics.len() as u8;
+        n_topics.serialize(writer)?;
+        for topic in self.topics {
+            topic.serialize(writer)?;
+        }
+        self.value.serialize(writer)?;
+        Ok(())
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Payload(pub Vec<u8>);
 
 impl Payload {
@@ -234,7 +325,7 @@ impl Payload {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Call {
     pub proc_id: proc_table::ProcedureKey,
     pub payload: Payload,
@@ -406,5 +497,20 @@ mod tests {
         let requested_key = &[0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xfe];
         let result = matching_keys(prefix, required_key, requested_key);
         assert_eq!(result,false);
+    }
+
+
+    #[test]
+    fn deserialise_log_call() {
+        let mut input: &[u8] = &[0x08,0x00,0x00,0xab,0xcd,0xab,0xcd];
+        let syscall = SysCall::deserialize(&mut input).unwrap();
+        assert_eq!(syscall, SysCall{
+            cap_index: 0,
+            action: SysCallAction::Log(LogCall {
+                topics: Vec::new(),
+                value: Payload([0xab,0xcd,0xab,0xcd].to_vec()),
+            }),
+        });
+        // assert_eq!(contract.currentProcedure(), [0u8; 24]);
     }
 }
