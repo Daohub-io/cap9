@@ -383,6 +383,12 @@ pub fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<ca
         _ => return None,
     };
 
+    let n_caps = get_proc_cap_list_len(key, cap_type);
+
+    if cap_index >= n_caps {
+        return None;
+    }
+
     let mut raw_val: Vec<U256> = (0..cap_size)
         .map(|i| {
             U256::from(pwasm_ethereum::read(&H256(
