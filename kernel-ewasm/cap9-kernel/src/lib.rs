@@ -270,7 +270,7 @@ mod tests {
             prefix,
             key: rev_key,
         });
-        let cap_key: U256 = U256::from_little_endian(&key);
+        let cap_key: U256 = U256::from_little_endian(&[0xc0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x61,0x62,0x63,0x64,0x65,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]);
         let cap_list_raw = [4.into(),3.into(),0.into(),cap_key].to_vec();
         let cap_list: NewCapList = NewCapList::from_u256_list(&cap_list_raw).unwrap();
         let expected_cap_list = NewCapList([NewCapability{parent_index:0, cap: sample_cap}].to_vec());
