@@ -203,7 +203,5 @@ pub fn raw_proc_log(cap_index: u8, value: Vec<u8>) -> Result<(), Error> {
         action: SysCallAction::Log(LogCall{topics,value: Payload(value.clone())}),
     };
     syscall.serialize(&mut input).unwrap();
-    cap9_syscall(&input, &mut Vec::new());
-    Ok(())
-
+    cap9_syscall(&input, &mut Vec::new())
 }

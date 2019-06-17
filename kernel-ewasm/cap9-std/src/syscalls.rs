@@ -157,14 +157,37 @@ impl SysCallAction {
                 false
             },
             // LOG syscall
-            SysCallAction::Log(LogCall{topics,value}) => {
-                return true;
-                if let Capability::Log(proc_table::cap::LogCap {topics, t1, t2, t3, t4}) = cap {
-                    // let location_u256: U256 = location.into();
-                    // let size_u256: U256 = size.into();
-                    // if (key >= &location_u256) && (key <= &(location_u256 + size_u256)) {
-                    //     return true;
-                    // }
+            SysCallAction::Log(LogCall{topics,value:_}) => {
+                if let Capability::Log(proc_table::cap::LogCap {topics: n_required_topics, t1, t2, t3, t4}) = cap {
+                    // Check that all of the topics required by the cap are satisfied. That
+                    // is, for every topic in the capability, the corresponding exists in
+                    // the system call and is set to that exact value. First we check that
+                    // there are enough topics in the request.
+                    if topics.len() < n_required_topics as usize {
+                        // The system call specifies an insufficient number of topics
+                        return false;
+                    }
+
+                    if topics.len() >= 1 {
+                        if topics[0] != t1.into() {
+                            return false;
+                        }
+                    }
+                    if topics.len() >= 2 {
+                        if topics[1] != t2.into() {
+                            return false;
+                        }
+                    }
+                    if topics.len() >= 3 {
+                        if topics[2] != t3.into() {
+                            return false;
+                        }
+                    }
+                    if topics.len() >= 4 {
+                        if topics[3] != t4.into() {
+                            return false;
+                        }
+                    }
                     return true;
                 }
                 false
