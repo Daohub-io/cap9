@@ -6,7 +6,7 @@ import { newKernelInstance, web3, createAccount, KernelInstance, deployContract,
 import { notEqual } from 'assert';
 
 
-describe.skip('Procedure Call Syscall', function () {
+describe('Procedure Call Syscall', function () {
     this.timeout(40_000);
     describe('#callProc', function () {
         it('should return the testNum without a call', async function () {
