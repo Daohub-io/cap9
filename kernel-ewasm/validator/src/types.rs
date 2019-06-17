@@ -5,7 +5,7 @@ use crate::io;
 use super::{Deserialize, VarUint7, VarInt7, CountedList,
     VarUint32};
 use crate::serialization::{Error, Serialize};
-use pwasm_std::types::U256;
+use pwasm_std::types::{U256,H256};
 
 /// Type definition in types section. Currently can be only of the function type.
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -182,6 +182,15 @@ impl Deserialize for u8 {
     }
 }
 
+impl Serialize for u8 {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        writer.write(&[self])?;
+        Ok(())
+    }
+}
+
 impl Deserialize for U256 {
     type Error = io::Error;
 
@@ -201,6 +210,29 @@ impl Serialize for U256 {
         let mut bytes: Vec<u8> = Vec::new();
         bytes.resize(32,0);
         self.to_big_endian(bytes.as_mut_slice());
+        writer.write(&bytes)?;
+        Ok(())
+    }
+}
+
+
+impl Deserialize for H256 {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut u8buf = [0u8; 32];
+        // TODO: check that enough bytes were read
+        reader.read(&mut u8buf)?;
+        Ok(u8buf.into())
+    }
+}
+
+
+impl Serialize for H256 {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let bytes = self.to_fixed_bytes();
         writer.write(&bytes)?;
         Ok(())
     }

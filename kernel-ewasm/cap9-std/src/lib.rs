@@ -194,3 +194,16 @@ pub fn raw_proc_call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u
     syscall.serialize(&mut input).unwrap();
     cap9_syscall(&input, &mut Vec::new())
 }
+
+pub fn raw_proc_log(cap_index: u8, value: Vec<u8>) -> Result<(), Error> {
+    let mut input = Vec::new();
+    let topics = Vec::new();
+    let syscall = SysCall {
+        cap_index,
+        action: SysCallAction::Log(LogCall{topics,value: Payload(value)}),
+    };
+    pwasm_ethereum::log(&[], &value.as_slice());
+
+    // syscall.serialize(&mut input).unwrap();
+    // cap9_syscall(&input, &mut Vec::new())
+}

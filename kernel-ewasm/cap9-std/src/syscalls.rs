@@ -22,8 +22,10 @@ pub struct SysCall {
 impl SysCall {
     pub fn cap_type(&self) -> u8 {
         match &self.action {
+            // TODO: use the constants provided elsewhere
             SysCallAction::Call(_)  => 0x3,
             SysCallAction::Write(_) => 0x7,
+            SysCallAction::Log(_) => 0x8,
         }
     }
 
@@ -76,6 +78,7 @@ impl Serialize for SysCall {
         match self.action {
             SysCallAction::Call(_) => writer.write(&[self.cap_type()])?,
             SysCallAction::Write(_) => writer.write(&[self.cap_type()])?,
+            SysCallAction::Log(_) => writer.write(&[self.cap_type()])?,
         }
         // Write cap index
         writer.write(&[self.cap_index])?;
@@ -91,6 +94,7 @@ impl Serialize for SysCall {
 pub enum SysCallAction {
     Write(WriteCall),
     Call(Call),
+    Log(LogCall),
 }
 
 impl SysCallAction {
@@ -141,6 +145,19 @@ impl SysCallAction {
                 }
                 false
             },
+            // LOG syscall
+            SysCallAction::Log(LogCall{topics,value}) => {
+                return true;
+                if let Capability::Log(proc_table::cap::LogCap {topics, t1, t2, t3, t4}) = cap {
+                    // let location_u256: U256 = location.into();
+                    // let size_u256: U256 = size.into();
+                    // if (key >= &location_u256) && (key <= &(location_u256 + size_u256)) {
+                    //     return true;
+                    // }
+                    return true;
+                }
+                false
+            },
         }
     }
 
@@ -150,6 +167,11 @@ impl SysCallAction {
             SysCallAction::Write(WriteCall{key,value}) => {
                 let value_h256: H256 = value.into();
                 pwasm_ethereum::write(&key.into(), &value_h256.as_fixed_bytes());
+                pwasm_ethereum::ret(&[]);
+            },
+            // LOG syscall
+            SysCallAction::Log(LogCall{topics,value}) => {
+                pwasm_ethereum::log(&topics.as_slice(), &value.0.as_slice());
                 pwasm_ethereum::ret(&[]);
             },
             // Call syscall
@@ -187,6 +209,10 @@ impl Serialize for SysCallAction {
                 write_call.serialize(writer)?;
                 Ok(())
             },
+            SysCallAction::Log(log_call) => {
+                log_call.serialize(writer)?;
+                Ok(())
+            },
         }
     }
 }
@@ -219,6 +245,42 @@ impl Serialize for WriteCall {
         Ok(())
     }
 }
+
+
+#[derive(Clone, Debug)]
+pub struct LogCall {
+    pub topics: Vec<H256>,
+    pub value: Payload,
+}
+
+impl Deserialize for LogCall {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let n_topics = U256::deserialize(reader)?;
+        let mut topics : Vec<H256> = Vec::new();
+        for _i in 0..(n_topics.as_usize()) {
+            topics.push(H256::deserialize(reader)?);
+        }
+        let value: Payload = Payload::deserialize(reader)?;
+        Ok(LogCall{topics, value})
+    }
+}
+
+impl Serialize for LogCall {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let n_topics = self.topics.len() as u8;
+        n_topics.serialize(writer)?;
+        for topic in self.topics {
+            topic.serialize(writer)?;
+        }
+        self.value.serialize(writer)?;
+        Ok(())
+    }
+}
+
 
 #[derive(Debug, Clone)]
 pub struct Payload(pub Vec<u8>);

@@ -27,3 +27,6 @@ wasm-build --target=wasm32-unknown-unknown .\target entry_test
 
 cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\release\caller_test.wasm .\target\wasm32-unknown-unknown\release\caller_test.wasm
 wasm-build --target=wasm32-unknown-unknown .\target caller_test
+
+cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\release\logger_test.wasm .\target\wasm32-unknown-unknown\release\logger_test.wasm
+wasm-build --target=wasm32-unknown-unknown .\target logger_test
