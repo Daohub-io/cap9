@@ -165,7 +165,7 @@ export class LogCap implements Capability {
         const topic2 = (this.topics.length >= 2) ? this.topics[1] : 0;
         const topic3 = (this.topics.length >= 3) ? this.topics[2] : 0;
         const topic4 = (this.topics.length >= 4) ? this.topics[3] : 0;
-        return [this.topics.length].concat([topic1, topic2, topic3, topic4].map(utils.utf8ToHex) as any)
+        return [this.topics.length].concat([topic1, topic2, topic3, topic4].map(x=>web3.utils.fromAscii(x,32)) as any)
     }
 }
 

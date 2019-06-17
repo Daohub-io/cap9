@@ -131,7 +131,7 @@ describe('Log Syscall', function () {
             // assert.strictEqual(return_value.logs.length, 0, "Nothing should be logged");
         })
     })
-    describe.skip('Single topic', function () {
+    describe('Single topic', function () {
         it('should log a value with correct cap', async function () {
             const caps = [new NewCap(0, new LogCap(["abcd"]))];
 
@@ -154,6 +154,8 @@ describe('Log Syscall', function () {
             // Once we have toggled entry procedure on, we have no way to switch
             // back.
 
+            const log_cap = await kernel_asLogger.methods.getCap(0x8,0).call();
+
             // This is the key that we will be modifying in storage.
             // const key = web3.utils.fromAscii("init");
             const value = "0xabcdabcd";
@@ -163,7 +165,8 @@ describe('Log Syscall', function () {
 
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            const message = kernel_asLogger.methods.log(cap_index, ["abcd"], value).encodeABI();
+            const message = kernel_asLogger.methods.log(cap_index, [web3.utils.fromAscii("abcd",32)], value).encodeABI();
+            // console.log(message)
             const return_value = await web3.eth.sendTransaction({to:kernel.contract.address, data: message})
             assert.strictEqual(normalize(return_value.logs[0].data), normalize(value), "The correct value should be logged");
         })
@@ -196,7 +199,7 @@ describe('Log Syscall', function () {
 
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            const message = kernel_asLogger.methods.log(cap_index, ["abcd"], value).encodeABI();
+            const message = kernel_asLogger.methods.log(cap_index, [web3.utils.fromAscii("abcd")], value).encodeABI();
             let return_value;
             let success;
             try {

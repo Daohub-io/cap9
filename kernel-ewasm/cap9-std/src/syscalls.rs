@@ -159,12 +159,14 @@ impl SysCallAction {
             // LOG syscall
             SysCallAction::Log(LogCall{topics,value:_}) => {
                 if let Capability::Log(proc_table::cap::LogCap {topics: n_required_topics, t1, t2, t3, t4}) = cap {
-                    // Check that all of the topics required by the cap are satisfied. That
-                    // is, for every topic in the capability, the corresponding exists in
-                    // the system call and is set to that exact value. First we check that
-                    // there are enough topics in the request.
+                    // Check that all of the topics required by the cap are
+                    // satisfied. That is, for every topic in the capability,
+                    // the corresponding exists in the system call and is set to
+                    // that exact value. First we check that there are enough
+                    // topics in the request.
                     if topics.len() < n_required_topics as usize {
-                        // The system call specifies an insufficient number of topics
+                        // The system call specifies an insufficient number of
+                        // topics
                         return false;
                     }
 

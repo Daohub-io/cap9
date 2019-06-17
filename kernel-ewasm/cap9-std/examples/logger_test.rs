@@ -40,7 +40,7 @@ pub mod writer {
 
         fn log(&mut self, cap_idx: U256, topics: Vec<H256>, value: Vec<u8>);
 
-        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
+        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256, U256, U256, U256);
 
     }
 
@@ -60,10 +60,10 @@ pub mod writer {
         // }
 
         fn log(&mut self, cap_idx: U256, topics: Vec<H256>, value: Vec<u8>) {
-            cap9_std::raw_proc_log(cap_idx.as_u32() as u8, value).unwrap();
+            cap9_std::raw_proc_log(cap_idx.as_u32() as u8, topics, value).unwrap();
         }
 
-        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256) {
+        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256, U256, U256, U256) {
             // Get the key of the currently executing procedure.
             let this_key: cap9_std::proc_table::ProcedureKey = cap9_std::proc_table::get_current_proc_id();
             let cap = cap9_std::proc_table::get_proc_cap(this_key, cap_type.as_u32() as u8, cap_index.as_u32() as u8).unwrap();
@@ -71,16 +71,8 @@ pub mod writer {
             // let raw_cap_ptr: [u8; 32] = proc_pointer.get_cap_val_ptr(3, 0, 0);
             // let raw_cap = U256::from(pwasm_ethereum::read(&H256(raw_cap_ptr)));
             match cap {
-                Capability::ProcedureCall(ProcedureCallCap {prefix, key}) => {
-                    let h: H256 = SysCallProcedureKey(key).into();
-                    // if prefix == 0 {
-                    //     panic!("prefix val is {:?}", prefix);
-                    // }
-                    let hx = U256::from_little_endian(&[0xc0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-                    // let hx = h.as_bytes()[0];
-                    // let hx: u8 = key[0].clone();
-                    // let hx: u8 = 0xc0;
-                    (prefix.into(), h.into())
+                Capability::Log(LogCap {topics,t1,t2,t3,t4}) => {
+                    (topics.into(), t1.into(), t2.into(), t3.into(), t4.into())
                 },
                 // ProcedureRegister(ProcedureRegisterCap),
                 // ProcedureDelete(ProcedureDeleteCap),

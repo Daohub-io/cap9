@@ -195,9 +195,8 @@ pub fn raw_proc_call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_log(cap_index: u8, value: Vec<u8>) -> Result<(), Error> {
+pub fn raw_proc_log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<(), Error> {
     let mut input: Vec<u8> = Vec::new();
-    let topics = Vec::new();
     let syscall = SysCall {
         cap_index,
         action: SysCallAction::Log(LogCall{topics,value: Payload(value.clone())}),
