@@ -212,6 +212,7 @@ pub fn call() {
             if cap_ok {
                 syscall.execute();
             }
+            pwasm_ethereum::ret(&result());
         }
 
     } else {
@@ -236,6 +237,8 @@ mod tests {
     use super::*;
     use core::str::FromStr;
     use kernel::KernelInterface;
+
+    use cap9_std::proc_table::cap::*;
 
     #[test]
     fn should_initialize_with_entry_procedure() {

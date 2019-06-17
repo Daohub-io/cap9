@@ -109,8 +109,10 @@ impl SysCallAction {
                     let mut mask_b_array = [0;8];
                     mask_b_array.copy_from_slice(&key[16..24]);
 
-                    let prefix_mask_a: u128 = u128::max_value().checked_shl(core::cmp::min((128 - prefix) as u32 - 64, 0)).unwrap_or(0);
-                    let prefix_mask_b:u64 = u64::max_value().checked_shl((128 - prefix) as u32).unwrap_or(0);
+                    let shift_amt: u32 = 192_u8.checked_sub(prefix).unwrap_or(0) as u32;
+
+                    let prefix_mask_a: u128 = u128::max_value().checked_shl(shift_amt.checked_sub(64).unwrap_or(0)).unwrap_or(0);
+                    let prefix_mask_b:u64 = u64::max_value().checked_shl(shift_amt).unwrap_or(0);
 
                     // mask_a + mask_b is the key we are allowed
                     let mask_a: u128 = u128::from_le_bytes(mask_a_array) & prefix_mask_a;
@@ -153,6 +155,7 @@ impl SysCallAction {
             // Call syscall
             SysCallAction::Call(Call{proc_id, payload}) => {
                 // Find the address of the procedure we are about to execute
+                let proc_id: proc_table::ProcedureKey = proc_table::get_entry_proc_id();
                 let proc_address = proc_table::get_proc_addr(proc_id.clone()).expect("No Proc");
                 // Remember this procedure which is being executed.
                 let this_proc = proc_table::get_current_proc_id();
@@ -162,7 +165,7 @@ impl SysCallAction {
                 // Execute the procedure
                 // We need to subtract some gas from the limit, because there will
                 // be instructions in-between that need to be run.
-                crate::actual_call_code(pwasm_ethereum::gas_left()-10000, &proc_address, U256::zero(), &pwasm_ethereum::input(), &mut Vec::new()).expect("Invalid Procedure Call");
+                crate::actual_call_code(pwasm_ethereum::gas_left()-10000, &proc_address, U256::zero(), payload.0.as_slice(), &mut Vec::new()).expect("Invalid Procedure Call");
                 // Set the "current_proc" value back to this procedure, as we
                 // have returned to it.
                 proc_table::set_current_proc_id(this_proc).unwrap();
@@ -218,7 +221,7 @@ impl Serialize for WriteCall {
 }
 
 #[derive(Debug, Clone)]
-pub struct Payload(Vec<u8>);
+pub struct Payload(pub Vec<u8>);
 
 impl Payload {
     pub fn new() -> Self {
@@ -288,7 +291,23 @@ impl Serialize for Payload {
 }
 
 /// Newtype wrapper over procedure keys for interaction with syscalls.
-pub struct SysCallProcedureKey(proc_table::ProcedureKey);
+pub struct SysCallProcedureKey(pub proc_table::ProcedureKey);
+
+impl From<H256> for SysCallProcedureKey {
+    fn from(h: H256) -> Self {
+        let mut proc_id: proc_table::ProcedureKey = [0; 24];
+        proc_id.copy_from_slice(&h.as_bytes()[8..32]);
+        SysCallProcedureKey(proc_id)
+    }
+}
+
+impl Into<H256> for SysCallProcedureKey {
+    fn into(self) -> H256 {
+        let mut proc_id_u256: [u8; 32] = [0; 32];
+        proc_id_u256[8..32].copy_from_slice(&self.0);
+        proc_id_u256.into()
+    }
+}
 
 impl Deserialize for SysCallProcedureKey {
     type Error = io::Error;

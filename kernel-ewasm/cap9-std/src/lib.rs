@@ -182,8 +182,15 @@ pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result
         action: SysCallAction::Write(WriteCall{key: key.into(), value: value.into()}),
     };
     syscall.serialize(&mut input).unwrap();
-    let mut result = Vec::with_capacity(32);
-    result.resize(32,0);
-    // input.resize(1+1+32+32, 0);
-    cap9_syscall(&input, &mut result)
+    cap9_syscall(&input, &mut Vec::new())
+}
+
+pub fn raw_proc_call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u8>) -> Result<(), Error> {
+    let mut input = Vec::new();
+    let syscall = SysCall {
+        cap_index,
+        action: SysCallAction::Call(Call{proc_id: proc_id.0, payload: Payload(payload)}),
+    };
+    syscall.serialize(&mut input).unwrap();
+    cap9_syscall(&input, &mut Vec::new())
 }

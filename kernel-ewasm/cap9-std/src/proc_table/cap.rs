@@ -184,7 +184,7 @@ impl Capability {
                 key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
 
                 let proc_call_cap = ProcedureCallCap {
-                    prefix: val.byte(0),
+                    prefix: val.byte(31),
                     key: key,
                 };
 
@@ -634,7 +634,7 @@ mod tests {
 
         let mut arr = [0; 32];
         arr[0] = 3;
-        
+
         let sample_cap = ProcedureCallCap {
             prefix: 3,
             key: [1; 24]
@@ -650,6 +650,27 @@ mod tests {
         let decoded = NewCapList::from_u256_list(&encoded).expect("Should decode call cap");
 
         assert_eq!(input.inner(), decoded.inner());
+    }
+
+    #[test]
+    fn should_decode_encode_call_cap() {
+
+        let prefix: u8 = 3;
+        // let key = [0x11; 24];
+        let key: [u8; 24] = [0x1,0x3,0x4,0x5,0x6,0x7,0x8,0x9,0xa,0xb,0xc,0xd,0xe,0xf,0x10,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1a];
+        let mut arr = [0; 32];
+        arr[0] = 3;
+        arr[8..32].copy_from_slice(&key);
+
+        let sample_cap = Capability::ProcedureCall(ProcedureCallCap {
+            prefix,
+            key,
+        });
+
+        let list = [CAP_PROC_CALL.into(),arr.into()].to_vec();
+
+        assert_eq!(sample_cap.into_u256_list(), list);
+        assert_eq!(Capability::from_u256_list(&list).unwrap(), sample_cap);
     }
 
 }
