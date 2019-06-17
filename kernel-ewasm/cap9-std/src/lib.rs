@@ -2,8 +2,7 @@
 
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
-use validator::io;
-use validator::serialization::{Deserialize, Serialize};
+use validator::serialization::{Serialize};
 
 /// Generic wasm error
 #[derive(Debug)]
@@ -99,39 +98,39 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
 
 
 pub fn actual_call_code(gas: u64, address: &Address, value: U256, input: &[u8], result: &mut [u8]) -> Result<(), Error> {
-	let mut value_arr = [0u8; 32];
-	value.to_big_endian(&mut value_arr);
-	unsafe {
-		if external::call_code(
-			gas as i64,
-			address.as_ptr(),
-			value_arr.as_ptr(),
-			input.as_ptr(),
-			input.len() as u32,
-			result.as_mut_ptr(), result.len() as u32
-		) == 0 {
-			Ok(())
-		} else {
-			Err(Error)
-		}
-	}
+    let mut value_arr = [0u8; 32];
+    value.to_big_endian(&mut value_arr);
+    unsafe {
+        if external::call_code(
+            gas as i64,
+            address.as_ptr(),
+            value_arr.as_ptr(),
+            input.as_ptr(),
+            input.len() as u32,
+            result.as_mut_ptr(), result.len() as u32
+        ) == 0 {
+            Ok(())
+        } else {
+            Err(Error)
+        }
+    }
 }
 
 /// Allocates and requests [`call`] return data (result)
 pub fn result() -> pwasm_std::Vec<u8> {
-	let len = unsafe { external::result_length() };
+    let len = unsafe { external::result_length() };
 
-	match len {
-		0 => pwasm_std::Vec::new(),
-		non_zero => {
-			let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
-			unsafe {
-				data.set_len(non_zero as usize);
-				external::fetch_result(data.as_mut_ptr());
-			}
-			data
-		}
-	}
+    match len {
+        0 => pwasm_std::Vec::new(),
+        non_zero => {
+            let mut data = pwasm_std::Vec::with_capacity(non_zero as usize);
+            unsafe {
+                data.set_len(non_zero as usize);
+                external::fetch_result(data.as_mut_ptr());
+            }
+            data
+        }
+    }
 }
 
 /// This function is the rough shape of a syscall. It's only purpose is to force
@@ -183,8 +182,15 @@ pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result
         action: SysCallAction::Write(WriteCall{key: key.into(), value: value.into()}),
     };
     syscall.serialize(&mut input).unwrap();
-    let mut result = Vec::with_capacity(32);
-    result.resize(32,0);
-    // input.resize(1+1+32+32, 0);
-    cap9_syscall(&input, &mut result)
+    cap9_syscall(&input, &mut Vec::new())
+}
+
+pub fn raw_proc_call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u8>) -> Result<(), Error> {
+    let mut input = Vec::new();
+    let syscall = SysCall {
+        cap_index,
+        action: SysCallAction::Call(Call{proc_id: proc_id.0, payload: Payload(payload)}),
+    };
+    syscall.serialize(&mut input).unwrap();
+    cap9_syscall(&input, &mut Vec::new())
 }

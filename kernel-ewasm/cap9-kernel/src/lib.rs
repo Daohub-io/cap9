@@ -76,7 +76,7 @@ pub mod kernel {
 
     impl KernelInterface for KernelContract {
 
-        fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, _cap_list: Vec<U256>) {
+        fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, cap_list: Vec<U256>) {
             let _entry_proc_key = {
                 let byte_key = _entry_proc_key.as_bytes();
                 let len = byte_key.len();
@@ -85,9 +85,9 @@ pub mod kernel {
                 output
             };
 
-            let _cap_list = cap::NewCapList::from_u256_list(&_cap_list).expect("Caplist must be valid");
+            let cap_list = cap::NewCapList::from_u256_list(&cap_list).expect("Caplist must be valid");
 
-            proc_table::insert_proc(_entry_proc_key, _entry_proc_address, _cap_list).unwrap();
+            proc_table::insert_proc(_entry_proc_key, _entry_proc_address, cap_list).unwrap();
             proc_table::set_entry_proc_id(_entry_proc_key).unwrap();
         }
 
@@ -189,7 +189,6 @@ pub fn call() {
             let entry_address = proc_table::get_proc_addr(proc_id).expect("No Entry Proc");
 
             // Save the procedure we are about to call into "current procedure"
-            // (this is still a hack at this point).
             proc_table::set_current_proc_id(proc_id).unwrap();
             // We need to subtract some gas from the limit, because there will
             // be instructions in-between that need to be run.
@@ -212,7 +211,10 @@ pub fn call() {
             // If the cap is ok, execute the syscall.
             if cap_ok {
                 syscall.execute();
+            } else {
+                panic!("Bad cap");
             }
+            pwasm_ethereum::ret(&result());
         }
 
     } else {
@@ -238,6 +240,8 @@ mod tests {
     use core::str::FromStr;
     use kernel::KernelInterface;
 
+    use cap9_std::proc_table::cap::*;
+
     #[test]
     fn should_initialize_with_entry_procedure() {
         let mut contract = kernel::KernelContract {};
@@ -255,6 +259,25 @@ mod tests {
 
         assert_eq!(&contract.entryProcedure()[0..4], entry_proc_key.as_bytes());
         assert_eq!(contract.currentProcedure(), [0u8; 24]);
+    }
+
+    #[ignore]
+    #[test]
+    fn should_parse_cap_list() {
+        let prefix: u8 = 3;
+        let key: [u8; 24] = [0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8,0x9,0xa,0xb,0xc,0xd,0xe,0xf,0x10,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19];
+        // TODO: this need to reverse the key is an issue, but can wait
+        let mut rev_key: [u8; 24] = key.clone();
+        rev_key.reverse();
+        let sample_cap = Capability::ProcedureCall(ProcedureCallCap {
+            prefix,
+            key: rev_key,
+        });
+        let cap_key: U256 = U256::from_little_endian(&[prefix,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8,0x9,0xa,0xb,0xc,0xd,0xe,0xf,0x10,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19]);
+        let cap_list_raw = [4.into(),3.into(),0.into(),cap_key].to_vec();
+        let cap_list: NewCapList = NewCapList::from_u256_list(&cap_list_raw).unwrap();
+        let expected_cap_list = NewCapList([NewCapability{parent_index:0, cap: sample_cap}].to_vec());
+        assert_eq!(cap_list, expected_cap_list);
     }
 
 }
