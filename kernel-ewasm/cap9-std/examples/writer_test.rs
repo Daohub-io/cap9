@@ -23,6 +23,8 @@ pub mod writer {
     use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
     use cap9_std;
+    // use cap9_std::proc_table::*;
+    use cap9_std::proc_table::cap::*;
 
     #[eth_abi(TestWriterEndpoint, KernelClient)]
     pub trait TestWriterInterface {
@@ -36,6 +38,8 @@ pub mod writer {
         fn writeNumDirect(&mut self, key: U256, val: U256);
 
         fn writeNum(&mut self, cap_idx: U256, key: U256, val: U256);
+
+        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
 
     }
 
@@ -56,6 +60,22 @@ pub mod writer {
 
         fn writeNum(&mut self, cap_idx: U256, key: U256, val: U256) {
             cap9_std::raw_proc_write(cap_idx.as_u32() as u8, &key.into(), &val.into()).unwrap();
+        }
+
+        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256) {
+            // Get the key of the currently executing procedure.
+            let this_key: cap9_std::proc_table::ProcedureKey = cap9_std::proc_table::get_current_proc_id();
+            let cap = cap9_std::proc_table::get_proc_cap(this_key, cap_type.as_u32() as u8, cap_index.as_u32() as u8).unwrap();
+            match cap {
+                // ProcedureCall(ProcedureCallCap),
+                // ProcedureRegister(ProcedureRegisterCap),
+                // ProcedureDelete(ProcedureDeleteCap),
+                // ProcedureEntry(ProcedureEntryCap),
+                Capability::StoreWrite(StoreWriteCap {location, size}) => (location.into(), size.into()),
+                // Log(LogCap),
+                // AccountCall(AccountCallCap),
+                _ => panic!("wrong cap")
+            }
         }
     }
 }
