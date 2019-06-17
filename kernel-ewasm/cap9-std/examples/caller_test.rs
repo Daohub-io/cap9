@@ -74,19 +74,9 @@ pub mod writer {
             // Get the key of the currently executing procedure.
             let this_key: cap9_std::proc_table::ProcedureKey = cap9_std::proc_table::get_current_proc_id();
             let cap = cap9_std::proc_table::get_proc_cap(this_key, cap_type.as_u32() as u8, cap_index.as_u32() as u8).unwrap();
-            // let proc_pointer = cap9_std::proc_table::ProcPointer::from_key(this_key);
-            // let raw_cap_ptr: [u8; 32] = proc_pointer.get_cap_val_ptr(3, 0, 0);
-            // let raw_cap = U256::from(pwasm_ethereum::read(&H256(raw_cap_ptr)));
             match cap {
                 Capability::ProcedureCall(ProcedureCallCap {prefix, key}) => {
                     let h: H256 = SysCallProcedureKey(key).into();
-                    // if prefix == 0 {
-                    //     panic!("prefix val is {:?}", prefix);
-                    // }
-                    let hx = U256::from_little_endian(&[0xc0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-                    // let hx = h.as_bytes()[0];
-                    // let hx: u8 = key[0].clone();
-                    // let hx: u8 = 0xc0;
                     (prefix.into(), h.into())
                 },
                 // ProcedureRegister(ProcedureRegisterCap),

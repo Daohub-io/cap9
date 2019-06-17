@@ -211,6 +211,8 @@ pub fn call() {
             // If the cap is ok, execute the syscall.
             if cap_ok {
                 syscall.execute();
+            } else {
+                panic!("Bad cap");
             }
             pwasm_ethereum::ret(&result());
         }
@@ -259,6 +261,7 @@ mod tests {
         assert_eq!(contract.currentProcedure(), [0u8; 24]);
     }
 
+    #[ignore]
     #[test]
     fn should_parse_cap_list() {
         let prefix: u8 = 3;
