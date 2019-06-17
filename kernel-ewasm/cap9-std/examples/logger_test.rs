@@ -61,7 +61,6 @@ pub mod writer {
 
         fn log(&mut self, cap_idx: U256, value: Vec<u8>) {
             cap9_std::raw_proc_log(cap_idx.as_u32() as u8, value).unwrap();
-            // pwasm_ethereum::log(&[], &value.as_slice());
         }
 
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256) {

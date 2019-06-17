@@ -6,10 +6,10 @@ import { newKernelInstance, web3, createAccount, KernelInstance, deployContract,
 import { notEqual } from 'assert';
 
 
-describe.only('Log Syscall', function () {
+describe('Log Syscall', function () {
     this.timeout(40_000);
     describe('#log', function () {
-        it.only('should return the testNum', async function () {
+        it('should return the testNum', async function () {
             const caps = [new NewCap(0, new LogCap([]))];
 
             let newProc = await deployContract("logger_test", "TestLoggerInterface");
@@ -35,7 +35,7 @@ describe.only('Log Syscall', function () {
             const test_value = await kernel_asLogger.methods.testNum().call();
             assert.strictEqual(test_value.toNumber(), 76, "The test value should be 76");
         })
-        it.only('should log a value with correct cap', async function () {
+        it('should log a value with correct cap', async function () {
             const caps = [new NewCap(0, new LogCap([]))];
 
             let newProc = await deployContract("logger_test", "TestLoggerInterface");
@@ -67,9 +67,8 @@ describe.only('Log Syscall', function () {
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
             const message = kernel_asLogger.methods.log(cap_index, value).encodeABI();
-            const return_value = await web3.eth.call({to:kernel.contract.address, data: message})
-            console.log(return_value)
-            // assert.strictEqual(normalize(return_value), normalize(76), `The new value should be ${76}`);
+            const return_value = await web3.eth.sendTransaction({to:kernel.contract.address, data: message})
+            assert.strictEqual(normalize(return_value.logs[0].data), normalize(value), "The correct value should be logged");
         })
         it.skip('should fail to call itself, with incorrect cap', async function () {
             const caps = [new NewCap(0, new LogCap([]))];
@@ -94,32 +93,17 @@ describe.only('Log Syscall', function () {
             // back.
 
             // This is the key that we will be modifying in storage.
-            const key = web3.utils.fromAscii("init");
-            const value = "0xae28f1ed";
+            // const key = web3.utils.fromAscii("init");
+            const value = "0xabcdabcd";
             // This is the index of the capability (in the procedures capability
             // list) that we will be using to perform the writes.
             const cap_index = 0;
 
-            // Check that we have the right cap at index 0
-            const call_cap = await kernel_asLogger.methods.getCap(0x3,0).call();
-            console.log(call_cap);
-            console.log(web3.utils.toHex(call_cap[0]),web3.utils.toHex(call_cap[1]));
-            assert.strictEqual(normalize(call_cap[0]), normalize(192), "The prefix size of call cap should be 192");
-            assert.strictEqual(normalize(call_cap[1]), normalize(key), `The base key of the write cap should be ${key}`);
-
-
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            // const message = kernel_asLogger.methods.callProc(cap_index, key).encodeABI();
-            // let success;
-            // try {
-            //     const return_value = await web3.eth.call({to:kernel.contract.address, data: message})
-            //     success = true;
-            //     console.log(return_value)
-            // } catch (e) {
-            //     success = false;
-            // }
-            // assert(!success, "Call should not succeed");
+            const message = kernel_asLogger.methods.log(cap_index, value).encodeABI();
+            const return_value = await web3.eth.sendTransaction({to:kernel.contract.address, data: message})
+            assert.strictEqual(normalize(return_value.logs[0].data), normalize(value), "The correct value should be logged");
         })
     })
 })

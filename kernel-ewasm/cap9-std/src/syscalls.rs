@@ -13,7 +13,7 @@ use proc_table::cap::Capability;
 
 /// A full system call request, including the cap_index. This is permitted to
 /// access the procedure table as part of the environment.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SysCall {
     pub cap_index: u8,
     pub action: SysCallAction,
@@ -64,6 +64,12 @@ impl Deserialize for SysCall {
                     action: SysCallAction::Write(WriteCall::deserialize(reader)?)
                 })
             },
+            0x8 => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::Log(LogCall::deserialize(reader)?)
+                })
+            },
             _ => panic!("unknown syscall"),
         }
     }
@@ -90,7 +96,7 @@ impl Serialize for SysCall {
 /// The action portion of a SysCall, i.e. WRITE, LOG, etc. without the
 /// permissions information. This is the type where the capability checking and
 /// execution logic is written.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SysCallAction {
     Write(WriteCall),
     Call(Call),
@@ -167,12 +173,10 @@ impl SysCallAction {
             SysCallAction::Write(WriteCall{key,value}) => {
                 let value_h256: H256 = value.into();
                 pwasm_ethereum::write(&key.into(), &value_h256.as_fixed_bytes());
-                pwasm_ethereum::ret(&[]);
             },
             // LOG syscall
             SysCallAction::Log(LogCall{topics,value}) => {
                 pwasm_ethereum::log(&topics.as_slice(), &value.0.as_slice());
-                pwasm_ethereum::ret(&[]);
             },
             // Call syscall
             SysCallAction::Call(Call{proc_id, payload}) => {
@@ -218,7 +222,7 @@ impl Serialize for SysCallAction {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WriteCall {
     pub key: U256,
     pub value: U256,
@@ -247,7 +251,7 @@ impl Serialize for WriteCall {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LogCall {
     pub topics: Vec<H256>,
     pub value: Payload,
@@ -257,9 +261,9 @@ impl Deserialize for LogCall {
     type Error = io::Error;
 
     fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
-        let n_topics = U256::deserialize(reader)?;
+        let n_topics = u8::deserialize(reader)?;
         let mut topics : Vec<H256> = Vec::new();
-        for _i in 0..(n_topics.as_usize()) {
+        for _i in 0..(n_topics as usize) {
             topics.push(H256::deserialize(reader)?);
         }
         let value: Payload = Payload::deserialize(reader)?;
@@ -282,7 +286,7 @@ impl Serialize for LogCall {
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Payload(pub Vec<u8>);
 
 impl Payload {
@@ -291,7 +295,7 @@ impl Payload {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Call {
     pub proc_id: proc_table::ProcedureKey,
     pub payload: Payload,
@@ -417,5 +421,20 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00,0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00];
         assert_eq!(buffer, expected);
+    }
+
+
+    #[test]
+    fn deserialise_log_call() {
+        let mut input: &[u8] = &[0x08,0x00,0x00,0xab,0xcd,0xab,0xcd];
+        let syscall = SysCall::deserialize(&mut input).unwrap();
+        assert_eq!(syscall, SysCall{
+            cap_index: 0,
+            action: SysCallAction::Log(LogCall {
+                topics: Vec::new(),
+                value: Payload([0xab,0xcd,0xab,0xcd].to_vec()),
+            }),
+        });
+        // assert_eq!(contract.currentProcedure(), [0u8; 24]);
     }
 }
