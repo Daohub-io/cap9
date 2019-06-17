@@ -2,12 +2,21 @@
 
 ## Development
 
-### Setup
+### VSCode Container Setup
+
+You will need:
+* [Docker](https://www.docker.com/)
+* [Vscode](https://code.visualstudio.com/)
+* [Vscode-remote-extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
+
+Select `Remote-Containers: Open folder in container option`, then wait for the environment to build (~30min)
+
+### Local Setup
 You will need to install
 
 * [npm](https://nodejs.org/en/)
 * [rustup](https://rustup.rs/)
-* [parity-ethereum](https://wiki.parity.io/Setup)
+* [parity-ethereum - fork](https://github.com/daohub-io/parity-ethereum)
 
 ```bash
 # We need a nightly toolchain
@@ -22,6 +31,10 @@ cargo install pwasm-utils-cli --bin wasm-build --version 0.6.0
 
 # We need to install all npm modules - use stable (v11)(2019)
 npm install
+
+# We need to install the parity-ethereum fork
+chmod +x ./scripts/parity_install.sh
+./scripts/parity_install.sh
 ```
 
 ### Build

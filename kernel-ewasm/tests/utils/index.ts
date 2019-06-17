@@ -82,7 +82,7 @@ export class CallCap implements Capability {
         const baseKey24 = utils.fromAscii(this.baseKey.padEnd(24, '\0'))
         // baseKeyHex is baseKey24, hex-encoded, and is therefore 48 chars. The
         // "0x" is removed from the start of the string.
-        const baseKeyHex = utils.toHex(baseKey24).slice(2,48);
+        const baseKeyHex = utils.toHex(baseKey24).slice(2,50);
         // prefixHex is the prefix length hex-encoded and padded to two chars (a
         // single byte). The "0x" is removed here also.
         const prefixHex = utils.toHex(this.prefixLength).slice(2).padStart(2,'0');

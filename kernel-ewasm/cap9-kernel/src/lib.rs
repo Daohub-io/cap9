@@ -211,6 +211,8 @@ pub fn call() {
             // If the cap is ok, execute the syscall.
             if cap_ok {
                 syscall.execute();
+            } else {
+                panic!("Bad cap");
             }
             pwasm_ethereum::ret(&result());
         }
