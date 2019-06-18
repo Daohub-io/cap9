@@ -36,7 +36,7 @@ pub mod writer {
         #[constant]
         fn testNum(&mut self) -> U256;
 
-        fn regProc(&mut self, cap_idx: U256, key: H256, cap_list: Vec<H256>);
+        fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>);
 
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
 
@@ -52,7 +52,7 @@ pub mod writer {
             76.into()
         }
 
-        fn regProc(&mut self, cap_idx: U256, key: H256, cap_list: Vec<H256>) {
+        fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>) {
             // cap9_std::raw_proc_call(cap_idx.as_u32() as u8, key.into(), payload).unwrap();
             pwasm_ethereum::ret(&cap9_std::result());
         }
