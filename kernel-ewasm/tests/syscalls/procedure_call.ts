@@ -66,7 +66,8 @@ describe('Procedure Call Syscall', function () {
 
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            const message = kernel_asCaller.methods.callProc(cap_index, key).encodeABI();
+            const payload = "0xae28f1ed";
+            const message = kernel_asCaller.methods.callProc(cap_index, key, payload).encodeABI();
             const return_value = await web3.eth.call({to:kernel.contract.address, data: message});
             assert.strictEqual(normalize(return_value), normalize(76), `The new value should be ${76}`);
         })
@@ -110,7 +111,8 @@ describe('Procedure Call Syscall', function () {
 
             // Write a new value (1) into the storage at 'key' using the cap at
             // 'cap_index'
-            const message = kernel_asCaller.methods.callProc(cap_index, key).encodeABI();
+            const payload = "0xae28f1ed";
+            const message = kernel_asCaller.methods.callProc(cap_index, key, payload).encodeABI();
             let success;
             try {
                 const return_value = await web3.eth.call({to:kernel.contract.address, data: message})
