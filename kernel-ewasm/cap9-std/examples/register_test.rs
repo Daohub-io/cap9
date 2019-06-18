@@ -74,7 +74,7 @@ pub mod writer {
             let this_key: cap9_std::proc_table::ProcedureKey = cap9_std::proc_table::get_current_proc_id();
             let cap = cap9_std::proc_table::get_proc_cap(this_key, cap_type.as_u32() as u8, cap_index.as_u32() as u8).unwrap();
             match cap {
-                Capability::ProcedureCall(ProcedureCallCap {prefix, key}) => {
+                Capability::ProcedureRegister(ProcedureRegisterCap {prefix, key}) => {
                     let h: H256 = SysCallProcedureKey(key).into();
                     (prefix.into(), h.into())
                 },

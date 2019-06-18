@@ -197,7 +197,7 @@ impl Capability {
                 key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
 
                 let proc_reg_cap = ProcedureRegisterCap {
-                    prefix: val.byte(0),
+                    prefix: val.byte(31),
                     key: key,
                 };
 
@@ -210,7 +210,7 @@ impl Capability {
                 key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
 
                 let proc_del_cap = ProcedureDeleteCap {
-                    prefix: val.byte(0),
+                    prefix: val.byte(31),
                     key: key,
                 };
 

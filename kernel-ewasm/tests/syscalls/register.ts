@@ -10,7 +10,7 @@ describe('Register Procedure Syscall', function () {
     this.timeout(40_000);
     describe('#regProc', function () {
         it('should return the testNum', async function () {
-            const caps = [new NewCap(0, new RegisterCap(0, "write"))];
+            const caps = [new NewCap(192, new RegisterCap(0, "write"))];
 
             let newProc = await deployContract("register_test", "TestRegisterInterface");
             let kernel = await newKernelInstance("init", newProc.address, caps);
@@ -36,7 +36,7 @@ describe('Register Procedure Syscall', function () {
             assert.strictEqual(test_value.toNumber(), 76, "The test value should be 76");
         })
         it('should register write procedure, with correct cap', async function () {
-            const caps = [new NewCap(0, new RegisterCap(5, "write"))];
+            const caps = [new NewCap(0, new RegisterCap(192, "write"))];
 
             let newProc = await deployContract("register_test", "TestRegisterInterface");
             let kernel = await newKernelInstance("init", newProc.address, caps);
@@ -125,8 +125,10 @@ describe('Register Procedure Syscall', function () {
             assert(!procList2.includes(normalize(web3.utils.fromAscii("write",24))), "The new procedure key should not be included in the table");
 
         })
-        it.skip('should fail to register, with incorrect cap', async function () {
-            const caps = [new NewCap(0, new RegisterCap(5, "read"))];
+        it('should fail to register, with incorrect cap', async function () {
+            const prefix = 192;
+            const cap_key = "read";
+            const caps = [new NewCap(0, new RegisterCap(prefix, cap_key))];
 
             let newProc = await deployContract("register_test", "TestRegisterInterface");
             let kernel = await newKernelInstance("init", newProc.address, caps);
@@ -156,7 +158,11 @@ describe('Register Procedure Syscall', function () {
             // Deploy the contract for the procedure that we will register.
             let writeProc = await deployContract("writer_test", "TestWriterInterface");
 
-            // This is the address of the new procedure that we wish to register.
+            const call_cap = await kernel_asRegister.methods.getCap(0x4,0).call();
+            assert.strictEqual(normalize(call_cap[0]), normalize(prefix), "The prefix size of call cap should be 192");
+            // A little bit of padding is added here just for the purposes of a
+            // quick test.
+            assert.strictEqual(web3.utils.toHex(call_cap[1]).padEnd(66,'0').slice(2).padStart(66,'0'), web3.utils.toHex(web3.utils.fromAscii(cap_key)).padEnd(66,'0').slice(2).padStart(66,'0'), `The base key of the write cap should be ${cap_key}`);
 
             const procList1 = await kernel_asRegister.methods.listProcs().call().then(x=>x.map(normalize));
             // We then send that message via a call procedure syscall.
