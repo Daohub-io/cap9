@@ -105,13 +105,13 @@ export class RegisterCap implements Capability {
         const baseKey24 = utils.fromAscii(this.baseKey.padEnd(24, '\0'))
         // baseKeyHex is baseKey24, hex-encoded, and is therefore 48 chars. The
         // "0x" is removed from the start of the string.
-        const baseKeyHex = utils.toHex(baseKey24).slice(2);
+        const baseKeyHex = utils.toHex(baseKey24).slice(2,50);
         // prefixHex is the prefix length hex-encoded and padded to two chars (a
         // single byte). The "0x" is removed here also.
         const prefixHex = utils.toHex(this.prefixLength).slice(2).padStart(2,'0');
         // There are 7 bytes between the prefix length and the start of the base
         // key.
-        const undefinedFill = utils.toHex("".padEnd(7,'\0')).slice(2);
+        const undefinedFill = "".padEnd(14,'0');
         // We string these together in the correct order.
         const key = "0x" + prefixHex + undefinedFill + baseKeyHex;
 
@@ -128,13 +128,13 @@ export class DeleteCap implements Capability {
         const baseKey24 = utils.fromAscii(this.baseKey.padEnd(24, '\0'))
         // baseKeyHex is baseKey24, hex-encoded, and is therefore 48 chars. The
         // "0x" is removed from the start of the string.
-        const baseKeyHex = utils.toHex(baseKey24).slice(2);
+        const baseKeyHex = utils.toHex(baseKey24).slice(2,50);
         // prefixHex is the prefix length hex-encoded and padded to two chars (a
         // single byte). The "0x" is removed here also.
         const prefixHex = utils.toHex(this.prefixLength).slice(2).padStart(2,'0');
         // There are 7 bytes between the prefix length and the start of the base
         // key.
-        const undefinedFill = utils.toHex("".padEnd(7,'\0')).slice(2);
+        const undefinedFill = "".padEnd(14,'0');
         // We string these together in the correct order.
         const key = "0x" + prefixHex + undefinedFill + baseKeyHex;
 

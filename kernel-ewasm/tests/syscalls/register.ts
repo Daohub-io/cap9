@@ -8,8 +8,8 @@ import { notEqual } from 'assert';
 
 describe.skip('Register Procedure Syscall', function () {
     this.timeout(40_000);
-    describe('#callProc', function () {
-        it('should return the testNum without a call', async function () {
+    describe('#regProc', function () {
+        it('should return the testNum', async function () {
             const caps = [new NewCap(0, new CallCap(0, "init"))];
 
             let newProc = await deployContract("register_test", "TestRegisterInterface");
