@@ -38,6 +38,8 @@ pub mod writer {
 
         fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>);
 
+        fn listProcs(&mut self) -> Vec<H256>;
+
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
 
     }
@@ -53,8 +55,18 @@ pub mod writer {
         }
 
         fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>) {
-            // cap9_std::raw_proc_call(cap_idx.as_u32() as u8, key.into(), payload).unwrap();
+            cap9_std::raw_proc_reg(cap_idx.as_u32() as u8, key.into(), address, cap_list).unwrap();
             pwasm_ethereum::ret(&cap9_std::result());
+        }
+
+        fn listProcs(&mut self) -> Vec<H256> {
+            let n_procs = cap9_std::proc_table::get_proc_list_len();
+            let mut procs = Vec::new();
+            for i in 1..(n_procs.as_usize() + 1) {
+                let index = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,i as u8];
+                procs.push(SysCallProcedureKey(cap9_std::proc_table::get_proc_id(index).unwrap()).into());
+            }
+            procs
         }
 
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256) {

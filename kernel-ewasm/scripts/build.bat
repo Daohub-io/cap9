@@ -32,4 +32,5 @@ cargo run --package cap9-build -- set-mem --pages 3 .\target\wasm32-unknown-unkn
 wasm-build --target=wasm32-unknown-unknown .\target logger_test
 
 cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\release\register_test.wasm .\target\wasm32-unknown-unknown\release\register_test.wasm
+cargo run --package cap9-build -- set-mem --pages 3 .\target\wasm32-unknown-unknown\release\register_test.wasm .\target\wasm32-unknown-unknown\release\register_test.wasm
 wasm-build --target=wasm32-unknown-unknown .\target register_test

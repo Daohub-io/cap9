@@ -72,6 +72,12 @@ impl Deserialize for SysCall {
                     action: SysCallAction::Log(LogCall::deserialize(reader)?)
                 })
             },
+            0x4 => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::Register(RegisterProc::deserialize(reader)?)
+                })
+            },
             _ => panic!("unknown syscall"),
         }
     }
