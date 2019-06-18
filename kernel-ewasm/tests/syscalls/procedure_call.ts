@@ -58,22 +58,24 @@ describe('Procedure Call Syscall', function () {
             // back.
 
             // This is the key that we will be modifying in storage.
-            const key = web3.utils.fromAscii("init");
-            const value = "0xae28f1ed";
+            const key = "0x" + web3.utils.fromAscii("init",24).slice(2).padStart(64,"0");
             // This is the index of the capability (in the procedures capability
             // list) that we will be using to perform the writes.
             const cap_index = 0;
 
-            // Write a new value (1) into the storage at 'key' using the cap at
-            // 'cap_index'
-            const payload = "0xae28f1ed";
+            // Here we prepare a message to call the "testNum()" method, but
+            // rather than send it we just keep it as an encoded message (called
+            // payload).
+            const payload = kernel_asCaller.methods.testNum().encodeABI();
+            // We then send that message via a call procedure syscall.
             const message = kernel_asCaller.methods.callProc(cap_index, key, payload).encodeABI();
             const return_value = await web3.eth.call({to:kernel.contract.address, data: message});
             assert.strictEqual(normalize(return_value), normalize(76), `The new value should be ${76}`);
         })
         it('should fail to call itself, with incorrect cap', async function () {
             const cap_key = "abcde";
-            const caps = [new NewCap(0, new CallCap(5, cap_key))];
+            const prefix = 5;
+            const caps = [new NewCap(0, new CallCap(prefix, cap_key))];
 
             let newProc = await deployContract("caller_test", "TestCallerInterface");
             let kernel = await newKernelInstance("init", newProc.address, caps);
@@ -95,7 +97,7 @@ describe('Procedure Call Syscall', function () {
             // back.
 
             // This is the key that we will be modifying in storage.
-            const key = web3.utils.fromAscii("init");
+            const key = "0x" + web3.utils.fromAscii("init",24).slice(2).padStart(64,"0");
             const value = "0xae28f1ed";
             // This is the index of the capability (in the procedures capability
             // list) that we will be using to perform the writes.
@@ -103,21 +105,21 @@ describe('Procedure Call Syscall', function () {
 
             // Check that we have the right cap at index 0
             const call_cap = await kernel_asCaller.methods.getCap(0x3,0).call();
-            // assert.strictEqual(normalize(call_cap[0]), normalize(192), "The prefix size of call cap should be 192");
+            assert.strictEqual(normalize(call_cap[0]), normalize(prefix), "The prefix size of call cap should be 192");
             // A little bit of padding is added here just for the purposes of a
             // quick test.
-            // assert.strictEqual(web3.utils.toHex(call_cap[1]).padEnd(66,'\0'), web3.utils.toHex(web3.utils.fromAscii(cap_key)).padEnd(66,'\0'), `The base key of the write cap should be ${cap_key}`);
+            assert.strictEqual(web3.utils.toHex(call_cap[1]).padEnd(66,'0').slice(2).padStart(66,'0'), web3.utils.toHex(web3.utils.fromAscii(cap_key)).padEnd(66,'0').slice(2).padStart(66,'0'), `The base key of the write cap should be ${cap_key}`);
 
-
-            // Write a new value (1) into the storage at 'key' using the cap at
-            // 'cap_index'
-            const payload = "0xae28f1ed";
+            // Here we prepare a message to call the "testNum()" method, but
+            // rather than send it we just keep it as an encoded message (called
+            // payload).
+            const payload = kernel_asCaller.methods.testNum().encodeABI();
+            // We then send that message via a call procedure syscall.
             const message = kernel_asCaller.methods.callProc(cap_index, key, payload).encodeABI();
             let success;
             try {
                 const return_value = await web3.eth.call({to:kernel.contract.address, data: message})
                 success = true;
-                console.log(return_value)
             } catch (e) {
                 success = false;
             }
