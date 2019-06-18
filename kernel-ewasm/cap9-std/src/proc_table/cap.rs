@@ -28,6 +28,17 @@ pub const CAP_LOG_SIZE: u8 = 5;
 pub const CAP_ACC_CALL: u8 = 9;
 pub const CAP_ACC_CALL_SIZE: u8 = 1;
 
+/// A list of the cap types which we can use for iterating over all cap types.
+pub const CAP_TYPES: [u8; 7] = [
+    CAP_PROC_CALL,
+    CAP_PROC_REGISTER,
+    CAP_PROC_DELETE,
+    CAP_PROC_ENTRY,
+    CAP_STORE_WRITE,
+    CAP_LOG,
+    CAP_ACC_CALL
+];
+
 type ProcedureKey = [u8; 24];
 type ProcedureIndex = [u8; 24];
 

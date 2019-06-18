@@ -9,6 +9,7 @@ pub struct Error;
 
 use crate::proc_table;
 use proc_table::cap::Capability;
+use proc_table::cap::*;
 use proc_table::ProcedureKey;
 
 
@@ -23,11 +24,10 @@ pub struct SysCall {
 impl SysCall {
     pub fn cap_type(&self) -> u8 {
         match &self.action {
-            // TODO: use the constants provided elsewhere
-            SysCallAction::Call(_)  => 0x3,
-            SysCallAction::Write(_) => 0x7,
-            SysCallAction::Log(_) => 0x8,
-            SysCallAction::Register(_) => 0x4,
+            SysCallAction::Call(_)  => CAP_PROC_CALL,
+            SysCallAction::Write(_) => CAP_STORE_WRITE,
+            SysCallAction::Log(_) => CAP_LOG,
+            SysCallAction::Register(_) => CAP_PROC_REGISTER,
         }
     }
 
@@ -54,25 +54,25 @@ impl Deserialize for SysCall {
         let syscall_type = u8::deserialize(reader)?;
         let cap_index = u8::deserialize(reader)?;
         match syscall_type {
-            0x3 => {
+            CAP_PROC_CALL => {
                 Ok(SysCall {
                     cap_index,
                     action: SysCallAction::Call(Call::deserialize(reader)?)
                 })
             },
-            0x7 => {
+            CAP_STORE_WRITE => {
                 Ok(SysCall {
                     cap_index,
                     action: SysCallAction::Write(WriteCall::deserialize(reader)?)
                 })
             },
-            0x8 => {
+            CAP_LOG => {
                 Ok(SysCall {
                     cap_index,
                     action: SysCallAction::Log(LogCall::deserialize(reader)?)
                 })
             },
-            0x4 => {
+            CAP_PROC_REGISTER => {
                 Ok(SysCall {
                     cap_index,
                     action: SysCallAction::Register(RegisterProc::deserialize(reader)?)
@@ -89,13 +89,7 @@ impl Serialize for SysCall {
 
     fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write syscall type
-        // TODO: we don't actually need this match statment
-        match self.action {
-            SysCallAction::Call(_) => writer.write(&[self.cap_type()])?,
-            SysCallAction::Write(_) => writer.write(&[self.cap_type()])?,
-            SysCallAction::Log(_) => writer.write(&[self.cap_type()])?,
-            SysCallAction::Register(_) => writer.write(&[self.cap_type()])?,
-        }
+        writer.write(&[self.cap_type()])?;
         // Write cap index
         writer.write(&[self.cap_index])?;
         self.action.serialize(writer)?;
