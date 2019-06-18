@@ -11,7 +11,6 @@ cargo build --release --target wasm32-unknown-unknown --no-default-features --fe
 cd cap9-kernel
 cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
 cd ..
-cap9-build set-mem --pages 3 .\target\wasm32-unknown-unknown\release\%contract_name%.wasm .\target\wasm32-unknown-unknown\release\%contract_name%.wasm
 cargo run --package cap9-build -- set-mem --pages 3 .\target\wasm32-unknown-unknown\release\%contract_name%.wasm .\target\wasm32-unknown-unknown\release\%contract_name%.wasm
 wasm-build --target=wasm32-unknown-unknown .\target kernel-ewasm
 
@@ -29,6 +28,7 @@ cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\rel
 wasm-build --target=wasm32-unknown-unknown .\target caller_test
 
 cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\release\logger_test.wasm .\target\wasm32-unknown-unknown\release\logger_test.wasm
+cargo run --package cap9-build -- set-mem --pages 3 .\target\wasm32-unknown-unknown\release\logger_test.wasm .\target\wasm32-unknown-unknown\release\logger_test.wasm
 wasm-build --target=wasm32-unknown-unknown .\target logger_test
 
 cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\release\register_test.wasm .\target\wasm32-unknown-unknown\release\register_test.wasm
