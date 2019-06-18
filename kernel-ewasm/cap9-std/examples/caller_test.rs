@@ -27,7 +27,7 @@ pub mod writer {
     use cap9_std::proc_table::cap::*;
     use cap9_std::syscalls::*;
 
-    #[eth_abi(TestCallerEndpoint, KernelClient)]
+    #[eth_abi(TestCallerEndpoint)]
     pub trait TestCallerInterface {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self);
@@ -38,7 +38,7 @@ pub mod writer {
 
         // fn writeNumDirect(&mut self, key: U256, val: U256);
 
-        fn callProc(&mut self, cap_idx: U256, key: H256);
+        fn callProc(&mut self, cap_idx: U256, key: H256, payload: Vec<u8>);
 
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
 
@@ -54,18 +54,7 @@ pub mod writer {
             76.into()
         }
 
-        // Call a procedure with a hard-coded key.
-        // fn callProcHC(&mut self, key: U256, val: U256) {
-        //     pwasm_ethereum::write(&key.into(), &val.into());
-        // }
-
-        // TODO: pass through a payload
-        fn callProc(&mut self, cap_idx: U256, key: H256) {
-            let mut payload = Vec::new();
-            payload.push(0xae);
-            payload.push(0x28);
-            payload.push(0xf1);
-            payload.push(0xed);
+        fn callProc(&mut self, cap_idx: U256, key: H256, payload: Vec<u8>) {
             cap9_std::raw_proc_call(cap_idx.as_u32() as u8, key.into(), payload).unwrap();
             pwasm_ethereum::ret(&cap9_std::result());
         }
