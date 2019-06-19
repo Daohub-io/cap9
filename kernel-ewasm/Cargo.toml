@@ -10,5 +10,5 @@ members = [
 
 [profile.release]
 panic = "abort"
-lto = false
-# opt-level = "z"
+lto = true
+opt-level = "z"
