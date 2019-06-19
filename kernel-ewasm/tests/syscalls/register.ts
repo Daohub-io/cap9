@@ -499,7 +499,7 @@ describe('Register Procedure Syscall', function () {
                 await registerTest(registerCaps, requestedCaps, procName, contractName, contractABIName, result);
             })
         })
-        describe.skip('account call', function () {
+        describe('account call', function () {
             it('should register procedure with account call cap, identical (true, true)', async function () {
                 const prefix = 192;
                 const cap_key = "write";

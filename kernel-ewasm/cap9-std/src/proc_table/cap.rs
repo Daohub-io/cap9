@@ -460,20 +460,7 @@ impl Capability {
             }
             (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
                 let val = input[start];
-
-                let can_call_any = val.bit(31);
-                let can_send = val.bit(30);
-
-                let mut address = [0u8; 20];
-                address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
-                let address = H160::from(address);
-
-                let account_call_cap = AccountCallCap {
-                    can_call_any: can_call_any,
-                    can_send: can_send,
-                    address: address,
-                };
-
+                let account_call_cap = val.into();
                 Capability::AccountCall(account_call_cap)
             }
             _ => return Err(CapDecodeErr::InvalidCapType(cap_type)),
@@ -724,18 +711,7 @@ impl NewCapList {
                 (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
                     let val = list[start];
 
-                    let can_call_any = val.bit(0);
-                    let can_send = val.bit(1);
-
-                    let mut address = [0u8; 20];
-                    address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
-                    let address = H160::from(address);
-
-                    let account_call_cap = AccountCallCap {
-                        can_call_any: can_call_any,
-                        can_send: can_send,
-                        address: address,
-                    };
+                    let account_call_cap: AccountCallCap = val.into();
 
                     NewCapability {
                         cap: Capability::AccountCall(account_call_cap),
@@ -750,6 +726,23 @@ impl NewCapList {
         }
 
         Ok(NewCapList(result))
+    }
+}
+
+impl From<U256> for AccountCallCap {
+    fn from(val: U256) -> Self {
+        let can_call_any = val.bit(255);
+        let can_send = val.bit(254);
+
+        let mut address = [0u8; 20];
+        address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
+        let address = H160::from(address);
+
+        AccountCallCap {
+            can_call_any: can_call_any,
+            can_send: can_send,
+            address: address,
+        }
     }
 }
 
@@ -877,6 +870,24 @@ mod tests {
 
         assert_eq!(sample_cap.into_u256_list(), list);
         assert_eq!(Capability::from_u256_list(&list).unwrap(), sample_cap);
+    }
+
+    #[test]
+    fn should_decode_encode_account_call_cap() {
+
+        let raw: [u8;32] = [0xc0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0x00];
+        let raw_address: [u8;20] = [0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0x00];
+
+        let val: U256 = raw.into();
+        let address: Address = raw_address.into();
+        let cap: AccountCallCap = val.into();
+        let expected_cap = AccountCallCap {
+            can_send: true,
+            can_call_any: true,
+            address: address,
+        };
+        assert_eq!(cap, expected_cap);
+        // assert_eq!(Capability::from_u256_list(&list).unwrap(), sample_cap);
     }
 
 }
