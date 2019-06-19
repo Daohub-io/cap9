@@ -109,7 +109,168 @@ impl Capability {
             Capability::AccountCall(_) => CAP_ACC_CALL_SIZE,
         }
     }
+
+    pub fn cap_type(&self) -> u8 {
+        match self {
+            Capability::ProcedureCall(cap) => CAP_PROC_CALL,
+            Capability::ProcedureRegister(cap) => CAP_PROC_REGISTER,
+            Capability::ProcedureDelete(cap) => CAP_PROC_DELETE,
+            Capability::ProcedureEntry(cap) => CAP_PROC_ENTRY,
+            Capability::StoreWrite(cap) => CAP_STORE_WRITE,
+            Capability::Log(cap) => CAP_LOG,
+            Capability::AccountCall(cap) => CAP_ACC_CALL,
+        }
+    }
+
+    pub fn is_subset_of(&self, parent_cap: &Capability) -> bool {
+        match (self, parent_cap) {
+            // (Capability::ProcedureCall(cap),Capability::ProcedureCall(parent)) => cap.is_subset_of(parent_cap),
+            (Capability::StoreWrite(cap),Capability::StoreWrite(parent)) => cap.is_subset_of(parent),
+            _ => false,
+        }
+    }
+
 }
+
+pub trait AsCap {
+    /// Is this capability a superset of the capability provided as child_cap?
+    /// This is implemented in terms of "is_subset_of".
+    // fn is_superset_of<T: AsCap>(&self, child_cap: T) -> bool {
+    //     child_cap.is_subset_of(self)
+    // }
+
+    fn is_subset_of(&self, parent_cap: &Self) -> bool;
+}
+
+impl AsCap for StoreWriteCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // Base storage address
+        if U256::from_big_endian(&self.location) < U256::from_big_endian(&parent_cap.location) {
+            return false;
+        }
+        // Number of additional storage keys
+        if (U256::from_big_endian(&self.location) + U256::from_big_endian(&self.size)) > (U256::from_big_endian(&parent_cap.location) + U256::from_big_endian(&parent_cap.size)) {
+            return false;
+        }
+        true
+    }
+}
+
+// function isSubset(uint192 currentProcedure, uint256 capType, uint256 capIndex, uint256[] caps, uint256 i) internal view returns (bool) {
+//         uint256 currentVal;
+//         uint256 requestedVal;
+//         uint256 b;
+//         uint256 current;
+//         uint256 req;
+//         // Check if our cap is a subset. If not revert.
+//         // The subset logic of these three caps are the same
+//         if (capType == CAP_PROC_CALL || capType == CAP_PROC_REGISTER || capType == CAP_PROC_DELETE) {
+//             currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
+//             requestedVal = caps[i+3+0];
+
+//             // Check that the prefix of B is >= than the prefix of A.
+//             current = currentVal & 0xff00000000000000000000000000000000000000000000000000000000000000;
+//             req = requestedVal & 0xff00000000000000000000000000000000000000000000000000000000000000;
+//             if (current > req) {
+//                 return false;
+//             }
+
+//             // b is "currentMask"
+//             b = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff << ((192 - (current >> 248)));
+//             current = b & currentVal & 0x0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff;
+//             req = b & requestedVal & 0x0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff;
+//             // Insert a 0 value (which means the prefix will be zero, i.e. the maximum capability)
+//             // Check that the first $prefix bits of the two keys are the same
+//             if (current != req) {
+//                 return false;
+//             }
+//             return true;
+//         } else if (capType == CAP_STORE_WRITE) {
+//             // Base storage address
+//             currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
+//             requestedVal = caps[i+3+0];
+//             if (requestedVal < currentVal) {
+//                 return false;
+//             }
+
+//             // Number of additional storage keys
+//             currentVal += _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x01);
+//             requestedVal += caps[i+3+1];
+//             if (requestedVal > currentVal) {
+//                 return false;
+//             }
+//             // Even though there exists invalid capabilities, we don't check for
+//             // them here as it wouldn't cover all circumstances. If we wan to
+//             // check for it we should do it more generally.
+//             // if (requestedVal == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
+//             //     return false;
+//             // }
+//             return true;
+//         } else if (capType == CAP_LOG) {
+//             // First we check the number of required topics. The number of
+//             // required topics of the requested cap must be equal to or greater
+//             // than the number of required topics for the current cap.
+//             currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
+//             requestedVal = caps[i+3+0];
+//             if (requestedVal < currentVal) {
+//                 return false;
+//             }
+
+//             // Next we check that the topics required by the current cap are
+//             // also required by the requested cap.
+//             for (b = 1; b <= currentVal; b++) {
+//                 if (caps[i+3+b] != _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | b)) {
+//                     return false;
+//                 }
+//             }
+//             return true;
+//         } else if (capType == CAP_PROC_ENTRY) {
+//             // All of these caps are identical, therefore any cap of this type
+//             // is the subset of another
+//             return true;
+//         } else if (capType == CAP_ACC_CALL) {
+//             // If the requested value of callAny is true, then the requested
+//             // value of callAny must be true.
+//             currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
+//             requestedVal = caps[i+3+0];
+//             current = currentVal & 0x8000000000000000000000000000000000000000000000000000000000000000;
+//             req = requestedVal & 0x8000000000000000000000000000000000000000000000000000000000000000;
+//             // If req != 0 (that is, equals 1, requested callAny flag is true) and
+//             // current == 0 (that is, current callAny flag is false)
+//             // then fail
+//             if (req != 0) {
+//                 // requested callAny == true
+//                 if (current == 0) {
+//                     return false;
+//                 }
+//             } else {
+//                 // requested callAny == false
+//                 // if the current value is callAny, we don't care about the
+//                 // value of ethAddress. If the current value of callAny is
+//                 // 0 (false) we must check that the addresses are the same
+//                 if (current == 0) {
+//                     // the addresses must match
+//                     // get the current and required addresses
+//                     current = currentVal & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+//                     req = requestedVal & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+//                     if (current != req) {
+//                         return false;
+//                     }
+//                 }
+//             }
+//             // if the requested sendValue flag is true, the current sendValue
+//             // flag must also be true.
+//             // get the sendValue flags
+//             current = currentVal & 0x4000000000000000000000000000000000000000000000000000000000000000;
+//             req = requestedVal & 0x4000000000000000000000000000000000000000000000000000000000000000;
+//             if (req != 0 && current == 0) {
+//                 return false;
+//             }
+//             return true;
+//         } else {
+//             revert("unknown capability");
+//         }
+//     }
 
 #[derive(Clone, Debug)]
 pub enum CapDecodeErr {

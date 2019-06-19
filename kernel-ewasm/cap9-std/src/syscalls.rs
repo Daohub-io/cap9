@@ -150,11 +150,29 @@ impl SysCallAction {
                 false
             },
             // Register Procedure syscall
-            SysCallAction::Register(RegisterProc{proc_id,address:_, cap_list:_}) => {
+            SysCallAction::Register(RegisterProc{proc_id,address:_, cap_list}) => {
+                // Check that this procedure has the correct capability to
+                // register a procedure of the given key.
                 if let Capability::ProcedureRegister(proc_table::cap::ProcedureRegisterCap {prefix, key}) = cap {
-                    return matching_keys(prefix, &key, proc_id);
+                    if !matching_keys(prefix, &key, proc_id) {
+                        return false;
+                    }
                 }
-                false
+                let this_key: proc_table::ProcedureKey = proc_table::get_current_proc_id();
+                // Check that this procedure has sufficent capabilities to
+                // delegate to the new procedure.
+                let caps = &cap_list.0;
+                for cap in caps {
+                    // Retrieve the parent cap that this cap has requested.
+                    let parent_cap: Capability = match proc_table::get_proc_cap(this_key, cap.cap.cap_type(), cap.parent_index) {
+                        None => return false,
+                        Some(cap) => cap,
+                    };
+                    if !cap.cap.is_subset_of(&parent_cap) {
+                        return false;
+                    }
+                }
+                true
             },
             // WRITE syscall
             SysCallAction::Write(WriteCall{key,value:_}) => {
