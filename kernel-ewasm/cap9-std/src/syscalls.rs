@@ -126,22 +126,23 @@ impl SysCallAction {
                     if !matching_keys(prefix, &key, proc_id) {
                         return false;
                     }
-                }
-                let this_key: proc_table::ProcedureKey = proc_table::get_current_proc_id();
-                // Check that this procedure has sufficent capabilities to
-                // delegate to the new procedure.
-                let caps = &cap_list.0;
-                for cap in caps {
-                    // Retrieve the parent cap that this cap has requested.
-                    let parent_cap: Capability = match proc_table::get_proc_cap(this_key, cap.cap.cap_type(), cap.parent_index) {
-                        None => return false,
-                        Some(cap) => cap,
-                    };
-                    if !cap.cap.is_subset_of(&parent_cap) {
-                        return false;
+                    let this_key: proc_table::ProcedureKey = proc_table::get_current_proc_id();
+                    // Check that this procedure has sufficent capabilities to
+                    // delegate to the new procedure.
+                    let caps = &cap_list.0;
+                    for cap in caps {
+                        // Retrieve the parent cap that this cap has requested.
+                        let parent_cap: Capability = match proc_table::get_proc_cap(this_key, cap.cap.cap_type(), cap.parent_index) {
+                            None => return false,
+                            Some(cap) => cap,
+                        };
+                        if !cap.cap.is_subset_of(&parent_cap) {
+                            return false;
+                        }
                     }
+                    return true;
                 }
-                true
+                false
             },
             // WRITE syscall
             SysCallAction::Write(WriteCall{key,value:_}) => {
