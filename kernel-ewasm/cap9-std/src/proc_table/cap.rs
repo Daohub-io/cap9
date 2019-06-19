@@ -112,13 +112,13 @@ impl Capability {
 
     pub fn cap_type(&self) -> u8 {
         match self {
-            Capability::ProcedureCall(cap) => CAP_PROC_CALL,
-            Capability::ProcedureRegister(cap) => CAP_PROC_REGISTER,
-            Capability::ProcedureDelete(cap) => CAP_PROC_DELETE,
-            Capability::ProcedureEntry(cap) => CAP_PROC_ENTRY,
-            Capability::StoreWrite(cap) => CAP_STORE_WRITE,
-            Capability::Log(cap) => CAP_LOG,
-            Capability::AccountCall(cap) => CAP_ACC_CALL,
+            Capability::ProcedureCall(_) => CAP_PROC_CALL,
+            Capability::ProcedureRegister(_) => CAP_PROC_REGISTER,
+            Capability::ProcedureDelete(_) => CAP_PROC_DELETE,
+            Capability::ProcedureEntry(_) => CAP_PROC_ENTRY,
+            Capability::StoreWrite(_) => CAP_STORE_WRITE,
+            Capability::Log(_) => CAP_LOG,
+            Capability::AccountCall(_) => CAP_ACC_CALL,
         }
     }
 
@@ -407,7 +407,7 @@ impl Capability {
                 let mut topics = [[0; 32]; 4];
                 if topics_len != 0 {
                     match topics_len {
-                        1...4 => {
+                        1..=4 => {
                             for i in 0..topics_len {
                                 topics[i] = input[start + i + 1].into()
                             }
@@ -667,7 +667,7 @@ impl NewCapList {
                     let mut topics = [[0; 32]; 4];
                     if topics_len != 0 {
                         match topics_len {
-                            1...4 => {
+                            1..=4 => {
                                 for i in 0..topics_len {
                                     topics[i] = list[start + i + 1].into()
                                 }
