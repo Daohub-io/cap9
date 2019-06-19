@@ -124,20 +124,31 @@ impl Capability {
 
     pub fn is_subset_of(&self, parent_cap: &Capability) -> bool {
         match (self, parent_cap) {
-            // (Capability::ProcedureCall(cap),Capability::ProcedureCall(parent)) => cap.is_subset_of(parent_cap),
+            (Capability::ProcedureCall(cap),Capability::ProcedureCall(parent)) => cap.is_subset_of(parent),
+            (Capability::ProcedureCall(_),_) => false,
+
             (Capability::StoreWrite(cap),Capability::StoreWrite(parent)) => cap.is_subset_of(parent),
-            _ => false,
+            (Capability::StoreWrite(_),_) => false,
+
+            (Capability::ProcedureRegister(cap),Capability::ProcedureRegister(parent)) => cap.is_subset_of(parent),
+            (Capability::ProcedureRegister(_),_) => false,
+
+            (Capability::ProcedureDelete(cap),Capability::ProcedureDelete(parent)) => cap.is_subset_of(parent),
+            (Capability::ProcedureDelete(_),_) => false,
+
+            (Capability::ProcedureEntry(cap),Capability::ProcedureEntry(parent)) => cap.is_subset_of(parent),
+            (Capability::ProcedureEntry(_),_) => false,
+
+            (Capability::Log(cap),Capability::Log(parent)) => cap.is_subset_of(parent),
+            (Capability::Log(_),_) => false,
+
+            (Capability::AccountCall(cap),Capability::AccountCall(parent)) => cap.is_subset_of(parent),
+            (Capability::AccountCall(_),_) => false,
         }
     }
 }
 
 pub trait AsCap {
-    /// Is this capability a superset of the capability provided as child_cap?
-    /// This is implemented in terms of "is_subset_of".
-    // fn is_superset_of<T: AsCap>(&self, child_cap: T) -> bool {
-    //     child_cap.is_subset_of(self)
-    // }
-
     fn is_subset_of(&self, parent_cap: &Self) -> bool;
 }
 
@@ -209,7 +220,7 @@ impl AsCap for AccountCallCap {
             }
         } else {
             // if the parent_cap value is callAny, we don't care about the value
-            // of ethAddress. If the current value of callAny is false we must
+            // of ethAddress. If the requested value of callAny is false we must
             // check that the addresses are the same
             if !parent_cap.can_call_any {
                 // the addresses must match
@@ -232,6 +243,28 @@ impl AsCap for AccountCallCap {
 
 
 impl AsCap for ProcedureRegisterCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // Check that the prefix of B is >= than the prefix of A.
+        if parent_cap.prefix > self.prefix {
+            return false;
+        }
+        // The keys must match
+        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
+    }
+}
+
+impl AsCap for ProcedureDeleteCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // Check that the prefix of B is >= than the prefix of A.
+        if parent_cap.prefix > self.prefix {
+            return false;
+        }
+        // The keys must match
+        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
+    }
+}
+
+impl AsCap for ProcedureCallCap {
     fn is_subset_of(&self, parent_cap: &Self) -> bool {
         // Check that the prefix of B is >= than the prefix of A.
         if parent_cap.prefix > self.prefix {
@@ -428,8 +461,8 @@ impl Capability {
             (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
                 let val = input[start];
 
-                let can_call_any = val.bit(0);
-                let can_send = val.bit(1);
+                let can_call_any = val.bit(31);
+                let can_send = val.bit(30);
 
                 let mut address = [0u8; 20];
                 address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
