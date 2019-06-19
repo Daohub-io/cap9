@@ -238,10 +238,8 @@ impl SysCallAction {
             }
             // Register Procedure
             SysCallAction::Register(RegisterProc{proc_id, address, cap_list}) => {
-                // TODO: pass through cap list
-                // let cap_list = cap::NewCapList::from_u256_list(&cap_list).expect("Caplist must be valid");
-                let cap_list = proc_table::cap::NewCapList::empty();
-                proc_table::insert_proc(proc_id.clone(), address.clone(), cap_list).unwrap();
+                // TODO: these should probably be passed by reference
+                proc_table::insert_proc(proc_id.clone(), address.clone(), cap_list.clone()).unwrap();
             }
         }
     }
@@ -457,6 +455,19 @@ impl Into<H256> for SysCallProcedureKey {
         let mut proc_id_u256: [u8; 32] = [0; 32];
         proc_id_u256[8..32].copy_from_slice(&self.0);
         proc_id_u256.into()
+    }
+}
+
+
+impl From<ProcedureKey> for SysCallProcedureKey {
+    fn from(proc_id: ProcedureKey) -> Self {
+        SysCallProcedureKey(proc_id)
+    }
+}
+
+impl Into<ProcedureKey> for SysCallProcedureKey {
+    fn into(self) -> ProcedureKey {
+        self.0
     }
 }
 

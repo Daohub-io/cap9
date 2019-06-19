@@ -97,7 +97,7 @@ describe('Kernel', function () {
             const code_size = await kernel.methods.get_code_size(kernelAddress).call();
             const code_hex = await kernel.methods.code_copy(kernelAddress).call();
             const code = web3.utils.hexToBytes(code_hex);
-            assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
+            assert.strictEqual(code.length, code_size, "The code length should be as given by EXTCODESIZE");
         })
 
         it('should return a boolean when trying to validate the kernel itself', async function () {

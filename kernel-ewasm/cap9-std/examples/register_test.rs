@@ -42,6 +42,8 @@ pub mod writer {
 
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
 
+        fn getNCaps(&mut self, key: H256, cap_type: U256) -> Vec<H256>;
+
     }
 
     pub struct RegisterContract;
@@ -87,6 +89,16 @@ pub mod writer {
                 _ => panic!("wrong cap")
             }
         }
+
+        fn getNCaps(&mut self, key_raw: H256, cap_type: U256) -> Vec<H256> {
+            let key: SysCallProcedureKey = key_raw.into();
+            let n_caps: U256 = cap9_std::proc_table::get_proc_cap_list_len(key.into(), cap_type.as_u32() as u8).into();
+            // let cap = cap9_std::proc_table::get_proc_cap(this_key, cap_type.as_u32() as u8, cap_index.as_u32() as u8).unwrap();
+            let mut caps = Vec::new();
+            caps.push(n_caps.into());
+            caps
+        }
+
     }
 }
 // Declares the dispatch and dispatch_ctor methods

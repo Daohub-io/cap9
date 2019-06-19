@@ -65,16 +65,21 @@ describe('Register Procedure Syscall', function () {
 
             // Deploy the contract for the procedure that we will register.
             let writeProc = await deployContract("writer_test", "TestWriterInterface");
-
+            const writer_caps = [new NewCap(0, new WriteCap(0x8000, 2))];
+            const encoded_writer_caps = writer_caps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
             // This is the address of the new procedure that we wish to register.
 
             const procList1 = await kernel_asRegister.methods.listProcs().call().then(x=>x.map(normalize));
             // We then send that message via a call procedure syscall.
-            const message = kernel_asRegister.methods.regProc(cap_index, key, writeProc.address, []).encodeABI();
+            const message = kernel_asRegister.methods.regProc(cap_index, key, writeProc.address, encoded_writer_caps).encodeABI();
             const return_value = await web3.eth.sendTransaction({ to: kernel.contract.address, data: message });
             const procList2 = await kernel_asRegister.methods.listProcs().call().then(x=>x.map(normalize));
             assert.strictEqual(procList2.length, procList1.length + 1, "The number of procedures should have increased by 1");
             assert(procList2.includes(normalize(web3.utils.fromAscii("write",24))), "The new procedure key should be included in the table");
+
+            // Check that the new procedure has the correct caps.
+            const resulting_caps = await kernel_asRegister.methods.getNCaps(web3.utils.fromAscii("write",24), 0x7).call();
+            assert.strictEqual(normalize(resulting_caps[0]), normalize(1), "One write cap should be written");
         })
         it('should fail to register, with no cap', async function () {
             const caps = [];

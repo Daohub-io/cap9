@@ -129,7 +129,15 @@ pub mod kernel {
         }
 
         fn code_copy(&mut self, to: Address) -> pwasm_std::Vec<u8> {
-            super::extcodecopy(&to)
+            let mut code = super::extcodecopy(&to);
+            // TODO: FIXME: This is an awful hack. Without these two resize
+            // lines (which have no net effect) we hit an Unreachable trap in
+            // the WASM code. Jake's hypothesis is that these two lines trigger
+            // a reallocation of some kind (of the vector) that side-steps
+            // whatever issue is occuring.
+            code.resize(code.len()+1,0);
+            code.resize(code.len()-1,0);
+            code
         }
 
         fn get_cap_type_len(&mut self, _proc_key: String, _cap_type: U256) -> U256 {
