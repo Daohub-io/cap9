@@ -150,7 +150,7 @@ impl SysCallAction {
                 false
             },
             // Register Procedure syscall
-            SysCallAction::Register(RegisterProc{proc_id,address:_}) => {
+            SysCallAction::Register(RegisterProc{proc_id,address:_, cap_list:_}) => {
                 if let Capability::ProcedureRegister(proc_table::cap::ProcedureRegisterCap {prefix, key}) = cap {
                     return matching_keys(prefix, &key, proc_id);
                 }
@@ -237,7 +237,7 @@ impl SysCallAction {
                 proc_table::set_current_proc_id(this_proc).unwrap();
             }
             // Register Procedure
-            SysCallAction::Register(RegisterProc{proc_id, address}) => {
+            SysCallAction::Register(RegisterProc{proc_id, address, cap_list}) => {
                 // TODO: pass through cap list
                 // let cap_list = cap::NewCapList::from_u256_list(&cap_list).expect("Caplist must be valid");
                 let cap_list = proc_table::cap::NewCapList::empty();
@@ -341,6 +341,7 @@ impl Serialize for LogCall {
 pub struct RegisterProc {
     pub proc_id: proc_table::ProcedureKey,
     pub address: Address,
+    pub cap_list: NewCapList,
 }
 
 impl Deserialize for RegisterProc {
@@ -349,7 +350,8 @@ impl Deserialize for RegisterProc {
     fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
         let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
         let address = Address::deserialize(reader)?;
-        Ok(RegisterProc{proc_id, address})
+        let cap_list = NewCapList::deserialize(reader)?;
+        Ok(RegisterProc{proc_id, address, cap_list})
     }
 }
 
@@ -360,8 +362,10 @@ impl Serialize for RegisterProc {
     fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write procedure id
         SysCallProcedureKey(self.proc_id).serialize(writer)?;
-        // Write payload
+        // Write the address of the contract
         self.address.serialize(writer)?;
+        // Write the caps out as 32-byte values, as per the spec
+        self.cap_list.serialize(writer)?;
         Ok(())
     }
 }
@@ -479,6 +483,36 @@ impl Serialize for SysCallProcedureKey {
         Ok(())
     }
 }
+
+
+impl Deserialize for NewCapList {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut cap_list_raw: Vec<U256> = Vec::new();
+        loop {
+            if let Ok(cap_val) = H256::deserialize(reader) {
+                cap_list_raw.push(cap_val.into());
+            } else {
+                break;
+            }
+        }
+        let cap_list = NewCapList::from_u256_list(cap_list_raw.as_slice()).unwrap();
+        Ok(cap_list)
+    }
+}
+
+impl Serialize for NewCapList {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        for val in self.to_u256_list() {
+            val.serialize(writer)?;
+        }
+        Ok(())
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

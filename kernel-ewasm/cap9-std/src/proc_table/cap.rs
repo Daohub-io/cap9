@@ -294,7 +294,7 @@ pub struct NewCapability {
     pub parent_index: u8,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NewCapList(pub Vec<NewCapability>);
 
 impl NewCapList {

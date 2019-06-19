@@ -207,9 +207,11 @@ pub fn raw_proc_log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<
 
 pub fn raw_proc_reg(cap_index: u8, proc_id: SysCallProcedureKey, address: Address, cap_list: Vec<H256>) -> Result<(), Error> {
     let mut input = Vec::new();
+    let u256_list: Vec<U256> = cap_list.iter().map(|x| x.into()).collect();
+    let cap_list = proc_table::cap::NewCapList::from_u256_list(&u256_list).unwrap();
     let syscall = SysCall {
         cap_index,
-        action: SysCallAction::Register(RegisterProc{proc_id: proc_id.0, address}),
+        action: SysCallAction::Register(RegisterProc{proc_id: proc_id.0, address, cap_list}),
     };
     syscall.serialize(&mut input).unwrap();
     cap9_syscall(&input, &mut Vec::new())
