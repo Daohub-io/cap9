@@ -97,37 +97,6 @@ impl Serialize for SysCall {
     }
 }
 
-fn matching_keys(prefix: u8, required_key: &ProcedureKey, requested_key: &ProcedureKey) -> bool {
-    // We only want to keep the first $prefix bits of $key, the
-    // rest should be zero. We then XOR this value with the
-    // requested proc id and the value should be zero. TODO:
-    // consider using the unstable BitVec type. For now we will
-    // just a u128 and a u64.
-    let mut mask_a_array = [0;16];
-    mask_a_array.copy_from_slice(&required_key[0..16]);
-    let mut mask_b_array = [0;8];
-    mask_b_array.copy_from_slice(&required_key[16..24]);
-
-    let shift_amt: u32 = 192_u8.checked_sub(prefix).unwrap_or(0) as u32;
-
-    let prefix_mask_a: u128 = u128::max_value().checked_shl(shift_amt.checked_sub(64).unwrap_or(0)).unwrap_or(0);
-    let prefix_mask_b:u64 = u64::max_value().checked_shl(shift_amt).unwrap_or(0);
-
-    // mask_a + mask_b is the key we are allowed
-    let mask_a: u128 = u128::from_be_bytes(mask_a_array) & prefix_mask_a;
-    let mask_b: u64 = u64::from_be_bytes(mask_b_array) & prefix_mask_b;
-
-    // This is the key we are requesting but cleared
-    let mut req_a_array = [0;16];
-    req_a_array.copy_from_slice(&requested_key[0..16]);
-    let mut req_b_array = [0;8];
-    req_b_array.copy_from_slice(&requested_key[16..24]);
-    let req_a: u128 = u128::from_be_bytes(req_a_array) & prefix_mask_a;
-    let req_b: u64 = u64::from_be_bytes(req_b_array) & prefix_mask_b;
-
-    return (req_a == mask_a) && (req_b == mask_b);
-}
-
 /// The action portion of a SysCall, i.e. WRITE, LOG, etc. without the
 /// permissions information. This is the type where the capability checking and
 /// execution logic is written.

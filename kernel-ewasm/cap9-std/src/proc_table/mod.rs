@@ -477,7 +477,7 @@ pub mod contract {
     impl ProcedureTableInterface for ProcedureTableContract {
         fn insert_proc(&mut self, key: String, address: Address, cap_list: Vec<U256>) -> U256 {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
@@ -495,7 +495,7 @@ pub mod contract {
 
         fn remove_proc(&mut self, key: String) -> U256 {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
@@ -511,7 +511,7 @@ pub mod contract {
         /// Set Entry Procedure Id
         fn set_entry_proc_id(&mut self, key: String) -> U256 {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
@@ -527,7 +527,7 @@ pub mod contract {
         /// Set Current Procedure Id
         fn set_current_proc_id(&mut self, key: String) -> U256 {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
@@ -542,7 +542,7 @@ pub mod contract {
 
         fn contains(&mut self, key: String) -> bool {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
@@ -558,7 +558,7 @@ pub mod contract {
 
         fn get_proc_addr(&mut self, key: String) -> Address {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
@@ -574,7 +574,7 @@ pub mod contract {
 
         fn get_proc_index(&mut self, key: String) -> U256 {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
@@ -607,7 +607,7 @@ pub mod contract {
 
         fn get_proc_cap_list_len(&mut self, key: String, cap_type: U256) -> U256 {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);
@@ -619,7 +619,7 @@ pub mod contract {
 
         fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256> {
             let raw_key = {
-                let mut byte_key = key.as_bytes();
+                let byte_key = key.as_bytes();
                 let len = byte_key.len();
                 let mut output = [0u8; 24];
                 output[..len].copy_from_slice(byte_key);

@@ -129,7 +129,6 @@ impl Capability {
             _ => false,
         }
     }
-
 }
 
 pub trait AsCap {
@@ -156,121 +155,123 @@ impl AsCap for StoreWriteCap {
     }
 }
 
-// function isSubset(uint192 currentProcedure, uint256 capType, uint256 capIndex, uint256[] caps, uint256 i) internal view returns (bool) {
-//         uint256 currentVal;
-//         uint256 requestedVal;
-//         uint256 b;
-//         uint256 current;
-//         uint256 req;
-//         // Check if our cap is a subset. If not revert.
-//         // The subset logic of these three caps are the same
-//         if (capType == CAP_PROC_CALL || capType == CAP_PROC_REGISTER || capType == CAP_PROC_DELETE) {
-//             currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
-//             requestedVal = caps[i+3+0];
 
-//             // Check that the prefix of B is >= than the prefix of A.
-//             current = currentVal & 0xff00000000000000000000000000000000000000000000000000000000000000;
-//             req = requestedVal & 0xff00000000000000000000000000000000000000000000000000000000000000;
-//             if (current > req) {
-//                 return false;
-//             }
+impl AsCap for LogCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // First we check the number of required topics. The number of
+        // required topics of the requested cap must be equal to or greater
+        // than the number of required topics for the current cap.
+        if self.topics < parent_cap.topics {
+            return false;
+        }
+        // Next we check that the topics required by the parent cap are
+        // also required by the requested cap.
+        if parent_cap.topics >= 1 {
+            if parent_cap.t1 != self.t1 {
+                return false;
+            }
+        }
+        if parent_cap.topics >= 2 {
+            if parent_cap.t2 != self.t2 {
+                return false;
+            }
+        }
+        if parent_cap.topics >= 3 {
+            if parent_cap.t3 != self.t3 {
+                return false;
+            }
+        }
+        if parent_cap.topics >= 4 {
+            if parent_cap.t4 != self.t4 {
+                return false;
+            }
+        }
+        true
+    }
+}
 
-//             // b is "currentMask"
-//             b = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff << ((192 - (current >> 248)));
-//             current = b & currentVal & 0x0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff;
-//             req = b & requestedVal & 0x0000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff;
-//             // Insert a 0 value (which means the prefix will be zero, i.e. the maximum capability)
-//             // Check that the first $prefix bits of the two keys are the same
-//             if (current != req) {
-//                 return false;
-//             }
-//             return true;
-//         } else if (capType == CAP_STORE_WRITE) {
-//             // Base storage address
-//             currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
-//             requestedVal = caps[i+3+0];
-//             if (requestedVal < currentVal) {
-//                 return false;
-//             }
 
-//             // Number of additional storage keys
-//             currentVal += _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x01);
-//             requestedVal += caps[i+3+1];
-//             if (requestedVal > currentVal) {
-//                 return false;
-//             }
-//             // Even though there exists invalid capabilities, we don't check for
-//             // them here as it wouldn't cover all circumstances. If we wan to
-//             // check for it we should do it more generally.
-//             // if (requestedVal == 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff) {
-//             //     return false;
-//             // }
-//             return true;
-//         } else if (capType == CAP_LOG) {
-//             // First we check the number of required topics. The number of
-//             // required topics of the requested cap must be equal to or greater
-//             // than the number of required topics for the current cap.
-//             currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | 0x00);
-//             requestedVal = caps[i+3+0];
-//             if (requestedVal < currentVal) {
-//                 return false;
-//             }
+impl AsCap for ProcedureEntryCap {
+    fn is_subset_of(&self, _parent_cap: &Self) -> bool {
+        // All of these caps are identical, therefore any cap of this type is
+        // the subset of another,
+        true
+    }
+}
 
-//             // Next we check that the topics required by the current cap are
-//             // also required by the requested cap.
-//             for (b = 1; b <= currentVal; b++) {
-//                 if (caps[i+3+b] != _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex+1)*0x100) | b)) {
-//                     return false;
-//                 }
-//             }
-//             return true;
-//         } else if (capType == CAP_PROC_ENTRY) {
-//             // All of these caps are identical, therefore any cap of this type
-//             // is the subset of another
-//             return true;
-//         } else if (capType == CAP_ACC_CALL) {
-//             // If the requested value of callAny is true, then the requested
-//             // value of callAny must be true.
-//             currentVal = _get(_getPointerProcHeapByName(currentProcedure) | (capType*0x10000) | ((capIndex + 1)*0x100) | 0x00);
-//             requestedVal = caps[i+3+0];
-//             current = currentVal & 0x8000000000000000000000000000000000000000000000000000000000000000;
-//             req = requestedVal & 0x8000000000000000000000000000000000000000000000000000000000000000;
-//             // If req != 0 (that is, equals 1, requested callAny flag is true) and
-//             // current == 0 (that is, current callAny flag is false)
-//             // then fail
-//             if (req != 0) {
-//                 // requested callAny == true
-//                 if (current == 0) {
-//                     return false;
-//                 }
-//             } else {
-//                 // requested callAny == false
-//                 // if the current value is callAny, we don't care about the
-//                 // value of ethAddress. If the current value of callAny is
-//                 // 0 (false) we must check that the addresses are the same
-//                 if (current == 0) {
-//                     // the addresses must match
-//                     // get the current and required addresses
-//                     current = currentVal & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-//                     req = requestedVal & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-//                     if (current != req) {
-//                         return false;
-//                     }
-//                 }
-//             }
-//             // if the requested sendValue flag is true, the current sendValue
-//             // flag must also be true.
-//             // get the sendValue flags
-//             current = currentVal & 0x4000000000000000000000000000000000000000000000000000000000000000;
-//             req = requestedVal & 0x4000000000000000000000000000000000000000000000000000000000000000;
-//             if (req != 0 && current == 0) {
-//                 return false;
-//             }
-//             return true;
-//         } else {
-//             revert("unknown capability");
-//         }
-//     }
+impl AsCap for AccountCallCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // If the requested value of callAny is true, then the parent cap
+        // value of callAny must be true.
+        if self.can_call_any {
+            if !parent_cap.can_call_any {
+                return false;
+            }
+        } else {
+            // if the parent_cap value is callAny, we don't care about the value
+            // of ethAddress. If the current value of callAny is false we must
+            // check that the addresses are the same
+            if !parent_cap.can_call_any {
+                // the addresses must match
+                if self.address != parent_cap.address {
+                    return false;
+                }
+            }
+        }
+
+        // if the requested sendValue flag is true, the parent sendValue flag
+        // must also be true.
+        if self.can_send && !parent_cap.can_send {
+            return false;
+        }
+
+        // Othwerwise we can consider it a subset
+        true
+    }
+}
+
+
+impl AsCap for ProcedureRegisterCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // Check that the prefix of B is >= than the prefix of A.
+        if parent_cap.prefix > self.prefix {
+            return false;
+        }
+        // The keys must match
+        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
+    }
+}
+
+pub fn matching_keys(prefix: u8, required_key: &ProcedureKey, requested_key: &ProcedureKey) -> bool {
+    // We only want to keep the first $prefix bits of $key, the
+    // rest should be zero. We then XOR this value with the
+    // requested proc id and the value should be zero. TODO:
+    // consider using the unstable BitVec type. For now we will
+    // just a u128 and a u64.
+    let mut mask_a_array = [0;16];
+    mask_a_array.copy_from_slice(&required_key[0..16]);
+    let mut mask_b_array = [0;8];
+    mask_b_array.copy_from_slice(&required_key[16..24]);
+
+    let shift_amt: u32 = 192_u8.checked_sub(prefix).unwrap_or(0) as u32;
+
+    let prefix_mask_a: u128 = u128::max_value().checked_shl(shift_amt.checked_sub(64).unwrap_or(0)).unwrap_or(0);
+    let prefix_mask_b:u64 = u64::max_value().checked_shl(shift_amt).unwrap_or(0);
+
+    // mask_a + mask_b is the key we are allowed
+    let mask_a: u128 = u128::from_be_bytes(mask_a_array) & prefix_mask_a;
+    let mask_b: u64 = u64::from_be_bytes(mask_b_array) & prefix_mask_b;
+
+    // This is the key we are requesting but cleared
+    let mut req_a_array = [0;16];
+    req_a_array.copy_from_slice(&requested_key[0..16]);
+    let mut req_b_array = [0;8];
+    req_b_array.copy_from_slice(&requested_key[16..24]);
+    let req_a: u128 = u128::from_be_bytes(req_a_array) & prefix_mask_a;
+    let req_b: u64 = u64::from_be_bytes(req_b_array) & prefix_mask_b;
+
+    return (req_a == mask_a) && (req_b == mask_b);
+}
 
 #[derive(Clone, Debug)]
 pub enum CapDecodeErr {
@@ -790,7 +791,7 @@ mod tests {
 
         let write_cap = match &cap_list_result.0[0].cap {
             Capability::StoreWrite(write_cap) => write_cap,
-            cap => panic!("Invalid Cap"),
+            _ => panic!("Invalid Cap"),
         };
 
         // Get Location and Size
