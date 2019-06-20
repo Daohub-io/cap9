@@ -190,26 +190,34 @@ impl NewCapList {
 impl NewCapList {
     // TODO: add error handling
     pub fn to_u256_list(&self) -> Vec<U256> {
-        // Allocate Vector with Max Cap Size
         let mut res: Vec<U256> = Vec::with_capacity(self.0.len() * (CAP_LOG_SIZE + 3) as usize);
-
-        // TODO: figure out whether move/clone is the right choice.
-        for new_cap in self.0.iter() {
-            let cap_size = U256::from(new_cap.cap.get_cap_size() + 3);
-            res.write(&[cap_size]);
-            let cap_type = U256::from(new_cap.cap.cap_type());
-            res.write(&[cap_type]);
-            let parent_index = U256::from(new_cap.parent_index);
-            res.write(&[parent_index]);
-            new_cap.cap.clone().serialize(&mut res);
-        }
-
+        self.clone().serialize(&mut res).unwrap();
         res
     }
 
     pub fn from_u256_list(list: &[U256]) -> Result<Self, CapDecodeErr> {
         let mut cursor = Cursor::new(list);
         NewCapList::deserialize(&mut cursor).map_err(|_| CapDecodeErr::InvalidCapType(0))
+    }
+}
+
+
+impl Serialize<U256> for NewCapList {
+    type Error = cap9_core::Error;
+
+    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+        // TODO: figure out whether move/clone is the right choice.
+        for new_cap in self.0.iter() {
+            let cap_size = U256::from(new_cap.cap.get_cap_size() + 3);
+            writer.write(&[cap_size])?;
+            let cap_type = U256::from(new_cap.cap.cap_type());
+            writer.write(&[cap_type])?;
+            let parent_index = U256::from(new_cap.parent_index);
+            writer.write(&[parent_index])?;
+            new_cap.cap.clone().serialize(writer)?;
+        }
+
+        Ok(())
     }
 }
 
