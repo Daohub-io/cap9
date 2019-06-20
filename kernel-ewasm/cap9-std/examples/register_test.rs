@@ -20,13 +20,15 @@ fn main() {}
 
 pub mod writer {
     use pwasm_abi::types::*;
+    use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
     use cap9_std;
     // use cap9_std::proc_table::*;
     use cap9_std::proc_table::cap::*;
+    use cap9_std::syscalls::*;
 
-    #[eth_abi(TestLoggerEndpoint, KernelClient)]
-    pub trait TestLoggerInterface {
+    #[eth_abi(TestRegisterEndpoint)]
+    pub trait TestRegisterInterface {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self);
 
@@ -34,17 +36,19 @@ pub mod writer {
         #[constant]
         fn testNum(&mut self) -> U256;
 
-        // fn writeNumDirect(&mut self, key: U256, val: U256);
+        fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>);
 
-        fn log(&mut self, cap_idx: U256, topics: Vec<H256>, value: Vec<u8>);
+        fn listProcs(&mut self) -> Vec<H256>;
 
-        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256, U256, U256, U256);
+        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
+
+        fn getNCaps(&mut self, key: H256) -> u64;
 
     }
 
-    pub struct LoggerContract;
+    pub struct RegisterContract;
 
-    impl TestLoggerInterface for LoggerContract {
+    impl TestRegisterInterface for RegisterContract {
 
         fn constructor(&mut self) {}
 
@@ -52,25 +56,29 @@ pub mod writer {
             76.into()
         }
 
-        // Call a procedure with a hard-coded key.
-        // fn callProcHC(&mut self, key: U256, val: U256) {
-        //     pwasm_ethereum::write(&key.into(), &val.into());
-        // }
-
-        fn log(&mut self, cap_idx: U256, topics: Vec<H256>, value: Vec<u8>) {
-            cap9_std::raw_proc_log(cap_idx.as_u32() as u8, topics, value).unwrap();
+        fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>) {
+            cap9_std::raw_proc_reg(cap_idx.as_u32() as u8, key.into(), address, cap_list).unwrap();
+            pwasm_ethereum::ret(&cap9_std::result());
         }
 
-        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256, U256, U256, U256) {
+        fn listProcs(&mut self) -> Vec<H256> {
+            let n_procs = cap9_std::proc_table::get_proc_list_len();
+            let mut procs = Vec::new();
+            for i in 1..(n_procs.as_usize() + 1) {
+                let index = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,i as u8];
+                procs.push(SysCallProcedureKey(cap9_std::proc_table::get_proc_id(index).unwrap()).into());
+            }
+            procs
+        }
+
+        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256) {
             // Get the key of the currently executing procedure.
             let this_key: cap9_std::proc_table::ProcedureKey = cap9_std::proc_table::get_current_proc_id();
             let cap = cap9_std::proc_table::get_proc_cap(this_key, cap_type.as_u32() as u8, cap_index.as_u32() as u8).unwrap();
-            // let proc_pointer = cap9_std::proc_table::ProcPointer::from_key(this_key);
-            // let raw_cap_ptr: [u8; 32] = proc_pointer.get_cap_val_ptr(3, 0, 0);
-            // let raw_cap = U256::from(pwasm_ethereum::read(&H256(raw_cap_ptr)));
             match cap {
-                Capability::Log(LogCap {topics,t1,t2,t3,t4}) => {
-                    (topics.into(), t1.into(), t2.into(), t3.into(), t4.into())
+                Capability::ProcedureRegister(ProcedureRegisterCap {prefix, key}) => {
+                    let h: H256 = SysCallProcedureKey(key).into();
+                    (prefix.into(), h.into())
                 },
                 // ProcedureRegister(ProcedureRegisterCap),
                 // ProcedureDelete(ProcedureDeleteCap),
@@ -81,6 +89,18 @@ pub mod writer {
                 _ => panic!("wrong cap")
             }
         }
+
+        fn getNCaps(&mut self, key_raw: H256) -> u64 {
+            let key: SysCallProcedureKey = key_raw.into();
+            let proc_id: cap9_std::proc_table::ProcedureKey = key.into();
+            let mut n_caps: u64 = 0;
+            for i in &CAP_TYPES {
+                let n: U256 = cap9_std::proc_table::get_proc_cap_list_len(proc_id.clone(), *i).into();
+                n_caps += n.as_u64();
+            }
+            n_caps
+        }
+
     }
 }
 // Declares the dispatch and dispatch_ctor methods
@@ -88,13 +108,13 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut endpoint = writer::TestLoggerEndpoint::new(writer::LoggerContract {});
+    let mut endpoint = writer::TestRegisterEndpoint::new(writer::RegisterContract {});
     // Read http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding for details
     pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
 }
 
 #[no_mangle]
 pub fn deploy() {
-    let mut endpoint = writer::TestLoggerEndpoint::new(writer::LoggerContract {});
+    let mut endpoint = writer::TestRegisterEndpoint::new(writer::RegisterContract {});
     endpoint.dispatch_ctor(&pwasm_ethereum::input());
 }

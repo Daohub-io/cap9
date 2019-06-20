@@ -129,7 +129,15 @@ pub mod kernel {
         }
 
         fn code_copy(&mut self, to: Address) -> pwasm_std::Vec<u8> {
-            super::extcodecopy(&to)
+            let mut code = super::extcodecopy(&to);
+            // TODO: FIXME: This is an awful hack. Without these two resize
+            // lines (which have no net effect) we hit an Unreachable trap in
+            // the WASM code. Jake's hypothesis is that these two lines trigger
+            // a reallocation of some kind (of the vector) that side-steps
+            // whatever issue is occuring.
+            code.resize(code.len()+1,0);
+            code.resize(code.len()-1,0);
+            code
         }
 
         fn get_cap_type_len(&mut self, _proc_key: String, _cap_type: U256) -> U256 {
@@ -145,9 +153,7 @@ pub mod kernel {
         }
 
         fn toggle_syscall(&mut self) {
-            let mut current_val = pwasm_ethereum::read(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR));
-            current_val[0] = if current_val[0] == 0 { 1 } else { 0 };
-            pwasm_ethereum::write(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR), &current_val);
+            toggle_syscall();
         }
 
         fn get_mode(&mut self) -> u32 {
@@ -159,7 +165,14 @@ pub mod kernel {
             panic!("test-panic")
         }
     }
+
+    pub fn toggle_syscall() {
+        let mut current_val = pwasm_ethereum::read(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR));
+        current_val[0] = if current_val[0] == 0 { 1 } else { 0 };
+        pwasm_ethereum::write(&H256(super::TEST_KERNEL_SYSCALL_TOGGLE_PTR), &current_val);
+    }
 }
+
 
 // Declares the dispatch and dispatch_ctor methods
 use pwasm_abi::eth::EndpointInterface;
@@ -178,6 +191,12 @@ pub fn call() {
         // is not correctly implemented we need to think about this a little.
         // Because only delegate call is ever used, we can't use a sender
         // address.
+
+        // If the first byte is 0x00, it is not a valid syscall. Therefore we
+        // will interpret it as "toggle test mode".
+        if pwasm_ethereum::input()[0] == 0x00 {
+            kernel::toggle_syscall();
+        }
 
         // If the current procedure is set to a non-zero value, we know we are
         // mid execution. Therefore this must be a system call.

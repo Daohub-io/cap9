@@ -4,6 +4,7 @@
 //! according to the cap9 spec. This validates the contract in a buffer rather
 //! than parsing into native data structure.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(dead_code)]
 
 #[cfg(not(feature = "std"))]
 #[macro_use]

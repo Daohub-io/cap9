@@ -5,7 +5,7 @@ use crate::io;
 use super::{Deserialize, VarUint7, VarInt7, CountedList,
     VarUint32};
 use crate::serialization::{Error, Serialize};
-use pwasm_std::types::{U256,H256};
+use pwasm_std::types::{U256,H256, Address};
 
 /// Type definition in types section. Currently can be only of the function type.
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -234,6 +234,29 @@ impl Serialize for H256 {
     fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         let bytes = self.to_fixed_bytes();
         writer.write(&bytes)?;
+        Ok(())
+    }
+}
+
+
+impl Deserialize for Address {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut u8buf = [0u8; 32];
+        // TODO: check that enough bytes were read
+        reader.read(&mut u8buf)?;
+        let h: H256 = u8buf.into();
+        Ok(h.into())
+    }
+}
+
+impl Serialize for Address {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let h: H256 = self.into();
+        writer.write(&h.to_fixed_bytes())?;
         Ok(())
     }
 }

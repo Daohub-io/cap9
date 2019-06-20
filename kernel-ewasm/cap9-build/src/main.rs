@@ -2,7 +2,7 @@ extern crate parity_wasm;
 extern crate pwasm_utils;
 
 use parity_wasm::elements::{Module,MemoryType};
-use clap::{Arg, App, SubCommand, ArgMatches};
+use clap::{Arg, App, SubCommand};
 use parity_wasm::elements::{Instructions, Instruction};
 
 fn main() {
@@ -66,7 +66,7 @@ fn contract_build(module: Module) -> Module {
     let syscall_instructions_res = get_syscall_instructions(&module);
 
     // TODO: what is the index of this newly added function?
-    let mut new_module_builder = parity_wasm::builder::from_module(module);
+    let new_module_builder = parity_wasm::builder::from_module(module);
     // Add the syscall function, if applicable.
     let mut new_module = if let Ok(syscall_instructions) = syscall_instructions_res {
         new_module_builder
@@ -135,7 +135,7 @@ fn contract_build(module: Module) -> Module {
 fn set_mem(mut module: Module, num_pages: u32) -> Module {
     // We want to find the single memory section, and change it from its current
     // value to the one we've requested.
-    let mut mem_entry: &mut Vec<MemoryType> = module.memory_section_mut().unwrap().entries_mut();
+    let mem_entry: &mut Vec<MemoryType> = module.memory_section_mut().unwrap().entries_mut();
     mem_entry[0] = parity_wasm::elements::MemoryType::new(num_pages,None);
     module
 }

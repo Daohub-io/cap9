@@ -9,6 +9,7 @@ pub struct Error;
 
 use crate::proc_table;
 use proc_table::cap::Capability;
+use proc_table::cap::*;
 use proc_table::ProcedureKey;
 
 
@@ -23,10 +24,10 @@ pub struct SysCall {
 impl SysCall {
     pub fn cap_type(&self) -> u8 {
         match &self.action {
-            // TODO: use the constants provided elsewhere
-            SysCallAction::Call(_)  => 0x3,
-            SysCallAction::Write(_) => 0x7,
-            SysCallAction::Log(_) => 0x8,
+            SysCallAction::Call(_)  => CAP_PROC_CALL,
+            SysCallAction::Write(_) => CAP_STORE_WRITE,
+            SysCallAction::Log(_) => CAP_LOG,
+            SysCallAction::Register(_) => CAP_PROC_REGISTER,
         }
     }
 
@@ -53,22 +54,28 @@ impl Deserialize for SysCall {
         let syscall_type = u8::deserialize(reader)?;
         let cap_index = u8::deserialize(reader)?;
         match syscall_type {
-            0x3 => {
+            CAP_PROC_CALL => {
                 Ok(SysCall {
                     cap_index,
                     action: SysCallAction::Call(Call::deserialize(reader)?)
                 })
             },
-            0x7 => {
+            CAP_STORE_WRITE => {
                 Ok(SysCall {
                     cap_index,
                     action: SysCallAction::Write(WriteCall::deserialize(reader)?)
                 })
             },
-            0x8 => {
+            CAP_LOG => {
                 Ok(SysCall {
                     cap_index,
                     action: SysCallAction::Log(LogCall::deserialize(reader)?)
+                })
+            },
+            CAP_PROC_REGISTER => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::Register(RegisterProc::deserialize(reader)?)
                 })
             },
             _ => panic!("unknown syscall"),
@@ -82,47 +89,12 @@ impl Serialize for SysCall {
 
     fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write syscall type
-        match self.action {
-            SysCallAction::Call(_) => writer.write(&[self.cap_type()])?,
-            SysCallAction::Write(_) => writer.write(&[self.cap_type()])?,
-            SysCallAction::Log(_) => writer.write(&[self.cap_type()])?,
-        }
+        writer.write(&[self.cap_type()])?;
         // Write cap index
         writer.write(&[self.cap_index])?;
         self.action.serialize(writer)?;
         Ok(())
     }
-}
-
-fn matching_keys(prefix: u8, required_key: &ProcedureKey, requested_key: &ProcedureKey) -> bool {
-    // We only want to keep the first $prefix bits of $key, the
-    // rest should be zero. We then XOR this value with the
-    // requested proc id and the value should be zero. TODO:
-    // consider using the unstable BitVec type. For now we will
-    // just a u128 and a u64.
-    let mut mask_a_array = [0;16];
-    mask_a_array.copy_from_slice(&required_key[0..16]);
-    let mut mask_b_array = [0;8];
-    mask_b_array.copy_from_slice(&required_key[16..24]);
-
-    let shift_amt: u32 = 192_u8.checked_sub(prefix).unwrap_or(0) as u32;
-
-    let prefix_mask_a: u128 = u128::max_value().checked_shl(shift_amt.checked_sub(64).unwrap_or(0)).unwrap_or(0);
-    let prefix_mask_b:u64 = u64::max_value().checked_shl(shift_amt).unwrap_or(0);
-
-    // mask_a + mask_b is the key we are allowed
-    let mask_a: u128 = u128::from_be_bytes(mask_a_array) & prefix_mask_a;
-    let mask_b: u64 = u64::from_be_bytes(mask_b_array) & prefix_mask_b;
-
-    // This is the key we are requesting but cleared
-    let mut req_a_array = [0;16];
-    req_a_array.copy_from_slice(&requested_key[0..16]);
-    let mut req_b_array = [0;8];
-    req_b_array.copy_from_slice(&requested_key[16..24]);
-    let req_a: u128 = u128::from_be_bytes(req_a_array) & prefix_mask_a;
-    let req_b: u64 = u64::from_be_bytes(req_b_array) & prefix_mask_b;
-
-    return (req_a == mask_a) && (req_b == mask_b);
 }
 
 /// The action portion of a SysCall, i.e. WRITE, LOG, etc. without the
@@ -133,6 +105,7 @@ pub enum SysCallAction {
     Write(WriteCall),
     Call(Call),
     Log(LogCall),
+    Register(RegisterProc),
 }
 
 impl SysCallAction {
@@ -142,6 +115,32 @@ impl SysCallAction {
             SysCallAction::Call(Call{proc_id,payload:_}) => {
                 if let Capability::ProcedureCall(proc_table::cap::ProcedureCallCap {prefix, key}) = cap {
                     return matching_keys(prefix, &key, proc_id);
+                }
+                false
+            },
+            // Register Procedure syscall
+            SysCallAction::Register(RegisterProc{proc_id,address:_, cap_list}) => {
+                // Check that this procedure has the correct capability to
+                // register a procedure of the given key.
+                if let Capability::ProcedureRegister(proc_table::cap::ProcedureRegisterCap {prefix, key}) = cap {
+                    if !matching_keys(prefix, &key, proc_id) {
+                        return false;
+                    }
+                    let this_key: proc_table::ProcedureKey = proc_table::get_current_proc_id();
+                    // Check that this procedure has sufficent capabilities to
+                    // delegate to the new procedure.
+                    let caps = &cap_list.0;
+                    for cap in caps {
+                        // Retrieve the parent cap that this cap has requested.
+                        let parent_cap: Capability = match proc_table::get_proc_cap(this_key, cap.cap.cap_type(), cap.parent_index) {
+                            None => return false,
+                            Some(cap) => cap,
+                        };
+                        if !cap.cap.is_subset_of(&parent_cap) {
+                            return false;
+                        }
+                    }
+                    return true;
                 }
                 false
             },
@@ -225,6 +224,11 @@ impl SysCallAction {
                 // have returned to it.
                 proc_table::set_current_proc_id(this_proc).unwrap();
             }
+            // Register Procedure
+            SysCallAction::Register(RegisterProc{proc_id, address, cap_list}) => {
+                // TODO: these should probably be passed by reference
+                proc_table::insert_proc(proc_id.clone(), address.clone(), cap_list.clone()).unwrap();
+            }
         }
     }
 }
@@ -244,6 +248,10 @@ impl Serialize for SysCallAction {
             },
             SysCallAction::Log(log_call) => {
                 log_call.serialize(writer)?;
+                Ok(())
+            },
+            SysCallAction::Register(register_call) => {
+                register_call.serialize(writer)?;
                 Ok(())
             },
         }
@@ -310,6 +318,40 @@ impl Serialize for LogCall {
             topic.serialize(writer)?;
         }
         self.value.serialize(writer)?;
+        Ok(())
+    }
+}
+
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct RegisterProc {
+    pub proc_id: proc_table::ProcedureKey,
+    pub address: Address,
+    pub cap_list: NewCapList,
+}
+
+impl Deserialize for RegisterProc {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
+        let address = Address::deserialize(reader)?;
+        let cap_list = NewCapList::deserialize(reader)?;
+        Ok(RegisterProc{proc_id, address, cap_list})
+    }
+}
+
+
+impl Serialize for RegisterProc {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        // Write procedure id
+        SysCallProcedureKey(self.proc_id).serialize(writer)?;
+        // Write the address of the contract
+        self.address.serialize(writer)?;
+        // Write the caps out as 32-byte values, as per the spec
+        self.cap_list.serialize(writer)?;
         Ok(())
     }
 }
@@ -404,6 +446,19 @@ impl Into<H256> for SysCallProcedureKey {
     }
 }
 
+
+impl From<ProcedureKey> for SysCallProcedureKey {
+    fn from(proc_id: ProcedureKey) -> Self {
+        SysCallProcedureKey(proc_id)
+    }
+}
+
+impl Into<ProcedureKey> for SysCallProcedureKey {
+    fn into(self) -> ProcedureKey {
+        self.0
+    }
+}
+
 impl Deserialize for SysCallProcedureKey {
     type Error = io::Error;
 
@@ -427,6 +482,36 @@ impl Serialize for SysCallProcedureKey {
         Ok(())
     }
 }
+
+
+impl Deserialize for NewCapList {
+    type Error = io::Error;
+
+    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut cap_list_raw: Vec<U256> = Vec::new();
+        loop {
+            if let Ok(cap_val) = H256::deserialize(reader) {
+                cap_list_raw.push(cap_val.into());
+            } else {
+                break;
+            }
+        }
+        let cap_list = NewCapList::from_u256_list(cap_list_raw.as_slice()).unwrap();
+        Ok(cap_list)
+    }
+}
+
+impl Serialize for NewCapList {
+    type Error = io::Error;
+
+    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        for val in self.to_u256_list() {
+            val.serialize(writer)?;
+        }
+        Ok(())
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -504,6 +589,15 @@ mod tests {
         let requested_key = &[0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xfe];
         let result = matching_keys(prefix, required_key, requested_key);
         assert_eq!(result,true);
+    }
+
+    #[test]
+    fn matching_keys_test_7() {
+        let prefix = 5*8;
+        let required_key  = &[0x61,0x62,0x63,0x64,0x65,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00];
+        let requested_key = &[0x61,0x78,0x63,0x64,0x65,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00];
+        let result = matching_keys(prefix, required_key, requested_key);
+        assert_eq!(result,false);
     }
 
     #[test]

@@ -28,6 +28,17 @@ pub const CAP_LOG_SIZE: u8 = 5;
 pub const CAP_ACC_CALL: u8 = 9;
 pub const CAP_ACC_CALL_SIZE: u8 = 1;
 
+/// A list of the cap types which we can use for iterating over all cap types.
+pub const CAP_TYPES: [u8; 7] = [
+    CAP_PROC_CALL,
+    CAP_PROC_REGISTER,
+    CAP_PROC_DELETE,
+    CAP_PROC_ENTRY,
+    CAP_STORE_WRITE,
+    CAP_LOG,
+    CAP_ACC_CALL
+];
+
 type ProcedureKey = [u8; 24];
 type ProcedureIndex = [u8; 24];
 
@@ -98,6 +109,201 @@ impl Capability {
             Capability::AccountCall(_) => CAP_ACC_CALL_SIZE,
         }
     }
+
+    pub fn cap_type(&self) -> u8 {
+        match self {
+            Capability::ProcedureCall(_) => CAP_PROC_CALL,
+            Capability::ProcedureRegister(_) => CAP_PROC_REGISTER,
+            Capability::ProcedureDelete(_) => CAP_PROC_DELETE,
+            Capability::ProcedureEntry(_) => CAP_PROC_ENTRY,
+            Capability::StoreWrite(_) => CAP_STORE_WRITE,
+            Capability::Log(_) => CAP_LOG,
+            Capability::AccountCall(_) => CAP_ACC_CALL,
+        }
+    }
+
+    pub fn is_subset_of(&self, parent_cap: &Capability) -> bool {
+        match (self, parent_cap) {
+            (Capability::ProcedureCall(cap),Capability::ProcedureCall(parent)) => cap.is_subset_of(parent),
+            (Capability::ProcedureCall(_),_) => false,
+
+            (Capability::StoreWrite(cap),Capability::StoreWrite(parent)) => cap.is_subset_of(parent),
+            (Capability::StoreWrite(_),_) => false,
+
+            (Capability::ProcedureRegister(cap),Capability::ProcedureRegister(parent)) => cap.is_subset_of(parent),
+            (Capability::ProcedureRegister(_),_) => false,
+
+            (Capability::ProcedureDelete(cap),Capability::ProcedureDelete(parent)) => cap.is_subset_of(parent),
+            (Capability::ProcedureDelete(_),_) => false,
+
+            (Capability::ProcedureEntry(cap),Capability::ProcedureEntry(parent)) => cap.is_subset_of(parent),
+            (Capability::ProcedureEntry(_),_) => false,
+
+            (Capability::Log(cap),Capability::Log(parent)) => cap.is_subset_of(parent),
+            (Capability::Log(_),_) => false,
+
+            (Capability::AccountCall(cap),Capability::AccountCall(parent)) => cap.is_subset_of(parent),
+            (Capability::AccountCall(_),_) => false,
+        }
+    }
+}
+
+pub trait AsCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool;
+}
+
+impl AsCap for StoreWriteCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // Base storage address
+        if U256::from_big_endian(&self.location) < U256::from_big_endian(&parent_cap.location) {
+            return false;
+        }
+        // Number of additional storage keys
+        if (U256::from_big_endian(&self.location) + U256::from_big_endian(&self.size)) > (U256::from_big_endian(&parent_cap.location) + U256::from_big_endian(&parent_cap.size)) {
+            return false;
+        }
+        true
+    }
+}
+
+
+impl AsCap for LogCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // First we check the number of required topics. The number of
+        // required topics of the requested cap must be equal to or greater
+        // than the number of required topics for the current cap.
+        if self.topics < parent_cap.topics {
+            return false;
+        }
+        // Next we check that the topics required by the parent cap are
+        // also required by the requested cap.
+        if parent_cap.topics >= 1 {
+            if parent_cap.t1 != self.t1 {
+                return false;
+            }
+        }
+        if parent_cap.topics >= 2 {
+            if parent_cap.t2 != self.t2 {
+                return false;
+            }
+        }
+        if parent_cap.topics >= 3 {
+            if parent_cap.t3 != self.t3 {
+                return false;
+            }
+        }
+        if parent_cap.topics >= 4 {
+            if parent_cap.t4 != self.t4 {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+
+impl AsCap for ProcedureEntryCap {
+    fn is_subset_of(&self, _parent_cap: &Self) -> bool {
+        // All of these caps are identical, therefore any cap of this type is
+        // the subset of another,
+        true
+    }
+}
+
+impl AsCap for AccountCallCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // If the requested value of callAny is true, then the parent cap
+        // value of callAny must be true.
+        if self.can_call_any {
+            if !parent_cap.can_call_any {
+                return false;
+            }
+        } else {
+            // if the parent_cap value is callAny, we don't care about the value
+            // of ethAddress. If the requested value of callAny is false we must
+            // check that the addresses are the same
+            if !parent_cap.can_call_any {
+                // the addresses must match
+                if self.address != parent_cap.address {
+                    return false;
+                }
+            }
+        }
+
+        // if the requested sendValue flag is true, the parent sendValue flag
+        // must also be true.
+        if self.can_send && !parent_cap.can_send {
+            return false;
+        }
+
+        // Othwerwise we can consider it a subset
+        true
+    }
+}
+
+
+impl AsCap for ProcedureRegisterCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // Check that the prefix of B is >= than the prefix of A.
+        if parent_cap.prefix > self.prefix {
+            return false;
+        }
+        // The keys must match
+        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
+    }
+}
+
+impl AsCap for ProcedureDeleteCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // Check that the prefix of B is >= than the prefix of A.
+        if parent_cap.prefix > self.prefix {
+            return false;
+        }
+        // The keys must match
+        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
+    }
+}
+
+impl AsCap for ProcedureCallCap {
+    fn is_subset_of(&self, parent_cap: &Self) -> bool {
+        // Check that the prefix of B is >= than the prefix of A.
+        if parent_cap.prefix > self.prefix {
+            return false;
+        }
+        // The keys must match
+        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
+    }
+}
+
+pub fn matching_keys(prefix: u8, required_key: &ProcedureKey, requested_key: &ProcedureKey) -> bool {
+    // We only want to keep the first $prefix bits of $key, the
+    // rest should be zero. We then XOR this value with the
+    // requested proc id and the value should be zero. TODO:
+    // consider using the unstable BitVec type. For now we will
+    // just a u128 and a u64.
+    let mut mask_a_array = [0;16];
+    mask_a_array.copy_from_slice(&required_key[0..16]);
+    let mut mask_b_array = [0;8];
+    mask_b_array.copy_from_slice(&required_key[16..24]);
+
+    let shift_amt: u32 = 192_u8.checked_sub(prefix).unwrap_or(0) as u32;
+
+    let prefix_mask_a: u128 = u128::max_value().checked_shl(shift_amt.checked_sub(64).unwrap_or(0)).unwrap_or(0);
+    let prefix_mask_b:u64 = u64::max_value().checked_shl(shift_amt).unwrap_or(0);
+
+    // mask_a + mask_b is the key we are allowed
+    let mask_a: u128 = u128::from_be_bytes(mask_a_array) & prefix_mask_a;
+    let mask_b: u64 = u64::from_be_bytes(mask_b_array) & prefix_mask_b;
+
+    // This is the key we are requesting but cleared
+    let mut req_a_array = [0;16];
+    req_a_array.copy_from_slice(&requested_key[0..16]);
+    let mut req_b_array = [0;8];
+    req_b_array.copy_from_slice(&requested_key[16..24]);
+    let req_a: u128 = u128::from_be_bytes(req_a_array) & prefix_mask_a;
+    let req_b: u64 = u64::from_be_bytes(req_b_array) & prefix_mask_b;
+
+    return (req_a == mask_a) && (req_b == mask_b);
 }
 
 #[derive(Clone, Debug)]
@@ -197,7 +403,7 @@ impl Capability {
                 key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
 
                 let proc_reg_cap = ProcedureRegisterCap {
-                    prefix: val.byte(0),
+                    prefix: val.byte(31),
                     key: key,
                 };
 
@@ -210,7 +416,7 @@ impl Capability {
                 key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
 
                 let proc_del_cap = ProcedureDeleteCap {
-                    prefix: val.byte(0),
+                    prefix: val.byte(31),
                     key: key,
                 };
 
@@ -235,7 +441,7 @@ impl Capability {
                 let mut topics = [[0; 32]; 4];
                 if topics_len != 0 {
                     match topics_len {
-                        1...4 => {
+                        1..=4 => {
                             for i in 0..topics_len {
                                 topics[i] = input[start + i + 1].into()
                             }
@@ -254,20 +460,7 @@ impl Capability {
             }
             (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
                 let val = input[start];
-
-                let can_call_any = val.bit(0);
-                let can_send = val.bit(1);
-
-                let mut address = [0u8; 20];
-                address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
-                let address = H160::from(address);
-
-                let account_call_cap = AccountCallCap {
-                    can_call_any: can_call_any,
-                    can_send: can_send,
-                    address: address,
-                };
-
+                let account_call_cap = val.into();
                 Capability::AccountCall(account_call_cap)
             }
             _ => return Err(CapDecodeErr::InvalidCapType(cap_type)),
@@ -283,7 +476,7 @@ pub struct NewCapability {
     pub parent_index: u8,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NewCapList(pub Vec<NewCapability>);
 
 impl NewCapList {
@@ -495,7 +688,7 @@ impl NewCapList {
                     let mut topics = [[0; 32]; 4];
                     if topics_len != 0 {
                         match topics_len {
-                            1...4 => {
+                            1..=4 => {
                                 for i in 0..topics_len {
                                     topics[i] = list[start + i + 1].into()
                                 }
@@ -518,18 +711,7 @@ impl NewCapList {
                 (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
                     let val = list[start];
 
-                    let can_call_any = val.bit(0);
-                    let can_send = val.bit(1);
-
-                    let mut address = [0u8; 20];
-                    address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
-                    let address = H160::from(address);
-
-                    let account_call_cap = AccountCallCap {
-                        can_call_any: can_call_any,
-                        can_send: can_send,
-                        address: address,
-                    };
+                    let account_call_cap: AccountCallCap = val.into();
 
                     NewCapability {
                         cap: Capability::AccountCall(account_call_cap),
@@ -544,6 +726,23 @@ impl NewCapList {
         }
 
         Ok(NewCapList(result))
+    }
+}
+
+impl From<U256> for AccountCallCap {
+    fn from(val: U256) -> Self {
+        let can_call_any = val.bit(255);
+        let can_send = val.bit(254);
+
+        let mut address = [0u8; 20];
+        address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
+        let address = H160::from(address);
+
+        AccountCallCap {
+            can_call_any: can_call_any,
+            can_send: can_send,
+            address: address,
+        }
     }
 }
 
@@ -618,7 +817,7 @@ mod tests {
 
         let write_cap = match &cap_list_result.0[0].cap {
             Capability::StoreWrite(write_cap) => write_cap,
-            cap => panic!("Invalid Cap"),
+            _ => panic!("Invalid Cap"),
         };
 
         // Get Location and Size
@@ -671,6 +870,24 @@ mod tests {
 
         assert_eq!(sample_cap.into_u256_list(), list);
         assert_eq!(Capability::from_u256_list(&list).unwrap(), sample_cap);
+    }
+
+    #[test]
+    fn should_decode_encode_account_call_cap() {
+
+        let raw: [u8;32] = [0xc0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0x00];
+        let raw_address: [u8;20] = [0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0x00];
+
+        let val: U256 = raw.into();
+        let address: Address = raw_address.into();
+        let cap: AccountCallCap = val.into();
+        let expected_cap = AccountCallCap {
+            can_send: true,
+            can_call_any: true,
+            address: address,
+        };
+        assert_eq!(cap, expected_cap);
+        // assert_eq!(Capability::from_u256_list(&list).unwrap(), sample_cap);
     }
 
 }

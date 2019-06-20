@@ -1,6 +1,4 @@
 #[cfg(not(feature = "std"))]
-use pwasm_std::Vec;
-#[cfg(not(feature = "std"))]
 use pwasm_std::String;
 /// A listing is a category of import. There are 3 types of imports whitelisted,
 /// greylisted, and blacklisted. There is no blacklist, everything that is not
