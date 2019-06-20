@@ -81,7 +81,7 @@ impl Deserialize<U256> for LogCap {
 impl Serialize<U256> for LogCap {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<U256>>(&self, writer: &mut W) -> Result<(), Self::Error> {
         let topics_len = U256::from(self.topics);
         let t1 = U256::from(self.t1);
         let t2 = U256::from(self.t2);

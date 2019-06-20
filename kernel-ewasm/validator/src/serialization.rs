@@ -19,7 +19,7 @@ pub trait WASMSerialize {
     /// Serialization error produced by serialization routine.
     type Error: From<cap9_core::Error>;
     /// Serialize type to serial i/o
-    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error>;
+    fn serialize<W: cap9_core::Write<u8>>(&self, writer: &mut W) -> Result<(), Self::Error>;
 }
 
 

@@ -149,15 +149,15 @@ pub trait Deserialize<T> : Sized {
 pub trait Serialize<T> {
     /// Serialization error produced by serialization routine.
     type Error: From<Error>;
-    /// Serialize type to serial i/o
-    fn serialize<W: Write<T>>(self, writer: &mut W) -> Result<(), Self::Error>;
+    /// Serialize.
+    fn serialize<W: Write<T>>(&self, writer: &mut W) -> Result<(), Self::Error>;
 }
 
 impl Serialize<u8> for u8 {
     type Error = Error;
 
-    fn serialize<W: Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
-        writer.write(&[self])?;
+    fn serialize<W: Write<u8>>(&self, writer: &mut W) -> Result<(), Self::Error> {
+        writer.write(&[*self])?;
         Ok(())
     }
 }
@@ -175,8 +175,8 @@ impl Deserialize<u8> for u8 {
 impl Serialize<U256> for u8 {
     type Error = Error;
 
-    fn serialize<W: Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
-        writer.write(&[self.into()])?;
+    fn serialize<W: Write<U256>>(&self, writer: &mut W) -> Result<(), Self::Error> {
+        writer.write(&[(*self).into()])?;
         Ok(())
     }
 }
@@ -206,7 +206,7 @@ impl Deserialize<u8> for U256 {
 impl Serialize<u8> for U256 {
     type Error = Error;
 
-    fn serialize<W: Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: Write<u8>>(&self, writer: &mut W) -> Result<(), Self::Error> {
         let mut bytes: Vec<u8> = Vec::new();
         bytes.resize(32,0);
         self.to_big_endian(bytes.as_mut_slice());
@@ -230,7 +230,7 @@ impl Deserialize<u8> for H256 {
 impl Serialize<u8> for H256 {
     type Error = Error;
 
-    fn serialize<W: Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: Write<u8>>(&self, writer: &mut W) -> Result<(), Self::Error> {
         let bytes = self.to_fixed_bytes();
         writer.write(&bytes)?;
         Ok(())
@@ -253,8 +253,8 @@ impl Deserialize<u8> for Address {
 impl Serialize<u8> for Address {
     type Error = Error;
 
-    fn serialize<W: Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
-        let h: H256 = self.into();
+    fn serialize<W: Write<u8>>(&self, writer: &mut W) -> Result<(), Self::Error> {
+        let h: H256 = (*self).into();
         writer.write(&h.to_fixed_bytes())?;
         Ok(())
     }

@@ -152,7 +152,7 @@ pub enum CapDecodeErr {
 impl Serialize<U256> for Capability {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<U256>>(&self, writer: &mut W) -> Result<(), Self::Error> {
         // TODO: replace all these identical match arms with something like .inner()
         match self {
             Capability::ProcedureCall(cap) => cap.serialize(writer)?,
@@ -191,7 +191,7 @@ impl NewCapList {
     // TODO: add error handling
     pub fn to_u256_list(&self) -> Vec<U256> {
         let mut res: Vec<U256> = Vec::with_capacity(self.0.len() * (CAP_LOG_SIZE + 3) as usize);
-        self.clone().serialize(&mut res).unwrap();
+        self.serialize(&mut res).unwrap();
         res
     }
 
@@ -205,7 +205,7 @@ impl NewCapList {
 impl Serialize<U256> for NewCapList {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<U256>>(&self, writer: &mut W) -> Result<(), Self::Error> {
         // TODO: figure out whether move/clone is the right choice.
         for new_cap in self.0.iter() {
             let cap_size = U256::from(new_cap.cap.get_cap_size() + 3);
@@ -214,7 +214,7 @@ impl Serialize<U256> for NewCapList {
             writer.write(&[cap_type])?;
             let parent_index = U256::from(new_cap.parent_index);
             writer.write(&[parent_index])?;
-            new_cap.cap.clone().serialize(writer)?;
+            new_cap.cap.serialize(writer)?;
         }
 
         Ok(())

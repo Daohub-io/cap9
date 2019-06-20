@@ -42,7 +42,7 @@ impl Deserialize<U256> for ProcedureCallCap {
 impl Serialize<U256> for ProcedureCallCap {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<U256>>(&self, writer: &mut W) -> Result<(), Self::Error> {
         let mut res = [0u8; 32];
         res[0] = self.prefix;
         res[8..].copy_from_slice(&self.key);
