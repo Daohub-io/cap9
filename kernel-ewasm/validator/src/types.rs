@@ -2,10 +2,9 @@
 pub use core::fmt;
 use pwasm_std::vec::Vec;
 use crate::io;
-use super::{Deserialize, VarUint7, VarInt7, CountedList,
-    VarUint32};
-use crate::serialization::{Error, Serialize};
-use pwasm_std::types::{U256,H256, Address};
+use super::{VarUint7, VarInt7, CountedList, VarUint32};
+use crate::serialization::{Error, Serialize, Deserialize, SerializeU256, DeserializeU256};
+pub use pwasm_std::types::{U256,H256, Address};
 
 /// Type definition in types section. Currently can be only of the function type.
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
@@ -17,7 +16,7 @@ pub enum Type {
 impl Deserialize for Type {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         Ok(Type::Function(FunctionType::deserialize(reader)?))
     }
 }
@@ -40,7 +39,7 @@ pub enum ValueType {
 impl Deserialize for ValueType {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let val = VarInt7::deserialize(reader)?;
 
         match val.into() {
@@ -67,7 +66,7 @@ pub enum BlockType {
 impl Deserialize for BlockType {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let val = VarInt7::deserialize(reader)?;
 
         match val.into() {
@@ -125,7 +124,7 @@ impl FunctionType {
 impl Deserialize for FunctionType {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let form: u8 = VarUint7::deserialize(reader)?.into();
 
         if form != 0x60 {
@@ -162,7 +161,7 @@ pub enum TableElementType {
 impl Deserialize for TableElementType {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let val = VarInt7::deserialize(reader)?;
 
         match val.into() {
@@ -175,10 +174,20 @@ impl Deserialize for TableElementType {
 impl Deserialize for u8 {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 1];
         reader.read(&mut u8buf)?;
         Ok(u8buf[0])
+    }
+}
+
+impl DeserializeU256 for u8 {
+    type Error = io::Error;
+
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut buf = [U256::zero(); 1];
+        reader.read(&mut buf)?;
+        Ok(buf[0].as_u32() as u8)
     }
 }
 
@@ -194,7 +203,7 @@ impl Serialize for u8 {
 impl Deserialize for U256 {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 32];
         // TODO: check that enough bytes were read
         reader.read(&mut u8buf)?;
@@ -219,9 +228,8 @@ impl Serialize for U256 {
 impl Deserialize for H256 {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 32];
-        // TODO: check that enough bytes were read
         reader.read(&mut u8buf)?;
         Ok(u8buf.into())
     }
@@ -242,7 +250,7 @@ impl Serialize for H256 {
 impl Deserialize for Address {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 32];
         // TODO: check that enough bytes were read
         reader.read(&mut u8buf)?;

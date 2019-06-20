@@ -37,7 +37,7 @@ impl Instructions {
 impl Deserialize for Instructions {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut instructions = Vec::new();
         let mut block_count = 1usize;
 
@@ -90,7 +90,7 @@ impl InitExpr {
 impl Deserialize for InitExpr {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut instructions = Vec::new();
 
         loop {
@@ -1016,7 +1016,7 @@ pub mod opcodes {
 impl Deserialize for Instruction {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         use self::Instruction::*;
         use self::opcodes::*;
 
@@ -1322,7 +1322,7 @@ impl Deserialize for Instruction {
     }
 }
 
-fn deserialize_atomic<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
+fn deserialize_atomic<R: io::Read<u8>>(reader: &mut R) -> Result<Instruction, Error> {
     use self::Instruction::*;
     use self::opcodes::*;
 
@@ -1400,7 +1400,7 @@ fn deserialize_atomic<R: io::Read>(reader: &mut R) -> Result<Instruction, Error>
     })
 }
 
-fn deserialize_simd<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
+fn deserialize_simd<R: io::Read<u8>>(reader: &mut R) -> Result<Instruction, Error> {
     use self::Instruction::*;
     use self::opcodes::*;
 
@@ -1571,7 +1571,7 @@ fn deserialize_simd<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
     })
 }
 
-fn deserialize_bulk<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
+fn deserialize_bulk<R: io::Read<u8>>(reader: &mut R) -> Result<Instruction, Error> {
     use self::Instruction::*;
     use self::opcodes::*;
 
@@ -1618,7 +1618,7 @@ fn deserialize_bulk<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
 impl Deserialize for MemArg {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let align = Uint8::deserialize(reader)?;
         let offset = VarUint32::deserialize(reader)?;
         Ok(MemArg { align: align.into(), offset: offset.into() })

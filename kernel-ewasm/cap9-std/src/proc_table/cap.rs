@@ -2,6 +2,10 @@ extern crate pwasm_abi;
 extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
+use validator::Cursor;
+use validator::serialization::{Serialize, Deserialize, SerializeU256, DeserializeU256};
+use validator::io;
+
 use pwasm_abi::eth;
 use pwasm_abi::types::*;
 
@@ -166,7 +170,6 @@ impl AsCap for StoreWriteCap {
     }
 }
 
-
 impl AsCap for LogCap {
     fn is_subset_of(&self, parent_cap: &Self) -> bool {
         // First we check the number of required topics. The number of
@@ -200,7 +203,6 @@ impl AsCap for LogCap {
         true
     }
 }
-
 
 impl AsCap for ProcedureEntryCap {
     fn is_subset_of(&self, _parent_cap: &Self) -> bool {
@@ -380,6 +382,8 @@ impl Capability {
                 }
         }
     }
+
+    // TODO: replace with Deserializer
     pub fn from_u256_list(input: &[U256]) -> Result<Capability, CapDecodeErr> {
         let cap_type = input[0].as_u32() as u8;
         let start = 1;
@@ -590,78 +594,45 @@ impl NewCapList {
     }
 
     pub fn from_u256_list(list: &[U256]) -> Result<Self, CapDecodeErr> {
+
+        let mut cursor = Cursor::new(list);
         let mut result = Vec::new();
 
-        // List Length
-        let end = list.len();
-
-        // Set Start
-        let mut start = 0;
-
-        while start < end {
+        while cursor.remaining() > 0 {
             // Check List Length
-            if end - start < 3 {
-                return Err(CapDecodeErr::InvalidCapLen(start as u8));
+            if cursor.remaining() < 3 {
+                return Err(CapDecodeErr::InvalidCapLen(cursor.remaining() as u8));
             }
-
             // Get Values
-            let cap_size = list[start].byte(0);
-            let cap_type = list[start + 1].byte(0);
-            let parent_index = list[start + 2].byte(0);
+            let cap_size = u8::deserialize_u256(&mut cursor).unwrap();
+            let cap_type = u8::deserialize_u256(&mut cursor).unwrap();
+            let parent_index = u8::deserialize_u256(&mut cursor).unwrap();
 
             // Check Cap Size
-            if end - start < cap_size as usize {
+            if (cursor.remaining()+3) < cap_size as usize {
                 return Err(CapDecodeErr::InvalidCapLen(cap_size));
             }
 
-            // Increment Start
-            start += 3;
-
+            // TODO: unchecked subtraction
             let new_cap = match (cap_type, cap_size - 3) {
                 (CAP_PROC_CALL, CAP_PROC_CALL_SIZE) => {
-                    let val = list[start];
-                    let mut key = [0u8; 24];
-                    key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
-
-                    let proc_call_cap = ProcedureCallCap {
-                        prefix: val.byte(31),
-                        key: key,
-                    };
-
+                    let proc_call_cap = ProcedureCallCap::deserialize_u256(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::ProcedureCall(proc_call_cap),
                         parent_index,
                     }
                 }
                 (CAP_PROC_REGISTER, CAP_PROC_REGISTER_SIZE) => {
-                    let val = list[start];
-
-                    let mut key = [0u8; 24];
-                    key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
-
-                    let proc_reg_cap = ProcedureRegisterCap {
-                        prefix: val.byte(31),
-                        key: key,
-                    };
-
+                    let proc_reg_cap = ProcedureRegisterCap::deserialize_u256(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::ProcedureRegister(proc_reg_cap),
                         parent_index,
                     }
                 }
                 (CAP_PROC_DELETE, CAP_PROC_DELETE_SIZE) => {
-                    let val = list[start];
-
-                    let mut key = [0u8; 24];
-                    key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
-
-                    let proc_del_cap = ProcedureDeleteCap {
-                        prefix: val.byte(31),
-                        key: key,
-                    };
-
+                    let proc_reg_cap = ProcedureDeleteCap::deserialize_u256(&mut cursor).unwrap();
                     NewCapability {
-                        cap: Capability::ProcedureDelete(proc_del_cap),
+                        cap: Capability::ProcedureDelete(proc_reg_cap),
                         parent_index,
                     }
                 }
@@ -670,49 +641,21 @@ impl NewCapList {
                     parent_index,
                 },
                 (CAP_STORE_WRITE, CAP_STORE_WRITE_SIZE) => {
-                    let location: [u8; 32] = list[start].into();
-                    let size: [u8; 32] = list[start + 1].into();
-
-                    let store_write_cap = StoreWriteCap {
-                        location: location,
-                        size: size,
-                    };
-
+                    let store_write_cap = StoreWriteCap::deserialize_u256(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::StoreWrite(store_write_cap),
                         parent_index,
                     }
                 }
                 (CAP_LOG, CAP_LOG_SIZE) => {
-                    let topics_len: usize = list[start].byte(0) as usize;
-                    let mut topics = [[0; 32]; 4];
-                    if topics_len != 0 {
-                        match topics_len {
-                            1..=4 => {
-                                for i in 0..topics_len {
-                                    topics[i] = list[start + i + 1].into()
-                                }
-                            }
-                            _ => return Err(CapDecodeErr::InvalidCapLen(topics_len as u8)),
-                        }
-                    }
-
+                    let log_cap = LogCap::deserialize_u256(&mut cursor).unwrap();
                     NewCapability {
-                        cap: Capability::Log(LogCap {
-                            topics: topics_len as u8,
-                            t1: topics[0],
-                            t2: topics[1],
-                            t3: topics[2],
-                            t4: topics[3],
-                        }),
+                        cap: Capability::Log(log_cap),
                         parent_index,
                     }
                 }
                 (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
-                    let val = list[start];
-
-                    let account_call_cap: AccountCallCap = val.into();
-
+                    let account_call_cap = AccountCallCap::deserialize_u256(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::AccountCall(account_call_cap),
                         parent_index,
@@ -720,12 +663,141 @@ impl NewCapList {
                 }
                 _ => return Err(CapDecodeErr::InvalidCapType(cap_type)),
             };
-
-            start += cap_size as usize - 3;
             result.push(new_cap);
         }
-
         Ok(NewCapList(result))
+    }
+}
+
+impl DeserializeU256 for ProcedureCallCap {
+    type Error = io::Error;
+
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut buf = [U256::zero(); 1];
+        reader.read(&mut buf).unwrap();
+        let val: U256 = buf[0];
+        let mut key = [0u8; 24];
+        key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
+
+        Ok(ProcedureCallCap {
+            prefix: val.byte(31),
+            key: key,
+        })
+    }
+}
+
+impl DeserializeU256 for ProcedureRegisterCap {
+    type Error = io::Error;
+
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut buf = [U256::zero(); 1];
+        reader.read(&mut buf).unwrap();
+        let val: U256 = buf[0];
+        let mut key = [0u8; 24];
+        key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
+
+        Ok(ProcedureRegisterCap {
+            prefix: val.byte(31),
+            key: key,
+        })
+    }
+}
+
+impl DeserializeU256 for ProcedureDeleteCap {
+    type Error = io::Error;
+
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut buf = [U256::zero(); 1];
+        reader.read(&mut buf).unwrap();
+        let val: U256 = buf[0];
+        let mut key = [0u8; 24];
+        key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
+
+        Ok(ProcedureDeleteCap {
+            prefix: val.byte(31),
+            key: key,
+        })
+    }
+}
+
+impl DeserializeU256 for ProcedureEntryCap {
+    type Error = io::Error;
+
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        Ok(ProcedureEntryCap {})
+    }
+}
+
+impl DeserializeU256 for StoreWriteCap {
+    type Error = io::Error;
+
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut buf = [U256::zero(); 2];
+        reader.read(&mut buf).unwrap();
+        let location: [u8; 32] = buf[0].into();
+        let size: [u8; 32] = buf[1].into();
+
+        Ok(StoreWriteCap {
+            location: location,
+            size: size,
+        })
+    }
+}
+
+impl DeserializeU256 for LogCap {
+    type Error = io::Error;
+
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut buf = [U256::zero(); 5];
+        reader.read(&mut buf).unwrap();
+
+        let topics_len: usize = buf[0].byte(0) as usize;
+        let mut topics = [[0; 32]; 4];
+        if topics_len != 0 {
+            match topics_len {
+                1..=4 => {
+                    for i in 0..topics_len {
+                        topics[i] = buf[i+1].into()
+                    }
+                }
+                _ => return Err(validator::io::Error::InvalidData)
+                // _ => return Err(CapDecodeErr::InvalidCapLen(topics_len as u8)),
+            }
+        }
+
+        Ok(LogCap {
+            topics: topics_len as u8,
+            t1: topics[0],
+            t2: topics[1],
+            t3: topics[2],
+            t4: topics[3],
+        })
+    }
+}
+
+
+impl DeserializeU256 for AccountCallCap {
+    type Error = io::Error;
+
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut buf = [U256::zero(); 1];
+        reader.read(&mut buf).unwrap();
+        let val: U256 = buf[0];
+
+        let can_call_any = val.bit(255);
+        let can_send = val.bit(254);
+
+        let mut address = [0u8; 20];
+        address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
+        let address = H160::from(address);
+
+        let account_call_cap = AccountCallCap {
+            can_call_any: can_call_any,
+            can_send: can_send,
+            address: address,
+        };
+
+        Ok(account_call_cap)
     }
 }
 
@@ -887,7 +959,6 @@ mod tests {
             address: address,
         };
         assert_eq!(cap, expected_cap);
-        // assert_eq!(Capability::from_u256_list(&list).unwrap(), sample_cap);
     }
 
 }

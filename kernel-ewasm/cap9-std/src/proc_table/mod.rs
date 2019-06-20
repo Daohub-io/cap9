@@ -2,6 +2,10 @@ extern crate pwasm_abi;
 extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
+
+use validator::Cursor;
+use validator::serialization::{Serialize, Deserialize, SerializeU256, DeserializeU256};
+
 use pwasm_abi::eth;
 use pwasm_abi::types::*;
 
@@ -389,15 +393,24 @@ pub fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<ca
         return None;
     }
 
-    let mut raw_val: Vec<U256> = (0..cap_size)
+    let raw_val: Vec<U256> = (0..cap_size)
         .map(|i| {
             U256::from(pwasm_ethereum::read(&H256(
                 proc_pointer.get_cap_val_ptr(cap_type, cap_index, i),
             )))
         })
         .collect();
-    raw_val.insert(0, U256::from(cap_type));
-    Capability::from_u256_list(&raw_val).ok()
+    let mut cursor = Cursor::new(raw_val.as_slice());
+    Some(match cap_type {
+        CAP_PROC_CALL => Capability::ProcedureCall(ProcedureCallCap::deserialize_u256(&mut cursor).unwrap()),
+        CAP_PROC_REGISTER => Capability::ProcedureRegister(ProcedureRegisterCap::deserialize_u256(&mut cursor).unwrap()),
+        CAP_PROC_DELETE => Capability::ProcedureDelete(ProcedureDeleteCap::deserialize_u256(&mut cursor).unwrap()),
+        CAP_PROC_ENTRY => Capability::ProcedureEntry(ProcedureEntryCap::deserialize_u256(&mut cursor).unwrap()),
+        CAP_STORE_WRITE => Capability::StoreWrite(StoreWriteCap::deserialize_u256(&mut cursor).unwrap()),
+        CAP_LOG => Capability::Log(LogCap::deserialize_u256(&mut cursor).unwrap()),
+        CAP_ACC_CALL => Capability::AccountCall(AccountCallCap::deserialize_u256(&mut cursor).unwrap()),
+        _ => return None,
+    })
 }
 
 /// Get Entry Procedure Id

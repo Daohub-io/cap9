@@ -50,7 +50,7 @@ impl SysCall {
 impl Deserialize for SysCall {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let syscall_type = u8::deserialize(reader)?;
         let cap_index = u8::deserialize(reader)?;
         match syscall_type {
@@ -268,7 +268,7 @@ pub struct WriteCall {
 impl Deserialize for WriteCall {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let key: U256 = U256::deserialize(reader)?;
         let value: U256 = U256::deserialize(reader)?;
         Ok(WriteCall{key, value})
@@ -297,7 +297,7 @@ pub struct LogCall {
 impl Deserialize for LogCall {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let n_topics = u8::deserialize(reader)?;
         let mut topics : Vec<H256> = Vec::new();
         for _i in 0..(n_topics as usize) {
@@ -333,7 +333,7 @@ pub struct RegisterProc {
 impl Deserialize for RegisterProc {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
         let address = Address::deserialize(reader)?;
         let cap_list = NewCapList::deserialize(reader)?;
@@ -375,7 +375,7 @@ pub struct Call {
 impl Deserialize for Call {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
         let payload = Payload::deserialize(reader)?;
         Ok(Call{proc_id, payload})
@@ -398,7 +398,7 @@ impl Serialize for Call {
 impl Deserialize for Payload {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         // Here we just need to read all remaining bytes TODO: a buffered read
         // would be better rather than a single byte loop. The Read interface
         // we're currently using isn't flexible enough here, we should change to
@@ -406,9 +406,14 @@ impl Deserialize for Payload {
         // correctness.
         let mut payload: Vec<u8> = Vec::new();
         let mut u8buf = [0; 1];
+        let mut i = 0;
         loop {
             match reader.read(&mut u8buf) {
                 Ok(_) => {
+                    i += 1;
+                    if i > 20 {
+                        // panic!("cursr: {:?}", i);
+                    }
                     payload.push(u8buf[0])
                 },
                 Err(_) => break,
@@ -462,7 +467,7 @@ impl Into<ProcedureKey> for SysCallProcedureKey {
 impl Deserialize for SysCallProcedureKey {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let proc_id_u256: U256 = U256::deserialize(reader)?;
         let mut proc_id_buffer: [u8; 32] = [0; 32];
         proc_id_u256.to_big_endian(&mut proc_id_buffer);
@@ -487,7 +492,7 @@ impl Serialize for SysCallProcedureKey {
 impl Deserialize for NewCapList {
     type Error = io::Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut cap_list_raw: Vec<U256> = Vec::new();
         loop {
             if let Ok(cap_val) = H256::deserialize(reader) {
@@ -602,8 +607,9 @@ mod tests {
 
     #[test]
     fn deserialise_log_call() {
-        let mut input: &[u8] = &[0x08,0x00,0x00,0xab,0xcd,0xab,0xcd];
-        let syscall = SysCall::deserialize(&mut input).unwrap();
+        let input: &[u8] = &[0x08,0x00,0x00,0xab,0xcd,0xab,0xcd];
+        let mut reader = io::Cursor::new(input);
+        let syscall = SysCall::deserialize(&mut reader).unwrap();
         assert_eq!(syscall, SysCall{
             cap_index: 0,
             action: SysCallAction::Log(LogCall {

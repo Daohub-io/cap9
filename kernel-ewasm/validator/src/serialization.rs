@@ -4,13 +4,14 @@ pub use core::fmt;
 use pwasm_std::vec::{Vec};
 
 use pwasm_std::String;
+use pwasm_std::types::*;
 
 /// Deserialization from serial i/o.
 pub trait Deserialize : Sized {
     /// Serialization error produced by deserialization routine.
     type Error: From<io::Error>;
     /// Deserialize type from serial i/o
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error>;
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error>;
 }
 
 /// Serialization to serial i/o. Takes self by value to consume less memory
@@ -20,6 +21,23 @@ pub trait Serialize {
     type Error: From<io::Error>;
     /// Serialize type to serial i/o
     fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error>;
+}
+
+/// Deserialization from serial i/o.
+pub trait DeserializeU256 : Sized {
+    /// Serialization error produced by deserialization routine.
+    type Error: From<io::Error>;
+    /// Deserialize type from serial i/o
+    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error>;
+}
+
+/// Serialization to serial i/o. Takes self by value to consume less memory
+/// (parity-wasm IR is being partially freed by filling the result buffer).
+pub trait SerializeU256 {
+    /// Serialization error produced by serialization routine.
+    type Error: From<io::Error>;
+    /// Serialize type to serial i/o
+    fn serialize_u256<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error>;
 }
 
 /// Deserialization/serialization error
@@ -189,7 +207,7 @@ pub struct Unparsed(pub Vec<u8>);
 impl Deserialize for Unparsed {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let len = VarUint32::deserialize(reader)?.into();
         let mut vec = vec![0u8; len];
         reader.read(&mut vec[..])?;

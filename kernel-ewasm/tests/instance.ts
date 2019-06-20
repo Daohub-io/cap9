@@ -6,7 +6,7 @@ import { Contract } from 'web3-eth-contract';
 
 describe('Kernel', function () {
     describe('#constructor', function () {
-        this.timeout(20_000);
+        this.timeout(40_000);
         it('should have correct Initial Entry Procedure', async function () {
             let kernel = await newKernelInstance("init", "0xc1912fee45d61c87cc5ea59dae31190fffff232d");
 
