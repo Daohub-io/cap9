@@ -4,7 +4,7 @@ use pwasm_std::String;
 use cap9_core;
 use crate::{Deserialize, Uint8, VarUint32, VarUint1, VarUint7};
 use crate::types::{TableElementType, ValueType};
-use crate::serialization::{Error};
+use crate::serialization::{Error, WASMDeserialize};
 
 const FLAG_HAS_MAX: u8 = 0x01;
 const FLAG_SHARED: u8 = 0x02;
@@ -32,7 +32,7 @@ impl GlobalType {
     pub fn is_mutable(&self) -> bool { self.is_mutable }
 }
 
-impl Deserialize for GlobalType {
+impl WASMDeserialize for GlobalType {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {

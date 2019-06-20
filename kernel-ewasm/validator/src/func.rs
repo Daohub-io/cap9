@@ -1,8 +1,8 @@
 use cap9_core;
-use crate::{Deserialize, VarUint32};
+use crate::{VarUint32};
 use crate::types::ValueType;
 use crate::instructions::{Instructions};
-use crate::serialization::{Error};
+use crate::serialization::{Error,WASMDeserialize};
 use pwasm_std::vec::Vec;
 
 /// Function signature (type reference)
@@ -52,7 +52,7 @@ impl Local {
     pub fn value_type(&self) -> ValueType { self.value_type }
 }
 
-impl Deserialize for Local {
+impl WASMDeserialize for Local {
      type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {

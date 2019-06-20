@@ -5,7 +5,8 @@ use super::Cursor;
 use super::ImportEntry;
 use crate::instructions;
 use crate::primitives::CountedList;
-use crate::serialization::Deserialize;
+use crate::serialization::{WASMDeserialize};
+use cap9_core::Deserialize;
 #[cfg(not(feature = "std"))]
 use pwasm_std::String;
 #[cfg(not(feature = "std"))]

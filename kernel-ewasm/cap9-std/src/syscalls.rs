@@ -1,7 +1,7 @@
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
 use cap9_core;
-use validator::serialization::{Deserialize, Serialize};
+use cap9_core::{Deserialize, Serialize};
 
 /// Generic wasm error
 #[derive(Debug)]
@@ -523,7 +523,7 @@ mod tests {
     use super::*;
     use pwasm_abi::types::*;
     use cap9_core;
-    use validator::serialization::{Deserialize, Serialize};
+    use cap9_core::{Deserialize, Serialize};
 
     #[test]
     fn serialize_write() {

@@ -4,7 +4,7 @@
 
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
-use validator::serialization::{Serialize};
+use cap9_core::Serialize;
 
 /// Generic wasm error
 #[derive(Debug)]

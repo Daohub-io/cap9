@@ -1,4 +1,4 @@
-use cap9_core;
+use cap9_core::*;
 use crate::primitives::*;
 pub use core::fmt;
 use pwasm_std::vec::{Vec};
@@ -6,8 +6,9 @@ use pwasm_std::vec::{Vec};
 use pwasm_std::String;
 use pwasm_std::types::*;
 
+
 /// Deserialization from serial i/o.
-pub trait Deserialize : Sized {
+pub trait WASMDeserialize : Sized {
     /// Serialization error produced by deserialization routine.
     type Error: From<cap9_core::Error>;
     /// Deserialize type from serial i/o
@@ -16,29 +17,13 @@ pub trait Deserialize : Sized {
 
 /// Serialization to serial i/o. Takes self by value to consume less memory
 /// (parity-wasm IR is being partially freed by filling the result buffer).
-pub trait Serialize {
+pub trait WASMSerialize {
     /// Serialization error produced by serialization routine.
     type Error: From<cap9_core::Error>;
     /// Serialize type to serial i/o
     fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error>;
 }
 
-/// Deserialization from serial i/o.
-pub trait DeserializeU256 : Sized {
-    /// Serialization error produced by deserialization routine.
-    type Error: From<cap9_core::Error>;
-    /// Deserialize type from serial i/o
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error>;
-}
-
-/// Serialization to serial i/o. Takes self by value to consume less memory
-/// (parity-wasm IR is being partially freed by filling the result buffer).
-pub trait SerializeU256 {
-    /// Serialization error produced by serialization routine.
-    type Error: From<cap9_core::Error>;
-    /// Serialize type to serial i/o
-    fn serialize_u256<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error>;
-}
 
 /// Deserialization/serialization error
 #[derive(Debug, Clone)]

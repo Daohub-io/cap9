@@ -17,7 +17,6 @@ pub use cap9_core::*;
 mod primitives;
 pub mod serialization;
 mod types;
-use self::serialization::Deserialize;
 
 use self::primitives::{
     CountedList, Uint32, Uint64, Uint8, VarInt32, VarInt64, VarInt7, VarUint1, VarUint32, VarUint7,

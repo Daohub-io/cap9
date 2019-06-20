@@ -2,9 +2,7 @@ extern crate pwasm_abi;
 extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
-
-use validator::Cursor;
-use validator::serialization::{Serialize, Deserialize, SerializeU256, DeserializeU256};
+use cap9_core::{Cursor, Serialize, Deserialize, SerializeU256, DeserializeU256};
 
 use pwasm_abi::eth;
 use pwasm_abi::types::*;

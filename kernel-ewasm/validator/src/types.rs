@@ -2,8 +2,8 @@
 pub use core::fmt;
 use pwasm_std::vec::Vec;
 use cap9_core;
+use crate::serialization::{Error, WASMSerialize, WASMDeserialize};
 use super::{VarUint7, VarInt7, CountedList, VarUint32};
-use crate::serialization::{Error, Serialize, Deserialize, SerializeU256, DeserializeU256};
 pub use pwasm_std::types::{U256,H256, Address};
 
 /// Type definition in types section. Currently can be only of the function type.
@@ -13,7 +13,7 @@ pub enum Type {
     Function(FunctionType),
 }
 
-impl Deserialize for Type {
+impl WASMDeserialize for Type {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -36,7 +36,7 @@ pub enum ValueType {
     V128,
 }
 
-impl Deserialize for ValueType {
+impl WASMDeserialize for ValueType {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -63,7 +63,7 @@ pub enum BlockType {
     NoResult,
 }
 
-impl Deserialize for BlockType {
+impl WASMDeserialize for BlockType {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -121,7 +121,7 @@ impl FunctionType {
     pub fn return_type_mut(&mut self) -> &mut Option<ValueType> { &mut self.return_type }
 }
 
-impl Deserialize for FunctionType {
+impl WASMDeserialize for FunctionType {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -158,7 +158,7 @@ pub enum TableElementType {
     AnyFunc,
 }
 
-impl Deserialize for TableElementType {
+impl WASMDeserialize for TableElementType {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -168,103 +168,5 @@ impl Deserialize for TableElementType {
             -0x10 => Ok(TableElementType::AnyFunc),
             _ => Err(Error::UnknownTableElementType(val.into())),
         }
-    }
-}
-
-impl Deserialize for u8 {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut u8buf = [0u8; 1];
-        reader.read(&mut u8buf)?;
-        Ok(u8buf[0])
-    }
-}
-
-impl DeserializeU256 for u8 {
-    type Error = cap9_core::Error;
-
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut buf = [U256::zero(); 1];
-        reader.read(&mut buf)?;
-        Ok(buf[0].as_u32() as u8)
-    }
-}
-
-impl Serialize for u8 {
-    type Error = cap9_core::Error;
-
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
-        writer.write(&[self])?;
-        Ok(())
-    }
-}
-
-impl Deserialize for U256 {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut u8buf = [0u8; 32];
-        // TODO: check that enough bytes were read
-        reader.read(&mut u8buf)?;
-        Ok(u8buf.into())
-    }
-}
-
-
-impl Serialize for U256 {
-    type Error = cap9_core::Error;
-
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
-        let mut bytes: Vec<u8> = Vec::new();
-        bytes.resize(32,0);
-        self.to_big_endian(bytes.as_mut_slice());
-        writer.write(&bytes)?;
-        Ok(())
-    }
-}
-
-
-impl Deserialize for H256 {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut u8buf = [0u8; 32];
-        reader.read(&mut u8buf)?;
-        Ok(u8buf.into())
-    }
-}
-
-
-impl Serialize for H256 {
-    type Error = cap9_core::Error;
-
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
-        let bytes = self.to_fixed_bytes();
-        writer.write(&bytes)?;
-        Ok(())
-    }
-}
-
-
-impl Deserialize for Address {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut u8buf = [0u8; 32];
-        // TODO: check that enough bytes were read
-        reader.read(&mut u8buf)?;
-        let h: H256 = u8buf.into();
-        Ok(h.into())
-    }
-}
-
-impl Serialize for Address {
-    type Error = cap9_core::Error;
-
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
-        let h: H256 = self.into();
-        writer.write(&h.to_fixed_bytes())?;
-        Ok(())
     }
 }

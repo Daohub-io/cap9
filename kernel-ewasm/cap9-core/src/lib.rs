@@ -1,3 +1,10 @@
+//! # Cap9 Core
+//!
+//! This crate contains some of the base types and mechanism used throughout the
+//! kernel and contracts. Most critically at this stage it contains the Cursor
+//! and Serialization types.
+//!
+
 #![no_std]
 pub use pwasm_std::types::{U256,H256, Address};
 
@@ -113,6 +120,141 @@ impl<'a, T: Copy> Read<T> for Cursor<'a, T> {
 impl Write for Vec<u8> {
     fn write(&mut self, buf: &[u8]) -> Result<(), Error> {
         self.extend(buf);
+        Ok(())
+    }
+}
+
+
+
+/// Deserialization from serial i/o.
+pub trait Deserialize : Sized {
+    /// Serialization error produced by deserialization routine.
+    type Error: From<Error>;
+    /// Deserialize type from serial i/o
+    fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error>;
+}
+
+/// Serialization to serial i/o. Takes self by value to consume less memory
+/// (parity-wasm IR is being partially freed by filling the result buffer).
+pub trait Serialize {
+    /// Serialization error produced by serialization routine.
+    type Error: From<Error>;
+    /// Serialize type to serial i/o
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error>;
+}
+
+/// Deserialization from serial i/o.
+pub trait DeserializeU256 : Sized {
+    /// Serialization error produced by deserialization routine.
+    type Error: From<Error>;
+    /// Deserialize type from serial i/o
+    fn deserialize_u256<R: Read<U256>>(reader: &mut R) -> Result<Self, Self::Error>;
+}
+
+/// Serialization to serial i/o. Takes self by value to consume less memory
+/// (parity-wasm IR is being partially freed by filling the result buffer).
+pub trait SerializeU256 {
+    /// Serialization error produced by serialization routine.
+    type Error: From<Error>;
+    /// Serialize type to serial i/o
+    fn serialize_u256<W: Write>(self, writer: &mut W) -> Result<(), Self::Error>;
+}
+
+
+impl Deserialize for u8 {
+    type Error = Error;
+
+    fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut u8buf = [0u8; 1];
+        reader.read(&mut u8buf)?;
+        Ok(u8buf[0])
+    }
+}
+
+impl DeserializeU256 for u8 {
+    type Error = Error;
+
+    fn deserialize_u256<R: Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut buf = [U256::zero(); 1];
+        reader.read(&mut buf)?;
+        Ok(buf[0].as_u32() as u8)
+    }
+}
+
+impl Serialize for u8 {
+    type Error = Error;
+
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        writer.write(&[self])?;
+        Ok(())
+    }
+}
+
+impl Deserialize for U256 {
+    type Error = Error;
+
+    fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut u8buf = [0u8; 32];
+        // TODO: check that enough bytes were read
+        reader.read(&mut u8buf)?;
+        Ok(u8buf.into())
+    }
+}
+
+
+impl Serialize for U256 {
+    type Error = Error;
+
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let mut bytes: Vec<u8> = Vec::new();
+        bytes.resize(32,0);
+        self.to_big_endian(bytes.as_mut_slice());
+        writer.write(&bytes)?;
+        Ok(())
+    }
+}
+
+
+impl Deserialize for H256 {
+    type Error = Error;
+
+    fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut u8buf = [0u8; 32];
+        reader.read(&mut u8buf)?;
+        Ok(u8buf.into())
+    }
+}
+
+
+impl Serialize for H256 {
+    type Error = Error;
+
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let bytes = self.to_fixed_bytes();
+        writer.write(&bytes)?;
+        Ok(())
+    }
+}
+
+
+impl Deserialize for Address {
+    type Error = Error;
+
+    fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut u8buf = [0u8; 32];
+        // TODO: check that enough bytes were read
+        reader.read(&mut u8buf)?;
+        let h: H256 = u8buf.into();
+        Ok(h.into())
+    }
+}
+
+impl Serialize for Address {
+    type Error = Error;
+
+    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let h: H256 = self.into();
+        writer.write(&h.to_fixed_bytes())?;
         Ok(())
     }
 }

@@ -1,9 +1,8 @@
 // This file is based on parity-wasm from parity, MIT & Apache Licensed
 use cap9_core;
-use crate::{Deserialize};
 use pwasm_std::vec::Vec;
 use pwasm_std::String;
-use crate::serialization::{Error};
+use crate::serialization::{Error,WASMDeserialize};
 
 
 macro_rules! buffered_read {
@@ -55,7 +54,7 @@ impl From<usize> for VarUint32 {
     }
 }
 
-impl Deserialize for VarUint32 {
+impl WASMDeserialize for VarUint32 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -91,7 +90,7 @@ impl From<VarUint64> for u64 {
     }
 }
 
-impl Deserialize for VarUint64 {
+impl WASMDeserialize for VarUint64 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -138,7 +137,7 @@ impl From<u8> for VarUint7 {
     }
 }
 
-impl Deserialize for VarUint7 {
+impl WASMDeserialize for VarUint7 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -164,7 +163,7 @@ impl From<i8> for VarInt7 {
     }
 }
 
-impl Deserialize for VarInt7 {
+impl WASMDeserialize for VarInt7 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -200,7 +199,7 @@ impl From<u8> for Uint8 {
     }
 }
 
-impl Deserialize for Uint8 {
+impl WASMDeserialize for Uint8 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -226,7 +225,7 @@ impl From<i32> for VarInt32 {
     }
 }
 
-impl Deserialize for VarInt32 {
+impl WASMDeserialize for VarInt32 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -276,7 +275,7 @@ impl From<i64> for VarInt64 {
     }
 }
 
-impl Deserialize for VarInt64 {
+impl WASMDeserialize for VarInt64 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -313,7 +312,7 @@ impl Deserialize for VarInt64 {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Uint32(u32);
 
-impl Deserialize for Uint32 {
+impl WASMDeserialize for Uint32 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -338,7 +337,7 @@ impl From<u32> for Uint32 {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Uint64(u64);
 
-impl Deserialize for Uint64 {
+impl WASMDeserialize for Uint64 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -376,7 +375,7 @@ impl From<bool> for VarUint1 {
     }
 }
 
-impl Deserialize for VarUint1 {
+impl WASMDeserialize for VarUint1 {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -390,7 +389,7 @@ impl Deserialize for VarUint1 {
     }
 }
 
-impl Deserialize for String {
+impl WASMDeserialize for String {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -407,14 +406,14 @@ impl Deserialize for String {
 /// List for reading sequence of elements typed `T`, given
 /// they are preceded by length (serialized as VarUint32).
 #[derive(Debug, Clone)]
-pub struct CountedList<T: Deserialize>(Vec<T>);
+pub struct CountedList<T: WASMDeserialize>(Vec<T>);
 
-impl<T: Deserialize> CountedList<T> {
+impl<T: WASMDeserialize> CountedList<T> {
     /// Destroy counted list returing inner vector.
     pub fn into_inner(self) -> Vec<T> { self.0 }
 }
 
-impl<T: Deserialize> Deserialize for CountedList<T> where T::Error: From<Error> {
+impl<T: WASMDeserialize> WASMDeserialize for CountedList<T> where T::Error: From<Error> {
     type Error = T::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {

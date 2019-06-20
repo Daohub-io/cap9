@@ -4,13 +4,13 @@ use pwasm_std::vec::Vec;
 use pwasm_std::Box;
 
 use cap9_core;
-use crate::{Deserialize,
+use crate::{
     Uint8, VarUint32, CountedList,
     Uint32, Uint64,
     VarInt32, VarInt64,
 };
 use crate::types::{BlockType};
-use crate::serialization::{Error};
+use crate::serialization::{Error, WASMDeserialize};
 
 /// List of instructions (usually inside a block section).
 #[derive(Debug, Clone, PartialEq)]
@@ -34,7 +34,7 @@ impl Instructions {
     pub fn elements_mut(&mut self) -> &mut Vec<Instruction> { &mut self.0 }
 }
 
-impl Deserialize for Instructions {
+impl WASMDeserialize for Instructions {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -87,7 +87,7 @@ impl InitExpr {
     }
 }
 
-impl Deserialize for InitExpr {
+impl WASMDeserialize for InitExpr {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -1013,7 +1013,7 @@ pub mod opcodes {
     pub const TABLE_COPY: u8 = 0x0e;
 }
 
-impl Deserialize for Instruction {
+impl WASMDeserialize for Instruction {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -1615,7 +1615,7 @@ fn deserialize_bulk<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Instructio
     })
 }
 
-impl Deserialize for MemArg {
+impl WASMDeserialize for MemArg {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
