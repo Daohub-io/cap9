@@ -126,7 +126,7 @@ impl Write for Vec<u8> {
 
 
 
-/// Deserialization from serial i/o.
+/// Deserialization.
 pub trait Deserialize<T> : Sized {
     /// Serialization error produced by deserialization routine.
     type Error: From<Error>;
@@ -134,8 +134,7 @@ pub trait Deserialize<T> : Sized {
     fn deserialize<R: Read<T>>(reader: &mut R) -> Result<Self, Self::Error>;
 }
 
-/// Serialization to serial i/o. Takes self by value to consume less memory
-/// (parity-wasm IR is being partially freed by filling the result buffer).
+/// Serialization.
 pub trait Serialize {
     /// Serialization error produced by serialization routine.
     type Error: From<Error>;

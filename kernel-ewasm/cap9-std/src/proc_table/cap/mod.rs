@@ -10,26 +10,28 @@ use pwasm_abi::types::*;
 
 use core::convert::TryFrom;
 
-pub const CAP_PROC_CALL: u8 = 3;
-pub const CAP_PROC_CALL_SIZE: u8 = 1;
+mod store_write;
+pub use store_write::*;
 
-pub const CAP_PROC_REGISTER: u8 = 4;
-pub const CAP_PROC_REGISTER_SIZE: u8 = 1;
+mod procedure_call;
+pub use procedure_call::*;
 
-pub const CAP_PROC_DELETE: u8 = 5;
-pub const CAP_PROC_DELETE_SIZE: u8 = 1;
+mod procedure_register;
+pub use procedure_register::*;
 
-pub const CAP_PROC_ENTRY: u8 = 6;
-pub const CAP_PROC_ENTRY_SIZE: u8 = 0;
+mod procedure_delete;
+pub use procedure_delete::*;
 
-pub const CAP_STORE_WRITE: u8 = 7;
-pub const CAP_STORE_WRITE_SIZE: u8 = 2;
+mod procedure_entry;
+pub use procedure_entry::*;
 
-pub const CAP_LOG: u8 = 8;
-pub const CAP_LOG_SIZE: u8 = 5;
+mod log;
+pub use log::*;
 
-pub const CAP_ACC_CALL: u8 = 9;
-pub const CAP_ACC_CALL_SIZE: u8 = 1;
+mod account_call;
+pub use account_call::*;
+
+
 
 /// A list of the cap types which we can use for iterating over all cap types.
 pub const CAP_TYPES: [u8; 7] = [
@@ -45,48 +47,9 @@ pub const CAP_TYPES: [u8; 7] = [
 type ProcedureKey = [u8; 24];
 type ProcedureIndex = [u8; 24];
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct ProcedureCallCap {
-    pub prefix: u8,
-    pub key: ProcedureKey,
-}
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct ProcedureRegisterCap {
-    pub prefix: u8,
-    pub key: ProcedureKey,
-}
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct ProcedureDeleteCap {
-    pub prefix: u8,
-    pub key: ProcedureKey,
-}
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct ProcedureEntryCap;
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct StoreWriteCap {
-    pub location: [u8; 32],
-    pub size: [u8; 32],
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct LogCap {
-    pub topics: u8,
-    pub t1: [u8; 32],
-    pub t2: [u8; 32],
-    pub t3: [u8; 32],
-    pub t4: [u8; 32],
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct AccountCallCap {
-    pub can_call_any: bool,
-    pub can_send: bool,
-    pub address: Address,
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Capability {
@@ -155,126 +118,7 @@ pub trait AsCap {
     fn is_subset_of(&self, parent_cap: &Self) -> bool;
 }
 
-impl AsCap for StoreWriteCap {
-    fn is_subset_of(&self, parent_cap: &Self) -> bool {
-        // Base storage address
-        if U256::from_big_endian(&self.location) < U256::from_big_endian(&parent_cap.location) {
-            return false;
-        }
-        // Number of additional storage keys
-        if (U256::from_big_endian(&self.location) + U256::from_big_endian(&self.size)) > (U256::from_big_endian(&parent_cap.location) + U256::from_big_endian(&parent_cap.size)) {
-            return false;
-        }
-        true
-    }
-}
 
-impl AsCap for LogCap {
-    fn is_subset_of(&self, parent_cap: &Self) -> bool {
-        // First we check the number of required topics. The number of
-        // required topics of the requested cap must be equal to or greater
-        // than the number of required topics for the current cap.
-        if self.topics < parent_cap.topics {
-            return false;
-        }
-        // Next we check that the topics required by the parent cap are
-        // also required by the requested cap.
-        if parent_cap.topics >= 1 {
-            if parent_cap.t1 != self.t1 {
-                return false;
-            }
-        }
-        if parent_cap.topics >= 2 {
-            if parent_cap.t2 != self.t2 {
-                return false;
-            }
-        }
-        if parent_cap.topics >= 3 {
-            if parent_cap.t3 != self.t3 {
-                return false;
-            }
-        }
-        if parent_cap.topics >= 4 {
-            if parent_cap.t4 != self.t4 {
-                return false;
-            }
-        }
-        true
-    }
-}
-
-impl AsCap for ProcedureEntryCap {
-    fn is_subset_of(&self, _parent_cap: &Self) -> bool {
-        // All of these caps are identical, therefore any cap of this type is
-        // the subset of another,
-        true
-    }
-}
-
-impl AsCap for AccountCallCap {
-    fn is_subset_of(&self, parent_cap: &Self) -> bool {
-        // If the requested value of callAny is true, then the parent cap
-        // value of callAny must be true.
-        if self.can_call_any {
-            if !parent_cap.can_call_any {
-                return false;
-            }
-        } else {
-            // if the parent_cap value is callAny, we don't care about the value
-            // of ethAddress. If the requested value of callAny is false we must
-            // check that the addresses are the same
-            if !parent_cap.can_call_any {
-                // the addresses must match
-                if self.address != parent_cap.address {
-                    return false;
-                }
-            }
-        }
-
-        // if the requested sendValue flag is true, the parent sendValue flag
-        // must also be true.
-        if self.can_send && !parent_cap.can_send {
-            return false;
-        }
-
-        // Othwerwise we can consider it a subset
-        true
-    }
-}
-
-
-impl AsCap for ProcedureRegisterCap {
-    fn is_subset_of(&self, parent_cap: &Self) -> bool {
-        // Check that the prefix of B is >= than the prefix of A.
-        if parent_cap.prefix > self.prefix {
-            return false;
-        }
-        // The keys must match
-        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
-    }
-}
-
-impl AsCap for ProcedureDeleteCap {
-    fn is_subset_of(&self, parent_cap: &Self) -> bool {
-        // Check that the prefix of B is >= than the prefix of A.
-        if parent_cap.prefix > self.prefix {
-            return false;
-        }
-        // The keys must match
-        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
-    }
-}
-
-impl AsCap for ProcedureCallCap {
-    fn is_subset_of(&self, parent_cap: &Self) -> bool {
-        // Check that the prefix of B is >= than the prefix of A.
-        if parent_cap.prefix > self.prefix {
-            return false;
-        }
-        // The keys must match
-        matching_keys(parent_cap.prefix, &parent_cap.key, &self.key)
-    }
-}
 
 pub fn matching_keys(prefix: u8, required_key: &ProcedureKey, requested_key: &ProcedureKey) -> bool {
     // We only want to keep the first $prefix bits of $key, the
@@ -499,7 +343,7 @@ impl NewCapList {
         let mut res = Vec::with_capacity(self.0.len() * (CAP_LOG_SIZE + 3) as usize);
 
         for new_cap in self.0.iter() {
-            let raw_cap_slice = match &new_cap.cap {
+            let raw_cap_slice: Vec<U256> = match &new_cap.cap {
                 Capability::ProcedureCall(proc_call_cap) => {
                     let cap_size = U256::from(CAP_PROC_CALL_SIZE + 3);
                     let cap_type = U256::from(CAP_PROC_CALL);
@@ -668,154 +512,7 @@ impl NewCapList {
     }
 }
 
-impl Deserialize<U256> for ProcedureCallCap {
-    type Error = cap9_core::Error;
 
-    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut buf = [U256::zero(); 1];
-        reader.read(&mut buf).unwrap();
-        let val: U256 = buf[0];
-        let mut key = [0u8; 24];
-        key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
-
-        Ok(ProcedureCallCap {
-            prefix: val.byte(31),
-            key: key,
-        })
-    }
-}
-
-impl Deserialize<U256> for ProcedureRegisterCap {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut buf = [U256::zero(); 1];
-        reader.read(&mut buf).unwrap();
-        let val: U256 = buf[0];
-        let mut key = [0u8; 24];
-        key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
-
-        Ok(ProcedureRegisterCap {
-            prefix: val.byte(31),
-            key: key,
-        })
-    }
-}
-
-impl Deserialize<U256> for ProcedureDeleteCap {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut buf = [U256::zero(); 1];
-        reader.read(&mut buf).unwrap();
-        let val: U256 = buf[0];
-        let mut key = [0u8; 24];
-        key.copy_from_slice(&<[u8; 32]>::from(val)[8..]);
-
-        Ok(ProcedureDeleteCap {
-            prefix: val.byte(31),
-            key: key,
-        })
-    }
-}
-
-impl Deserialize<U256> for ProcedureEntryCap {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<U256>>(_reader: &mut R) -> Result<Self, Self::Error> {
-        Ok(ProcedureEntryCap {})
-    }
-}
-
-impl Deserialize<U256> for StoreWriteCap {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut buf = [U256::zero(); 2];
-        reader.read(&mut buf).unwrap();
-        let location: [u8; 32] = buf[0].into();
-        let size: [u8; 32] = buf[1].into();
-
-        Ok(StoreWriteCap {
-            location: location,
-            size: size,
-        })
-    }
-}
-
-impl Deserialize<U256> for LogCap {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut buf = [U256::zero(); 5];
-        reader.read(&mut buf).unwrap();
-
-        let topics_len: usize = buf[0].byte(0) as usize;
-        let mut topics = [[0; 32]; 4];
-        if topics_len != 0 {
-            match topics_len {
-                1..=4 => {
-                    for i in 0..topics_len {
-                        topics[i] = buf[i+1].into()
-                    }
-                }
-                _ => return Err(cap9_core::Error::InvalidData)
-                // _ => return Err(CapDecodeErr::InvalidCapLen(topics_len as u8)),
-            }
-        }
-
-        Ok(LogCap {
-            topics: topics_len as u8,
-            t1: topics[0],
-            t2: topics[1],
-            t3: topics[2],
-            t4: topics[3],
-        })
-    }
-}
-
-
-impl Deserialize<U256> for AccountCallCap {
-    type Error = cap9_core::Error;
-
-    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
-        let mut buf = [U256::zero(); 1];
-        reader.read(&mut buf).unwrap();
-        let val: U256 = buf[0];
-
-        let can_call_any = val.bit(255);
-        let can_send = val.bit(254);
-
-        let mut address = [0u8; 20];
-        address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
-        let address = H160::from(address);
-
-        let account_call_cap = AccountCallCap {
-            can_call_any: can_call_any,
-            can_send: can_send,
-            address: address,
-        };
-
-        Ok(account_call_cap)
-    }
-}
-
-impl From<U256> for AccountCallCap {
-    fn from(val: U256) -> Self {
-        let can_call_any = val.bit(255);
-        let can_send = val.bit(254);
-
-        let mut address = [0u8; 20];
-        address.copy_from_slice(&<[u8; 32]>::from(val)[12..]);
-        let address = H160::from(address);
-
-        AccountCallCap {
-            can_call_any: can_call_any,
-            can_send: can_send,
-            address: address,
-        }
-    }
-}
 
 #[cfg(test)]
 #[allow(non_snake_case)]
