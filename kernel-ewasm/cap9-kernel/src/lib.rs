@@ -17,7 +17,7 @@ use cap9_std::*;
 use cap9_std::syscalls::SysCall;
 
 use validator::serialization::Deserialize;
-use validator::io::Cursor;
+use cap9_core::Cursor;
 
 /// This is a temporary storage location for toggling
 const TEST_KERNEL_SYSCALL_TOGGLE_PTR: [u8; 32] = [

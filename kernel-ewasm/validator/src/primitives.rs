@@ -1,6 +1,5 @@
 // This file is based on parity-wasm from parity, MIT & Apache Licensed
-// use crate::rust::{vec::Vec, string::String};
-use crate::{io};
+use cap9_core;
 use crate::{Deserialize};
 use pwasm_std::vec::Vec;
 use pwasm_std::String;
@@ -59,7 +58,7 @@ impl From<usize> for VarUint32 {
 impl Deserialize for VarUint32 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut res = 0;
         let mut shift = 0;
         let mut u8buf = [0u8; 1];
@@ -95,7 +94,7 @@ impl From<VarUint64> for u64 {
 impl Deserialize for VarUint64 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut res = 0;
         let mut shift = 0;
         let mut u8buf = [0u8; 1];
@@ -142,7 +141,7 @@ impl From<u8> for VarUint7 {
 impl Deserialize for VarUint7 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 1];
         reader.read(&mut u8buf)?;
         Ok(VarUint7(u8buf[0]))
@@ -168,7 +167,7 @@ impl From<i8> for VarInt7 {
 impl Deserialize for VarInt7 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 1];
         reader.read(&mut u8buf)?;
 
@@ -204,7 +203,7 @@ impl From<u8> for Uint8 {
 impl Deserialize for Uint8 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 1];
         reader.read(&mut u8buf)?;
         Ok(Uint8(u8buf[0]))
@@ -230,7 +229,7 @@ impl From<i32> for VarInt32 {
 impl Deserialize for VarInt32 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut res = 0;
         let mut shift = 0;
         let mut u8buf = [0u8; 1];
@@ -280,7 +279,7 @@ impl From<i64> for VarInt64 {
 impl Deserialize for VarInt64 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut res = 0i64;
         let mut shift = 0;
         let mut u8buf = [0u8; 1];
@@ -317,7 +316,7 @@ pub struct Uint32(u32);
 impl Deserialize for Uint32 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [0u8; 4];
         reader.read(&mut buf)?;
         // todo check range
@@ -342,7 +341,7 @@ pub struct Uint64(u64);
 impl Deserialize for Uint64 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [0u8; 8];
         reader.read(&mut buf)?;
         // todo check range
@@ -380,7 +379,7 @@ impl From<bool> for VarUint1 {
 impl Deserialize for VarUint1 {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 1];
         reader.read(&mut u8buf)?;
         match u8buf[0] {
@@ -394,7 +393,7 @@ impl Deserialize for VarUint1 {
 impl Deserialize for String {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let length = u32::from(VarUint32::deserialize(reader)?) as usize;
         if length > 0 {
             String::from_utf8(buffered_read!(1024, length, reader)).map_err(|_| Error::NonUtf8String)
@@ -418,7 +417,7 @@ impl<T: Deserialize> CountedList<T> {
 impl<T: Deserialize> Deserialize for CountedList<T> where T::Error: From<Error> {
     type Error = T::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let count: usize = VarUint32::deserialize(reader)?.into();
         let mut result = Vec::new();
         for _ in 0..count { result.push(T::deserialize(reader)?); }
@@ -431,7 +430,7 @@ impl<T: Deserialize> Deserialize for CountedList<T> where T::Error: From<Error> 
 
 // 	use super::super::{deserialize_buffer, Serialize};
 // 	use super::{CountedList, VarInt7, VarUint32, VarInt32, VarInt64, VarUint64};
-// 	use crate::io::Error;
+// 	use crate::cap9_core::Error;
 
 // 	fn varuint32_ser_test(val: u32, expected: Vec<u8>) {
 // 		let mut buf = Vec::new();

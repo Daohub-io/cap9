@@ -1,4 +1,4 @@
-use crate::{io};
+use cap9_core;
 use crate::primitives::*;
 pub use core::fmt;
 use pwasm_std::vec::{Vec};
@@ -9,35 +9,35 @@ use pwasm_std::types::*;
 /// Deserialization from serial i/o.
 pub trait Deserialize : Sized {
     /// Serialization error produced by deserialization routine.
-    type Error: From<io::Error>;
+    type Error: From<cap9_core::Error>;
     /// Deserialize type from serial i/o
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error>;
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error>;
 }
 
 /// Serialization to serial i/o. Takes self by value to consume less memory
 /// (parity-wasm IR is being partially freed by filling the result buffer).
 pub trait Serialize {
     /// Serialization error produced by serialization routine.
-    type Error: From<io::Error>;
+    type Error: From<cap9_core::Error>;
     /// Serialize type to serial i/o
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error>;
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error>;
 }
 
 /// Deserialization from serial i/o.
 pub trait DeserializeU256 : Sized {
     /// Serialization error produced by deserialization routine.
-    type Error: From<io::Error>;
+    type Error: From<cap9_core::Error>;
     /// Deserialize type from serial i/o
-    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error>;
+    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error>;
 }
 
 /// Serialization to serial i/o. Takes self by value to consume less memory
 /// (parity-wasm IR is being partially freed by filling the result buffer).
 pub trait SerializeU256 {
     /// Serialization error produced by serialization routine.
-    type Error: From<io::Error>;
+    type Error: From<cap9_core::Error>;
     /// Serialize type to serial i/o
-    fn serialize_u256<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error>;
+    fn serialize_u256<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error>;
 }
 
 /// Deserialization/serialization error
@@ -195,8 +195,8 @@ impl ::std::error::Error for Error {
     }
 }
 
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
+impl From<cap9_core::Error> for Error {
+    fn from(err: cap9_core::Error) -> Self {
         Error::HeapOther(format!("I/O Error: {:?}", err))
     }
 }
@@ -207,7 +207,7 @@ pub struct Unparsed(pub Vec<u8>);
 impl Deserialize for Unparsed {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let len = VarUint32::deserialize(reader)?.into();
         let mut vec = vec![0u8; len];
         reader.read(&mut vec[..])?;
@@ -223,12 +223,12 @@ impl From<Unparsed> for Vec<u8> {
 
 /// Deserialize deserializable type from buffer.
 pub fn deserialize_buffer<T: Deserialize>(contents: &[u8]) -> Result<T, T::Error> {
-    let mut reader = io::Cursor::new(contents);
+    let mut reader = cap9_core::Cursor::new(contents);
     let result = T::deserialize(&mut reader)?;
     if reader.position() != contents.len() {
         // It's a TrailingData, since if there is not enough data then
         // UnexpectedEof must have been returned earlier in T::deserialize.
-        return Err(io::Error::TrailingData.into())
+        return Err(cap9_core::Error::TrailingData.into())
     }
     Ok(result)
 }

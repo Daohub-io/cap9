@@ -1,6 +1,6 @@
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
-use validator::io;
+use cap9_core;
 use validator::serialization::{Deserialize, Serialize};
 
 /// Generic wasm error
@@ -48,9 +48,9 @@ impl SysCall {
 
 
 impl Deserialize for SysCall {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let syscall_type = u8::deserialize(reader)?;
         let cap_index = u8::deserialize(reader)?;
         match syscall_type {
@@ -85,9 +85,9 @@ impl Deserialize for SysCall {
 
 
 impl Serialize for SysCall {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write syscall type
         writer.write(&[self.cap_type()])?;
         // Write cap index
@@ -234,9 +234,9 @@ impl SysCallAction {
 }
 
 impl Serialize for SysCallAction {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         match self {
             SysCallAction::Call(call) => {
                 call.serialize(writer)?;
@@ -266,9 +266,9 @@ pub struct WriteCall {
 }
 
 impl Deserialize for WriteCall {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let key: U256 = U256::deserialize(reader)?;
         let value: U256 = U256::deserialize(reader)?;
         Ok(WriteCall{key, value})
@@ -276,9 +276,9 @@ impl Deserialize for WriteCall {
 }
 
 impl Serialize for WriteCall {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write key
         self.key.serialize(writer)?;
         // Write value
@@ -295,9 +295,9 @@ pub struct LogCall {
 }
 
 impl Deserialize for LogCall {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let n_topics = u8::deserialize(reader)?;
         let mut topics : Vec<H256> = Vec::new();
         for _i in 0..(n_topics as usize) {
@@ -309,9 +309,9 @@ impl Deserialize for LogCall {
 }
 
 impl Serialize for LogCall {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         let n_topics = self.topics.len() as u8;
         n_topics.serialize(writer)?;
         for topic in self.topics {
@@ -331,9 +331,9 @@ pub struct RegisterProc {
 }
 
 impl Deserialize for RegisterProc {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
         let address = Address::deserialize(reader)?;
         let cap_list = NewCapList::deserialize(reader)?;
@@ -343,9 +343,9 @@ impl Deserialize for RegisterProc {
 
 
 impl Serialize for RegisterProc {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write procedure id
         SysCallProcedureKey(self.proc_id).serialize(writer)?;
         // Write the address of the contract
@@ -373,9 +373,9 @@ pub struct Call {
 }
 
 impl Deserialize for Call {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
         let payload = Payload::deserialize(reader)?;
         Ok(Call{proc_id, payload})
@@ -384,9 +384,9 @@ impl Deserialize for Call {
 
 
 impl Serialize for Call {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write procedure id
         SysCallProcedureKey(self.proc_id).serialize(writer)?;
         // Write payload
@@ -396,9 +396,9 @@ impl Serialize for Call {
 }
 
 impl Deserialize for Payload {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         // Here we just need to read all remaining bytes TODO: a buffered read
         // would be better rather than a single byte loop. The Read interface
         // we're currently using isn't flexible enough here, we should change to
@@ -424,9 +424,9 @@ impl Deserialize for Payload {
 }
 
 impl Serialize for Payload {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         writer.write(self.0.as_slice())?;
         Ok(())
     }
@@ -465,9 +465,9 @@ impl Into<ProcedureKey> for SysCallProcedureKey {
 }
 
 impl Deserialize for SysCallProcedureKey {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let proc_id_u256: U256 = U256::deserialize(reader)?;
         let mut proc_id_buffer: [u8; 32] = [0; 32];
         proc_id_u256.to_big_endian(&mut proc_id_buffer);
@@ -478,9 +478,9 @@ impl Deserialize for SysCallProcedureKey {
 }
 
 impl Serialize for SysCallProcedureKey {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         let mut proc_id_u256: [u8; 32] = [0; 32];
         proc_id_u256[8..32].copy_from_slice(&self.0);
         writer.write(&proc_id_u256)?;
@@ -490,9 +490,9 @@ impl Serialize for SysCallProcedureKey {
 
 
 impl Deserialize for NewCapList {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut cap_list_raw: Vec<U256> = Vec::new();
         loop {
             if let Ok(cap_val) = H256::deserialize(reader) {
@@ -507,9 +507,9 @@ impl Deserialize for NewCapList {
 }
 
 impl Serialize for NewCapList {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         for val in self.to_u256_list() {
             val.serialize(writer)?;
         }
@@ -522,7 +522,7 @@ impl Serialize for NewCapList {
 mod tests {
     use super::*;
     use pwasm_abi::types::*;
-    use validator::io;
+    use cap9_core;
     use validator::serialization::{Deserialize, Serialize};
 
     #[test]
@@ -608,7 +608,7 @@ mod tests {
     #[test]
     fn deserialise_log_call() {
         let input: &[u8] = &[0x08,0x00,0x00,0xab,0xcd,0xab,0xcd];
-        let mut reader = io::Cursor::new(input);
+        let mut reader = cap9_core::Cursor::new(input);
         let syscall = SysCall::deserialize(&mut reader).unwrap();
         assert_eq!(syscall, SysCall{
             cap_index: 0,

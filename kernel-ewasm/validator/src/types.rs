@@ -1,7 +1,7 @@
 // use crate::rust::{fmt, vec::Vec};
 pub use core::fmt;
 use pwasm_std::vec::Vec;
-use crate::io;
+use cap9_core;
 use super::{VarUint7, VarInt7, CountedList, VarUint32};
 use crate::serialization::{Error, Serialize, Deserialize, SerializeU256, DeserializeU256};
 pub use pwasm_std::types::{U256,H256, Address};
@@ -16,7 +16,7 @@ pub enum Type {
 impl Deserialize for Type {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         Ok(Type::Function(FunctionType::deserialize(reader)?))
     }
 }
@@ -39,7 +39,7 @@ pub enum ValueType {
 impl Deserialize for ValueType {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let val = VarInt7::deserialize(reader)?;
 
         match val.into() {
@@ -66,7 +66,7 @@ pub enum BlockType {
 impl Deserialize for BlockType {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let val = VarInt7::deserialize(reader)?;
 
         match val.into() {
@@ -124,7 +124,7 @@ impl FunctionType {
 impl Deserialize for FunctionType {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let form: u8 = VarUint7::deserialize(reader)?.into();
 
         if form != 0x60 {
@@ -161,7 +161,7 @@ pub enum TableElementType {
 impl Deserialize for TableElementType {
     type Error = Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let val = VarInt7::deserialize(reader)?;
 
         match val.into() {
@@ -172,9 +172,9 @@ impl Deserialize for TableElementType {
 }
 
 impl Deserialize for u8 {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 1];
         reader.read(&mut u8buf)?;
         Ok(u8buf[0])
@@ -182,9 +182,9 @@ impl Deserialize for u8 {
 }
 
 impl DeserializeU256 for u8 {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: io::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [U256::zero(); 1];
         reader.read(&mut buf)?;
         Ok(buf[0].as_u32() as u8)
@@ -192,18 +192,18 @@ impl DeserializeU256 for u8 {
 }
 
 impl Serialize for u8 {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         writer.write(&[self])?;
         Ok(())
     }
 }
 
 impl Deserialize for U256 {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 32];
         // TODO: check that enough bytes were read
         reader.read(&mut u8buf)?;
@@ -213,9 +213,9 @@ impl Deserialize for U256 {
 
 
 impl Serialize for U256 {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         let mut bytes: Vec<u8> = Vec::new();
         bytes.resize(32,0);
         self.to_big_endian(bytes.as_mut_slice());
@@ -226,9 +226,9 @@ impl Serialize for U256 {
 
 
 impl Deserialize for H256 {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 32];
         reader.read(&mut u8buf)?;
         Ok(u8buf.into())
@@ -237,9 +237,9 @@ impl Deserialize for H256 {
 
 
 impl Serialize for H256 {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         let bytes = self.to_fixed_bytes();
         writer.write(&bytes)?;
         Ok(())
@@ -248,9 +248,9 @@ impl Serialize for H256 {
 
 
 impl Deserialize for Address {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn deserialize<R: io::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 32];
         // TODO: check that enough bytes were read
         reader.read(&mut u8buf)?;
@@ -260,9 +260,9 @@ impl Deserialize for Address {
 }
 
 impl Serialize for Address {
-    type Error = io::Error;
+    type Error = cap9_core::Error;
 
-    fn serialize<W: io::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
         let h: H256 = self.into();
         writer.write(&h.to_fixed_bytes())?;
         Ok(())

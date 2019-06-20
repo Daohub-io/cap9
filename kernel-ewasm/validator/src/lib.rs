@@ -13,7 +13,7 @@ extern crate alloc;
 mod func;
 mod import_entry;
 mod instructions;
-pub mod io;
+pub use cap9_core::*;
 mod primitives;
 pub mod serialization;
 mod types;
@@ -199,8 +199,8 @@ impl<'a, T> Cursor<'a, T> {
 
 /// Implement standard read definition (which clones). This is basically the
 /// rust definition of read for slice.
-impl<'a> io::Read<u8> for Cursor<'a, u8> {
-    fn read(&mut self, buf: &mut [u8]) -> Result<(), io::Error> {
+impl<'a> cap9_core::Read<u8> for Cursor<'a, u8> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<(), cap9_core::Error> {
         let actual_self = &self.body[self.current_offset..];
         let amt = core::cmp::min(buf.len(), actual_self.len());
         let (a, _) = actual_self.split_at(amt);
@@ -216,8 +216,8 @@ impl<'a> io::Read<u8> for Cursor<'a, u8> {
     }
 }
 
-impl<'a> io::Read<U256> for Cursor<'a, U256> {
-    fn read(&mut self, buf: &mut [U256]) -> Result<(), io::Error> {
+impl<'a> cap9_core::Read<U256> for Cursor<'a, U256> {
+    fn read(&mut self, buf: &mut [U256]) -> Result<(), cap9_core::Error> {
         let actual_self = &self.body[self.current_offset..];
         let amt = core::cmp::min(buf.len(), actual_self.len());
         let (a, _) = actual_self.split_at(amt);
