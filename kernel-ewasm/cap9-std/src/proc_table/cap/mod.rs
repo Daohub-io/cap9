@@ -452,60 +452,34 @@ impl Deserialize<U256> for NewCapList {
             let cap_type = u8::deserialize(reader)?;
             let parent_index = u8::deserialize(reader)?;
 
+
+            let inner_cap_size = cap_size.checked_sub(3).ok_or(cap9_core::Error::InvalidData)?;
+
             // Check Cap Size
-            if (reader.remaining()+3) < cap_size as usize {
+            if reader.remaining() < inner_cap_size as usize {
                 return Err(cap9_core::Error::InvalidData);
             }
 
-            // TODO: unchecked subtraction
-            let new_cap = match (cap_type, cap_size - 3) {
-                (CAP_PROC_CALL, CAP_PROC_CALL_SIZE) => {
-                    let proc_call_cap = ProcedureCallCap::deserialize(reader)?;
-                    NewCapability {
-                        cap: Capability::ProcedureCall(proc_call_cap),
-                        parent_index,
-                    }
-                }
-                (CAP_PROC_REGISTER, CAP_PROC_REGISTER_SIZE) => {
-                    let proc_reg_cap = ProcedureRegisterCap::deserialize(reader)?;
-                    NewCapability {
-                        cap: Capability::ProcedureRegister(proc_reg_cap),
-                        parent_index,
-                    }
-                }
-                (CAP_PROC_DELETE, CAP_PROC_DELETE_SIZE) => {
-                    let proc_reg_cap = ProcedureDeleteCap::deserialize(reader)?;
-                    NewCapability {
-                        cap: Capability::ProcedureDelete(proc_reg_cap),
-                        parent_index,
-                    }
-                }
-                (CAP_PROC_ENTRY, CAP_PROC_ENTRY_SIZE) => NewCapability {
-                    cap: Capability::ProcedureEntry(ProcedureEntryCap),
-                    parent_index,
-                },
-                (CAP_STORE_WRITE, CAP_STORE_WRITE_SIZE) => {
-                    let store_write_cap = StoreWriteCap::deserialize(reader)?;
-                    NewCapability {
-                        cap: Capability::StoreWrite(store_write_cap),
-                        parent_index,
-                    }
-                }
-                (CAP_LOG, CAP_LOG_SIZE) => {
-                    let log_cap = LogCap::deserialize(reader)?;
-                    NewCapability {
-                        cap: Capability::Log(log_cap),
-                        parent_index,
-                    }
-                }
-                (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
-                    let account_call_cap = AccountCallCap::deserialize(reader)?;
-                    NewCapability {
-                        cap: Capability::AccountCall(account_call_cap),
-                        parent_index,
-                    }
-                }
+            let cap: Capability = match (cap_type, inner_cap_size) {
+                (CAP_PROC_CALL, CAP_PROC_CALL_SIZE) =>
+                    Capability::ProcedureCall(ProcedureCallCap::deserialize(reader)?),
+                (CAP_PROC_REGISTER, CAP_PROC_REGISTER_SIZE) =>
+                    Capability::ProcedureRegister(ProcedureRegisterCap::deserialize(reader)?),
+                (CAP_PROC_DELETE, CAP_PROC_DELETE_SIZE) =>
+                    Capability::ProcedureDelete(ProcedureDeleteCap::deserialize(reader)?),
+                (CAP_PROC_ENTRY, CAP_PROC_ENTRY_SIZE) =>
+                    Capability::ProcedureEntry(ProcedureEntryCap),
+                (CAP_STORE_WRITE, CAP_STORE_WRITE_SIZE) =>
+                    Capability::StoreWrite(StoreWriteCap::deserialize(reader)?),
+                (CAP_LOG, CAP_LOG_SIZE) =>
+                    Capability::Log(LogCap::deserialize(reader)?),
+                (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) =>
+                    Capability::AccountCall(AccountCallCap::deserialize(reader)?),
                 _ => return Err(cap9_core::Error::InvalidData),
+            };
+            let new_cap = NewCapability {
+                cap,
+                parent_index,
             };
             result.push(new_cap);
         }
