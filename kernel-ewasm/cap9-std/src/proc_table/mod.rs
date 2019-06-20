@@ -2,7 +2,7 @@ extern crate pwasm_abi;
 extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
-use cap9_core::{Cursor, Serialize, Deserialize, SerializeU256, DeserializeU256};
+use cap9_core::{Cursor, Serialize, Deserialize};
 
 use pwasm_abi::eth;
 use pwasm_abi::types::*;
@@ -400,13 +400,13 @@ pub fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<ca
         .collect();
     let mut cursor = Cursor::new(raw_val.as_slice());
     Some(match cap_type {
-        CAP_PROC_CALL => Capability::ProcedureCall(ProcedureCallCap::deserialize_u256(&mut cursor).unwrap()),
-        CAP_PROC_REGISTER => Capability::ProcedureRegister(ProcedureRegisterCap::deserialize_u256(&mut cursor).unwrap()),
-        CAP_PROC_DELETE => Capability::ProcedureDelete(ProcedureDeleteCap::deserialize_u256(&mut cursor).unwrap()),
-        CAP_PROC_ENTRY => Capability::ProcedureEntry(ProcedureEntryCap::deserialize_u256(&mut cursor).unwrap()),
-        CAP_STORE_WRITE => Capability::StoreWrite(StoreWriteCap::deserialize_u256(&mut cursor).unwrap()),
-        CAP_LOG => Capability::Log(LogCap::deserialize_u256(&mut cursor).unwrap()),
-        CAP_ACC_CALL => Capability::AccountCall(AccountCallCap::deserialize_u256(&mut cursor).unwrap()),
+        CAP_PROC_CALL => Capability::ProcedureCall(ProcedureCallCap::deserialize(&mut cursor).unwrap()),
+        CAP_PROC_REGISTER => Capability::ProcedureRegister(ProcedureRegisterCap::deserialize(&mut cursor).unwrap()),
+        CAP_PROC_DELETE => Capability::ProcedureDelete(ProcedureDeleteCap::deserialize(&mut cursor).unwrap()),
+        CAP_PROC_ENTRY => Capability::ProcedureEntry(ProcedureEntryCap::deserialize(&mut cursor).unwrap()),
+        CAP_STORE_WRITE => Capability::StoreWrite(StoreWriteCap::deserialize(&mut cursor).unwrap()),
+        CAP_LOG => Capability::Log(LogCap::deserialize(&mut cursor).unwrap()),
+        CAP_ACC_CALL => Capability::AccountCall(AccountCallCap::deserialize(&mut cursor).unwrap()),
         _ => return None,
     })
 }

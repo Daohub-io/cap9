@@ -47,7 +47,7 @@ impl SysCall {
 }
 
 
-impl Deserialize for SysCall {
+impl Deserialize<u8> for SysCall {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -265,7 +265,7 @@ pub struct WriteCall {
     pub value: U256,
 }
 
-impl Deserialize for WriteCall {
+impl Deserialize<u8> for WriteCall {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -294,7 +294,7 @@ pub struct LogCall {
     pub value: Payload,
 }
 
-impl Deserialize for LogCall {
+impl Deserialize<u8> for LogCall {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -330,7 +330,7 @@ pub struct RegisterProc {
     pub cap_list: NewCapList,
 }
 
-impl Deserialize for RegisterProc {
+impl Deserialize<u8> for RegisterProc {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -372,7 +372,7 @@ pub struct Call {
     pub payload: Payload,
 }
 
-impl Deserialize for Call {
+impl Deserialize<u8> for Call {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -395,7 +395,7 @@ impl Serialize for Call {
     }
 }
 
-impl Deserialize for Payload {
+impl Deserialize<u8> for Payload {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -464,7 +464,7 @@ impl Into<ProcedureKey> for SysCallProcedureKey {
     }
 }
 
-impl Deserialize for SysCallProcedureKey {
+impl Deserialize<u8> for SysCallProcedureKey {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -489,7 +489,7 @@ impl Serialize for SysCallProcedureKey {
 }
 
 
-impl Deserialize for NewCapList {
+impl Deserialize<u8> for NewCapList {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {

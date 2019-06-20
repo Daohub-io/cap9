@@ -2,7 +2,7 @@ use pwasm_std;
 use pwasm_std::String;
 
 use cap9_core;
-use crate::{Deserialize, Uint8, VarUint32, VarUint1, VarUint7};
+use crate::{Uint8, VarUint32, VarUint1, VarUint7};
 use crate::types::{TableElementType, ValueType};
 use crate::serialization::{Error, WASMDeserialize};
 
@@ -68,7 +68,7 @@ impl TableType {
     pub fn elem_type(&self) -> TableElementType { self.elem_type }
 }
 
-impl Deserialize for TableType {
+impl WASMDeserialize for TableType {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -106,7 +106,7 @@ impl ResizableLimits {
     pub fn shared(&self) -> bool { self.shared }
 }
 
-impl Deserialize for ResizableLimits {
+impl WASMDeserialize for ResizableLimits {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -150,7 +150,7 @@ impl MemoryType {
     }
 }
 
-impl Deserialize for MemoryType {
+impl WASMDeserialize for MemoryType {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -172,7 +172,7 @@ pub enum External {
     Global(GlobalType),
 }
 
-impl Deserialize for External {
+impl WASMDeserialize for External {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -228,7 +228,7 @@ impl ImportEntry {
     pub fn external_mut(&mut self) -> &mut External { &mut self.external }
 }
 
-impl Deserialize for ImportEntry {
+impl WASMDeserialize for ImportEntry {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {

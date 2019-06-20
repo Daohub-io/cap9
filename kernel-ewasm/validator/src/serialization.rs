@@ -189,7 +189,7 @@ impl From<cap9_core::Error> for Error {
 /// Unparsed part of the module/section.
 pub struct Unparsed(pub Vec<u8>);
 
-impl Deserialize for Unparsed {
+impl WASMDeserialize for Unparsed {
     type Error = Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -207,7 +207,7 @@ impl From<Unparsed> for Vec<u8> {
 }
 
 /// Deserialize deserializable type from buffer.
-pub fn deserialize_buffer<T: Deserialize>(contents: &[u8]) -> Result<T, T::Error> {
+pub fn deserialize_buffer<T: WASMDeserialize>(contents: &[u8]) -> Result<T, T::Error> {
     let mut reader = cap9_core::Cursor::new(contents);
     let result = T::deserialize(&mut reader)?;
     if reader.position() != contents.len() {

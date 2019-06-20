@@ -3,7 +3,7 @@ extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
 use cap9_core;
-use cap9_core::{Cursor, Serialize, Deserialize, SerializeU256, DeserializeU256};
+use cap9_core::{Cursor, Serialize, Deserialize};
 
 use pwasm_abi::eth;
 use pwasm_abi::types::*;
@@ -603,9 +603,9 @@ impl NewCapList {
                 return Err(CapDecodeErr::InvalidCapLen(cursor.remaining() as u8));
             }
             // Get Values
-            let cap_size = u8::deserialize_u256(&mut cursor).unwrap();
-            let cap_type = u8::deserialize_u256(&mut cursor).unwrap();
-            let parent_index = u8::deserialize_u256(&mut cursor).unwrap();
+            let cap_size = u8::deserialize(&mut cursor).unwrap();
+            let cap_type = u8::deserialize(&mut cursor).unwrap();
+            let parent_index = u8::deserialize(&mut cursor).unwrap();
 
             // Check Cap Size
             if (cursor.remaining()+3) < cap_size as usize {
@@ -615,21 +615,21 @@ impl NewCapList {
             // TODO: unchecked subtraction
             let new_cap = match (cap_type, cap_size - 3) {
                 (CAP_PROC_CALL, CAP_PROC_CALL_SIZE) => {
-                    let proc_call_cap = ProcedureCallCap::deserialize_u256(&mut cursor).unwrap();
+                    let proc_call_cap = ProcedureCallCap::deserialize(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::ProcedureCall(proc_call_cap),
                         parent_index,
                     }
                 }
                 (CAP_PROC_REGISTER, CAP_PROC_REGISTER_SIZE) => {
-                    let proc_reg_cap = ProcedureRegisterCap::deserialize_u256(&mut cursor).unwrap();
+                    let proc_reg_cap = ProcedureRegisterCap::deserialize(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::ProcedureRegister(proc_reg_cap),
                         parent_index,
                     }
                 }
                 (CAP_PROC_DELETE, CAP_PROC_DELETE_SIZE) => {
-                    let proc_reg_cap = ProcedureDeleteCap::deserialize_u256(&mut cursor).unwrap();
+                    let proc_reg_cap = ProcedureDeleteCap::deserialize(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::ProcedureDelete(proc_reg_cap),
                         parent_index,
@@ -640,21 +640,21 @@ impl NewCapList {
                     parent_index,
                 },
                 (CAP_STORE_WRITE, CAP_STORE_WRITE_SIZE) => {
-                    let store_write_cap = StoreWriteCap::deserialize_u256(&mut cursor).unwrap();
+                    let store_write_cap = StoreWriteCap::deserialize(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::StoreWrite(store_write_cap),
                         parent_index,
                     }
                 }
                 (CAP_LOG, CAP_LOG_SIZE) => {
-                    let log_cap = LogCap::deserialize_u256(&mut cursor).unwrap();
+                    let log_cap = LogCap::deserialize(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::Log(log_cap),
                         parent_index,
                     }
                 }
                 (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
-                    let account_call_cap = AccountCallCap::deserialize_u256(&mut cursor).unwrap();
+                    let account_call_cap = AccountCallCap::deserialize(&mut cursor).unwrap();
                     NewCapability {
                         cap: Capability::AccountCall(account_call_cap),
                         parent_index,
@@ -668,10 +668,10 @@ impl NewCapList {
     }
 }
 
-impl DeserializeU256 for ProcedureCallCap {
+impl Deserialize<U256> for ProcedureCallCap {
     type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [U256::zero(); 1];
         reader.read(&mut buf).unwrap();
         let val: U256 = buf[0];
@@ -685,10 +685,10 @@ impl DeserializeU256 for ProcedureCallCap {
     }
 }
 
-impl DeserializeU256 for ProcedureRegisterCap {
+impl Deserialize<U256> for ProcedureRegisterCap {
     type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [U256::zero(); 1];
         reader.read(&mut buf).unwrap();
         let val: U256 = buf[0];
@@ -702,10 +702,10 @@ impl DeserializeU256 for ProcedureRegisterCap {
     }
 }
 
-impl DeserializeU256 for ProcedureDeleteCap {
+impl Deserialize<U256> for ProcedureDeleteCap {
     type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [U256::zero(); 1];
         reader.read(&mut buf).unwrap();
         let val: U256 = buf[0];
@@ -719,18 +719,18 @@ impl DeserializeU256 for ProcedureDeleteCap {
     }
 }
 
-impl DeserializeU256 for ProcedureEntryCap {
+impl Deserialize<U256> for ProcedureEntryCap {
     type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: cap9_core::Read<U256>>(_reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<U256>>(_reader: &mut R) -> Result<Self, Self::Error> {
         Ok(ProcedureEntryCap {})
     }
 }
 
-impl DeserializeU256 for StoreWriteCap {
+impl Deserialize<U256> for StoreWriteCap {
     type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [U256::zero(); 2];
         reader.read(&mut buf).unwrap();
         let location: [u8; 32] = buf[0].into();
@@ -743,10 +743,10 @@ impl DeserializeU256 for StoreWriteCap {
     }
 }
 
-impl DeserializeU256 for LogCap {
+impl Deserialize<U256> for LogCap {
     type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [U256::zero(); 5];
         reader.read(&mut buf).unwrap();
 
@@ -775,10 +775,10 @@ impl DeserializeU256 for LogCap {
 }
 
 
-impl DeserializeU256 for AccountCallCap {
+impl Deserialize<U256> for AccountCallCap {
     type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [U256::zero(); 1];
         reader.read(&mut buf).unwrap();
         let val: U256 = buf[0];

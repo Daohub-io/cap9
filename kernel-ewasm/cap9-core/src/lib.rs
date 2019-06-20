@@ -127,11 +127,11 @@ impl Write for Vec<u8> {
 
 
 /// Deserialization from serial i/o.
-pub trait Deserialize : Sized {
+pub trait Deserialize<T> : Sized {
     /// Serialization error produced by deserialization routine.
     type Error: From<Error>;
     /// Deserialize type from serial i/o
-    fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error>;
+    fn deserialize<R: Read<T>>(reader: &mut R) -> Result<Self, Self::Error>;
 }
 
 /// Serialization to serial i/o. Takes self by value to consume less memory
@@ -143,25 +143,7 @@ pub trait Serialize {
     fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error>;
 }
 
-/// Deserialization from serial i/o.
-pub trait DeserializeU256 : Sized {
-    /// Serialization error produced by deserialization routine.
-    type Error: From<Error>;
-    /// Deserialize type from serial i/o
-    fn deserialize_u256<R: Read<U256>>(reader: &mut R) -> Result<Self, Self::Error>;
-}
-
-/// Serialization to serial i/o. Takes self by value to consume less memory
-/// (parity-wasm IR is being partially freed by filling the result buffer).
-pub trait SerializeU256 {
-    /// Serialization error produced by serialization routine.
-    type Error: From<Error>;
-    /// Serialize type to serial i/o
-    fn serialize_u256<W: Write>(self, writer: &mut W) -> Result<(), Self::Error>;
-}
-
-
-impl Deserialize for u8 {
+impl Deserialize<u8> for u8 {
     type Error = Error;
 
     fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -171,10 +153,10 @@ impl Deserialize for u8 {
     }
 }
 
-impl DeserializeU256 for u8 {
+impl Deserialize<U256> for u8 {
     type Error = Error;
 
-    fn deserialize_u256<R: Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut buf = [U256::zero(); 1];
         reader.read(&mut buf)?;
         Ok(buf[0].as_u32() as u8)
@@ -190,7 +172,7 @@ impl Serialize for u8 {
     }
 }
 
-impl Deserialize for U256 {
+impl Deserialize<u8> for U256 {
     type Error = Error;
 
     fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -215,7 +197,7 @@ impl Serialize for U256 {
 }
 
 
-impl Deserialize for H256 {
+impl Deserialize<u8> for H256 {
     type Error = Error;
 
     fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
@@ -237,7 +219,7 @@ impl Serialize for H256 {
 }
 
 
-impl Deserialize for Address {
+impl Deserialize<u8> for Address {
     type Error = Error;
 
     fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
