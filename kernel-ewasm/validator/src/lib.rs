@@ -28,7 +28,6 @@ pub mod modules;
 use listing::*;
 pub use modules::Function;
 pub use modules::Module;
-use types::*;
 
 /// A trait for types which can be validated against the cap9 spec.
 pub trait Validity {
@@ -144,93 +143,6 @@ fn parse_varuint_32(cursor: &mut Cursor<u8>) -> u32 {
         }
     }
     res
-}
-
-// Seek does not seem to be implemented in core, so we'll reimplement what we
-// need.
-#[derive(Debug)]
-pub struct Cursor<'a, T> {
-    current_offset: usize,
-    body: &'a [T],
-}
-
-impl<'a, T> Cursor<'a, T> {
-
-    pub fn new(body: &'a [T]) -> Cursor<'a, T> {
-        Cursor {
-            body,
-            current_offset: 0,
-        }
-    }
-
-    // Read the byte at the cusor, and increment the pointer by 1.
-    fn read_ref(&mut self) -> Option<&'a T> {
-        if self.current_offset < self.body.len() {
-            let val = &self.body[self.current_offset];
-            self.current_offset += 1;
-            Some(val)
-        } else {
-            None
-        }
-    }
-
-    fn read_ref_n(&mut self, n: usize) -> &'a [T] {
-        let val = &self.body[self.current_offset..(self.current_offset + n)];
-        self.current_offset += n;
-        val
-    }
-
-    fn skip(&mut self, n: usize) {
-        self.current_offset += n;
-    }
-
-    pub fn remaining(&self) -> usize {
-        self.body.len() - self.current_offset
-    }
-
-    pub fn len(&self) -> usize {
-        self.body.len()
-    }
-
-    pub fn position(&self) -> usize {
-        self.current_offset
-    }
-}
-
-/// Implement standard read definition (which clones). This is basically the
-/// rust definition of read for slice.
-impl<'a> cap9_core::Read<u8> for Cursor<'a, u8> {
-    fn read(&mut self, buf: &mut [u8]) -> Result<(), cap9_core::Error> {
-        let actual_self = &self.body[self.current_offset..];
-        let amt = core::cmp::min(buf.len(), actual_self.len());
-        let (a, _) = actual_self.split_at(amt);
-
-        if amt == 1 {
-            buf[0] = a[0];
-        } else {
-            buf[..amt].copy_from_slice(a);
-        }
-
-        self.current_offset += amt;
-        Ok(())
-    }
-}
-
-impl<'a> cap9_core::Read<U256> for Cursor<'a, U256> {
-    fn read(&mut self, buf: &mut [U256]) -> Result<(), cap9_core::Error> {
-        let actual_self = &self.body[self.current_offset..];
-        let amt = core::cmp::min(buf.len(), actual_self.len());
-        let (a, _) = actual_self.split_at(amt);
-
-        if amt == 1 {
-            buf[0] = a[0];
-        } else {
-            buf[..amt].copy_from_slice(a);
-        }
-
-        self.current_offset += amt;
-        Ok(())
-    }
 }
 
 #[cfg(test)]

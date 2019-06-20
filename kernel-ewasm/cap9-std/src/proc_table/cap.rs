@@ -723,7 +723,7 @@ impl DeserializeU256 for ProcedureDeleteCap {
 impl DeserializeU256 for ProcedureEntryCap {
     type Error = cap9_core::Error;
 
-    fn deserialize_u256<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize_u256<R: cap9_core::Read<U256>>(_reader: &mut R) -> Result<Self, Self::Error> {
         Ok(ProcedureEntryCap {})
     }
 }
