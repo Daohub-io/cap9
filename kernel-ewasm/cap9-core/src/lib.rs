@@ -37,6 +37,7 @@ pub trait Read<T> {
     ///
     /// If there is not enough data in this read then `UnexpectedEof` will be returned.
     fn read(&mut self, buf: &mut [T]) -> Result<(), Error>;
+    fn remaining(&self) -> usize;
 }
 
 
@@ -115,7 +116,36 @@ impl<'a, T: Copy> Read<T> for Cursor<'a, T> {
         self.current_offset += amt;
         Ok(())
     }
+
+    fn remaining(&self) -> usize {
+        self.remaining()
+    }
 }
+
+// impl<'a, T: Copy> Read<T> for &mut Cursor<'a, T> {
+//     fn read(&mut self, buf: &mut [T]) -> Result<(), Error> {
+//         if self.remaining() < buf.len() {
+//             return Err(Error::UnexpectedEof);
+//         }
+//         let actual_self = &self.body[self.current_offset..];
+//         let amt = core::cmp::min(buf.len(), actual_self.len());
+//         let (a, _) = actual_self.split_at(amt);
+
+//         if amt == 1 {
+//             buf[0] = a[0];
+//         } else {
+//             buf[..amt].copy_from_slice(a);
+//         }
+
+//         (*self).current_offset += amt;
+//         Ok(())
+//     }
+
+//     fn remaining(&self) -> usize {
+//         self.remaining()
+//     }
+// }
+
 
 impl Write for Vec<u8> {
     fn write(&mut self, buf: &[u8]) -> Result<(), Error> {

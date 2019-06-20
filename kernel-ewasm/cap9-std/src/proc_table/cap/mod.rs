@@ -31,8 +31,6 @@ pub use log::*;
 mod account_call;
 pub use account_call::*;
 
-
-
 /// A list of the cap types which we can use for iterating over all cap types.
 pub const CAP_TYPES: [u8; 7] = [
     CAP_PROC_CALL,
@@ -46,10 +44,6 @@ pub const CAP_TYPES: [u8; 7] = [
 
 type ProcedureKey = [u8; 24];
 type ProcedureIndex = [u8; 24];
-
-
-
-
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Capability {
@@ -437,43 +431,50 @@ impl NewCapList {
     }
 
     pub fn from_u256_list(list: &[U256]) -> Result<Self, CapDecodeErr> {
-
         let mut cursor = Cursor::new(list);
-        let mut result = Vec::new();
+        NewCapList::deserialize(&mut cursor).map_err(|_| CapDecodeErr::InvalidCapType(0))
+    }
+}
 
-        while cursor.remaining() > 0 {
+
+impl Deserialize<U256> for NewCapList {
+    type Error = cap9_core::Error;
+
+    fn deserialize<R: cap9_core::Read<U256>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let mut result = Vec::new();
+        while reader.remaining() > 0 {
             // Check List Length
-            if cursor.remaining() < 3 {
-                return Err(CapDecodeErr::InvalidCapLen(cursor.remaining() as u8));
+            if reader.remaining() < 3 {
+                return Err(cap9_core::Error::InvalidData);
             }
             // Get Values
-            let cap_size = u8::deserialize(&mut cursor).unwrap();
-            let cap_type = u8::deserialize(&mut cursor).unwrap();
-            let parent_index = u8::deserialize(&mut cursor).unwrap();
+            let cap_size = u8::deserialize(reader)?;
+            let cap_type = u8::deserialize(reader)?;
+            let parent_index = u8::deserialize(reader)?;
 
             // Check Cap Size
-            if (cursor.remaining()+3) < cap_size as usize {
-                return Err(CapDecodeErr::InvalidCapLen(cap_size));
+            if (reader.remaining()+3) < cap_size as usize {
+                return Err(cap9_core::Error::InvalidData);
             }
 
             // TODO: unchecked subtraction
             let new_cap = match (cap_type, cap_size - 3) {
                 (CAP_PROC_CALL, CAP_PROC_CALL_SIZE) => {
-                    let proc_call_cap = ProcedureCallCap::deserialize(&mut cursor).unwrap();
+                    let proc_call_cap = ProcedureCallCap::deserialize(reader)?;
                     NewCapability {
                         cap: Capability::ProcedureCall(proc_call_cap),
                         parent_index,
                     }
                 }
                 (CAP_PROC_REGISTER, CAP_PROC_REGISTER_SIZE) => {
-                    let proc_reg_cap = ProcedureRegisterCap::deserialize(&mut cursor).unwrap();
+                    let proc_reg_cap = ProcedureRegisterCap::deserialize(reader)?;
                     NewCapability {
                         cap: Capability::ProcedureRegister(proc_reg_cap),
                         parent_index,
                     }
                 }
                 (CAP_PROC_DELETE, CAP_PROC_DELETE_SIZE) => {
-                    let proc_reg_cap = ProcedureDeleteCap::deserialize(&mut cursor).unwrap();
+                    let proc_reg_cap = ProcedureDeleteCap::deserialize(reader)?;
                     NewCapability {
                         cap: Capability::ProcedureDelete(proc_reg_cap),
                         parent_index,
@@ -484,34 +485,33 @@ impl NewCapList {
                     parent_index,
                 },
                 (CAP_STORE_WRITE, CAP_STORE_WRITE_SIZE) => {
-                    let store_write_cap = StoreWriteCap::deserialize(&mut cursor).unwrap();
+                    let store_write_cap = StoreWriteCap::deserialize(reader)?;
                     NewCapability {
                         cap: Capability::StoreWrite(store_write_cap),
                         parent_index,
                     }
                 }
                 (CAP_LOG, CAP_LOG_SIZE) => {
-                    let log_cap = LogCap::deserialize(&mut cursor).unwrap();
+                    let log_cap = LogCap::deserialize(reader)?;
                     NewCapability {
                         cap: Capability::Log(log_cap),
                         parent_index,
                     }
                 }
                 (CAP_ACC_CALL, CAP_ACC_CALL_SIZE) => {
-                    let account_call_cap = AccountCallCap::deserialize(&mut cursor).unwrap();
+                    let account_call_cap = AccountCallCap::deserialize(reader)?;
                     NewCapability {
                         cap: Capability::AccountCall(account_call_cap),
                         parent_index,
                     }
                 }
-                _ => return Err(CapDecodeErr::InvalidCapType(cap_type)),
+                _ => return Err(cap9_core::Error::InvalidData),
             };
             result.push(new_cap);
         }
         Ok(NewCapList(result))
     }
 }
-
 
 
 #[cfg(test)]
