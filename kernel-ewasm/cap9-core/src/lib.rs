@@ -25,11 +25,11 @@ pub enum Error {
 }
 
 
-pub trait Write {
+pub trait Write<T> {
     /// Write a buffer of data into this write.
     ///
     /// All data is written at once.
-    fn write(&mut self, buf: &[u8]) -> Result<(), Error>;
+    fn write(&mut self, buf: &[T]) -> Result<(), Error>;
 }
 
 pub trait Read<T> {
@@ -122,38 +122,19 @@ impl<'a, T: Copy> Read<T> for Cursor<'a, T> {
     }
 }
 
-// impl<'a, T: Copy> Read<T> for &mut Cursor<'a, T> {
-//     fn read(&mut self, buf: &mut [T]) -> Result<(), Error> {
-//         if self.remaining() < buf.len() {
-//             return Err(Error::UnexpectedEof);
-//         }
-//         let actual_self = &self.body[self.current_offset..];
-//         let amt = core::cmp::min(buf.len(), actual_self.len());
-//         let (a, _) = actual_self.split_at(amt);
-
-//         if amt == 1 {
-//             buf[0] = a[0];
-//         } else {
-//             buf[..amt].copy_from_slice(a);
-//         }
-
-//         (*self).current_offset += amt;
-//         Ok(())
-//     }
-
-//     fn remaining(&self) -> usize {
-//         self.remaining()
-//     }
-// }
-
-
-impl Write for Vec<u8> {
+impl Write<u8> for Vec<u8> {
     fn write(&mut self, buf: &[u8]) -> Result<(), Error> {
         self.extend(buf);
         Ok(())
     }
 }
 
+impl Write<U256> for Vec<U256> {
+    fn write(&mut self, buf: &[U256]) -> Result<(), Error> {
+        self.extend(buf);
+        Ok(())
+    }
+}
 
 
 /// Deserialization.
@@ -165,11 +146,20 @@ pub trait Deserialize<T> : Sized {
 }
 
 /// Serialization.
-pub trait Serialize {
+pub trait Serialize<T> {
     /// Serialization error produced by serialization routine.
     type Error: From<Error>;
     /// Serialize type to serial i/o
-    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error>;
+    fn serialize<W: Write<T>>(self, writer: &mut W) -> Result<(), Self::Error>;
+}
+
+impl Serialize<u8> for u8 {
+    type Error = Error;
+
+    fn serialize<W: Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
+        writer.write(&[self])?;
+        Ok(())
+    }
 }
 
 impl Deserialize<u8> for u8 {
@@ -182,6 +172,15 @@ impl Deserialize<u8> for u8 {
     }
 }
 
+impl Serialize<U256> for u8 {
+    type Error = Error;
+
+    fn serialize<W: Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+        writer.write(&[self.into()])?;
+        Ok(())
+    }
+}
+
 impl Deserialize<U256> for u8 {
     type Error = Error;
 
@@ -189,15 +188,6 @@ impl Deserialize<U256> for u8 {
         let mut buf = [U256::zero(); 1];
         reader.read(&mut buf)?;
         Ok(buf[0].as_u32() as u8)
-    }
-}
-
-impl Serialize for u8 {
-    type Error = Error;
-
-    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error> {
-        writer.write(&[self])?;
-        Ok(())
     }
 }
 
@@ -213,10 +203,10 @@ impl Deserialize<u8> for U256 {
 }
 
 
-impl Serialize for U256 {
+impl Serialize<u8> for U256 {
     type Error = Error;
 
-    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         let mut bytes: Vec<u8> = Vec::new();
         bytes.resize(32,0);
         self.to_big_endian(bytes.as_mut_slice());
@@ -237,10 +227,10 @@ impl Deserialize<u8> for H256 {
 }
 
 
-impl Serialize for H256 {
+impl Serialize<u8> for H256 {
     type Error = Error;
 
-    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         let bytes = self.to_fixed_bytes();
         writer.write(&bytes)?;
         Ok(())
@@ -260,10 +250,10 @@ impl Deserialize<u8> for Address {
     }
 }
 
-impl Serialize for Address {
+impl Serialize<u8> for Address {
     type Error = Error;
 
-    fn serialize<W: Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         let h: H256 = self.into();
         writer.write(&h.to_fixed_bytes())?;
         Ok(())

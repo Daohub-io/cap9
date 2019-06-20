@@ -3,7 +3,7 @@ extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
 use cap9_core;
-use cap9_core::{Cursor, Serialize, Deserialize};
+use cap9_core::{Cursor, Serialize, Deserialize, Write};
 
 use pwasm_abi::eth;
 use pwasm_abi::types::*;
@@ -311,6 +311,25 @@ impl Capability {
     }
 }
 
+
+impl Serialize<U256> for Capability {
+    type Error = cap9_core::Error;
+
+    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+        // TODO: replace all these identical match arms with something like .inner()
+        match self {
+            Capability::ProcedureCall(cap) => cap.serialize(writer)?,
+            Capability::ProcedureRegister(cap) => cap.serialize(writer)?,
+            Capability::ProcedureDelete(cap) => cap.serialize(writer)?,
+            Capability::ProcedureEntry(cap) => cap.serialize(writer)?,
+            Capability::StoreWrite(cap) => cap.serialize(writer)?,
+            Capability::Log(cap) => cap.serialize(writer)?,
+            Capability::AccountCall(cap) => cap.serialize(writer)?,
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct NewCapability {
     pub cap: Capability,
@@ -425,6 +444,26 @@ impl NewCapList {
             };
 
             res.extend_from_slice(&raw_cap_slice);
+        }
+        let res2 = self.to_u256_list_new();
+        assert_eq!(res, res2);
+        res
+    }
+
+    // TODO: add error handling
+    pub fn to_u256_list_new(&self) -> Vec<U256> {
+        // Allocate Vector with Max Cap Size
+        let mut res: Vec<U256> = Vec::with_capacity(self.0.len() * (CAP_LOG_SIZE + 3) as usize);
+
+        // TODO: figure out whether move/clone is the right choice.
+        for new_cap in self.0.iter() {
+            let cap_size = U256::from(new_cap.cap.get_cap_size() + 3);
+            res.write(&[cap_size]);
+            let cap_type = U256::from(new_cap.cap.cap_type());
+            res.write(&[cap_type]);
+            let parent_index = U256::from(new_cap.parent_index);
+            res.write(&[parent_index]);
+            new_cap.cap.clone().serialize(&mut res);
         }
 
         res

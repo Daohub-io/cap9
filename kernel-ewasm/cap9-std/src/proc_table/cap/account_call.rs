@@ -84,3 +84,21 @@ impl From<U256> for AccountCallCap {
         }
     }
 }
+
+impl Serialize<U256> for AccountCallCap {
+    type Error = cap9_core::Error;
+
+    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+        let mut res = [0u8; 32];
+        res[0] |= if self.can_call_any {
+            0x80
+        } else {
+            0
+        };
+        res[0] |= if self.can_send { 0x40 } else { 0 };
+
+        res[12..].copy_from_slice(self.address.as_fixed_bytes());
+        writer.write(&[res.into()])?;
+        Ok(())
+    }
+}

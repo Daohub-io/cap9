@@ -41,3 +41,12 @@ impl Deserialize<U256> for StoreWriteCap {
         })
     }
 }
+
+impl Serialize<U256> for StoreWriteCap {
+    type Error = cap9_core::Error;
+
+    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+        writer.write(&[U256::from(self.location), U256::from(self.size)])?;
+        Ok(())
+    }
+}

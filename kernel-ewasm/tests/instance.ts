@@ -60,7 +60,7 @@ describe('Kernel', function () {
     })
 
     describe('validator', function () {
-        this.timeout(20000);
+        this.timeout(40_000);
         let kernel: Contract;
 
         before(async function () {

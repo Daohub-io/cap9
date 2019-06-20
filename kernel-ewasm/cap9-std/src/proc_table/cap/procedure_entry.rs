@@ -22,3 +22,12 @@ impl Deserialize<U256> for ProcedureEntryCap {
         Ok(ProcedureEntryCap {})
     }
 }
+
+
+impl Serialize<U256> for ProcedureEntryCap {
+    type Error = cap9_core::Error;
+
+    fn serialize<W: cap9_core::Write<U256>>(self, writer: &mut W) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}

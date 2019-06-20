@@ -84,10 +84,10 @@ impl Deserialize<u8> for SysCall {
 }
 
 
-impl Serialize for SysCall {
+impl Serialize<u8> for SysCall {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write syscall type
         writer.write(&[self.cap_type()])?;
         // Write cap index
@@ -233,10 +233,10 @@ impl SysCallAction {
     }
 }
 
-impl Serialize for SysCallAction {
+impl Serialize<u8> for SysCallAction {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         match self {
             SysCallAction::Call(call) => {
                 call.serialize(writer)?;
@@ -275,10 +275,10 @@ impl Deserialize<u8> for WriteCall {
     }
 }
 
-impl Serialize for WriteCall {
+impl Serialize<u8> for WriteCall {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write key
         self.key.serialize(writer)?;
         // Write value
@@ -308,10 +308,10 @@ impl Deserialize<u8> for LogCall {
     }
 }
 
-impl Serialize for LogCall {
+impl Serialize<u8> for LogCall {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         let n_topics = self.topics.len() as u8;
         n_topics.serialize(writer)?;
         for topic in self.topics {
@@ -342,10 +342,10 @@ impl Deserialize<u8> for RegisterProc {
 }
 
 
-impl Serialize for RegisterProc {
+impl Serialize<u8> for RegisterProc {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write procedure id
         SysCallProcedureKey(self.proc_id).serialize(writer)?;
         // Write the address of the contract
@@ -383,10 +383,10 @@ impl Deserialize<u8> for Call {
 }
 
 
-impl Serialize for Call {
+impl Serialize<u8> for Call {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         // Write procedure id
         SysCallProcedureKey(self.proc_id).serialize(writer)?;
         // Write payload
@@ -423,10 +423,10 @@ impl Deserialize<u8> for Payload {
     }
 }
 
-impl Serialize for Payload {
+impl Serialize<u8> for Payload {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         writer.write(self.0.as_slice())?;
         Ok(())
     }
@@ -477,10 +477,10 @@ impl Deserialize<u8> for SysCallProcedureKey {
     }
 }
 
-impl Serialize for SysCallProcedureKey {
+impl Serialize<u8> for SysCallProcedureKey {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         let mut proc_id_u256: [u8; 32] = [0; 32];
         proc_id_u256[8..32].copy_from_slice(&self.0);
         writer.write(&proc_id_u256)?;
@@ -506,10 +506,10 @@ impl Deserialize<u8> for NewCapList {
     }
 }
 
-impl Serialize for NewCapList {
+impl Serialize<u8> for NewCapList {
     type Error = cap9_core::Error;
 
-    fn serialize<W: cap9_core::Write>(self, writer: &mut W) -> Result<(), Self::Error> {
+    fn serialize<W: cap9_core::Write<u8>>(self, writer: &mut W) -> Result<(), Self::Error> {
         for val in self.to_u256_list() {
             val.serialize(writer)?;
         }
