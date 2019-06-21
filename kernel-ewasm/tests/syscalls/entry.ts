@@ -2,11 +2,12 @@ const Web3 = require('web3')
 const assert = require('assert')
 const fs = require('fs')
 
-import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap, Tester, TestContract } from '../utils'
+import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap} from '../utils'
+import { Tester, TestContract } from '../utils/tester';
 import { notEqual } from 'assert';
 
 
-describe('Set Entry Syscall', function () {
+describe.only('Set Entry Syscall', function () {
     this.timeout(40_000);
     describe('set entry', function () {
         it('set the entry to writer, execute writer', async function () {
