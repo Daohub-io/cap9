@@ -399,26 +399,10 @@ impl Deserialize<u8> for Payload {
     type Error = cap9_core::Error;
 
     fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
-        // Here we just need to read all remaining bytes TODO: a buffered read
-        // would be better rather than a single byte loop. The Read interface
-        // we're currently using isn't flexible enough here, we should change to
-        // a Read implementeation with a sized buffer. This is sufficient for
-        // correctness.
+        // Read all the remaining bytes in the buffer.
         let mut payload: Vec<u8> = Vec::new();
-        let mut u8buf = [0; 1];
-        let mut i = 0;
-        loop {
-            match reader.read(&mut u8buf) {
-                Ok(_) => {
-                    i += 1;
-                    if i > 20 {
-                        // panic!("cursr: {:?}", i);
-                    }
-                    payload.push(u8buf[0])
-                },
-                Err(_) => break,
-            }
-        }
+        payload.resize(reader.remaining(), 0_u8);
+        reader.read(&mut payload)?;
         Ok(Payload(payload))
     }
 }
