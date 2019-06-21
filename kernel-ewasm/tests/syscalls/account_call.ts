@@ -24,9 +24,10 @@ describe('Account Call Syscall', function () {
             tester.setFirstEntry("init", new TestContract("account_call_test", "TestAccountCallInterface", entryCaps));
             await tester.init();
             const value = 0;
-            const payload = "0xae28f1ed";
+            const payload = externalContract.methods.testNum().encodeABI();
             const result = true;
-            await tester.externalCallTest(externalContract.address, value, payload, result);
+            const return_value = await tester.externalCallTest(externalContract.address, value, payload, result);
+            assert.strictEqual(normalize(return_value), normalize(56), "The number should be 56");
         })
         it('fail to call the external contract due to lack of caps', async function () {
             const externalContract = await deployContract("external_contract", "TestExternalInterface");
@@ -41,7 +42,7 @@ describe('Account Call Syscall', function () {
             tester.setFirstEntry("init", new TestContract("account_call_test", "TestAccountCallInterface", entryCaps));
             await tester.init();
             const value = 0;
-            const payload = "0xae28f1ed";
+            const payload = externalContract.methods.testNum().encodeABI();
             const result = false;
             await tester.externalCallTest(externalContract.address, value, payload, result);
         })
@@ -60,9 +61,10 @@ describe('Account Call Syscall', function () {
             tester.initial_balance = 100;
             await tester.init();
             const value = 5;
-            const payload = "0xae28f1ed";
+            const payload = externalContract.methods.testNum().encodeABI();
             const result = true;
-            await tester.externalCallTest(externalContract.address, value, payload, result);
+            const return_value = await tester.externalCallTest(externalContract.address, value, payload, result);
+            assert.strictEqual(normalize(return_value), normalize(56), "The number should be 56");
         })
         it('fail to send value with insufficient cap', async function () {
             const externalContract = await deployContract("external_contract", "TestExternalInterface");
@@ -79,7 +81,7 @@ describe('Account Call Syscall', function () {
             tester.initial_balance = 100;
             await tester.init();
             const value = 5;
-            const payload = "0xae28f1ed";
+            const payload = externalContract.methods.testNum().encodeABI();
             const result = false;
             await tester.externalCallTest(externalContract.address, value, payload, result);
         })
@@ -97,9 +99,10 @@ describe('Account Call Syscall', function () {
             tester.setFirstEntry("init", new TestContract("account_call_test", "TestAccountCallInterface", entryCaps));
             await tester.init();
             const value = 0;
-            const payload = "0xae28f1ed";
+            const payload = externalContract.methods.testNum().encodeABI();
             const result = true;
-            await tester.externalCallTest(externalContract.address, value, payload, result);
+            const return_value = await tester.externalCallTest(externalContract.address, value, payload, result);
+            assert.strictEqual(normalize(return_value), normalize(56), "The number should be 56");
         })
         it('fail calling specific contract with insufficient cap', async function () {
             const externalContract = await deployContract("external_contract", "TestExternalInterface");
@@ -116,7 +119,7 @@ describe('Account Call Syscall', function () {
             tester.setFirstEntry("init", new TestContract("account_call_test", "TestAccountCallInterface", entryCaps));
             await tester.init();
             const value = 0;
-            const payload = "0xae28f1ed";
+            const payload = externalContract.methods.testNum().encodeABI();
             const result = false;
             await tester.externalCallTest(externalContract.address, value, payload, result);
         })
@@ -135,9 +138,10 @@ describe('Account Call Syscall', function () {
             tester.setFirstEntry("init", new TestContract("account_call_test", "TestAccountCallInterface", entryCaps));
             await tester.init();
             const value = 0;
-            const payload = "0xae28f1ed";
+            const payload = externalContract.methods.testNum().encodeABI();
             const result = true;
-            await tester.externalCallTest(externalContract.address, value, payload, result);
+            const return_value = await tester.externalCallTest(externalContract.address, value, payload, result);
+            assert.strictEqual(normalize(return_value), normalize(56), "The number should be 56");
         })
     })
 })

@@ -208,10 +208,9 @@ export class Tester {
             const balance1 = await web3.eth.getBalance(address);
             const return_value = await web3.eth.call({ to: this.kernel.contract.address, data: messageCall });
             const tx = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: messageSend });
-            assert.strictEqual(normalize(return_value), normalize(56), "The number should be 56");
             const balance2 = await web3.eth.getBalance(address);
             assert.strictEqual(normalize(balance2 - balance1), normalize(value), "Balance should have increased by the value parameter");
-
+            return return_value;
         } else {
             // The transaction should not succeed
             let success;
