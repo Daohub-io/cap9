@@ -181,7 +181,7 @@ pub fn call() {
     let current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
 
     // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface
-    //
+    // See issue #181
     // If Toggled Run Entry Procedure
     // Once the entry procedure is toggled on, there is no existing mechanism to
     // turn it off.

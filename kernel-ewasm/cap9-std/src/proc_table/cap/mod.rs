@@ -206,7 +206,6 @@ impl Serialize<U256> for NewCapList {
     type Error = cap9_core::Error;
 
     fn serialize<W: cap9_core::Write<U256>>(&self, writer: &mut W) -> Result<(), Self::Error> {
-        // TODO: figure out whether move/clone is the right choice.
         for new_cap in self.0.iter() {
             let cap_size = U256::from(new_cap.cap.get_cap_size() + 3);
             writer.write(&[cap_size])?;
