@@ -14,12 +14,11 @@ const http = require('http')
 
 // The tester class is an object for executing tests on the kernel.
 export class Tester {
-    entry_proc: TestContract;
+    entry_proc: TestContract = null;
     entry_proc_name: string;
     kernel: any;
     interface: any;
     constructor() {
-        this.entry_proc = null;
     }
 
     // Configure the entry procedure that will be used on first deployment of

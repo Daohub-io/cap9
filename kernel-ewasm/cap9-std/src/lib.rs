@@ -201,7 +201,7 @@ pub fn raw_proc_log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<
     let mut input: Vec<u8> = Vec::new();
     let syscall = SysCall {
         cap_index,
-        action: SysCallAction::Log(LogCall{topics,value: Payload(value.clone())}),
+        action: SysCallAction::Log(LogCall{topics,value: Payload(value)}),
     };
     syscall.serialize(&mut input).unwrap();
     cap9_syscall(&input, &mut Vec::new())
