@@ -168,6 +168,21 @@ enum SysCallError {
     NoSender,
 }
 
+const SINGLE_INSTRUCTION_GAS_COST: i64 = 1;
+const W_BASE: i64 = 2;
+const CALL_COST: i64 = 700;
+
+// TODO: This formulation seems to be incorrect, CALL_COST should not be
+// included, nor should the cost of the GAS call. However, this seems to work.
+// This may just be an incomplete part of pwasm. it should be
+// 10*SINGLE_INSTRUCTION_GAS_COST + 1*W_BASE.
+const SYSCALL_GAS_ADJ: i64 = 0
+    + W_BASE // Cost of GAS call to find remaining gas
+    + 10*SINGLE_INSTRUCTION_GAS_COST // Cost of various instructions
+    + W_BASE // Cost of CALLER call to find the caller
+    + CALL_COST // Cost of the call itself
+    ;
+
 fn get_syscall_instructions(module: &Module) -> Result<Instructions,SysCallError> {
     // If any of these three environments are not pulled in from the
     // environment, we cannot have syscalls.
@@ -177,8 +192,9 @@ fn get_syscall_instructions(module: &Module) -> Result<Instructions,SysCallError
     let syscall_instructions = parity_wasm::elements::Instructions::new(vec![
         // Call gas
         Instruction::Call(gasleft_index),
-        // TODO: this subtraction is a little hacky
-        Instruction::I64Const(10000),
+        // We need to subtract the cost of the instructions between here and
+        // call.
+        Instruction::I64Const(SYSCALL_GAS_ADJ),
         Instruction::I64Sub,
         // Call sender, this will place the sender somewhere in memory,
         // therefore we need to allocate or something. An address is 160 bits
