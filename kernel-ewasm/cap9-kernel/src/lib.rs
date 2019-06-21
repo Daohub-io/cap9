@@ -39,6 +39,7 @@ pub mod kernel {
     #[eth_abi(TestKernelEndpoint, KernelClient)]
     pub trait KernelInterface {
         /// The constructor set with Initial Entry Procedure
+        #[payable]
         fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, _cap_list: Vec<U256>);
         /// Get Entry Procedure
         #[constant]

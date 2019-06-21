@@ -18,34 +18,43 @@ extern crate cap9_test;
 
 fn main() {}
 
-pub mod writer {
+pub mod entry {
     use pwasm_abi::types::*;
     use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
     use cap9_std;
     // use cap9_std::proc_table::*;
     use cap9_std::proc_table::cap::*;
+    use cap9_std::syscalls::*;
 
-    #[eth_abi(TestExternalEndpoint, KernelClient)]
-    pub trait TestExternalInterface {
+    #[eth_abi(TestAccountCallEndpoint)]
+    pub trait TestAccountCallInterface {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self);
 
         /// Get Number
-        #[payable]
-        fn testNum(&mut self) -> U256;
+        #[constant]
+        fn getNum(&mut self) -> U256;
+
+        fn callExternal(&mut self, cap_idx: U256, address: Address, value: U256, payload: Vec<u8>);
 
     }
 
-    pub struct ExternalContract;
+    pub struct AccountCallContract;
 
-    impl TestExternalInterface for ExternalContract {
+    impl TestAccountCallInterface for AccountCallContract {
 
         fn constructor(&mut self) {}
 
-        fn testNum(&mut self) -> U256 {
-            56.into()
+        fn getNum(&mut self) -> U256 {
+            U256::from(6)
         }
+
+        fn callExternal(&mut self, cap_idx: U256, address: Address, value: U256, payload: Vec<u8>) {
+            cap9_std::raw_proc_acc_call(cap_idx.as_u32() as u8, address, value, payload).unwrap();
+            pwasm_ethereum::ret(&cap9_std::result());
+        }
+
     }
 }
 // Declares the dispatch and dispatch_ctor methods
@@ -53,13 +62,13 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut endpoint = writer::TestExternalEndpoint::new(writer::ExternalContract {});
+    let mut endpoint = entry::TestAccountCallEndpoint::new(entry::AccountCallContract {});
     // Read http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding for details
     pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
 }
 
 #[no_mangle]
 pub fn deploy() {
-    let mut endpoint = writer::TestExternalEndpoint::new(writer::ExternalContract {});
+    let mut endpoint = entry::TestAccountCallEndpoint::new(entry::AccountCallContract {});
     endpoint.dispatch_ctor(&pwasm_ethereum::input());
 }
