@@ -3,14 +3,14 @@ use pwasm_std;
 use pwasm_std::vec::Vec;
 use pwasm_std::Box;
 
-use crate::io;
-use crate::{Deserialize,
+use cap9_core;
+use crate::{
     Uint8, VarUint32, CountedList,
     Uint32, Uint64,
     VarInt32, VarInt64,
 };
 use crate::types::{BlockType};
-use crate::serialization::{Error};
+use crate::serialization::{Error, WASMDeserialize};
 
 /// List of instructions (usually inside a block section).
 #[derive(Debug, Clone, PartialEq)]
@@ -34,10 +34,10 @@ impl Instructions {
     pub fn elements_mut(&mut self) -> &mut Vec<Instruction> { &mut self.0 }
 }
 
-impl Deserialize for Instructions {
+impl WASMDeserialize for Instructions {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut instructions = Vec::new();
         let mut block_count = 1usize;
 
@@ -87,10 +87,10 @@ impl InitExpr {
     }
 }
 
-impl Deserialize for InitExpr {
+impl WASMDeserialize for InitExpr {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut instructions = Vec::new();
 
         loop {
@@ -1013,10 +1013,10 @@ pub mod opcodes {
     pub const TABLE_COPY: u8 = 0x0e;
 }
 
-impl Deserialize for Instruction {
+impl WASMDeserialize for Instruction {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         use self::Instruction::*;
         use self::opcodes::*;
 
@@ -1322,7 +1322,7 @@ impl Deserialize for Instruction {
     }
 }
 
-fn deserialize_atomic<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
+fn deserialize_atomic<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Instruction, Error> {
     use self::Instruction::*;
     use self::opcodes::*;
 
@@ -1400,7 +1400,7 @@ fn deserialize_atomic<R: io::Read>(reader: &mut R) -> Result<Instruction, Error>
     })
 }
 
-fn deserialize_simd<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
+fn deserialize_simd<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Instruction, Error> {
     use self::Instruction::*;
     use self::opcodes::*;
 
@@ -1571,7 +1571,7 @@ fn deserialize_simd<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
     })
 }
 
-fn deserialize_bulk<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
+fn deserialize_bulk<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Instruction, Error> {
     use self::Instruction::*;
     use self::opcodes::*;
 
@@ -1615,10 +1615,10 @@ fn deserialize_bulk<R: io::Read>(reader: &mut R) -> Result<Instruction, Error> {
     })
 }
 
-impl Deserialize for MemArg {
+impl WASMDeserialize for MemArg {
     type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let align = Uint8::deserialize(reader)?;
         let offset = VarUint32::deserialize(reader)?;
         Ok(MemArg { align: align.into(), offset: offset.into() })

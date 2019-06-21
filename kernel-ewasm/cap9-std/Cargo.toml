@@ -8,7 +8,7 @@ edition = "2018"
 pwasm-std = { version = "0.13", default-features = false }
 pwasm-ethereum = { version = "0.8", features = ["kip6"] }
 pwasm-abi = "0.2"
-validator = { path = "../validator", default-features = false }
+cap9-core = {path = "../cap9-core", default-features = false}
 
 [dev-dependencies]
 pwasm-abi-derive = "0.2"

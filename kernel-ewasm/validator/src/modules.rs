@@ -5,7 +5,8 @@ use super::Cursor;
 use super::ImportEntry;
 use crate::instructions;
 use crate::primitives::CountedList;
-use crate::serialization::Deserialize;
+use crate::serialization::{WASMDeserialize};
+use cap9_core::Deserialize;
 #[cfg(not(feature = "std"))]
 use pwasm_std::String;
 #[cfg(not(feature = "std"))]
@@ -206,7 +207,7 @@ impl<'a> Iterator for ImportIterator<'a> {
 }
 
 // TODO: ugly function
-fn parse_import(cursor: &mut Cursor) -> ImportEntry {
+fn parse_import(cursor: &mut Cursor<u8>) -> ImportEntry {
     let mut reader = Cursor {
         current_offset: cursor.current_offset,
         body: cursor.body,
@@ -493,7 +494,7 @@ struct Section {
     offset: usize,
 }
 
-fn parse_section(cursor: &mut Cursor) -> Section {
+fn parse_section(cursor: &mut Cursor<u8>) -> Section {
     let type_n = cursor.read_ref().expect("no bytes left to parse section type");
     let offset = cursor.current_offset;
     let size_n = parse_varuint_32(cursor);

@@ -1,9 +1,8 @@
-use crate::io;
-// mod primitives;
-use crate::{Deserialize, VarUint32};
+use cap9_core;
+use crate::{VarUint32};
 use crate::types::ValueType;
 use crate::instructions::{Instructions};
-use crate::serialization::{Error};
+use crate::serialization::{Error,WASMDeserialize};
 use pwasm_std::vec::Vec;
 
 /// Function signature (type reference)
@@ -28,7 +27,7 @@ impl Func {
 // impl Deserialize for Func {
 // 	 type Error = Error;
 
-// 	fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+// 	fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
 // 		Ok(Func(VarUint32::deserialize(reader)?.into()))
 // 	}
 // }
@@ -53,10 +52,10 @@ impl Local {
     pub fn value_type(&self) -> ValueType { self.value_type }
 }
 
-impl Deserialize for Local {
+impl WASMDeserialize for Local {
      type Error = Error;
 
-    fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let count = VarUint32::deserialize(reader)?;
         let value_type = ValueType::deserialize(reader)?;
         Ok(Local { count: count.into(), value_type: value_type })
@@ -99,7 +98,7 @@ impl FuncBody {
 // impl Deserialize for FuncBody {
 // 	 type Error = Error;
 
-// 	fn deserialize<R: io::Read>(reader: &mut R) -> Result<Self, Self::Error> {
+// 	fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
 //         // Why do we need to use a section reader here?
 // 		let mut body_reader = SectionReader::new(reader)?;
 // 		let locals: Vec<Local> = CountedList::<Local>::deserialize(&mut body_reader)?.into_inner();

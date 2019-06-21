@@ -13,11 +13,10 @@ extern crate alloc;
 mod func;
 mod import_entry;
 mod instructions;
-pub mod io;
+pub use cap9_core::*;
 mod primitives;
 pub mod serialization;
 mod types;
-use self::serialization::Deserialize;
 
 use self::primitives::{
     CountedList, Uint32, Uint64, Uint8, VarInt32, VarInt64, VarInt7, VarUint1, VarUint32, VarUint7,
@@ -125,7 +124,7 @@ impl<'a> Validity for modules::Module<'a> {
 
 /// Parse a variable size VarUint32 (i.e. LEB) as per the WASM spec. TODO: let's
 /// see if we can import this from parity-wasm.
-fn parse_varuint_32(cursor: &mut Cursor) -> u32 {
+fn parse_varuint_32(cursor: &mut Cursor<u8>) -> u32 {
     let mut res = 0;
     let mut shift = 0;
     loop {
@@ -143,56 +142,6 @@ fn parse_varuint_32(cursor: &mut Cursor) -> u32 {
         }
     }
     res
-}
-
-// Seek does not seem to be implemented in core, so we'll reimplement what we
-// need.
-#[derive(Debug)]
-struct Cursor<'a> {
-    current_offset: usize,
-    body: &'a [u8],
-}
-
-impl<'a> Cursor<'a> {
-    // Read the byte at the cusor, and increment the pointer by 1.
-    fn read_ref(&mut self) -> Option<&'a u8> {
-        if self.current_offset < self.body.len() {
-            let val = &self.body[self.current_offset];
-            self.current_offset += 1;
-            Some(val)
-        } else {
-            None
-        }
-    }
-
-    fn read_ref_n(&mut self, n: usize) -> &'a [u8] {
-        let val = &self.body[self.current_offset..(self.current_offset + n)];
-        self.current_offset += n;
-        val
-    }
-
-    fn skip(&mut self, n: usize) {
-        self.current_offset += n;
-    }
-}
-
-/// Implement standard read definition (which clones). This is basically the
-/// rust definition of read for slice.
-impl<'a> io::Read for Cursor<'a> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<()> {
-        let actual_self = &self.body[self.current_offset..];
-        let amt = core::cmp::min(buf.len(), actual_self.len());
-        let (a, _) = actual_self.split_at(amt);
-
-        if amt == 1 {
-            buf[0] = a[0];
-        } else {
-            buf[..amt].copy_from_slice(a);
-        }
-
-        self.current_offset += amt;
-        Ok(())
-    }
 }
 
 #[cfg(test)]

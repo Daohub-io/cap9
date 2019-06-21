@@ -2,6 +2,8 @@ extern crate pwasm_abi;
 extern crate pwasm_ethereum;
 extern crate pwasm_std;
 
+use cap9_core::{Cursor, Serialize, Deserialize};
+
 use pwasm_abi::eth;
 use pwasm_abi::types::*;
 
@@ -150,10 +152,12 @@ pub fn insert_proc(
     let cap_list = cap_list.inner();
 
     for new_cap in cap_list.iter() {
-        let raw_val = new_cap.cap.into_u256_list();
-        let cap_type = raw_val[0].as_u32() as u8;
+        let mut raw_val: Vec<U256> = Vec::new();
+        // TODO: consider using a separate Serialize that doesn't require move
+        new_cap.clone().cap.serialize(&mut raw_val).unwrap();
+        let cap_type = new_cap.cap.cap_type();
 
-        for (i, val) in raw_val[1..].iter().enumerate() {
+        for (i, val) in raw_val.iter().enumerate() {
             let cap_index = proc_type_len[cap_type as usize];
             pwasm_ethereum::write(
                 &H256(proc_pointer.get_cap_val_ptr(cap_type, cap_index, i as u8)),
@@ -389,15 +393,24 @@ pub fn get_proc_cap(key: ProcedureKey, cap_type: u8, cap_index: u8) -> Option<ca
         return None;
     }
 
-    let mut raw_val: Vec<U256> = (0..cap_size)
+    let raw_val: Vec<U256> = (0..cap_size)
         .map(|i| {
             U256::from(pwasm_ethereum::read(&H256(
                 proc_pointer.get_cap_val_ptr(cap_type, cap_index, i),
             )))
         })
         .collect();
-    raw_val.insert(0, U256::from(cap_type));
-    Capability::from_u256_list(&raw_val).ok()
+    let mut cursor = Cursor::new(raw_val.as_slice());
+    Some(match cap_type {
+        CAP_PROC_CALL => Capability::ProcedureCall(ProcedureCallCap::deserialize(&mut cursor).unwrap()),
+        CAP_PROC_REGISTER => Capability::ProcedureRegister(ProcedureRegisterCap::deserialize(&mut cursor).unwrap()),
+        CAP_PROC_DELETE => Capability::ProcedureDelete(ProcedureDeleteCap::deserialize(&mut cursor).unwrap()),
+        CAP_PROC_ENTRY => Capability::ProcedureEntry(ProcedureEntryCap::deserialize(&mut cursor).unwrap()),
+        CAP_STORE_WRITE => Capability::StoreWrite(StoreWriteCap::deserialize(&mut cursor).unwrap()),
+        CAP_LOG => Capability::Log(LogCap::deserialize(&mut cursor).unwrap()),
+        CAP_ACC_CALL => Capability::AccountCall(AccountCallCap::deserialize(&mut cursor).unwrap()),
+        _ => return None,
+    })
 }
 
 /// Get Entry Procedure Id
@@ -463,7 +476,7 @@ pub mod contract {
         fn get_proc_cap_list_len(&mut self, key: String, cap_type: U256) -> U256;
 
         /// Get Procedure Capability by Id, Type and Index
-        fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256>;
+        // fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256>;
 
         /// Get Entry Procedure Id
         fn get_entry_proc_id(&mut self) -> String;
@@ -617,24 +630,24 @@ pub mod contract {
             U256::from(get_proc_cap_list_len(raw_key, cap_type.as_u32() as u8))
         }
 
-        fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256> {
-            let raw_key = {
-                let byte_key = key.as_bytes();
-                let len = byte_key.len();
-                let mut output = [0u8; 24];
-                output[..len].copy_from_slice(byte_key);
-                output
-            };
+        // fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256> {
+        //     let raw_key = {
+        //         let byte_key = key.as_bytes();
+        //         let len = byte_key.len();
+        //         let mut output = [0u8; 24];
+        //         output[..len].copy_from_slice(byte_key);
+        //         output
+        //     };
 
-            let cap_type = cap_type.as_u32() as u8;
-            let cap_index = cap_index.as_u32() as u8;
+        //     let cap_type = cap_type.as_u32() as u8;
+        //     let cap_index = cap_index.as_u32() as u8;
 
-            if let Some(cap) = get_proc_cap(raw_key, cap_type, cap_index) {
-                cap.into_u256_list()
-            } else {
-                Vec::new()
-            }
-        }
+        //     if let Some(cap) = get_proc_cap(raw_key, cap_type, cap_index) {
+        //         cap.into_u256_list()
+        //     } else {
+        //         Vec::new()
+        //     }
+        // }
 
         fn get_entry_proc_id(&mut self) -> String {
             let id = get_entry_proc_id();
@@ -668,6 +681,8 @@ mod tests {
     use self::pwasm_test::{ext_get, ext_reset};
     use core::str::FromStr;
     use pwasm_abi::types::*;
+
+    use crate::proc_table::get_proc_cap;
 
     #[test]
     fn should_insert_proc_by_key() {
@@ -824,24 +839,22 @@ mod tests {
 
         contract.insert_proc(String::from("FOO"), proc_address, cap_list);
 
-        let new_write_cap = {
-            let raw_cap = contract.get_proc_cap(
-                String::from("FOO"),
-                U256::from(CAP_STORE_WRITE),
-                U256::zero(),
-            );
-            Capability::from_u256_list(&raw_cap).expect("Should be Valid StoreWriteCap")
-        };
+        let mut name: [u8; 24] = [0_u8; 24];
+        name.copy_from_slice(b"FOO\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
+
+        let new_write_cap = get_proc_cap(
+            name,
+            CAP_STORE_WRITE,
+            0,
+        ).unwrap();
 
 
-        let new_log_cap = {
-            let raw_cap = contract.get_proc_cap(
-                String::from("FOO"),
-                U256::from(CAP_LOG),
-                U256::zero(),
-            );
-            Capability::from_u256_list(&raw_cap).expect("Should be Valid LogCap")
-        };
+
+        let new_log_cap = get_proc_cap(
+            name,
+            CAP_LOG,
+            0,
+        ).unwrap();
 
         assert_eq!(new_write_cap, sample_write_cap.cap);
         assert_eq!(new_log_cap, sample_log_cap.cap);

@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 pwasm-std = {version = "0.13", default-features = false}
 pwasm-ethereum = {version = "0.8", default-features = false}
+cap9-core = {path = "../cap9-core", default-features = false}
 
 [dev-dependencies]
 wabt = "0.7.1"

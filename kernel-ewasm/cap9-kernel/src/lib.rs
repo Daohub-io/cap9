@@ -16,8 +16,7 @@ use cap9_std::proc_table;
 use cap9_std::*;
 use cap9_std::syscalls::SysCall;
 
-use validator::serialization::Deserialize;
-use validator::io::Cursor;
+use cap9_core::{Cursor, Deserialize};
 
 /// This is a temporary storage location for toggling
 const TEST_KERNEL_SYSCALL_TOGGLE_PTR: [u8; 32] = [
@@ -221,7 +220,8 @@ pub fn call() {
             // call.
 
             // Put the input into a cursor for deserialization.
-            let mut input = Cursor::new(pwasm_ethereum::input());
+            let input_slice = pwasm_ethereum::input();
+            let mut input = Cursor::new(input_slice.as_slice());
             // Attempt to deserialize the input into a syscall. Panic on
             // deserialization failure.
             let syscall: SysCall = SysCall::deserialize(&mut input).unwrap();
