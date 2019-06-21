@@ -45,7 +45,7 @@ describe('Account Call Syscall', function () {
             const result = false;
             await tester.externalCallTest(externalContract.address, value, payload, result);
         })
-        it.skip('succeed sending value with cap', async function () {
+        it('succeed sending value with cap', async function () {
             const externalContract = await deployContract("external_contract", "TestExternalInterface");
             const tester = new Tester();
             const prefix = 192;
@@ -64,7 +64,7 @@ describe('Account Call Syscall', function () {
             const result = true;
             await tester.externalCallTest(externalContract.address, value, payload, result);
         })
-        it.skip('fail to send value with insufficient cap', async function () {
+        it('fail to send value with insufficient cap', async function () {
             const externalContract = await deployContract("external_contract", "TestExternalInterface");
             const tester = new Tester();
             const prefix = 192;
