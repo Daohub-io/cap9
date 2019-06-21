@@ -12,7 +12,6 @@ use proc_table::cap::Capability;
 use proc_table::cap::*;
 use proc_table::ProcedureKey;
 
-
 /// A full system call request, including the cap_index. This is permitted to
 /// access the procedure table as part of the environment.
 #[derive(Clone, Debug, PartialEq)]
@@ -30,6 +29,7 @@ impl SysCall {
             SysCallAction::Register(_) => CAP_PROC_REGISTER,
             SysCallAction::Delete(_) => CAP_PROC_DELETE,
             SysCallAction::SetEntry(_) => CAP_PROC_ENTRY,
+            SysCallAction::AccountCall(_) => CAP_ACC_CALL,
         }
     }
 
@@ -92,6 +92,12 @@ impl Deserialize<u8> for SysCall {
                     action: SysCallAction::SetEntry(SetEntry::deserialize(reader)?)
                 })
             },
+            CAP_ACC_CALL => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::AccountCall(AccountCall::deserialize(reader)?)
+                })
+            },
             _ => panic!("unknown syscall"),
         }
     }
@@ -122,6 +128,7 @@ pub enum SysCallAction {
     Register(RegisterProc),
     Delete(DeleteProc),
     SetEntry(SetEntry),
+    AccountCall(AccountCall),
 }
 
 impl SysCallAction {
@@ -223,6 +230,24 @@ impl SysCallAction {
                 }
                 false
             },
+            // Account Call syscall
+            SysCallAction::AccountCall(AccountCall{address,value,payload:_}) => {
+                if let Capability::AccountCall(proc_table::cap::AccountCallCap {can_call_any, can_send, address: cap_address}) = cap {
+                    // If can_call_any is false and address does not match the
+                    // capability address, return false.
+                    if !can_call_any && (address != &cap_address) {
+                        return false;
+                    }
+
+                    // If can_send is false and amount is non-zero, return false
+                    if !can_send && (value != &U256::zero()) {
+                        return false;
+                    }
+                    return true;
+
+                }
+                false
+            },
         }
     }
 
@@ -266,6 +291,10 @@ impl SysCallAction {
             SysCallAction::SetEntry(SetEntry{proc_id}) => {
                 proc_table::set_entry_proc_id(*proc_id);
             }
+            // Account Call
+            SysCallAction::AccountCall(AccountCall{address,value,payload}) => {
+                pwasm_ethereum::call(pwasm_ethereum::gas_left()-10000, &address, *value, payload.0.as_slice(), &mut Vec::new());
+            }
         }
     }
 }
@@ -299,10 +328,43 @@ impl Serialize<u8> for SysCallAction {
                 set_entry_call.serialize(writer)?;
                 Ok(())
             },
+            SysCallAction::AccountCall(account_call) => {
+                account_call.serialize(writer)?;
+                Ok(())
+            },
         }
     }
 }
 
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AccountCall {
+    pub address: Address,
+    pub value: U256,
+    pub payload: Payload,
+}
+
+impl Deserialize<u8> for AccountCall {
+    type Error = cap9_core::Error;
+
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let address: Address = Address::deserialize(reader)?;
+        let value: U256 = U256::deserialize(reader)?;
+        let payload = Payload::deserialize(reader)?;
+        Ok(AccountCall{address, value, payload})
+    }
+}
+
+impl Serialize<u8> for AccountCall {
+    type Error = cap9_core::Error;
+
+    fn serialize<W: cap9_core::Write<u8>>(&self, writer: &mut W) -> Result<(), Self::Error> {
+        self.address.serialize(writer)?;
+        self.value.serialize(writer)?;
+        self.payload.serialize(writer)?;
+        Ok(())
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct WriteCall {
