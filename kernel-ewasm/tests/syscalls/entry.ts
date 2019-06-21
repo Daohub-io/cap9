@@ -7,7 +7,7 @@ import { Tester, TestContract } from '../utils/tester';
 import { notEqual } from 'assert';
 
 
-describe.only('Set Entry Syscall', function () {
+describe('Set Entry Syscall', function () {
     this.timeout(40_000);
     describe('set entry', function () {
         it('set the entry to writer, execute writer', async function () {
