@@ -19,7 +19,6 @@ export class Tester {
     kernel: any;
     interface: any;
     constructor() {
-        this.entry_proc = null;
     }
 
     // Configure the entry procedure that will be used on first deployment of
