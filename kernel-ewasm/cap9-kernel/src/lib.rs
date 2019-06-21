@@ -134,8 +134,8 @@ pub mod kernel {
             // the WASM code. Jake's hypothesis is that these two lines trigger
             // a reallocation of some kind (of the vector) that side-steps
             // whatever issue is occuring.
-            code.resize(code.len()+1,0);
             code.resize(code.len()-1,0);
+            code.resize(code.len()+1,0);
             code
         }
 

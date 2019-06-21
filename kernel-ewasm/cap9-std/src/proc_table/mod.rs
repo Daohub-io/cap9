@@ -184,6 +184,7 @@ pub fn insert_proc(
 }
 
 /// Error on Procedure Removal
+#[derive(Debug)]
 pub enum ProcRemoveError {
     /// Procedure Id is not Used
     InvalidId = 2,
