@@ -41,6 +41,8 @@ pub mod writer {
 
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
 
+        fn getEntry(&mut self) -> H256;
+
     }
 
     pub struct WriterContract;
@@ -76,6 +78,11 @@ pub mod writer {
                 // AccountCall(AccountCallCap),
                 _ => panic!("wrong cap")
             }
+        }
+
+        fn getEntry(&mut self) -> H256 {
+            let proc_id = cap9_std::proc_table::get_entry_proc_id();
+            cap9_std::syscalls::SysCallProcedureKey(proc_id).into()
         }
     }
 }

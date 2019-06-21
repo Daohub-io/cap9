@@ -1,5 +1,6 @@
 import { Contract } from "web3-eth-contract";
 import * as utils from 'web3-utils';
+const assert = require('assert')
 
 const BN = require('bn.js')
 const Web3 = require('web3');
