@@ -20,7 +20,12 @@ fn main() {}
 
 pub mod entry {
     use pwasm_abi::types::*;
+    use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
+    use cap9_std;
+    // use cap9_std::proc_table::*;
+    use cap9_std::proc_table::cap::*;
+    use cap9_std::syscalls::*;
 
     #[eth_abi(TestEntryEndpoint, KernelClient)]
     pub trait TestEntryInterface {
@@ -30,6 +35,18 @@ pub mod entry {
         /// Get Number
         #[constant]
         fn getNum(&mut self) -> U256;
+
+        fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>);
+
+        fn listProcs(&mut self) -> Vec<H256>;
+
+        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
+
+        fn getNCaps(&mut self, key: H256) -> u64;
+
+        fn setEntry(&mut self, cap_idx: U256, key: H256);
+
+        fn getEntry(&mut self) -> H256;
 
     }
 
@@ -42,6 +59,62 @@ pub mod entry {
         fn getNum(&mut self) -> U256 {
             U256::from(6)
         }
+
+        fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>) {
+            cap9_std::raw_proc_reg(cap_idx.as_u32() as u8, key.into(), address, cap_list).unwrap();
+            pwasm_ethereum::ret(&cap9_std::result());
+        }
+
+        fn setEntry(&mut self, cap_idx: U256, key: H256) {
+            cap9_std::raw_proc_entry(cap_idx.as_u32() as u8, key.into()).unwrap();
+            pwasm_ethereum::ret(&cap9_std::result());
+        }
+
+        fn getEntry(&mut self) -> H256 {
+            let proc_id = cap9_std::proc_table::get_entry_proc_id();
+            cap9_std::syscalls::SysCallProcedureKey(proc_id).into()
+        }
+
+        fn listProcs(&mut self) -> Vec<H256> {
+            let n_procs = cap9_std::proc_table::get_proc_list_len();
+            let mut procs = Vec::new();
+            for i in 1..(n_procs.as_usize() + 1) {
+                let index = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,i as u8];
+                procs.push(SysCallProcedureKey(cap9_std::proc_table::get_proc_id(index).unwrap()).into());
+            }
+            procs
+        }
+
+        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256) {
+            // Get the key of the currently executing procedure.
+            let this_key: cap9_std::proc_table::ProcedureKey = cap9_std::proc_table::get_current_proc_id();
+            let cap = cap9_std::proc_table::get_proc_cap(this_key, cap_type.as_u32() as u8, cap_index.as_u32() as u8).unwrap();
+            match cap {
+                Capability::ProcedureRegister(ProcedureRegisterCap {prefix, key}) => {
+                    let h: H256 = SysCallProcedureKey(key).into();
+                    (prefix.into(), h.into())
+                },
+                // ProcedureRegister(ProcedureRegisterCap),
+                // ProcedureDelete(ProcedureDeleteCap),
+                // ProcedureEntry(ProcedureEntryCap),
+                // Capability::StoreWrite(StoreWriteCap {location, size}) => (location.into(), size.into()),
+                // Log(LogCap),
+                // AccountCall(AccountCallCap),
+                _ => panic!("wrong cap")
+            }
+        }
+
+        fn getNCaps(&mut self, key_raw: H256) -> u64 {
+            let key: SysCallProcedureKey = key_raw.into();
+            let proc_id: cap9_std::proc_table::ProcedureKey = key.into();
+            let mut n_caps: u64 = 0;
+            for i in &CAP_TYPES {
+                let n: U256 = cap9_std::proc_table::get_proc_cap_list_len(proc_id.clone(), *i).into();
+                n_caps += n.as_u64();
+            }
+            n_caps
+        }
+
     }
 }
 // Declares the dispatch and dispatch_ctor methods

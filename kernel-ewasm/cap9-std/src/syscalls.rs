@@ -28,6 +28,7 @@ impl SysCall {
             SysCallAction::Write(_) => CAP_STORE_WRITE,
             SysCallAction::Log(_) => CAP_LOG,
             SysCallAction::Register(_) => CAP_PROC_REGISTER,
+            SysCallAction::SetEntry(_) => CAP_PROC_ENTRY,
         }
     }
 
@@ -78,6 +79,12 @@ impl Deserialize<u8> for SysCall {
                     action: SysCallAction::Register(RegisterProc::deserialize(reader)?)
                 })
             },
+            CAP_PROC_ENTRY => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::SetEntry(SetEntry::deserialize(reader)?)
+                })
+            },
             _ => panic!("unknown syscall"),
         }
     }
@@ -106,6 +113,7 @@ pub enum SysCallAction {
     Call(Call),
     Log(LogCall),
     Register(RegisterProc),
+    SetEntry(SetEntry),
 }
 
 impl SysCallAction {
@@ -115,6 +123,13 @@ impl SysCallAction {
             SysCallAction::Call(Call{proc_id,payload:_}) => {
                 if let Capability::ProcedureCall(proc_table::cap::ProcedureCallCap {prefix, key}) = cap {
                     return matching_keys(prefix, &key, proc_id);
+                }
+                false
+            },
+            // Set Entry syscall
+            SysCallAction::SetEntry(SetEntry{proc_id}) => {
+                if let Capability::ProcedureEntry(_) = cap {
+                    return true;
                 }
                 false
             },
@@ -229,6 +244,10 @@ impl SysCallAction {
                 // TODO: these should probably be passed by reference
                 proc_table::insert_proc(proc_id.clone(), address.clone(), cap_list.clone()).unwrap();
             }
+            // Set Entry
+            SysCallAction::SetEntry(SetEntry{proc_id}) => {
+                proc_table::set_entry_proc_id(*proc_id);
+            }
         }
     }
 }
@@ -252,6 +271,10 @@ impl Serialize<u8> for SysCallAction {
             },
             SysCallAction::Register(register_call) => {
                 register_call.serialize(writer)?;
+                Ok(())
+            },
+            SysCallAction::SetEntry(set_entry_call) => {
+                set_entry_call.serialize(writer)?;
                 Ok(())
             },
         }
@@ -287,6 +310,30 @@ impl Serialize<u8> for WriteCall {
     }
 }
 
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SetEntry {
+    pub proc_id: proc_table::ProcedureKey,
+}
+
+impl Deserialize<u8> for SetEntry {
+    type Error = cap9_core::Error;
+
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
+        Ok(SetEntry{proc_id})
+    }
+}
+
+impl Serialize<u8> for SetEntry {
+    type Error = cap9_core::Error;
+
+    fn serialize<W: cap9_core::Write<u8>>(&self, writer: &mut W) -> Result<(), Self::Error> {
+        // Write procedure id
+        SysCallProcedureKey(self.proc_id).serialize(writer)?;
+        Ok(())
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct LogCall {
