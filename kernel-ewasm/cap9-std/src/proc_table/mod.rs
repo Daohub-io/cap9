@@ -153,8 +153,7 @@ pub fn insert_proc(
 
     for new_cap in cap_list.iter() {
         let mut raw_val: Vec<U256> = Vec::new();
-        // TODO: consider using a separate Serialize that doesn't require move
-        new_cap.clone().cap.serialize(&mut raw_val).unwrap();
+        new_cap.cap.serialize(&mut raw_val).unwrap();
         let cap_type = new_cap.cap.cap_type();
 
         for (i, val) in raw_val.iter().enumerate() {
