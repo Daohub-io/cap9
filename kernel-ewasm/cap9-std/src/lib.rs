@@ -219,6 +219,16 @@ pub fn raw_proc_reg(cap_index: u8, proc_id: SysCallProcedureKey, address: Addres
     cap9_syscall(&input, &mut Vec::new())
 }
 
+pub fn raw_proc_delete(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
+    let mut input = Vec::new();
+    let syscall = SysCall {
+        cap_index,
+        action: SysCallAction::Delete(DeleteProc{proc_id: proc_id.0}),
+    };
+    syscall.serialize(&mut input).unwrap();
+    cap9_syscall(&input, &mut Vec::new())
+}
+
 pub fn raw_proc_entry(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {

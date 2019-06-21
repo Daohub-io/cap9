@@ -28,6 +28,7 @@ impl SysCall {
             SysCallAction::Write(_) => CAP_STORE_WRITE,
             SysCallAction::Log(_) => CAP_LOG,
             SysCallAction::Register(_) => CAP_PROC_REGISTER,
+            SysCallAction::Delete(_) => CAP_PROC_DELETE,
             SysCallAction::SetEntry(_) => CAP_PROC_ENTRY,
         }
     }
@@ -79,6 +80,12 @@ impl Deserialize<u8> for SysCall {
                     action: SysCallAction::Register(RegisterProc::deserialize(reader)?)
                 })
             },
+            CAP_PROC_DELETE => {
+                Ok(SysCall {
+                    cap_index,
+                    action: SysCallAction::Delete(DeleteProc::deserialize(reader)?)
+                })
+            },
             CAP_PROC_ENTRY => {
                 Ok(SysCall {
                     cap_index,
@@ -113,6 +120,7 @@ pub enum SysCallAction {
     Call(Call),
     Log(LogCall),
     Register(RegisterProc),
+    Delete(DeleteProc),
     SetEntry(SetEntry),
 }
 
@@ -126,8 +134,15 @@ impl SysCallAction {
                 }
                 false
             },
+            // Delete Procedure syscall
+            SysCallAction::Delete(DeleteProc{proc_id}) => {
+                if let Capability::ProcedureDelete(proc_table::cap::ProcedureDeleteCap {prefix, key}) = cap {
+                    return matching_keys(prefix, &key, proc_id);
+                }
+                false
+            },
             // Set Entry syscall
-            SysCallAction::SetEntry(SetEntry{proc_id}) => {
+            SysCallAction::SetEntry(SetEntry{proc_id:_}) => {
                 if let Capability::ProcedureEntry(_) = cap {
                     return true;
                 }
@@ -241,8 +256,11 @@ impl SysCallAction {
             }
             // Register Procedure
             SysCallAction::Register(RegisterProc{proc_id, address, cap_list}) => {
-                // TODO: these should probably be passed by reference
                 proc_table::insert_proc(proc_id.clone(), address.clone(), cap_list.clone()).unwrap();
+            }
+            // Delete Procedure
+            SysCallAction::Delete(DeleteProc{proc_id}) => {
+                proc_table::remove_proc(proc_id.clone()).unwrap();
             }
             // Set Entry
             SysCallAction::SetEntry(SetEntry{proc_id}) => {
@@ -271,6 +289,10 @@ impl Serialize<u8> for SysCallAction {
             },
             SysCallAction::Register(register_call) => {
                 register_call.serialize(writer)?;
+                Ok(())
+            },
+            SysCallAction::Delete(delete_call) => {
+                delete_call.serialize(writer)?;
                 Ok(())
             },
             SysCallAction::SetEntry(set_entry_call) => {
@@ -412,6 +434,33 @@ impl Payload {
         Payload(Vec::new())
     }
 }
+
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DeleteProc {
+    pub proc_id: proc_table::ProcedureKey,
+}
+
+impl Deserialize<u8> for DeleteProc {
+    type Error = cap9_core::Error;
+
+    fn deserialize<R: cap9_core::Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
+        let SysCallProcedureKey(proc_id) = SysCallProcedureKey::deserialize(reader)?;
+        Ok(DeleteProc{proc_id})
+    }
+}
+
+
+impl Serialize<u8> for DeleteProc {
+    type Error = cap9_core::Error;
+
+    fn serialize<W: cap9_core::Write<u8>>(&self, writer: &mut W) -> Result<(), Self::Error> {
+        // Write procedure id
+        SysCallProcedureKey(self.proc_id).serialize(writer)?;
+        Ok(())
+    }
+}
+
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Call {

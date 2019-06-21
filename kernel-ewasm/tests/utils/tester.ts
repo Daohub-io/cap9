@@ -146,6 +146,49 @@ export class Tester {
         }
     }
 
+    // Delete a procedure. This assumes the current entry procedure for the
+    // kernel provides the following interface:
+    //
+    //    * fn deleteProc(&mut self, cap_idx: U256, key: H256);
+    //    * fn listProcs(&mut self) -> Vec<H256>;
+    //    * fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256,
+    //      U256);
+    //    * fn getNCaps(&mut self, key: H256) -> u64;
+    //
+    // This method will also execute tests to ensure that the registration
+    // occurs successfully.
+    async deleteTest(requestedCaps, procName, result) {
+        // This is the key of the procedure that we will be registering.
+        const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
+        // This is the index of the capability (in the procedures capability
+        // list) that we will be using to perform the writes.
+        const cap_index = 0;
+
+        const procList1 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+        // We then send that message via a call procedure syscall.
+        const message = this.interface.methods.deleteProc(cap_index, key).encodeABI();
+        if (result) {
+            // The transaction should succeed
+            assert(procList1.includes(normalize(web3.utils.fromAscii(procName,24))), "The procedure key should origianlly be included in the table");
+            const return_value = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: message });
+            const procList2 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+            assert.strictEqual(procList2.length, procList1.length - 1, "The number of procedures should have decreased by 1");
+            assert(!procList2.includes(normalize(web3.utils.fromAscii(procName,24))), "The procedure key should not be included in the table");
+        } else {
+            // The transaction should not succeed
+            let success;
+            try {
+                const return_value = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: message });
+                success = true;
+            } catch (e) {
+                success = false;
+            }
+            assert(!success, "Call should not succeed");
+            const procList2 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+            assert.strictEqual(procList2.length, procList1.length, "The number of procedures should not have changed");
+        }
+    }
+
 }
 
 export class TestContract {
