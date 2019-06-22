@@ -289,11 +289,11 @@ impl SysCallAction {
             }
             // Set Entry
             SysCallAction::SetEntry(SetEntry{proc_id}) => {
-                proc_table::set_entry_proc_id(*proc_id);
+                proc_table::set_entry_proc_id(*proc_id).unwrap();
             }
             // Account Call
             SysCallAction::AccountCall(AccountCall{address,value,payload}) => {
-                pwasm_ethereum::call(pwasm_ethereum::gas_left()-10000, &address, *value, payload.0.as_slice(), &mut Vec::new());
+                pwasm_ethereum::call(pwasm_ethereum::gas_left()-10000, &address, *value, payload.0.as_slice(), &mut Vec::new()).unwrap();
             }
         }
     }

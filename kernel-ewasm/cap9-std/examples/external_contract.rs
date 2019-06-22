@@ -20,11 +20,7 @@ fn main() {}
 
 pub mod writer {
     use pwasm_abi::types::*;
-    use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
-    use cap9_std;
-    // use cap9_std::proc_table::*;
-    use cap9_std::proc_table::cap::*;
 
     #[eth_abi(TestExternalEndpoint, KernelClient)]
     pub trait TestExternalInterface {
