@@ -189,17 +189,11 @@ export class Tester {
         }
     }
 
-    // Delete a procedure. This assumes the current entry procedure for the
-    // kernel provides the following interface:
+    // Call an external contract. This assumes the current entry procedure for
+    // the kernel provides the following interface:
     //
-    //    * fn deleteProc(&mut self, cap_idx: U256, key: H256);
-    //    * fn listProcs(&mut self) -> Vec<H256>;
-    //    * fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256,
-    //      U256);
-    //    * fn getNCaps(&mut self, key: H256) -> u64;
-    //
-    // This method will also execute tests to ensure that the registration
-    // occurs successfully.
+    //    * fn callExternal(&mut self, cap_idx: U256, address: Address, value:
+    //      U256, payload: Vec<u8>)
     async externalCallTest(address, value, payload, result) {
         const cap_index = 0;
         const messageSend = this.interface.methods.callExternal(cap_index, address, value, payload).encodeABI();
