@@ -2,7 +2,7 @@
 pub use core::fmt;
 use pwasm_std::vec::Vec;
 use cap9_core;
-use crate::serialization::{Error, WASMSerialize, WASMDeserialize};
+use crate::serialization::{Error, WASMDeserialize};
 use super::{VarUint7, VarInt7, CountedList, VarUint32};
 pub use pwasm_std::types::{U256,H256, Address};
 

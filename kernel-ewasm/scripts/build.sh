@@ -12,7 +12,7 @@ cargo run --package cap9-build -- set-mem --pages 4 ./target/wasm32-unknown-unkn
 wasm-build --target=wasm32-unknown-unknown ./target cap9-kernel
 
 # Copy Examples
-cp ./target/wasm32-unknown-unknown/release/examples/*_test.wasm ./target/wasm32-unknown-unknown/release
+cp ./target/wasm32-unknown-unknown/release/examples/*.wasm ./target/wasm32-unknown-unknown/release
 
 cargo run --package cap9-build -- build-proc ./target/wasm32-unknown-unknown/release/writer_test.wasm ./target/wasm32-unknown-unknown/release/writer_test.wasm
 cargo run --package cap9-build -- set-mem --pages 4 ./target/wasm32-unknown-unknown/release/writer_test.wasm ./target/wasm32-unknown-unknown/release/writer_test.wasm
@@ -32,3 +32,13 @@ wasm-build --target=wasm32-unknown-unknown ./target logger_test
 cargo run --package cap9-build -- build-proc ./target/wasm32-unknown-unknown/release/register_test.wasm ./target/wasm32-unknown-unknown/release/register_test.wasm
 cargo run --package cap9-build -- set-mem --pages 4 ./target/wasm32-unknown-unknown/release/register_test.wasm ./target/wasm32-unknown-unknown/release/register_test.wasm
 wasm-build --target=wasm32-unknown-unknown ./target register_test
+
+cargo run --package cap9-build -- build-proc ./target/wasm32-unknown-unknown/release/delete_test.wasm ./target/wasm32-unknown-unknown/release/delete_test.wasm
+cargo run --package cap9-build -- set-mem --pages 4 ./target/wasm32-unknown-unknown/release/delete_test.wasm ./target/wasm32-unknown-unknown/release/delete_test.wasm
+wasm-build --target=wasm32-unknown-unknown ./target delete_test
+
+cargo run --package cap9-build -- build-proc ./target/wasm32-unknown-unknown/release/account_call_test.wasm ./target/wasm32-unknown-unknown/release/account_call_test.wasm
+cargo run --package cap9-build -- set-mem --pages 4 ./target/wasm32-unknown-unknown/release/account_call_test.wasm ./target/wasm32-unknown-unknown/release/account_call_test.wasm
+wasm-build --target=wasm32-unknown-unknown ./target account_call_test
+
+wasm-build --target=wasm32-unknown-unknown ./target external_contract

@@ -39,6 +39,7 @@ pub mod kernel {
     #[eth_abi(TestKernelEndpoint, KernelClient)]
     pub trait KernelInterface {
         /// The constructor set with Initial Entry Procedure
+        #[payable]
         fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, _cap_list: Vec<U256>);
         /// Get Entry Procedure
         #[constant]
@@ -134,8 +135,8 @@ pub mod kernel {
             // the WASM code. Jake's hypothesis is that these two lines trigger
             // a reallocation of some kind (of the vector) that side-steps
             // whatever issue is occuring.
-            code.resize(code.len()+1,0);
             code.resize(code.len()-1,0);
+            code.resize(code.len()+1,0);
             code
         }
 
@@ -181,7 +182,7 @@ pub fn call() {
     let current_val = pwasm_ethereum::read(&H256(TEST_KERNEL_SYSCALL_TOGGLE_PTR));
 
     // TODO: Remove Toggling and replace current Kernel Interface with Standard Entry Procedure Interface
-    //
+    // See issue #181
     // If Toggled Run Entry Procedure
     // Once the entry procedure is toggled on, there is no existing mechanism to
     // turn it off.

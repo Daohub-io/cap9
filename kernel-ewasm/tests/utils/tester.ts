@@ -14,12 +14,12 @@ const http = require('http')
 
 // The tester class is an object for executing tests on the kernel.
 export class Tester {
-    entry_proc: TestContract;
+    entry_proc: TestContract = null;
     entry_proc_name: string;
     kernel: any;
     interface: any;
+    initial_balance: number = 0;
     constructor() {
-        this.entry_proc = null;
     }
 
     // Configure the entry procedure that will be used on first deployment of
@@ -38,7 +38,7 @@ export class Tester {
         }
         // Deploy the first entry procedure
         const firstEntry = await deployContract(this.entry_proc.name, this.entry_proc.abiName);
-        this.kernel = await newKernelInstance(this.entry_proc_name, firstEntry.address, this.entry_proc.caps);
+        this.kernel = await newKernelInstance(this.entry_proc_name, firstEntry.address, this.entry_proc.caps, this.initial_balance);
         // Here we make a copy of the entry procedure contract interface, but
         // change the address so that it's pointing at the kernel. This
         // means the web3 library will send a message crafted to be read by
@@ -143,6 +143,81 @@ export class Tester {
             assert(!success, "Call should not succeed");
             const new_entry_proc = await this.interface.methods.getEntry().call();
             assert.strictEqual(normalize(new_entry_proc), normalize(old_entry_proc), "The entry proc should remain the same");
+        }
+    }
+
+    // Delete a procedure. This assumes the current entry procedure for the
+    // kernel provides the following interface:
+    //
+    //    * fn deleteProc(&mut self, cap_idx: U256, key: H256);
+    //    * fn listProcs(&mut self) -> Vec<H256>;
+    //    * fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256,
+    //      U256);
+    //    * fn getNCaps(&mut self, key: H256) -> u64;
+    //
+    // This method will also execute tests to ensure that the registration
+    // occurs successfully.
+    async deleteTest(requestedCaps, procName, result) {
+        // This is the key of the procedure that we will be registering.
+        const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
+        // This is the index of the capability (in the procedures capability
+        // list) that we will be using to perform the writes.
+        const cap_index = 0;
+
+        const procList1 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+        // We then send that message via a call procedure syscall.
+        const message = this.interface.methods.deleteProc(cap_index, key).encodeABI();
+        if (result) {
+            // The transaction should succeed
+            assert(procList1.includes(normalize(web3.utils.fromAscii(procName,24))), "The procedure key should origianlly be included in the table");
+            const return_value = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: message });
+            const procList2 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+            assert.strictEqual(procList2.length, procList1.length - 1, "The number of procedures should have decreased by 1");
+            assert(!procList2.includes(normalize(web3.utils.fromAscii(procName,24))), "The procedure key should not be included in the table");
+        } else {
+            // The transaction should not succeed
+            let success;
+            try {
+                const return_value = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: message });
+                success = true;
+            } catch (e) {
+                success = false;
+            }
+            assert(!success, "Call should not succeed");
+            const procList2 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+            assert.strictEqual(procList2.length, procList1.length, "The number of procedures should not have changed");
+        }
+    }
+
+    // Call an external contract. This assumes the current entry procedure for
+    // the kernel provides the following interface:
+    //
+    //    * fn callExternal(&mut self, cap_idx: U256, address: Address, value:
+    //      U256, payload: Vec<u8>)
+    async externalCallTest(address, value, payload, result) {
+        const cap_index = 0;
+        const messageSend = this.interface.methods.callExternal(cap_index, address, value, payload).encodeABI();
+        const messageCall = this.interface.methods.callExternal(cap_index, address, 0, payload).encodeABI();
+        if (result) {
+            const balance1 = await web3.eth.getBalance(address);
+            const return_value = await web3.eth.call({ to: this.kernel.contract.address, data: messageCall });
+            const tx = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: messageSend });
+            const balance2 = await web3.eth.getBalance(address);
+            assert.strictEqual(normalize(balance2 - balance1), normalize(value), "Balance should have increased by the value parameter");
+            return return_value;
+        } else {
+            // The transaction should not succeed
+            let success;
+            const balance1 = await web3.eth.getBalance(address);
+            try {
+                const tx = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: messageSend });
+                success = true;
+            } catch (e) {
+                success = false;
+            }
+            const balance2 = await web3.eth.getBalance(address);
+            assert(!success, "Call should not succeed");
+            assert.strictEqual(normalize(balance2), normalize(balance1), "Balance should remained unchanged");
         }
     }
 

@@ -196,7 +196,6 @@ impl Deserialize<u8> for U256 {
 
     fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 32];
-        // TODO: check that enough bytes were read
         reader.read(&mut u8buf)?;
         Ok(u8buf.into())
     }
@@ -243,7 +242,6 @@ impl Deserialize<u8> for Address {
 
     fn deserialize<R: Read<u8>>(reader: &mut R) -> Result<Self, Self::Error> {
         let mut u8buf = [0u8; 32];
-        // TODO: check that enough bytes were read
         reader.read(&mut u8buf)?;
         let h: H256 = u8buf.into();
         Ok(h.into())

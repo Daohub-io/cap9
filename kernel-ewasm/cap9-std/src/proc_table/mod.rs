@@ -153,8 +153,7 @@ pub fn insert_proc(
 
     for new_cap in cap_list.iter() {
         let mut raw_val: Vec<U256> = Vec::new();
-        // TODO: consider using a separate Serialize that doesn't require move
-        new_cap.clone().cap.serialize(&mut raw_val).unwrap();
+        new_cap.cap.serialize(&mut raw_val).unwrap();
         let cap_type = new_cap.cap.cap_type();
 
         for (i, val) in raw_val.iter().enumerate() {
@@ -184,6 +183,7 @@ pub fn insert_proc(
 }
 
 /// Error on Procedure Removal
+#[derive(Debug)]
 pub enum ProcRemoveError {
     /// Procedure Id is not Used
     InvalidId = 2,
@@ -475,9 +475,6 @@ pub mod contract {
         /// Get Procedure Cap List Length By Id and Type
         fn get_proc_cap_list_len(&mut self, key: String, cap_type: U256) -> U256;
 
-        /// Get Procedure Capability by Id, Type and Index
-        // fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256>;
-
         /// Get Entry Procedure Id
         fn get_entry_proc_id(&mut self) -> String;
 
@@ -629,25 +626,6 @@ pub mod contract {
 
             U256::from(get_proc_cap_list_len(raw_key, cap_type.as_u32() as u8))
         }
-
-        // fn get_proc_cap(&mut self, key: String, cap_type: U256, cap_index: U256) -> Vec<U256> {
-        //     let raw_key = {
-        //         let byte_key = key.as_bytes();
-        //         let len = byte_key.len();
-        //         let mut output = [0u8; 24];
-        //         output[..len].copy_from_slice(byte_key);
-        //         output
-        //     };
-
-        //     let cap_type = cap_type.as_u32() as u8;
-        //     let cap_index = cap_index.as_u32() as u8;
-
-        //     if let Some(cap) = get_proc_cap(raw_key, cap_type, cap_index) {
-        //         cap.into_u256_list()
-        //     } else {
-        //         Vec::new()
-        //     }
-        // }
 
         fn get_entry_proc_id(&mut self) -> String {
             let id = get_entry_proc_id();

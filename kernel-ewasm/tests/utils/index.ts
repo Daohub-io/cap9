@@ -253,7 +253,7 @@ export async function deployContract(file_name: string, abi_name: string): Promi
     return contract;
 }
 
-export async function newKernelInstance(proc_key: string, proc_address: string, cap_list: NewCap[] = []): Promise<KernelInstance> {
+export async function newKernelInstance(proc_key: string, proc_address: string, cap_list: NewCap[] = [], initial_balance: number = 0): Promise<KernelInstance> {
     // Create Account
     const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
     const accounts = await web3.eth.personal.getAccounts();
@@ -272,7 +272,7 @@ export async function newKernelInstance(proc_key: string, proc_address: string, 
     const TokenDeployTransaction = KernelContract.deploy({ data: codeHex, arguments: [proc_key, proc_address, encoded_cap_list] });
     await web3.eth.personal.unlockAccount(accounts[0], "user", null);
     let gas = await TokenDeployTransaction.estimateGas();
-    let contract_tx = TokenDeployTransaction.send({ gasLimit: gas, from: account } as any);
+    let contract_tx = TokenDeployTransaction.send({ gasLimit: gas, from: account, value: initial_balance } as any);
     let tx_hash: string = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
     let tx_receipt = await web3.eth.getTransactionReceipt(tx_hash);
     let contract_addr = tx_receipt.contractAddress;
