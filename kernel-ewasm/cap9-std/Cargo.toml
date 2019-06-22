@@ -11,7 +11,7 @@ pwasm-abi = "0.2"
 cap9-core = {path = "../cap9-core", default-features = false}
 
 [dev-dependencies]
-pwasm-abi-derive = "0.2"
+pwasm-abi-derive = { git = "https://github.com/Daohub-io/pwasm-abi.git", branch = "json-payable-constructors" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cap9-test = { path = "../cap9-test" }

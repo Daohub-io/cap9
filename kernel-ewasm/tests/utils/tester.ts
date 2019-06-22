@@ -18,6 +18,7 @@ export class Tester {
     entry_proc_name: string;
     kernel: any;
     interface: any;
+    initial_balance: number = 0;
     constructor() {
     }
 
@@ -37,7 +38,7 @@ export class Tester {
         }
         // Deploy the first entry procedure
         const firstEntry = await deployContract(this.entry_proc.name, this.entry_proc.abiName);
-        this.kernel = await newKernelInstance(this.entry_proc_name, firstEntry.address, this.entry_proc.caps);
+        this.kernel = await newKernelInstance(this.entry_proc_name, firstEntry.address, this.entry_proc.caps, this.initial_balance);
         // Here we make a copy of the entry procedure contract interface, but
         // change the address so that it's pointing at the kernel. This
         // means the web3 library will send a message crafted to be read by
@@ -185,6 +186,38 @@ export class Tester {
             assert(!success, "Call should not succeed");
             const procList2 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
             assert.strictEqual(procList2.length, procList1.length, "The number of procedures should not have changed");
+        }
+    }
+
+    // Call an external contract. This assumes the current entry procedure for
+    // the kernel provides the following interface:
+    //
+    //    * fn callExternal(&mut self, cap_idx: U256, address: Address, value:
+    //      U256, payload: Vec<u8>)
+    async externalCallTest(address, value, payload, result) {
+        const cap_index = 0;
+        const messageSend = this.interface.methods.callExternal(cap_index, address, value, payload).encodeABI();
+        const messageCall = this.interface.methods.callExternal(cap_index, address, 0, payload).encodeABI();
+        if (result) {
+            const balance1 = await web3.eth.getBalance(address);
+            const return_value = await web3.eth.call({ to: this.kernel.contract.address, data: messageCall });
+            const tx = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: messageSend });
+            const balance2 = await web3.eth.getBalance(address);
+            assert.strictEqual(normalize(balance2 - balance1), normalize(value), "Balance should have increased by the value parameter");
+            return return_value;
+        } else {
+            // The transaction should not succeed
+            let success;
+            const balance1 = await web3.eth.getBalance(address);
+            try {
+                const tx = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: messageSend });
+                success = true;
+            } catch (e) {
+                success = false;
+            }
+            const balance2 = await web3.eth.getBalance(address);
+            assert(!success, "Call should not succeed");
+            assert.strictEqual(normalize(balance2), normalize(balance1), "Balance should remained unchanged");
         }
     }
 
