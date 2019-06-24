@@ -1,6 +1,7 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
 	"name": "Node.js (latest LTS)",
+	"image": "daohub/cap9:latest",
 	"dockerFile": "Dockerfile",
 
 	// Uncomment the next line if you want to publish any ports.

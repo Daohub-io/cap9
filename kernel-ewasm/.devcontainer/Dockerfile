@@ -50,6 +50,14 @@ ENV RUST_BACKTRACE 1
 # Install eslint
 RUN npm install -g eslint
 
+# Install Parity Fork
+RUN git clone --depth 1 https://github.com/Daohub-io/parity-ethereum.git /tmp/parity-ethereum && \
+    cd /tmp/parity-ethereum && \
+    git fetch --all && \
+    git checkout master && \
+    cargo install --bin parity -j 1 --path . --bin parity parity-ethereum && \
+    cd $HOME
+
 # Clean up
 RUN apt-get autoremove -y \
     && apt-get clean -y \
