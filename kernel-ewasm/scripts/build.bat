@@ -45,4 +45,9 @@ cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\rel
 cargo run --package cap9-build -- set-mem --pages 4 .\target\wasm32-unknown-unknown\release\account_call_test.wasm .\target\wasm32-unknown-unknown\release\account_call_test.wasm
 wasm-build --target=wasm32-unknown-unknown .\target account_call_test
 
+
+cargo run --package cap9-build -- build-proc .\target\wasm32-unknown-unknown\release\acl.wasm .\target\wasm32-unknown-unknown\release\acl.wasm
+cargo run --package cap9-build -- set-mem --pages 4 .\target\wasm32-unknown-unknown\release\acl.wasm .\target\wasm32-unknown-unknown\release\acl.wasm
+wasm-build --target=wasm32-unknown-unknown .\target acl
+
 wasm-build --target=wasm32-unknown-unknown .\target external_contract

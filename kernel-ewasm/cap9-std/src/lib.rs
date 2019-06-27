@@ -333,15 +333,57 @@ impl<T: From<Vec<H256>> + Into<Vec<H256>>> BigMap<T> {
         self.location
     }
 
+    // fn base_key(&self, key: u8) -> H256 {
+    //     // base is simply a zeroed array in which we will store each piece of
+    //     // info with the correct alignment.
+    //     let mut key_mask [u8; 32] = [0; 32];
+    //     // The key starts at 255 - value_bits - key bits.
+    //     let key_start = 256 - self.value_bits - self.key_bits;
+    //     let
+    //     // key_mask[key_start..=(key_start+self.key_bits)].copy_from_slice();
+    //     // key_mask[0..key_start].copy_from_slice();
+    //     // let mut base = self.location.clone().to_fixed_bytes();
+    //     // base[31] = key;
+    //     // base.into()
+    // }
+
+    fn presence_key(&self, key: u8) -> H256 {
+        // The presence_key is the storage key which indicates whether there is a
+        // value associated with this key.
+        let mut base = self.location.clone().to_fixed_bytes();
+        base[30] = key;
+        let mut presence_key = base.clone();
+        presence_key[29] = 0;
+        // For now this is fixed. The first 246-bits are determined by the
+        // location. The next bit [246] is the presence/value bit. Then 8 bits [247,254]
+        // are the key. The last bit [255] is for the value.
+        presence_key.into()
+    }
+
+    pub fn present(&self, key: u8) -> bool {
+        // If the value at the presence key is non-zero, then a value is
+        // present.
+        let present = pwasm_ethereum::read(&self.presence_key(key));
+        (present[29] & 0b00000001) != 0
+    }
+
+    fn set_present(&self, key: u8) {
+        // If the value at the presence key is non-zero, then a value is
+        // present.
+        let mut present = pwasm_ethereum::read(&self.presence_key(key));
+        present[29] = present[29] | 0b00000001;
+        pwasm_ethereum::write(&self.presence_key(key), &present);
+    }
+
     pub fn get(&self, key: u8) -> Option<T> {
         // First question: Is there a value associated with this key?
         //
-        // The presenc_key is the storage key which indicates whether there is a
+        // The presence_key is the storage key which indicates whether there is a
         // value associated with this key.
         let mut base = self.location.clone().to_fixed_bytes();
-        base[31] = key;
+        base[30] = key;
         let mut presence_key = base.clone();
-        presence_key[30] = 0;
+        presence_key[29] = 0;
         // For now this is fixed. The first 246-bits are determined by the
         // location. The next bit [246] is the presence/value bit. Then 8 bits [247,254]
         // are the key. The last bit [255] is for the value.
@@ -351,7 +393,6 @@ impl<T: From<Vec<H256>> + Into<Vec<H256>>> BigMap<T> {
         } else {
             let mut vals: Vec<H256> = Vec::with_capacity(self.value_size as usize);
             for _ in 0..self.value_size {
-                // TODO: increment position
                 base[31] = base[31] + 1;
                 vals.push(pwasm_ethereum::read(&base.into()).into());
             }
@@ -361,19 +402,32 @@ impl<T: From<Vec<H256>> + Into<Vec<H256>>> BigMap<T> {
 
     pub fn insert(&mut self, key: u8, value: T) {
         let mut base = self.location.clone().to_fixed_bytes();
-        base[31] = key;
+        base[30] = key;
         let mut presence_key = base.clone();
-        presence_key[30] = 0;
+        presence_key[29] = 0;
         // For now this is fixed. The first 246-bits are determined by the
         // location. The next bit [246] is the presence/value bit. Then 8 bits [247,254]
         // are the key. The last bit [255] is for the value.
-        pwasm_ethereum::write(&presence_key.into(), &[1;32]);
+        self.set_present(key);
         let vals: Vec<H256> = value.into();
         for val in vals {
-            // TODO: increment position
             base[31] = base[31] + 1;
             pwasm_ethereum::write(&base.into(), &val.into());
         }
+    }
+}
+
+impl From<Vec<H256>> for SysCallProcedureKey {
+        fn from(h: Vec<H256>) -> Self {
+            h[0].into()
+        }
+    }
+
+impl Into<Vec<H256>> for SysCallProcedureKey {
+    fn into(self) -> Vec<H256> {
+        let mut res = Vec::with_capacity(1);
+        res.push(self.into());
+        res
     }
 }
 
@@ -391,9 +445,6 @@ mod test {
 
     impl From<Vec<H256>> for ExampleData {
         fn from(h: Vec<H256>) -> Self {
-            // let mut proc_id: proc_table::ProcedureKey = [0; 24];
-            // proc_id.copy_from_slice(&h.as_bytes()[8..32]);
-            // SysCallProcedureKey(proc_id)
             ExampleData {
                 key_v1: h[0],
                 key_v2: h[1],
