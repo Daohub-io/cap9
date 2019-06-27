@@ -254,3 +254,189 @@ pub fn acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) 
     syscall.serialize(&mut input).unwrap();
     cap9_syscall(&input, &mut Vec::new())
 }
+
+use core::marker::PhantomData;
+
+/// This is a Cap9 map. The way Solidity maps and Cap9 caps work are not
+/// compatible, as Cap9 uses contigous storage blocks in the caps. It is
+/// _generally_ expected that caps will be used in such a way that they are
+/// non-overlapping (although possibly shared). This means that key-size is
+/// relevant in a map that we create. This map does not do any hashing, and if a
+/// hashmap is desired that should be abstracted. This map associates one key of
+/// a fixed size, with a number of 32-byte values in storage.
+///
+/// This structure makes sense when the keys are not sparse. That is: when the
+/// number of used keys is within a few orders of maginitude of the number of
+/// possible keys. This will only really occur when the keys are small. A good
+/// example of this is an group permission map where each group id is only
+/// 8-bits.
+///
+/// The values of this struct are intentionally private.
+///
+/// The value type must implement to/from Vec<H256>.
+pub struct BigMap<T> {
+    /// The size of the key in bits.
+    key_bits: u8,
+    /// The number of 32-byte values associated with each key in bits.
+    ///
+    ///  By "in bits" we mean the number of bits necessary to provide space for
+    /// each value. This means that for a single 32-byte value, the number of
+    /// bits required is 0. For a data type of 5 32-byte values the number of
+    /// bits is 3, even though this could store up to
+    ///
+    value_bits: u8,
+    /// The number of 32-byte values used for this data type. Must fit within
+    /// value_bits.
+    ///
+    /// This is currently limited to a 32-bit number. Even though it could
+    /// technically be 255 bits, value of that size would not be practical on
+    /// Ethereum, and using a 32-bit number has more programming language
+    /// support. Using 32-bit values also gives as very simple soundness
+    /// properties that are useful at this stage (e.g. converts cleanly to f64).
+    value_size: u32,
+    /// The start location of the map.
+    location: H256,
+    /// The data type of the map
+    data_type: PhantomData<T>,
+}
+
+impl<T: From<Vec<H256>> + Into<Vec<H256>>> BigMap<T> {
+
+    // TODO: currently this accepts kernel space locations.
+    pub fn new(key_bits: u8, value_size: u32, location: H256) -> Self {
+        // This casts the log2 of the value size to u8. value_size is a u32, and
+        // therefore the log2 of it will always fit inside a u8. See test:
+        // log2_u32() for a demonstration of this.
+        let value_bits = f64::from(value_size).log2().ceil() as u8;
+        BigMap {
+            key_bits,
+            value_size,
+            value_bits,
+            location,
+            data_type: PhantomData,
+        }
+    }
+
+    pub fn key_bits(&self) -> u8 {
+        self.key_bits
+    }
+
+    pub fn value_bits(&self) -> u8 {
+        self.value_bits
+    }
+
+    pub fn value_size(&self) -> u32 {
+        self.value_size
+    }
+
+    pub fn location(&self) -> H256 {
+        self.location
+    }
+
+    pub fn get(&self, key: u8) -> Option<T> {
+        // First question: Is there a value associated with this key?
+        //
+        // The presenc_key is the storage key which indicates whether there is a
+        // value associated with this key.
+        let mut base = self.location.clone().to_fixed_bytes();
+        base[31] = key;
+        let mut presence_key = base.clone();
+        presence_key[30] = 0;
+        // For now this is fixed. The first 246-bits are determined by the
+        // location. The next bit [246] is the presence/value bit. Then 8 bits [247,254]
+        // are the key. The last bit [255] is for the value.
+        let present = pwasm_ethereum::read(&presence_key.into());
+        if present == [0; 32] {
+            None
+        } else {
+            let mut vals: Vec<H256> = Vec::with_capacity(self.value_size as usize);
+            for _ in 0..self.value_size {
+                // TODO: increment position
+                base[31] = base[31] + 1;
+                vals.push(pwasm_ethereum::read(&base.into()).into());
+            }
+            Some(vals.into())
+        }
+    }
+
+    pub fn insert(&mut self, key: u8, value: T) {
+        let mut base = self.location.clone().to_fixed_bytes();
+        base[31] = key;
+        let mut presence_key = base.clone();
+        presence_key[30] = 0;
+        // For now this is fixed. The first 246-bits are determined by the
+        // location. The next bit [246] is the presence/value bit. Then 8 bits [247,254]
+        // are the key. The last bit [255] is for the value.
+        pwasm_ethereum::write(&presence_key.into(), &[1;32]);
+        let vals: Vec<H256> = value.into();
+        for val in vals {
+            // TODO: increment position
+            base[31] = base[31] + 1;
+            pwasm_ethereum::write(&base.into(), &val.into());
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use pwasm_abi::types::*;
+    use super::*;
+
+    #[derive(Debug,Clone,PartialEq)]
+    struct ExampleData {
+        key_v1: H256,
+        key_v2: H256,
+    }
+
+
+    impl From<Vec<H256>> for ExampleData {
+        fn from(h: Vec<H256>) -> Self {
+            // let mut proc_id: proc_table::ProcedureKey = [0; 24];
+            // proc_id.copy_from_slice(&h.as_bytes()[8..32]);
+            // SysCallProcedureKey(proc_id)
+            ExampleData {
+                key_v1: h[0],
+                key_v2: h[1],
+            }
+        }
+    }
+
+    impl Into<Vec<H256>> for ExampleData {
+        fn into(self) -> Vec<H256> {
+            let mut res = Vec::with_capacity(2);
+            res.push(self.key_v1);
+            res.push(self.key_v2);
+            res
+        }
+    }
+
+    #[test]
+    fn new_big_map() {
+        let location: H256 = [
+            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+        ].into();
+        let mut map: BigMap<ExampleData> = BigMap::new(8, 5, location);
+        assert_eq!(map.key_bits(), 8);
+        assert_eq!(map.value_size(), 5);
+        assert_eq!(map.value_bits(), 3);
+        assert_eq!(map.location(), location);
+        assert_eq!(map.get(1), None);
+        let example = ExampleData {
+            key_v1: H256::repeat_byte(0xdd),
+            key_v2: H256::repeat_byte(0xee),
+        };
+        map.insert(1, example.clone());
+        assert_eq!(map.get(1), Some(example));
+    }
+
+    /// A sanity check to show that log2 of any u32 is less than 255, and will
+    /// therefore fit inside a u8, even when rounded up.
+    #[test]
+    fn log2_u32() {
+        let value_bits = (f64::from(u32::max_value())).log2();
+        assert!(value_bits < 255_f64);
+    }
+}
