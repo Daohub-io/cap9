@@ -16,7 +16,10 @@ describe('Access Control List', function () {
             const cap_key = "write";
             const entryCaps = [
                 new NewCap(0, new RegisterCap(prefix, cap_key)),
-                new NewCap(0, new WriteCap(0x8000, 2)),
+                new NewCap(0, new WriteCap(
+                    web3.utils.hexToBytes("0xaa00000000000000000000000000000000000000000000000000000000000000"),
+                    web3.utils.hexToBytes("0xffffff0000000000000000000000000000000000000000000000000000000000"),
+                )),
                 new NewCap(0, new EntryCap()),
             ];
             tester.setFirstEntry("init", new TestContract("acl", "TestACLInterface", entryCaps));

@@ -256,12 +256,12 @@ pub fn acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) 
 }
 pub trait Keyable {
     /// The width of the key in bytes.
-    fn key_width(&self) -> u8;
+    fn key_width() -> u8;
     fn key_slice(&self) -> Vec<u8>;
 }
 
 impl Keyable for u8 {
-    fn key_width(&self) -> u8 {
+    fn key_width() -> u8 {
         1
     }
 
@@ -273,7 +273,7 @@ impl Keyable for u8 {
 }
 
 impl Keyable for Address {
-    fn key_width(&self) -> u8 {
+    fn key_width() -> u8 {
         20
     }
 
@@ -348,16 +348,41 @@ pub struct BigMap<K,V> {
 
 impl<K: Keyable, V: Storable> BigMap<K,V> {
 
-    // TODO: currently this accepts kernel space locations.
-    pub fn new(key_bits: u8, value_size: u32, location: H256) -> Self {
+    // The location is dictated by the capability. A more specific location will
+    // simply require a more specific capability. This means the procedure needs
+    // to access capability data.
+    pub fn new(key_bits: u8, value_size: u32, cap_index: u8) -> Self {
         // This casts the log2 of the value size to u8. value_size is a u32, and
         // therefore the log2 of it will always fit inside a u8. See test:
         // log2_u32() for a demonstration of this.
         let value_bits = f64::from(value_size).log2().ceil() as u8;
-        BigMap {
-            location,
-            key_type: PhantomData,
-            data_type: PhantomData,
+        // Here we need to check that the capability is sufficient, otherwise we
+        // will throw an error. This will depend on the key size as well.
+        //
+        // The size of the cap needs to be key_width+1 in bytes
+        let address_bytes = K::key_width()+1;
+        let address_bits = address_bytes*8;
+        let address_size = U256::from(2).pow(U256::from(address_bits));
+        // The address also need to be aligned.
+        let this_proc_key = proc_table::get_current_proc_id();
+        if let Some(proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size})) =
+            // panic!("here");
+                proc_table::get_proc_cap(this_proc_key, proc_table::cap::CAP_STORE_WRITE, cap_index) {
+                    // Check that the size of the cap is correct.
+                    if U256::from(size) < address_size {
+                        panic!("cap too small")
+                    } else if U256::from(location).trailing_zeros() < address_bits as u32 {
+                        // the trailing number of 0 bits should be equal to or greater than the address_bits
+                        panic!("cap not aligned: {}-{}", U256::from(location).trailing_zeros(), address_bits)
+                    } else {
+                        BigMap {
+                            location: location.into(),
+                            key_type: PhantomData,
+                            data_type: PhantomData,
+                        }
+                    }
+        } else {
+            panic!("wrong cap: {:?}", this_proc_key)
         }
     }
 
@@ -368,11 +393,11 @@ impl<K: Keyable, V: Storable> BigMap<K,V> {
     fn base_key(&self, key: &K) -> [u8; 32] {
         let mut base: [u8; 32] = [0; 32];
         // The key start 32 - width - 1, the -1 is for data and presence
-        let key_start = 32 - key.key_width() as usize - 1;
+        let key_start = 32 - K::key_width() as usize - 1;
         // First we copy in the relevant parts of the location.
         base[0..key_start].copy_from_slice(&self.location().as_bytes()[0..key_start]);
         // Then we copy in the key
-        base[key_start..(key_start+key.key_width() as usize)].clone_from_slice(key.key_slice().as_slice());
+        base[key_start..(key_start+K::key_width() as usize)].clone_from_slice(key.key_slice().as_slice());
         base
     }
 
@@ -419,11 +444,6 @@ impl<K: Keyable, V: Storable> BigMap<K,V> {
 
     pub fn insert(&mut self, key: K, value: V) {
         let mut base = self.base_key(&key);
-        let mut presence_key = base.clone();
-        presence_key[29] = 0;
-        // For now this is fixed. The first 246-bits are determined by the
-        // location. The next bit [246] is the presence/value bit. Then 8 bits [247,254]
-        // are the key. The last bit [255] is for the value.
         self.set_present(key);
         let vals: Vec<H256> = value.store();
         for val in vals {
@@ -462,14 +482,30 @@ mod test {
 
     #[test]
     fn new_big_map() {
-        let location: H256 = [
+        let location: [u8; 32] = [
+            0xaa, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        let proc_key: [u8; 24] = [
             0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
             0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
             0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
-            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
-        ].into();
-        let mut map: BigMap<u8,ExampleData> = BigMap::new(8, 5, location);
-        assert_eq!(map.location(), location);
+        ];
+        proc_table::set_current_proc_id(proc_key).unwrap();
+        let this_proc_key = proc_table::get_current_proc_id();
+        let mut cap_list = Vec::new();
+        cap_list.push(proc_table::cap::NewCapability {
+            cap: proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {
+                location,
+                size: [0xff; 32],
+            }),
+            parent_index: 0,
+        });
+        proc_table::insert_proc(this_proc_key, Address::zero(), proc_table::cap::NewCapList(cap_list)).unwrap();
+        let mut map: BigMap<u8,ExampleData> = BigMap::new(8, 5, 0);
+        assert_eq!(map.location(), location.into());
         assert_eq!(map.get(1), None);
         let example = ExampleData {
             key_v1: H256::repeat_byte(0xdd),
@@ -481,19 +517,35 @@ mod test {
 
     #[test]
     fn new_big_address() {
-        let location: H256 = [
-            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
-            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
-            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
-            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
-        ].into();
+        let location: [u8; 32] = [
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
         let example_address = Address::from_slice(&[
             0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc,
             0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc,
             0xcc, 0xcc, 0xcc, 0xcc,
         ]);
-        let mut map: BigMap<Address,ExampleData> = BigMap::new(8, 5, location);
-        assert_eq!(map.location(), location);
+        let proc_key: [u8; 24] = [
+            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+            0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+        ];
+        proc_table::set_current_proc_id(proc_key).unwrap();
+        let this_proc_key = proc_table::get_current_proc_id();
+        let mut cap_list = Vec::new();
+        cap_list.push(proc_table::cap::NewCapability {
+            cap: proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {
+                location,
+                size: [0xff; 32],
+            }),
+            parent_index: 0,
+        });
+        proc_table::insert_proc(this_proc_key, Address::zero(), proc_table::cap::NewCapList(cap_list)).unwrap();
+        let mut map: BigMap<Address,ExampleData> = BigMap::new(8, 5, 0);
+        assert_eq!(map.location(), location.into());
         assert_eq!(map.get(example_address), None);
         let example = ExampleData {
             key_v1: H256::repeat_byte(0xdd),

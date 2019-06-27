@@ -57,7 +57,7 @@ pub mod ACL {
                 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
                 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
             ].into();
-            let mut procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(8, 1, location);
+            let mut procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(8, 1, 0);
             procecedure_map.insert(group_id.as_u32() as u8, proc_key.into());
         }
 
@@ -71,7 +71,7 @@ pub mod ACL {
                 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
                 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
             ].into();
-            let mut procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(8, 1, location);
+            let mut procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(8, 1, 0);
             match procecedure_map.get(group_id.as_u32() as u8) {
                 Some(x) => x.into(),
                 None => H256::zero(),
@@ -85,7 +85,7 @@ pub mod ACL {
                 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
                 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
             ].into();
-            let mut procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(8, 1, location);
+            let mut procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(8, 1, 0);
             procecedure_map.insert(account, group_id.as_u32() as u8);
         }
 
@@ -96,7 +96,7 @@ pub mod ACL {
                 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
                 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
             ].into();
-            let mut procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(8, 1, location);
+            let mut procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(8, 1, 0);
             match procecedure_map.get(account) {
                 Some(x) => x.into(),
                 None => U256::zero(),
