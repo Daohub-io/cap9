@@ -55,7 +55,7 @@ pub mod writer {
         }
 
         fn callProc(&mut self, cap_idx: U256, key: H256, payload: Vec<u8>) {
-            cap9_std::raw_proc_call(cap_idx.as_u32() as u8, key.into(), payload).unwrap();
+            cap9_std::call(cap_idx.as_u32() as u8, key.into(), payload).unwrap();
             pwasm_ethereum::ret(&cap9_std::result());
         }
 

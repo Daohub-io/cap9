@@ -57,7 +57,7 @@ pub mod writer {
         }
 
         fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>) {
-            cap9_std::raw_proc_reg(cap_idx.as_u32() as u8, key.into(), address, cap_list).unwrap();
+            cap9_std::reg(cap_idx.as_u32() as u8, key.into(), address, cap_list).unwrap();
             pwasm_ethereum::ret(&cap9_std::result());
         }
 

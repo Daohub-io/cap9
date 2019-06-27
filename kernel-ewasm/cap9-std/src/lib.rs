@@ -14,6 +14,9 @@ pub mod proc_table;
 pub mod syscalls;
 pub use syscalls::*;
 
+// Re-export pwasm::Vec as the Vec type for cap9_std
+pub use pwasm_std::Vec;
+
 // When we are compiling to WASM, unresolved references are left as (import)
 // expressions. However, under any other target symbols will have to be linked
 // for EVM functions (blocknumber, create, etc.). Therefore, when we are not
@@ -177,7 +180,7 @@ pub fn cap9_syscall(input: &[u8], result: &mut [u8]) -> Result<(), Error> {
     }
 }
 
-pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
+pub fn write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
     let mut input = Vec::with_capacity(1 + 1 + 32 + 32);
     let syscall = SysCall {
         cap_index,
@@ -187,7 +190,7 @@ pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u8>) -> Result<(), Error> {
+pub fn call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u8>) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {
         cap_index,
@@ -197,7 +200,7 @@ pub fn raw_proc_call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<(), Error> {
+pub fn log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<(), Error> {
     let mut input: Vec<u8> = Vec::new();
     let syscall = SysCall {
         cap_index,
@@ -207,7 +210,7 @@ pub fn raw_proc_log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_reg(cap_index: u8, proc_id: SysCallProcedureKey, address: Address, cap_list: Vec<H256>) -> Result<(), Error> {
+pub fn reg(cap_index: u8, proc_id: SysCallProcedureKey, address: Address, cap_list: Vec<H256>) -> Result<(), Error> {
     let mut input = Vec::new();
     let u256_list: Vec<U256> = cap_list.iter().map(|x| x.into()).collect();
     let cap_list = proc_table::cap::NewCapList::from_u256_list(&u256_list).unwrap();
@@ -219,7 +222,7 @@ pub fn raw_proc_reg(cap_index: u8, proc_id: SysCallProcedureKey, address: Addres
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_delete(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
+pub fn delete(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {
         cap_index,
@@ -229,7 +232,7 @@ pub fn raw_proc_delete(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<()
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_entry(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
+pub fn entry(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {
         cap_index,
@@ -238,7 +241,7 @@ pub fn raw_proc_entry(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(),
     syscall.serialize(&mut input).unwrap();
     cap9_syscall(&input, &mut Vec::new())
 }
-pub fn raw_proc_acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) -> Result<(), Error> {
+pub fn acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {
         cap_index,

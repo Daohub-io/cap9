@@ -40,7 +40,7 @@ pub mod entry {
         }
 
         fn callExternal(&mut self, cap_idx: U256, address: Address, value: U256, payload: Vec<u8>) {
-            cap9_std::raw_proc_acc_call(cap_idx.as_u32() as u8, address, value, payload).unwrap();
+            cap9_std::acc_call(cap_idx.as_u32() as u8, address, value, payload).unwrap();
             pwasm_ethereum::ret(&cap9_std::result());
         }
 
