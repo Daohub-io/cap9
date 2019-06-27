@@ -10,7 +10,7 @@ import { notEqual } from 'assert';
 describe('Access Control List', function () {
     this.timeout(40_000);
     describe('test map', function () {
-        it('call the external contract', async function () {
+        it('set and retrieve values', async function () {
             const tester = new Tester();
             const prefix = 192;
             const cap_key = "write";
@@ -26,6 +26,10 @@ describe('Access Control List', function () {
             await tester.interface.methods.set_group_procedure(5, proc_key).send();
             const return_value = await tester.interface.methods.get_group_procedure(5).call();
             assert.strictEqual(normalize(proc_key), normalize(return_value), "The procedure name should be correctly set");
+
+            await tester.interface.methods.set_account_group(tester.kernel.contract.address, 8).send();
+            const group_value = await tester.interface.methods.get_account_group(tester.kernel.contract.address).call();
+            assert.strictEqual(normalize(8), normalize(group_value), "The group number should be correctly set");
         })
     })
 })

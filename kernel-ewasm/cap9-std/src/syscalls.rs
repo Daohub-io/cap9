@@ -593,6 +593,13 @@ impl Into<H256> for SysCallProcedureKey {
     }
 }
 
+impl Into<H256> for &SysCallProcedureKey {
+    fn into(self) -> H256 {
+        let mut proc_id_u256: [u8; 32] = [0; 32];
+        proc_id_u256[8..32].copy_from_slice(&self.0);
+        proc_id_u256.into()
+    }
+}
 
 impl From<ProcedureKey> for SysCallProcedureKey {
     fn from(proc_id: ProcedureKey) -> Self {

@@ -35,6 +35,10 @@ pub mod ACL {
 
         fn get_group_procedure(&mut self, group_id: U256) -> H256;
 
+        fn set_account_group(&mut self, account: Address, group_id: U256);
+
+        fn get_account_group(&mut self, account: Address) -> U256;
+
     }
 
     pub struct ACLContract;
@@ -53,7 +57,7 @@ pub mod ACL {
                 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
                 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
             ].into();
-            let mut procecedure_map: cap9_std::BigMap<cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(8, 1, location);
+            let mut procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(8, 1, location);
             procecedure_map.insert(group_id.as_u32() as u8, proc_key.into());
         }
 
@@ -67,10 +71,35 @@ pub mod ACL {
                 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
                 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
             ].into();
-            let mut procecedure_map: cap9_std::BigMap<cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(8, 1, location);
+            let mut procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(8, 1, location);
             match procecedure_map.get(group_id.as_u32() as u8) {
                 Some(x) => x.into(),
                 None => H256::zero(),
+            }
+        }
+
+        fn set_account_group(&mut self, account: Address, group_id: U256) {
+            let location: H256 = [
+                0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
+                0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
+                0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
+                0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
+            ].into();
+            let mut procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(8, 1, location);
+            procecedure_map.insert(account, group_id.as_u32() as u8);
+        }
+
+        fn get_account_group(&mut self, account: Address) -> U256 {
+            let location: H256 = [
+                0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
+                0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
+                0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
+                0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb,
+            ].into();
+            let mut procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(8, 1, location);
+            match procecedure_map.get(account) {
+                Some(x) => x.into(),
+                None => U256::zero(),
             }
         }
     }
