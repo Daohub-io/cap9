@@ -395,6 +395,7 @@ impl<K: Keyable, V: Storable> BigMap<K,V> {
         // First we copy in the relevant parts of the location.
         base[0..key_start].copy_from_slice(&self.location().as_bytes()[0..key_start]);
         // Then we copy in the key
+        // TODO: overflow
         base[key_start..(key_start+K::key_width() as usize)].clone_from_slice(key.key_slice().as_slice());
         base
     }
