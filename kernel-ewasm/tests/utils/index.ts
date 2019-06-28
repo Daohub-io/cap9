@@ -13,7 +13,7 @@ type BN = typeof BN;
 // Get BuildPath
 const TARGET_PATH = path.resolve(process.cwd(), './target');
 // Get Dev Chain Config
-const CHAIN_CONFIG = require(path.resolve(process.cwd(), './wasm-dev-chain.json'));
+export const CHAIN_CONFIG = require(path.resolve(process.cwd(), './wasm-dev-chain.json'));
 // Web3 Config
 const WEB3_OPTIONS = {
     transactionConfirmationBlocks: 1
@@ -211,7 +211,7 @@ export function createAccount(name, password): Promise<string> {
                 chunk += data;
             });
             res.on('end', () => {
-                resolve(chunk);
+                resolve(JSON.parse(chunk).result);
             });
             res.on('error', reject);
         });
@@ -230,7 +230,7 @@ export async function deployContract(file_name: string, abi_name: string): Promi
     if (accounts.length == 0)
         throw `Got zero accounts`;
 
-    const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
+    const account = web3.utils.toChecksumAddress(newAccount, web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
     web3.eth.defaultAccount = account;
 
     // read JSON ABI
@@ -241,7 +241,7 @@ export async function deployContract(file_name: string, abi_name: string): Promi
     const Contract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 } as any);
     const DeploymentTx = Contract.deploy({ data: codeHex });
 
-    await web3.eth.personal.unlockAccount(accounts[0], DEFAULT_ACCOUNT.PASSWORD, null);
+    await web3.eth.personal.unlockAccount(account, DEFAULT_ACCOUNT.PASSWORD, null);
     let gas = await DeploymentTx.estimateGas();
     let contract_tx = DeploymentTx.send({ gasLimit: gas, from: account } as any);
     let tx_hash: string = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
@@ -259,9 +259,8 @@ export async function newKernelInstance(proc_key: string, proc_address: string, 
     const accounts = await web3.eth.personal.getAccounts();
     if (accounts.length == 0)
         throw `Got zero accounts`;
-    const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
+    const account = web3.utils.toChecksumAddress(newAccount, web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
     web3.eth.defaultAccount = account;
-
     const abi = KERNEL_WASM_ABI
     const codeHex = KERNEL_WASM
 
@@ -270,7 +269,7 @@ export async function newKernelInstance(proc_key: string, proc_address: string, 
 
     const KernelContract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 } as any);
     const TokenDeployTransaction = KernelContract.deploy({ data: codeHex, arguments: [proc_key, proc_address, encoded_cap_list] });
-    await web3.eth.personal.unlockAccount(accounts[0], "user", null);
+    await web3.eth.personal.unlockAccount(account, DEFAULT_ACCOUNT.PASSWORD, null);
     let gas = await TokenDeployTransaction.estimateGas();
     let contract_tx = TokenDeployTransaction.send({ gasLimit: gas, from: account, value: initial_balance } as any);
     let tx_hash: string = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
