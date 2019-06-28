@@ -232,7 +232,8 @@ pub fn call() {
             if cap_ok {
                 syscall.execute();
             } else {
-                panic!("Bad cap");
+                // TODO: implement revert
+                pwasm_ethereum::ret(&[]);
             }
             pwasm_ethereum::ret(&result());
         }

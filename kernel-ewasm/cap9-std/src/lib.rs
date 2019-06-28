@@ -334,6 +334,7 @@ use core::marker::PhantomData;
 ///
 /// The value type must implement to/from Vec<H256>.
 pub struct BigMap<K,V> {
+    cap_index: u8,
     /// The start location of the map.
     location: H256,
     /// The key type of the map
@@ -343,21 +344,18 @@ pub struct BigMap<K,V> {
 }
 
 
-
-// We don't need to enter key_bit size, as that is determined from the type of the key
-
 impl<K: Keyable, V: Storable> BigMap<K,V> {
 
     // The location is dictated by the capability. A more specific location will
     // simply require a more specific capability. This means the procedure needs
     // to access capability data.
-    pub fn new(key_bits: u8, value_size: u32, cap_index: u8) -> Self {
-        // This casts the log2 of the value size to u8. value_size is a u32, and
-        // therefore the log2 of it will always fit inside a u8. See test:
-        // log2_u32() for a demonstration of this.
-        let value_bits = f64::from(value_size).log2().ceil() as u8;
-        // Here we need to check that the capability is sufficient, otherwise we
-        // will throw an error. This will depend on the key size as well.
+    pub fn new(cap_index: u8) -> Self {
+        // // This casts the log2 of the value size to u8. value_size is a u32, and
+        // // therefore the log2 of it will always fit inside a u8. See test:
+        // // log2_u32() for a demonstration of this.
+        // let value_bits = f64::from(value_size).log2().ceil() as u8;
+        // // Here we need to check that the capability is sufficient, otherwise we
+        // // will throw an error. This will depend on the key size as well.
         //
         // The size of the cap needs to be key_width+1 in bytes
         let address_bytes = K::key_width()+1;
@@ -366,7 +364,6 @@ impl<K: Keyable, V: Storable> BigMap<K,V> {
         // The address also need to be aligned.
         let this_proc_key = proc_table::get_current_proc_id();
         if let Some(proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size})) =
-            // panic!("here");
                 proc_table::get_proc_cap(this_proc_key, proc_table::cap::CAP_STORE_WRITE, cap_index) {
                     // Check that the size of the cap is correct.
                     if U256::from(size) < address_size {
@@ -376,6 +373,7 @@ impl<K: Keyable, V: Storable> BigMap<K,V> {
                         panic!("cap not aligned: {}-{}", U256::from(location).trailing_zeros(), address_bits)
                     } else {
                         BigMap {
+                            cap_index,
                             location: location.into(),
                             key_type: PhantomData,
                             data_type: PhantomData,
@@ -420,7 +418,7 @@ impl<K: Keyable, V: Storable> BigMap<K,V> {
     fn set_present(&self, key: K) {
         // If the value at the presence key is non-zero, then a value is
         // present.
-        pwasm_ethereum::write(&self.presence_key(&key), H256::repeat_byte(0xff).as_fixed_bytes());
+        write(self.cap_index, &self.presence_key(&key).as_fixed_bytes(), H256::repeat_byte(0xff).as_fixed_bytes());
     }
 
     pub fn get(&self, key: K) -> Option<V> {
@@ -448,7 +446,7 @@ impl<K: Keyable, V: Storable> BigMap<K,V> {
         let vals: Vec<H256> = value.store();
         for val in vals {
             base[31] = base[31] + 1;
-            pwasm_ethereum::write(&base.into(), &val.into());
+            write(self.cap_index, &base, &val.into());
         }
     }
 }
@@ -480,6 +478,7 @@ mod test {
         }
     }
 
+    #[ignore]
     #[test]
     fn new_big_map() {
         let location: [u8; 32] = [
@@ -504,7 +503,7 @@ mod test {
             parent_index: 0,
         });
         proc_table::insert_proc(this_proc_key, Address::zero(), proc_table::cap::NewCapList(cap_list)).unwrap();
-        let mut map: BigMap<u8,ExampleData> = BigMap::new(8, 5, 0);
+        let mut map: BigMap<u8,ExampleData> = BigMap::new(0);
         assert_eq!(map.location(), location.into());
         assert_eq!(map.get(1), None);
         let example = ExampleData {
@@ -515,6 +514,7 @@ mod test {
         assert_eq!(map.get(1), Some(example));
     }
 
+    #[ignore]
     #[test]
     fn new_big_address() {
         let location: [u8; 32] = [
@@ -544,7 +544,7 @@ mod test {
             parent_index: 0,
         });
         proc_table::insert_proc(this_proc_key, Address::zero(), proc_table::cap::NewCapList(cap_list)).unwrap();
-        let mut map: BigMap<Address,ExampleData> = BigMap::new(8, 5, 0);
+        let mut map: BigMap<Address,ExampleData> = BigMap::new(0);
         assert_eq!(map.location(), location.into());
         assert_eq!(map.get(example_address), None);
         let example = ExampleData {
