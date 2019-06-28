@@ -186,9 +186,24 @@ impl SysCallAction {
                 if let Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size}) = cap {
                     let location_u256: U256 = location.into();
                     let size_u256: U256 = size.into();
-                    if (key >= &location_u256) && (key <= &(location_u256 + size_u256)) {
-                        return true;
+                    // We split this up into a few steps rather than an elegant
+                    // expression because we need to do thorough over/underflow
+                    // checking, which is more clear when written in this way.
+
+                    // If the location is below the given key, return false.
+                    if key < &location_u256 {
+                        return false;
                     }
+
+                    // If the location is above the upper bound of the cap,
+                    // return false. The storage location is a u256. If the
+                    // upper limit overflows a u256, then the storage location
+                    // MUST be less than that value (because it DOES fit within
+                    // a u256).
+                    if key > &(location_u256.saturating_add(size_u256)) {
+                        return false;
+                    }
+                    return true;
                 }
                 false
             },
