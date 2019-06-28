@@ -76,7 +76,6 @@ export class Tester {
         const writer_caps = requestedCaps;
         const encoded_writer_caps = writer_caps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
         // This is the address of the new procedure that we wish to register.
-
         const procList1 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
         // We then send that message via a call procedure syscall.
         const message = this.interface.methods.regProc(cap_index, key, writeProc.address, encoded_writer_caps).encodeABI();
@@ -88,9 +87,9 @@ export class Tester {
             assert(procList2.includes(normalize(web3.utils.fromAscii(procName,24))), "The new procedure key should be included in the table");
 
             // Check that the new procedure has the correct caps.
-            // TODO: update for other cap types.
             const resulting_caps = await this.interface.methods.getNCaps(web3.utils.fromAscii("write",24)).call();
             assert.strictEqual(normalize(resulting_caps), normalize(requestedCaps.length), "The requested number of write caps should be written");
+            return writeProc;
         } else {
             // The transaction should not succeed
             let success;
