@@ -32,6 +32,10 @@ const DEFAULT_PORT = 8545;
 // Connect to our local node
 export const web3 = new Web3(new Web3.providers.HttpProvider(`http://localhost:${DEFAULT_PORT}`), null, WEB3_OPTIONS);
 
+
+// The default ABI of a cap9 kernel is the ABI of it's entry kernel. Often we
+// will want to use a variety of other ABIs depending on which procedure we want
+// to interact with.
 export class KernelInstance {
 
     constructor(public contract: Contract) { }

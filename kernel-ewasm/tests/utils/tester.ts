@@ -18,9 +18,12 @@ export class Tester {
     entry_proc_name: string;
     entry_args: [];
     kernel: any;
+    private _interface: any;
     interface: any;
     initial_balance: number = 0;
+
     constructor() {
+
     }
 
     // Configure the entry procedure that will be used on first deployment of
@@ -31,6 +34,16 @@ export class Tester {
         this.entry_proc = contract;
         this.entry_args = args;
     }
+
+    // get interface() {
+    //     return this._interface;
+    // }
+
+    // set interface(newInterface) {
+    //     const int = newInterface.clone();
+    //     // int.address = this._interface.address;
+    //     this._interface = int;
+    // }
 
     // Deploy the kernel and any initial entry procedure. This also creates the
     // interface for the kernel using the ABI of the entry procedure.
@@ -67,6 +80,7 @@ export class Tester {
     // This method will also execute tests to ensure that the registration
     // occurs successfully.
     async registerTest(requestedCaps, procName, contractName, contractABIName, result) {
+        const procList = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
         // This is the key of the procedure that we will be registering.
         const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
         // This is the index of the capability (in the procedures capability
