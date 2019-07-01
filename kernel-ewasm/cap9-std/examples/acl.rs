@@ -27,7 +27,7 @@ pub mod ACL {
     use cap9_std::proc_table::cap::*;
     use cap9_std::syscalls::*;
 
-    #[eth_abi(TestACLEndpoint, KernelClient)]
+    #[eth_abi(TestACLEndpoint)]
     pub trait TestACLInterface {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self);
@@ -47,6 +47,8 @@ pub mod ACL {
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
 
         fn getNCaps(&mut self, key: H256) -> u64;
+
+        fn proxy(&mut self, payload: Vec<u8>);
 
     }
 
@@ -132,6 +134,21 @@ pub mod ACL {
             }
             n_caps
         }
+
+        /// The proxy function forwards the transaction to the procedure to
+        /// which the sender belongs.
+        fn proxy(&mut self, payload: Vec<u8>) {
+            let sender = pwasm_ethereum::origin();
+            let group_id = self.get_account_group(sender).as_u32() as u8;
+            let procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(0);
+            let procedure_key = procecedure_map.get(group_id).unwrap();
+            // Here the cap is hard coded. This procedure expects its first
+            // procedure call capability to give it all the necessary
+            // permissions.
+            cap9_std::call(0_u8, procedure_key, payload);
+            pwasm_ethereum::ret(&cap9_std::result());
+        }
+
     }
 }
 // Declares the dispatch and dispatch_ctor methods

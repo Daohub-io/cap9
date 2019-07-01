@@ -2,7 +2,7 @@ const Web3 = require('web3')
 const assert = require('assert')
 const fs = require('fs')
 
-import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap, AccCallCap, CHAIN_CONFIG} from './utils'
+import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap, AccCallCap, CHAIN_CONFIG, CallCap} from './utils'
 import { Tester, TestContract } from './utils/tester';
 import { notEqual } from 'assert';
 
@@ -49,6 +49,7 @@ describe('Access Control List', function () {
             const cap_key = "write";
             const entryCaps = [
                 new NewCap(0, new RegisterCap(prefix, cap_key)),
+                new NewCap(0, new CallCap(prefix, cap_key)),
                 new NewCap(0, new WriteCap(
                     web3.utils.hexToBytes("0xaa00000000000000000000000000000000000000000000000000000000000000"),
                     web3.utils.hexToBytes("0xffffff0000000000000000000000000000000000000000000000000000000000"),
@@ -62,8 +63,8 @@ describe('Access Control List', function () {
             let regInterface;
             {
                 const requestedCaps = [];
-                const contractName = "register_test";
-                const contractABIName = "TestRegisterInterface";
+                const contractName = "acl_group_5";
+                const contractABIName = "ACLGroup5Interface";
                 const result = true;
                 regInterface = await tester.registerTest(requestedCaps, procName, contractName, contractABIName, result);
             }
@@ -73,13 +74,41 @@ describe('Access Control List', function () {
             await tester.interface.methods.set_group_procedure(5, proc_key).send();
             // Add testAccount to Group 5
             await tester.interface.methods.set_account_group(testAccount, 5).send();
+            // Add main account to Group 5
+            const accounts = await web3.eth.getAccounts();
+            await tester.interface.methods.set_account_group(accounts[1], 5).send();
             // When testAccount sends a transaction to the kernel, the message
             // will be transparently passed to the procedure for Group 5. The
             // procedure for Group 5 is now simply a Register Procedure, and
             // should therefore return the number 76 when testNum is called.
+            // The way the ACL contract is structured is not using a fallback,
+            // but calling the 'proxy' function with the message.
+
+            // There are four steps:
+            //   1. Create a message for the final procedure contract we want to
+            //      call. This needs to be encoded accoring to the final
+            //      contracts ABI.
+            //   2. Create a message (proxy_message) for the contract that sits
+            //      in between us and the final contract (in this case the ACL
+            //      entry procedure). This needs to be encoded with the entry
+            //      procedure's ABI.
+            //   3. Call the kernel with the proxy message.
+            //   4. Decode the result according to the ABI of the final
+            //      contract. The kernel and entry procedure pass the return
+            //      value from the final procedure back to us unmodified. This
+            //      means the return value is encoded accoding to the final
+            //      contract, and should be decoded using its ABI.
+
+            // Step 1:
             const message = regInterface.methods.testNum().encodeABI();
-            // const return_value = await web3.eth.call({ to: tester.kernel.contract.address, data: message });
-            // assert.strictEqual(return_value, 76, "testNum() should return 76");
+            // Step 2:
+            const proxy_message = tester.interface.methods.proxy(message).encodeABI();
+            // Step 3:
+            const return_value = await web3.eth.call({to:tester.interface.address, data:proxy_message});
+            // Step 4:
+            const [res,] = web3.eth.abi.decodeParameters(regInterface.jsonInterface.abi.methods.testNum.abiItem.outputs,return_value);
+            // Check the value is correct.
+            assert.strictEqual(res.toNumber(), 78, "testNum() should return 78");
         })
     })
 })

@@ -46,6 +46,7 @@ build_procedure register_test
 build_procedure delete_test
 build_procedure account_call_test
 build_procedure acl
+build_procedure acl_group_5
 
 # external_contract is just a regular contract and does not need to go through
 # the cap9 procedure build process.
