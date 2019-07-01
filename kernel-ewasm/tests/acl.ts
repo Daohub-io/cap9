@@ -7,6 +7,11 @@ const jayson = require('jayson');
 const client = jayson.client.http({
   port: 8545
 });
+// List storage keys
+// client.request('parity_listStorageKeys', [tester.kernel.contract.address, 20], function(err, response) {
+//     if(err) throw err;
+//     console.log("storageKeys:", response.result); // 2
+// });
 
 import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap, AccCallCap, CHAIN_CONFIG, CallCap, DeleteCap} from './utils'
 import { Tester, TestContract } from './utils/tester';

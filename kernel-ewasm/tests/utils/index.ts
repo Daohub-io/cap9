@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path")
 const http = require('http')
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 type BN = typeof BN;
 
@@ -70,17 +71,24 @@ export class KernelInstance {
             throw new Error("indices of greather than 255 not supported");
         }
         const ptr = KERNEL_PROC_LIST_PTR;
-        ptr[31] = index;
+        ptr[28] = index;
         return ptr;
     }
 
     public async getProcedures(): Promise<Array<Uint8Array>> {
         const procs: Array<Promise<Uint8Array>> = [];
-        const nProcs = await this.getNProcedures().then(x=>web3.utils.fromHex(x).toNumber());
-        for (let i = 0; i < nProcs; i++) {
-            procs.push(this.getStorageAt(this.getListPtr(i)));
+        const nProcs = await this.getNProcedures().then(x=>x.toNumber());
+        for (let i = 1; i <= nProcs; i++) {
+            const ptr = this.getListPtr(i);
+            console.log(ptr)
+            procs.push(this.getStorageAt(ptr).then(x=>x.slice(8,32)));
         }
         return Promise.all(procs);
+    }
+
+    public async getProceduresAscii(): Promise<Array<string>> {
+        const procs = await this.getProcedures();
+        return procs.map(x=>decoder.decode(x));
     }
 
     async getProcCapTypeLen(proc_key: string, cap_type: CAP_TYPE): Promise<number> {
