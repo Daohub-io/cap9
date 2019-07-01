@@ -3,6 +3,8 @@ const assert = require('assert')
 
 import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, NewCap, WriteCap, CAP_TYPE, CallCap, LogCap, RegisterCap, DeleteCap, EntryCap, AccCallCap } from './utils'
 import { Contract } from 'web3-eth-contract';
+const encoder = new TextEncoder();
+
 
 describe('Kernel', function () {
     describe('#constructor', function () {
@@ -12,11 +14,11 @@ describe('Kernel', function () {
 
             // Check entryProcedure
             const entryProcedureKey = await kernel.getEntryProcedure()
-            assert.strictEqual(entryProcedureKey, "init")
+            assert.deepEqual(entryProcedureKey, encoder.encode("init".padEnd(24,'\0')))
 
             // Check currentProcedure
             const currentProcedureKey = await kernel.getCurrentProcedure()
-            assert.strictEqual(currentProcedureKey, "")
+            assert.deepEqual(currentProcedureKey, encoder.encode("".padEnd(24,'\0')))
 
             // Check all Cap lists
             for (const captype in CAP_TYPE) {

@@ -29,7 +29,7 @@ describe('Access Control List', function () {
                 )),
                 new NewCap(0, new EntryCap()),
             ];
-            tester.setFirstEntry("init", new TestContract("acl", "TestACLInterface", entryCaps));
+            tester.setFirstEntry("init", new TestContract("acl_entry", "ACLEntryInterface", entryCaps));
             await tester.init();
             const procName = "testProc";
             const proc_key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
