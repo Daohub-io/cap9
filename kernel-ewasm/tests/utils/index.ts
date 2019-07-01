@@ -223,7 +223,7 @@ export function createAccount(name, password): Promise<string> {
     });
 }
 
-export async function deployContract(file_name: string, abi_name: string): Promise<Contract> {
+export async function deployContract(file_name: string, abi_name: string, args?: []): Promise<Contract> {
     // Create Account
     const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
     const accounts = await web3.eth.personal.getAccounts();
@@ -239,7 +239,7 @@ export async function deployContract(file_name: string, abi_name: string): Promi
     // convert Wasm binary to hex format
     const codeHex = '0x' + fs.readFileSync(path.resolve(TARGET_PATH, `./${file_name}.wasm`)).toString('hex');
     const Contract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 } as any);
-    const DeploymentTx = Contract.deploy({ data: codeHex });
+    const DeploymentTx = Contract.deploy({ data: codeHex, arguments: args });
 
     await web3.eth.personal.unlockAccount(account, DEFAULT_ACCOUNT.PASSWORD, null);
     let gas = await DeploymentTx.estimateGas();

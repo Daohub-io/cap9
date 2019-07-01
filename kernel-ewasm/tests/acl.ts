@@ -38,6 +38,8 @@ describe('Access Control List', function () {
     })
     describe('test ACL proxy', function () {
         it('set and retrieve values', async function () {
+
+
             const testAccountName = "extra_account";
             const testAccountPassword = "extra_password";
             const testAccountRaw = await createAccount(testAccountName, testAccountPassword);
@@ -56,8 +58,10 @@ describe('Access Control List', function () {
                 )),
                 new NewCap(0, new EntryCap()),
             ];
-            tester.setFirstEntry("init", new TestContract("acl", "TestACLInterface", entryCaps));
+            tester.setFirstEntry("init", new TestContract("acl_entry", "ACLEntryInterface", entryCaps));
             await tester.init();
+            const accounts = await web3.eth.getAccounts();
+            const mainAccount = accounts[1];
             const procName = "write";
             // Successfuly register a register procedure.
             let regInterface;
@@ -74,9 +78,8 @@ describe('Access Control List', function () {
             await tester.interface.methods.set_group_procedure(5, proc_key).send();
             // Add testAccount to Group 5
             await tester.interface.methods.set_account_group(testAccount, 5).send();
-            // Add main account to Group 5
-            const accounts = await web3.eth.getAccounts();
-            await tester.interface.methods.set_account_group(accounts[1], 5).send();
+            // Add main account to Group 1 (Admin group)
+            await tester.interface.methods.set_account_group(mainAccount, 1).send();
             // When testAccount sends a transaction to the kernel, the message
             // will be transparently passed to the procedure for Group 5. The
             // procedure for Group 5 is now simply a Register Procedure, and
@@ -104,7 +107,7 @@ describe('Access Control List', function () {
             // Step 2:
             const proxy_message = tester.interface.methods.proxy(message).encodeABI();
             // Step 3:
-            const return_value = await web3.eth.call({to:tester.interface.address, data:proxy_message});
+            const return_value = await web3.eth.call({from:testAccount, to:tester.interface.address, data:proxy_message});
             // Step 4:
             const [res,] = web3.eth.abi.decodeParameters(regInterface.jsonInterface.abi.methods.testNum.abiItem.outputs,return_value);
             // Check the value is correct.

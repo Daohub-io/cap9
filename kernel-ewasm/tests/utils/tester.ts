@@ -16,6 +16,7 @@ const http = require('http')
 export class Tester {
     entry_proc: TestContract = null;
     entry_proc_name: string;
+    entry_args: [];
     kernel: any;
     interface: any;
     initial_balance: number = 0;
@@ -25,9 +26,10 @@ export class Tester {
     // Configure the entry procedure that will be used on first deployment of
     // the kernel. This procedure will be deployed during init(). This should be
     // used before init().
-    setFirstEntry(name: string, contract: TestContract) {
+    setFirstEntry(name: string, contract: TestContract, args?: []) {
         this.entry_proc_name = name;
         this.entry_proc = contract;
+        this.entry_args = args;
     }
 
     // Deploy the kernel and any initial entry procedure. This also creates the
@@ -37,7 +39,7 @@ export class Tester {
             throw new Error("no entry proc has been set")
         }
         // Deploy the first entry procedure
-        const firstEntry = await deployContract(this.entry_proc.name, this.entry_proc.abiName);
+        const firstEntry = await deployContract(this.entry_proc.name, this.entry_proc.abiName, this.entry_args);
         this.kernel = await newKernelInstance(this.entry_proc_name, firstEntry.address, this.entry_proc.caps, this.initial_balance);
         // Here we make a copy of the entry procedure contract interface, but
         // change the address so that it's pointing at the kernel. This

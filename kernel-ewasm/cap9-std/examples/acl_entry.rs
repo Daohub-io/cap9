@@ -27,8 +27,8 @@ pub mod ACL {
     use cap9_std::proc_table::cap::*;
     use cap9_std::syscalls::*;
 
-    #[eth_abi(TestACLEndpoint)]
-    pub trait TestACLInterface {
+    #[eth_abi(ACLEntryEndpoint)]
+    pub trait ACLEntryInterface {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self);
 
@@ -54,7 +54,7 @@ pub mod ACL {
 
     pub struct ACLContract;
 
-    impl TestACLInterface for ACLContract {
+    impl ACLEntryInterface for ACLContract {
 
         fn constructor(&mut self) {}
 
@@ -156,13 +156,13 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut endpoint = ACL::TestACLEndpoint::new(ACL::ACLContract {});
+    let mut endpoint = ACL::ACLEntryEndpoint::new(ACL::ACLContract {});
     // Read http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding for details
     pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
 }
 
 #[no_mangle]
 pub fn deploy() {
-    let mut endpoint = ACL::TestACLEndpoint::new(ACL::ACLContract {});
+    let mut endpoint = ACL::ACLEntryEndpoint::new(ACL::ACLContract {});
     endpoint.dispatch_ctor(&pwasm_ethereum::input());
 }
