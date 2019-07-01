@@ -122,8 +122,6 @@ describe('Access Control List', function () {
     })
     describe('test ACL boostrap', function () {
         it('set and retrieve values', async function () {
-
-
             const testAccountName = "extra_account";
             const testAccountPassword = "extra_password";
             const testAccountRaw = await createAccount(testAccountName, testAccountPassword);
@@ -172,9 +170,7 @@ describe('Access Control List', function () {
             // Update the ABI. The entry procedure is now "acl_entry" so we need
             // to use that ABI. We also need to be careful to keep the old
             // address.
-            const oldAddress = tester.interface.address;
             tester.interface = entry_contract;
-            tester.interface.address = oldAddress;
 
             const procName = "randomProcName";
             // Successfuly register a procedure for Group 5

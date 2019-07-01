@@ -19,7 +19,6 @@ export class Tester {
     entry_args: [];
     kernel: any;
     private _interface: any;
-    interface: any;
     initial_balance: number = 0;
 
     constructor() {
@@ -29,25 +28,28 @@ export class Tester {
     // Configure the entry procedure that will be used on first deployment of
     // the kernel. This procedure will be deployed during init(). This should be
     // used before init().
-    setFirstEntry(name: string, contract: TestContract, args?: []) {
+    public setFirstEntry(name: string, contract: TestContract, args?: []) {
         this.entry_proc_name = name;
         this.entry_proc = contract;
         this.entry_args = args;
     }
 
-    // get interface() {
-    //     return this._interface;
-    // }
+    public get interface() {
+        return this._interface;
+    }
 
-    // set interface(newInterface) {
-    //     const int = newInterface.clone();
-    //     // int.address = this._interface.address;
-    //     this._interface = int;
-    // }
+    // Always preserve the kernel address when setting a new interface.
+    public set interface(newInterface) {
+        const int = newInterface.clone();
+        if (this._interface) {
+            int.address = this._interface.address
+        }
+        this._interface = int;
+    }
 
     // Deploy the kernel and any initial entry procedure. This also creates the
     // interface for the kernel using the ABI of the entry procedure.
-    async init() {
+    public async init() {
         if (this.entry_proc === null) {
             throw new Error("no entry proc has been set")
         }
@@ -79,7 +81,7 @@ export class Tester {
     //
     // This method will also execute tests to ensure that the registration
     // occurs successfully.
-    async registerTest(requestedCaps, procName, contractName, contractABIName, result) {
+    public async registerTest(requestedCaps, procName, contractName, contractABIName, result) {
         const procList = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
         // This is the key of the procedure that we will be registering.
         const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
@@ -130,7 +132,7 @@ export class Tester {
     //
     // This method will also execute tests to ensure that the registration
     // occurs successfully.
-    async setEntryTest(procName, result) {
+    public async setEntryTest(procName, result) {
         const old_entry_proc = await this.interface.methods.getEntry().call();
         // This is the key of the procedure that we will be setting to the entry
         // procedure.
@@ -172,7 +174,7 @@ export class Tester {
     //
     // This method will also execute tests to ensure that the registration
     // occurs successfully.
-    async deleteTest(requestedCaps, procName, result) {
+    public async deleteTest(requestedCaps, procName, result) {
         // This is the key of the procedure that we will be registering.
         const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
         // This is the index of the capability (in the procedures capability
@@ -209,7 +211,7 @@ export class Tester {
     //
     //    * fn callExternal(&mut self, cap_idx: U256, address: Address, value:
     //      U256, payload: Vec<u8>)
-    async externalCallTest(address, value, payload, result) {
+    public async externalCallTest(address, value, payload, result) {
         const cap_index = 0;
         const messageSend = this.interface.methods.callExternal(cap_index, address, value, payload).encodeABI();
         const messageCall = this.interface.methods.callExternal(cap_index, address, 0, payload).encodeABI();
