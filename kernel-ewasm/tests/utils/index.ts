@@ -35,17 +35,45 @@ export const web3 = new Web3(new Web3.providers.HttpProvider(`http://localhost:$
 
 // The default ABI of a cap9 kernel is the ABI of it's entry kernel. Often we
 // will want to use a variety of other ABIs depending on which procedure we want
-// to interact with.
+// to interact with. This API also uses direct storage reads to perform some
+// tests. The necessarily reimplments some storage location logic accoding to
+// the standard.
 export class KernelInstance {
 
     constructor(public contract: Contract) { }
 
-    async getEntryProcedure(): Promise<string> {
-        return web3.utils.hexToAscii(await this.contract.methods.entryProcedure().call()).replace(/\0.*$/g, '');
+    private async getStorageAt(location: Uint8Array): Promise<string> {
+        return web3.eth.getStorageAt(this.contract.address, bufferToHex(location));
     }
 
-    async getCurrentProcedure(): Promise<string> {
-        return web3.utils.hexToAscii(await this.contract.methods.currentProcedure().call()).replace(/\0.*$/g, '');
+    public async getEntryProcedure(): Promise<string> {
+        return this.getStorageAt(KERNEL_ENTRY_PROC_PTR);
+    }
+
+    public async getCurrentProcedure(): Promise<string> {
+        return this.getStorageAt(KERNEL_CURRENT_PROC_PTR);
+    }
+
+    public async getNProcedures(): Promise<string> {
+        return this.getStorageAt(KERNEL_PROC_LIST_PTR);
+    }
+
+    private getListPtr(index: number): Uint8Array {
+        if (index > 255) {
+            throw new Error("indices of greather than 255 not supported");
+        }
+        const ptr = KERNEL_PROC_LIST_PTR;
+        ptr[31] = index;
+        return ptr;
+    }
+
+    public async getProcedures(): Promise<Array<string>> {
+        const procs: Array<Promise<string>> = [];
+        const nProcs = await this.getNProcedures().then(x=>web3.utils.fromHex(x).toNumber());
+        for (let i = 0; i < nProcs; i++) {
+            procs.push(this.getStorageAt(this.getListPtr(i)));
+        }
+        return Promise.all(procs);
     }
 
     async getProcCapTypeLen(proc_key: string, cap_type: CAP_TYPE): Promise<number> {
@@ -53,6 +81,30 @@ export class KernelInstance {
     }
 
 }
+
+function bufferToHex(buffer: Uint8Array) {
+    return "0x" + Array.from<number>(buffer).map(x => x.toString(16).padStart(2,'0')).join("");
+}
+const KERNEL_PROC_HEAP_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+]);
+const KERNEL_PROC_LIST_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+]);
+const KERNEL_ADDRESS_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+]);
+const KERNEL_CURRENT_PROC_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+]);
+const KERNEL_ENTRY_PROC_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+]);
 
 export enum CAP_TYPE {
     PROC_CALL = 3,
