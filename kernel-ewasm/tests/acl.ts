@@ -19,7 +19,7 @@ import { Tester, TestContract } from './utils/tester';
 import { notEqual } from 'assert';
 
 
-describe('Access Control List', function () {
+describe.only('Access Control List', function () {
     this.timeout(40_000);
     describe('test ACL boostrap', function () {
         it('set and retrieve values', async function () {

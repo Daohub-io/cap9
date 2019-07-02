@@ -50,10 +50,10 @@ pub mod ACL {
             cap9_std::entry(0, entry_key.into()).unwrap();
             // Add admin to the admin group (1)
             let admin_group: u8 = 1;
-            let mut procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(0);
+            let mut procecedure_map: cap9_std::StorageMap<Address, u8> = cap9_std::StorageMap::new(0);
             procecedure_map.insert(admin_account, admin_group);
             // Set the procedure of the admin group (1) to the admin procedure
-            let mut procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(0);
+            let mut procecedure_map: cap9_std::StorageMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageMap::new(0);
             procecedure_map.insert(admin_group, admin_key.into());
             // Unregister this bootstrap procedure, note that the contract will
             // not be reaped.

@@ -254,6 +254,10 @@ pub fn acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) 
     syscall.serialize(&mut input).unwrap();
     cap9_syscall(&input, &mut Vec::new())
 }
+
+// A type which implements Keyable must follow these rules:
+//    1. key width must be 32 or less.
+//    2. key_slice() must return a vec with a length of exactly key width.
 pub trait Keyable {
     /// The width of the key in bytes.
     fn key_width() -> u8;
@@ -282,6 +286,7 @@ impl Keyable for Address {
     }
 }
 
+// TODO: we might be able to make this a little more typesafe
 pub trait Storable {
     /// The width of the key in bytes.
     fn store(&self) -> Vec<H256>;
@@ -301,7 +306,6 @@ impl Storable for u8 {
         u.as_u32() as u8
     }
 }
-
 
 impl Storable for SysCallProcedureKey {
     fn store(&self) -> Vec<H256> {
@@ -333,7 +337,7 @@ use core::marker::PhantomData;
 /// The values of this struct are intentionally private.
 ///
 /// The value type must implement to/from Vec<H256>.
-pub struct BigMap<K,V> {
+pub struct StorageMap<K,V> {
     cap_index: u8,
     /// The start location of the map.
     location: H256,
@@ -344,7 +348,7 @@ pub struct BigMap<K,V> {
 }
 
 
-impl<K: Keyable, V: Storable> BigMap<K,V> {
+impl<K: Keyable, V: Storable> StorageMap<K,V> {
 
     // The location is dictated by the capability. A more specific location will
     // simply require a more specific capability. This means the procedure needs
@@ -372,7 +376,7 @@ impl<K: Keyable, V: Storable> BigMap<K,V> {
                         // the trailing number of 0 bits should be equal to or greater than the address_bits
                         panic!("cap not aligned: {}-{}", U256::from(location).trailing_zeros(), address_bits)
                     } else {
-                        BigMap {
+                        StorageMap {
                             cap_index,
                             location: location.into(),
                             key_type: PhantomData,
@@ -504,7 +508,7 @@ mod test {
             parent_index: 0,
         });
         proc_table::insert_proc(this_proc_key, Address::zero(), proc_table::cap::NewCapList(cap_list)).unwrap();
-        let mut map: BigMap<u8,ExampleData> = BigMap::new(0);
+        let mut map: StorageMap<u8,ExampleData> = StorageMap::new(0);
         assert_eq!(map.location(), location.into());
         assert_eq!(map.get(1), None);
         let example = ExampleData {
@@ -545,7 +549,7 @@ mod test {
             parent_index: 0,
         });
         proc_table::insert_proc(this_proc_key, Address::zero(), proc_table::cap::NewCapList(cap_list)).unwrap();
-        let mut map: BigMap<Address,ExampleData> = BigMap::new(0);
+        let mut map: StorageMap<Address,ExampleData> = StorageMap::new(0);
         assert_eq!(map.location(), location.into());
         assert_eq!(map.get(example_address), None);
         let example = ExampleData {
