@@ -286,14 +286,19 @@ impl Keyable for Address {
     }
 }
 
-// TODO: we might be able to make this a little more typesafe
+// TODO: we might be able to make this a little more typesafe, currently this is
+// limited to 256 keys.
 pub trait Storable {
-    /// The width of the key in bytes.
+    fn n_keys() -> U256;
     fn store(&self) -> Vec<H256>;
     fn read(vals: Vec<H256>) -> Self;
 }
 
 impl Storable for u8 {
+    fn n_keys() -> U256 {
+        1.into()
+    }
+
     fn store(&self) -> Vec<H256> {
         let u: U256 = (*self).into();
         let mut vals = Vec::new();
@@ -308,6 +313,10 @@ impl Storable for u8 {
 }
 
 impl Storable for SysCallProcedureKey {
+    fn n_keys() -> U256 {
+        1.into()
+    }
+
     fn store(&self) -> Vec<H256> {
         let mut res = Vec::with_capacity(1);
         res.push(self.into());
@@ -423,19 +432,18 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
     fn set_present(&self, key: K) {
         // If the value at the presence key is non-zero, then a value is
         // present.
-        write(self.cap_index, &self.presence_key(&key).as_fixed_bytes(), H256::repeat_byte(0xff).as_fixed_bytes());
+        write(self.cap_index, &self.presence_key(&key).as_fixed_bytes(), H256::repeat_byte(0xff).as_fixed_bytes()).unwrap();
     }
 
     pub fn get(&self, key: K) -> Option<V> {
         // First question: Is there a value associated with this key?
         //
-        // The presence_key is the storage key which indicates whether there is a
-        // value associated with this key.
+        // The presence_key is the storage key which indicates whether there is
+        // a value associated with this key.
         let mut base = self.base_key(&key);
         if self.present(&key) {
-            // TODO: remove arbitrary number
-            let mut vals: Vec<H256> = Vec::with_capacity(5 as usize);
-            for _ in 0..5 {
+            let mut vals: Vec<H256> = Vec::with_capacity(V::n_keys().as_usize());
+            for _ in 0..V::n_keys().as_usize() {
                 base[31] = base[31] + 1;
                 vals.push(pwasm_ethereum::read(&base.into()).into());
             }
@@ -451,8 +459,87 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
         let vals: Vec<H256> = value.store();
         for val in vals {
             base[31] = base[31] + 1;
-            write(self.cap_index, &base, &val.into());
+            write(self.cap_index, &base, &val.into()).unwrap();
         }
+    }
+}
+
+/// A key difference between a StorageVec a Rust Vec is that the
+/// capacity is a property of the capability and is therefore not so flexible,
+/// and cannot be changed. In order to get a vector of a different capacity you
+/// need to create a new StorageVec.
+pub struct StorageVec<V> {
+    cap_index: u8,
+    /// The start location of the map.
+    location: H256,
+    /// The data type of the map
+    data_type: PhantomData<V>,
+    /// The capacity of the vector. This is determined by the capability but is
+    /// cached here on creation as it is likely to be accessed frequently, and
+    /// requires multiple SREADs to determine.
+    capacity: U256,
+    length: U256,
+}
+
+impl<V: Storable> StorageVec<V> {
+
+    /// The location is dictated by the capability. A more specific location
+    /// will simply require a more specific capability. This means the procedure
+    /// needs to access capability data. The capacity is also defined by the
+    /// capability. The capability does not need to be aligned to the data size.
+    pub fn new(cap_index: u8) -> Self {
+        let this_proc_key = proc_table::get_current_proc_id();
+        if let Some(proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size})) =
+                proc_table::get_proc_cap(this_proc_key, proc_table::cap::CAP_STORE_WRITE, cap_index) {
+                    StorageVec {
+                        cap_index,
+                        location: location.into(),
+                        data_type: PhantomData,
+                        capacity: match (U256::from(size).saturating_add(1.into())).checked_div(V::n_keys()) {
+                            None => panic!("divide by zero"),
+                            Some(x) => x,
+                        },
+                        length: 0.into(),
+                    }
+        } else {
+            panic!("wrong cap: {:?}", this_proc_key)
+        }
+    }
+
+    /// Capacity is a function of both the capability and the size of the data.
+    /// We round down due to alignement.
+    pub fn capacity(&self) -> U256 {
+        self.capacity
+    }
+
+    pub fn location(&self) -> H256 {
+        self.location
+    }
+
+    pub fn get(&self, index: U256) -> Option<V> {
+        let start_key_opt: Option<U256> = match V::n_keys().checked_mul(index) {
+            None => None,
+            Some(x) => U256::from(self.location).checked_add(x),
+        };
+        let start_key: U256 = start_key_opt.unwrap();
+        // TOOD: use cursor method rather than building a vector
+        let mut vals: Vec<H256> = Vec::with_capacity(V::n_keys().as_usize());
+        for i in 0..V::n_keys().as_usize() {
+            let offset = start_key.checked_add(i.into()).unwrap();
+            vals.push(pwasm_ethereum::read(&offset.into()).into());
+        }
+        Some(V::read(vals))
+    }
+
+    pub fn push(&mut self, value: V) {
+        let start_key: U256 = U256::from(self.location).checked_add(self.length).unwrap();
+        // TOOD: use cursor method rather than building a vector
+        let vals: Vec<H256> = value.store();
+        for (i,val) in vals.iter().enumerate() {
+            let offset = start_key.checked_add(i.into()).unwrap();
+            write(self.cap_index, &offset.into(), &val.to_fixed_bytes()).unwrap();
+        }
+        self.length = self.length.checked_add(1.into()).unwrap();
     }
 }
 
@@ -469,6 +556,9 @@ mod test {
 
 
     impl Storable for ExampleData {
+        fn n_keys() -> U256 {
+            2.into()
+        }
         fn store(&self) -> Vec<H256> {
             let mut res = Vec::with_capacity(2);
             res.push(self.key_v1);
