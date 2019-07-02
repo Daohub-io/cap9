@@ -18,28 +18,37 @@ extern crate cap9_test;
 
 fn main() {}
 
-pub mod ACL {
+pub mod StorageVecTest {
     use pwasm_abi::types::*;
+    use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
     use cap9_std;
 
-    #[eth_abi(ACLGroup5Endpoint, KernelClient)]
-    pub trait ACLGroup5Interface {
-        /// The constructor set with Initial Entry Procedure
+    #[eth_abi(StorageVecTestEndpoint)]
+    pub trait StorageVecTestInterface {
+
         fn constructor(&mut self);
 
-        fn testNum(&mut self) -> U256;
+        fn create_vector(&mut self);
+
+        fn push_this_proc(&mut self);
 
     }
 
-    pub struct ACLContract;
+    pub struct StorageVecTestContract;
 
-    impl ACLGroup5Interface for ACLContract {
+    impl StorageVecTestInterface for StorageVecTestContract {
 
         fn constructor(&mut self) {}
 
-        fn testNum(&mut self) -> U256 {
-            78.into()
+        fn create_vector(&mut self) {
+            let _vector: cap9_std::StorageVec<cap9_std::SysCallProcedureKey> = cap9_std::StorageVec::new(0);
+        }
+
+        fn push_this_proc(&mut self) {
+            let mut vector: cap9_std::StorageVec<cap9_std::SysCallProcedureKey> = cap9_std::StorageVec::new(0);
+            let current_proc = cap9_std::proc_table::get_current_proc_id();
+            vector.push(current_proc.into());
         }
 
     }
@@ -49,13 +58,13 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut endpoint = ACL::ACLGroup5Endpoint::new(ACL::ACLContract {});
+    let mut endpoint = StorageVecTest::StorageVecTestEndpoint::new(StorageVecTest::StorageVecTestContract {});
     // Read http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding for details
     pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
 }
 
 #[no_mangle]
 pub fn deploy() {
-    let mut endpoint = ACL::ACLGroup5Endpoint::new(ACL::ACLContract {});
+    let mut endpoint = StorageVecTest::StorageVecTestEndpoint::new(StorageVecTest::StorageVecTestContract {});
     endpoint.dispatch_ctor(&pwasm_ethereum::input());
 }

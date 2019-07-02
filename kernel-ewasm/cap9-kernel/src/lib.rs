@@ -234,7 +234,7 @@ pub fn call() {
             } else {
                 panic!("Bad Cap");
                 // TODO: implement revert
-                pwasm_ethereum::ret(&[]);
+                // pwasm_ethereum::ret(&[]);
             }
             pwasm_ethereum::ret(&result());
         }

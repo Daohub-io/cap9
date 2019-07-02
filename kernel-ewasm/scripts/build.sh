@@ -49,6 +49,7 @@ build_procedure acl_entry
 build_procedure acl_admin
 build_procedure acl_bootstrap
 build_procedure acl_group_5
+build_procedure storage_vec_test
 
 # external_contract is just a regular contract and does not need to go through
 # the cap9 procedure build process.

@@ -20,12 +20,8 @@ fn main() {}
 
 pub mod ACL {
     use pwasm_abi::types::*;
-    use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
     use cap9_std;
-    // use cap9_std::proc_table::*;
-    use cap9_std::proc_table::cap::*;
-    use cap9_std::syscalls::*;
 
     #[eth_abi(ACLBootstrapEndpoint)]
     pub trait ACLBootstrapInterface {

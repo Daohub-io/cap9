@@ -68,7 +68,7 @@ export class KernelInstance {
         this.abi_cache = abi_cache;
     }
 
-    private async getStorageAt(location: Uint8Array): Promise<Uint8Array> {
+    public async getStorageAt(location: Uint8Array): Promise<Uint8Array> {
         const storageValue = await web3.eth.getStorageAt(this.contract.address, bufferToHex(location));
         return hexToBuffer(storageValue);
     }

@@ -491,6 +491,7 @@ impl<V: Storable> StorageVec<V> {
         let this_proc_key = proc_table::get_current_proc_id();
         if let Some(proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size})) =
                 proc_table::get_proc_cap(this_proc_key, proc_table::cap::CAP_STORE_WRITE, cap_index) {
+                    let initial_length = pwasm_ethereum::read(&H256::from(location));
                     StorageVec {
                         cap_index,
                         location: location.into(),
@@ -499,7 +500,7 @@ impl<V: Storable> StorageVec<V> {
                             None => panic!("divide by zero"),
                             Some(x) => x,
                         },
-                        length: 0.into(),
+                        length: U256::from(initial_length),
                     }
         } else {
             panic!("wrong cap: {:?}", this_proc_key)
@@ -532,7 +533,7 @@ impl<V: Storable> StorageVec<V> {
     }
 
     pub fn push(&mut self, value: V) {
-        let start_key: U256 = U256::from(self.location).checked_add(self.length).unwrap();
+        let start_key: U256 = U256::from(self.location).checked_add(1.into()).unwrap();
         // TOOD: use cursor method rather than building a vector
         let vals: Vec<H256> = value.store();
         for (i,val) in vals.iter().enumerate() {
@@ -540,6 +541,8 @@ impl<V: Storable> StorageVec<V> {
             write(self.cap_index, &offset.into(), &val.to_fixed_bytes()).unwrap();
         }
         self.length = self.length.checked_add(1.into()).unwrap();
+        // store length
+        write(self.cap_index, &U256::from(self.location).into(), &self.length.into()).unwrap();
     }
 }
 
