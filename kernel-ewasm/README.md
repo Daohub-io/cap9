@@ -43,7 +43,7 @@ chmod +x ./scripts/parity_install.sh
 # Enter Dir
 cd kernel-ewasm
 # Compile lib to ewasm then as pwasm contract
-./build.sh
+./scripts/build.sh
 ```
 
 ### Test
