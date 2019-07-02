@@ -94,14 +94,14 @@ export class Tester {
         const writer_caps = requestedCaps;
         const encoded_writer_caps = writer_caps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
         // This is the address of the new procedure that we wish to register.
-        const procList1 = await this.kernel.getProcedures().then(x=>x.map(bufferToHex));
-        // this.kernel.getProceduresAscii().then(console.log)
+        const procList1 = await this.kernel.getProcedureKeys().then(x=>x.map(bufferToHex));
+        // this.kernel.getProcedureKeysAscii().then(console.log)
         // We then send that message via a call procedure syscall.
         const message = this.interface.methods.regProc(cap_index, key, writeProc.address, encoded_writer_caps).encodeABI();
         if (result) {
             // The transaction should succeed
             const return_value = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: message });
-            const procList2 = await this.kernel.getProcedures().then(x=>x.map(bufferToHex));
+            const procList2 = await this.kernel.getProcedureKeys().then(x=>x.map(bufferToHex));
             assert.strictEqual(procList2.length, procList1.length + 1, "The number of procedures should have increased by 1");
             assert(procList2.includes(web3.utils.fromAscii(procName,24)), "The new procedure key should be included in the table");
 

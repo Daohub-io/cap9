@@ -12,6 +12,28 @@ const decoder = new TextDecoder();
 
 type BN = typeof BN;
 
+// Global singleton object which remembers the ABI associated with each
+// contract. This maps contract addresses => ABIs. Ethereum itself has a
+// mechanism for this via swarm data etc., but for testing we want to emulate it
+// here, particularly given pwasm support for such swarm may not be feature
+// complete.
+class ABICache {
+    private map: Map<string, any>;
+    constructor() {
+        this.map = new Map();
+    }
+
+    public add(address: string, abi: any) {
+        this.map.set(address, abi);
+    }
+
+    public get(address: string, abi: any): any {
+        return this.map.get(address);
+    }
+}
+
+const abi_cache = new ABICache();
+
 // Get BuildPath
 const TARGET_PATH = path.resolve(process.cwd(), './target');
 // Get Dev Chain Config
@@ -41,8 +63,10 @@ export const web3 = new Web3(new Web3.providers.HttpProvider(`http://localhost:$
 // tests. The necessarily reimplements some storage location logic accoding to
 // the standard.
 export class KernelInstance {
-
-    constructor(public contract: Contract) { }
+    private abi_cache: ABICache;
+    constructor(public contract: Contract) {
+        this.abi_cache = abi_cache;
+    }
 
     private async getStorageAt(location: Uint8Array): Promise<Uint8Array> {
         const storageValue = await web3.eth.getStorageAt(this.contract.address, bufferToHex(location));
@@ -75,21 +99,41 @@ export class KernelInstance {
         return ptr;
     }
 
-    public async getProcedures(): Promise<Array<Uint8Array>> {
-        const procs: Array<Promise<Uint8Array>> = [];
+    public async getProcedureKey(index: number): Promise<Uint8Array> {
+        const ptr = this.getListPtr(index);
+        return this.getStorageAt(ptr).then(x=>x.slice(8,32));
+    }
+
+    public async getProcedures(): Promise<Array<Procedure>> {
+        const procs: Array<Promise<Procedure>> = [];
         const nProcs = await this.getNProcedures().then(x=>x.toNumber());
         for (let i = 1; i <= nProcs; i++) {
             const ptr = this.getListPtr(i);
-            procs.push(this.getStorageAt(ptr).then(x=>x.slice(8,32)));
+            const proc = this.getStorageAt(ptr).then(x=>x.slice(8,32)).then(async (key) => {
+                const proc_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([0x00,0x00,0x00]))
+                const address = await this.getStorageAt(proc_ptr).then(x=>x.slice(12,32));
+                return new Procedure(key, address);
+            });
+            procs.push(proc);
         }
         return Promise.all(procs);
     }
 
-    public async getProceduresAscii(): Promise<Array<string>> {
-        const procs = await this.getProcedures();
+    public async getProcedureKeys(): Promise<Array<Uint8Array>> {
+        const procs: Array<Promise<Uint8Array>> = [];
+        const nProcs = await this.getNProcedures().then(x=>x.toNumber());
+        for (let i = 1; i <= nProcs; i++) {
+            procs.push(this.getProcedureKey(i));
+        }
+        return Promise.all(procs);
+    }
+
+    public async getProcedureKeysAscii(): Promise<Array<string>> {
+        const procs = await this.getProcedureKeys();
         return procs.map(x=>decoder.decode(x));
     }
 
+    // TODO: deprecate
     async getProcCapTypeLen(proc_key: string, cap_type: CAP_TYPE): Promise<number> {
         return utils.toDecimal(await this.contract.methods.get_cap_type_len(proc_key, cap_type).call());
     }
@@ -97,6 +141,14 @@ export class KernelInstance {
     // TODO: every time we add a contract to the kernel, that contract address
     // is immutably associated with an ABI, so we can cache those.
 
+}
+
+// WARNING: this is a lossy conversion, and should be used for
+// display/convinience only.
+export function bufferToString(buffer: Uint8Array) {
+    const nullIndex = buffer.indexOf(0x00);
+    const sliceIndex = nullIndex ? nullIndex : undefined;
+    return decoder.decode(buffer.slice(0,sliceIndex));
 }
 
 export function bufferToHex(buffer: Uint8Array) {
@@ -141,6 +193,22 @@ const KERNEL_ENTRY_PROC_PTR: Uint8Array = new Uint8Array([
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ]);
+
+// A representation of a procedure in the kernel.
+export class Procedure {
+    constructor(public key: Uint8Array, public address: Uint8Array) {
+
+    }
+
+    public toString() {
+        let str = "";
+        str += "Procedure {\n";
+        str += `\tkey: ("${bufferToString(this.key)}") ${bufferToHex(this.key)}\n`;
+        str += `\taddress: ${bufferToHex(this.address)}\n`;
+        str += `}\n`;
+        return str;
+    }
+}
 
 export enum CAP_TYPE {
     PROC_CALL = 3,
@@ -341,7 +409,7 @@ export async function deployContract(file_name: string, abi_name: string, args?:
     let contract_addr = tx_receipt.contractAddress;
     let contract = Contract.clone();
     contract.address = contract_addr;
-
+    abi_cache.add(contract.address, contract);
     return contract;
 }
 
