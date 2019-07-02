@@ -32,21 +32,9 @@ pub mod ACL {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self);
 
-        fn set_group_procedure(&mut self, group_id: U256, proc_key: H256);
-
         fn get_group_procedure(&mut self, group_id: U256) -> H256;
 
-        fn set_account_group(&mut self, account: Address, group_id: U256);
-
         fn get_account_group(&mut self, account: Address) -> U256;
-
-        fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>);
-
-        fn listProcs(&mut self) -> Vec<H256>;
-
-        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
-
-        fn getNCaps(&mut self, key: H256) -> u64;
 
         fn proxy(&mut self, payload: Vec<u8>);
 
@@ -57,14 +45,6 @@ pub mod ACL {
     impl ACLEntryInterface for ACLContract {
 
         fn constructor(&mut self) {}
-
-        fn set_group_procedure(&mut self, group_id: U256, proc_key: H256) {
-            // This relies on a mapping of groups -> procedures. Therefore we
-            // need a map mechanism. Here we will just create the mechanism each
-            // time at the same address.
-            let mut procecedure_map: cap9_std::BigMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::BigMap::new(0);
-            procecedure_map.insert(group_id.as_u32() as u8, proc_key.into());
-        }
 
         fn get_group_procedure(&mut self, group_id: U256) -> H256 {
             // This relies on a mapping of groups -> procedures. Therefore we
@@ -77,62 +57,12 @@ pub mod ACL {
             }
         }
 
-        fn set_account_group(&mut self, account: Address, group_id: U256) {
-            let mut procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(0);
-            procecedure_map.insert(account, group_id.as_u32() as u8);
-        }
-
         fn get_account_group(&mut self, account: Address) -> U256 {
             let procecedure_map: cap9_std::BigMap<Address, u8> = cap9_std::BigMap::new(0);
             match procecedure_map.get(account) {
                 Some(x) => x.into(),
                 None => U256::zero(),
             }
-        }
-
-        fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>) {
-            cap9_std::reg(cap_idx.as_u32() as u8, key.into(), address, cap_list).unwrap();
-            pwasm_ethereum::ret(&cap9_std::result());
-        }
-
-        fn listProcs(&mut self) -> Vec<H256> {
-            let n_procs = cap9_std::proc_table::get_proc_list_len();
-            let mut procs = Vec::new();
-            for i in 1..(n_procs.as_usize() + 1) {
-                let index = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,i as u8];
-                procs.push(SysCallProcedureKey(cap9_std::proc_table::get_proc_id(index).unwrap()).into());
-            }
-            procs
-        }
-
-        fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256) {
-            // Get the key of the currently executing procedure.
-            let this_key: cap9_std::proc_table::ProcedureKey = cap9_std::proc_table::get_current_proc_id();
-            let cap = cap9_std::proc_table::get_proc_cap(this_key, cap_type.as_u32() as u8, cap_index.as_u32() as u8).unwrap();
-            match cap {
-                Capability::ProcedureRegister(ProcedureRegisterCap {prefix, key}) => {
-                    let h: H256 = SysCallProcedureKey(key).into();
-                    (prefix.into(), h.into())
-                },
-                // ProcedureRegister(ProcedureRegisterCap),
-                // ProcedureDelete(ProcedureDeleteCap),
-                // ProcedureEntry(ProcedureEntryCap),
-                // Capability::StoreWrite(StoreWriteCap {location, size}) => (location.into(), size.into()),
-                // Log(LogCap),
-                // AccountCall(AccountCallCap),
-                _ => panic!("wrong cap")
-            }
-        }
-
-        fn getNCaps(&mut self, key_raw: H256) -> u64 {
-            let key: SysCallProcedureKey = key_raw.into();
-            let proc_id: cap9_std::proc_table::ProcedureKey = key.into();
-            let mut n_caps: u64 = 0;
-            for i in &CAP_TYPES {
-                let n: U256 = cap9_std::proc_table::get_proc_cap_list_len(proc_id.clone(), *i).into();
-                n_caps += n.as_u64();
-            }
-            n_caps
         }
 
         /// The proxy function forwards the transaction to the procedure to

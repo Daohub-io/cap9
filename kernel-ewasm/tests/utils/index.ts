@@ -70,7 +70,7 @@ export class KernelInstance {
         if (index > 255) {
             throw new Error("indices of greather than 255 not supported");
         }
-        const ptr = KERNEL_PROC_LIST_PTR;
+        const ptr = KERNEL_PROC_LIST_PTR.slice();
         ptr[28] = index;
         return ptr;
     }
@@ -80,7 +80,6 @@ export class KernelInstance {
         const nProcs = await this.getNProcedures().then(x=>x.toNumber());
         for (let i = 1; i <= nProcs; i++) {
             const ptr = this.getListPtr(i);
-            console.log(ptr)
             procs.push(this.getStorageAt(ptr).then(x=>x.slice(8,32)));
         }
         return Promise.all(procs);
@@ -95,13 +94,16 @@ export class KernelInstance {
         return utils.toDecimal(await this.contract.methods.get_cap_type_len(proc_key, cap_type).call());
     }
 
+    // TODO: every time we add a contract to the kernel, that contract address
+    // is immutably associated with an ABI, so we can cache those.
+
 }
 
-function bufferToHex(buffer: Uint8Array) {
+export function bufferToHex(buffer: Uint8Array) {
     return web3.utils.bytesToHex(Array.from<number>(buffer));
 }
 
-function hexToBuffer(str: string): Uint8Array {
+export function hexToBuffer(str: string): Uint8Array {
     return Uint8Array.from(web3.utils.hexToBytes(str));
 }
 

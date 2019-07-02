@@ -33,7 +33,6 @@ pub mod ACL {
 
         fn init(&mut self, entry_key: H256, entry_address: Address, entry_cap_list: Vec<H256>, admin_key: H256, admin_address: Address, admin_cap_list: Vec<H256>, admin_account: Address);
 
-        fn listProcs(&mut self) -> Vec<H256>;
     }
 
     pub struct ACLContract;
@@ -62,15 +61,6 @@ pub mod ACL {
             cap9_std::delete(0, current_proc.into()).unwrap();
         }
 
-        fn listProcs(&mut self) -> Vec<H256> {
-            let n_procs = cap9_std::proc_table::get_proc_list_len();
-            let mut procs = Vec::new();
-            for i in 1..(n_procs.as_usize() + 1) {
-                let index = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,i as u8];
-                procs.push(SysCallProcedureKey(cap9_std::proc_table::get_proc_id(index).unwrap()).into());
-            }
-            procs
-        }
     }
 }
 // Declares the dispatch and dispatch_ctor methods

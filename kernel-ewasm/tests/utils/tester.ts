@@ -2,7 +2,8 @@
 // required in tests.
 import { Contract } from "web3-eth-contract";
 import * as utils from 'web3-utils';
-import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap} from '../utils'
+import { newKernelInstance, web3, createAccount, KernelInstance, deployContract,
+    normalize, EntryCap, WriteCap, RegisterCap, NewCap, bufferToHex, hexToBuffer} from '../utils'
 
 const assert = require('assert')
 
@@ -82,7 +83,6 @@ export class Tester {
     // This method will also execute tests to ensure that the registration
     // occurs successfully.
     public async registerTest(requestedCaps, procName, contractName, contractABIName, result) {
-        const procList = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
         // This is the key of the procedure that we will be registering.
         const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
         // This is the index of the capability (in the procedures capability
@@ -94,15 +94,16 @@ export class Tester {
         const writer_caps = requestedCaps;
         const encoded_writer_caps = writer_caps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
         // This is the address of the new procedure that we wish to register.
-        const procList1 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+        const procList1 = await this.kernel.getProcedures().then(x=>x.map(bufferToHex));
+        // this.kernel.getProceduresAscii().then(console.log)
         // We then send that message via a call procedure syscall.
         const message = this.interface.methods.regProc(cap_index, key, writeProc.address, encoded_writer_caps).encodeABI();
         if (result) {
             // The transaction should succeed
             const return_value = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: message });
-            const procList2 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+            const procList2 = await this.kernel.getProcedures().then(x=>x.map(bufferToHex));
             assert.strictEqual(procList2.length, procList1.length + 1, "The number of procedures should have increased by 1");
-            assert(procList2.includes(normalize(web3.utils.fromAscii(procName,24))), "The new procedure key should be included in the table");
+            assert(procList2.includes(web3.utils.fromAscii(procName,24)), "The new procedure key should be included in the table");
 
             // Check that the new procedure has the correct caps.
             const resulting_caps = await this.interface.methods.getNCaps(web3.utils.fromAscii("write",24)).call();
