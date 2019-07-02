@@ -1,4 +1,4 @@
-# Cap9 Ewasm Kernel Target
+# Cap9 Ewasm
 
 ## Development
 
