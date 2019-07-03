@@ -483,6 +483,37 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
     }
 }
 
+/// An iterator over the values of a StorageVec.
+pub struct StorageVecIter<'a, V> {
+    /// The StorageVec we are iterating over.
+    storage_vec: &'a StorageVec<V>,
+    /// The current offset into the StorageVec.
+    offset: U256,
+}
+
+impl<'a, V: Storable> StorageVecIter<'a, V> {
+    fn new(storage_vec: &'a StorageVec<V>) -> Self {
+        StorageVecIter {
+            storage_vec,
+            offset: U256::zero(),
+        }
+    }
+}
+
+impl<'a, V: Storable> Iterator for StorageVecIter<'a, V> {
+    type Item = V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.storage_vec.get(self.offset) {
+            Some(val) => {
+                self.offset += U256::from(1);
+                Some(val)
+            },
+            None => None,
+        }
+    }
+}
+
 /// A key difference between a StorageVec a Rust Vec is that the
 /// capacity is a property of the capability and is therefore not so flexible,
 /// and cannot be changed. In order to get a vector of a different capacity you
@@ -564,6 +595,11 @@ impl<V: Storable> StorageVec<V> {
         // Store length value.
         write(self.cap_index, &U256::from(self.location).into(), &self.length.into()).unwrap();
     }
+
+    pub fn iter(&self) -> StorageVecIter<V> {
+        StorageVecIter::new(self)
+    }
+
 }
 
 #[cfg(test)]

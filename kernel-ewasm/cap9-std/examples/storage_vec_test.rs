@@ -34,6 +34,8 @@ pub mod StorageVecTest {
 
         fn push_num(&mut self, num: U256);
 
+        fn sum(&mut self) -> U256;
+
     }
 
     pub struct StorageVecTestContract;
@@ -55,6 +57,15 @@ pub mod StorageVecTest {
         fn push_num(&mut self, num: U256) {
             let mut vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::new(0);
             vector.push(num);
+        }
+
+        fn sum(&mut self) -> U256 {
+            let vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::new(0);
+            let mut total: U256 = U256::zero();
+            for val in vector.iter() {
+                total += val;
+            }
+            total
         }
 
     }
