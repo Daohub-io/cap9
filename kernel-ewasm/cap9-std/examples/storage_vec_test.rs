@@ -20,7 +20,6 @@ fn main() {}
 
 pub mod StorageVecTest {
     use pwasm_abi::types::*;
-    use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
     use cap9_std;
 
@@ -32,6 +31,8 @@ pub mod StorageVecTest {
         fn create_vector(&mut self);
 
         fn push_this_proc(&mut self);
+
+        fn push_num(&mut self, num: U256);
 
     }
 
@@ -49,6 +50,11 @@ pub mod StorageVecTest {
             let mut vector: cap9_std::StorageVec<cap9_std::SysCallProcedureKey> = cap9_std::StorageVec::new(0);
             let current_proc = cap9_std::proc_table::get_current_proc_id();
             vector.push(current_proc.into());
+        }
+
+        fn push_num(&mut self, num: U256) {
+            let mut vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::new(0);
+            vector.push(num);
         }
 
     }

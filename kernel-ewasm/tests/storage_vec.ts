@@ -75,19 +75,28 @@ describe('StorgeVec', function () {
                 .then(bufferToHex)
                 .then(web3.utils.hexToNumber);
             assert.strictEqual(length1, 0, "There should be 0 elements");
-            await tester.interface.methods.push_this_proc().send();
+            await tester.interface.methods.push_num(85).send();
             const keys3 = await listStorageKeys(tester.kernel.contract.address, 100);
             const length2 = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
                 .then(bufferToHex)
                 .then(web3.utils.hexToNumber);
             assert.strictEqual(length2, 1, "There should be 1 element");
-            const firstKey = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]));
-            // console.log(bufferToHex(firstKey));
-            assert.strictEqual(firstKey.filter(x=>x !== 0x00).length > 0,true, "The stored value should be non-zero");
-            await tester.interface.methods.push_this_proc().send();
+            const firstKey1 = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]))
+                .then(bufferToHex)
+                .then(web3.utils.hexToNumber);
+            assert.strictEqual(firstKey1, 85, "The first stored value should be 85");
+            await tester.interface.methods.push_num(95).send();
             const length3 = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
                 .then(bufferToHex)
                 .then(web3.utils.hexToNumber);
+            const firstKey2 = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]))
+                .then(bufferToHex)
+                .then(web3.utils.hexToNumber);
+            assert.strictEqual(firstKey2, 85, "The first stored value should be still be 85");
+            const secondKey1 = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2]))
+                .then(bufferToHex)
+                .then(web3.utils.hexToNumber);
+            assert.strictEqual(secondKey1, 95, "The second stored value should be be 95");
             assert.strictEqual(length3, 2, "There should be 2 elements");
         })
     })
