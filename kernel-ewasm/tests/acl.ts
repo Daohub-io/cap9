@@ -1,27 +1,47 @@
 const Web3 = require('web3')
 const assert = require('assert')
 const fs = require('fs')
-const jayson = require('jayson');
-
-// create a client
-const client = jayson.client.http({
-  port: 8545
-});
-// List storage keys. With parity this can be used to debug the total state of
-// the kernel.
-// client.request('parity_listStorageKeys', [tester.kernel.contract.address, 20], function(err, response) {
-//     if(err) throw err;
-//     console.log("storageKeys:", response.result); // 2
-// });
 
 import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap, AccCallCap, CHAIN_CONFIG, CallCap, DeleteCap, bufferToHex} from './utils'
 import { Tester, TestContract } from './utils/tester';
 import { notEqual } from 'assert';
 
 
-describe('Access Control List', function () {
+describe.only('Access Control List', function () {
     this.timeout(40_000);
     describe('test ACL boostrap', function () {
+        let tester;
+        let entry_contract;
+        let admin_contract;
+        const prefix = 0;
+        const cap_key = "write";
+        const entryCaps = [
+            new NewCap(0, new RegisterCap(prefix, cap_key)),
+            new NewCap(0, new RegisterCap(prefix, cap_key)),
+            new NewCap(0, new CallCap(prefix, cap_key)),
+            new NewCap(0, new DeleteCap(prefix, cap_key)),
+            new NewCap(0, new WriteCap(
+                web3.utils.hexToBytes("0x0000000000000000000000000000000000000000000000000000000000000000"),
+                web3.utils.hexToBytes("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+            )),
+            // new NewCap(0, new WriteCap(
+            //     web3.utils.hexToBytes("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+            //     web3.utils.hexToBytes("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
+            // )),
+            new NewCap(0, new EntryCap()),
+        ];
+
+        this.beforeAll(async function () {
+            tester = new Tester();
+
+            // Deploy entry contract
+            entry_contract = await deployContract("acl_entry", "ACLEntryInterface", []);
+            // Deploy admin contract
+            admin_contract = await deployContract("acl_admin", "ACLAdminInterface", []);
+            tester.setFirstEntry("init", new TestContract("acl_bootstrap", "ACLBootstrapInterface", entryCaps));
+            await tester.init();
+        });
+
         it('set and retrieve values', async function () {
             const testAccountName = "extra_account";
             const testAccountPassword = "extra_password";
@@ -29,27 +49,6 @@ describe('Access Control List', function () {
             const testAccount = web3.utils.toChecksumAddress(testAccountRaw, web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
             await web3.eth.personal.unlockAccount(testAccount, testAccountPassword, null);
 
-            const tester = new Tester();
-            const prefix = 0;
-            const cap_key = "write";
-            const entryCaps = [
-                new NewCap(0, new RegisterCap(prefix, cap_key)),
-                new NewCap(0, new RegisterCap(prefix, cap_key)),
-                new NewCap(0, new CallCap(prefix, cap_key)),
-                new NewCap(0, new DeleteCap(prefix, cap_key)),
-                new NewCap(0, new WriteCap(
-                    web3.utils.hexToBytes("0x0000000000000000000000000000000000000000000000000000000000000000"),
-                    web3.utils.hexToBytes("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-                )),
-                new NewCap(0, new EntryCap()),
-            ];
-
-            // Deploy entry contract
-            const entry_contract = await deployContract("acl_entry", "ACLEntryInterface", []);
-            // Deploy admin contract
-            const admin_contract = await deployContract("acl_admin", "ACLAdminInterface", []);
-            tester.setFirstEntry("init", new TestContract("acl_bootstrap", "ACLBootstrapInterface", entryCaps));
-            await tester.init();
             const accounts = await web3.eth.getAccounts();
             const mainAccount = accounts[1];
 
@@ -57,8 +56,10 @@ describe('Access Control List', function () {
             const admin_key = "0x" + web3.utils.fromAscii("admin", 24).slice(2).padStart(64, "0");
 
             let encoded_cap_list: string[] = entryCaps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
+            const keys1 = await tester.kernel.listStorageKeys(100);
+            console.log("keys1", keys1)
             // Bootstrap the ACL system.
-            await tester.interface.methods.init(
+            const r = await tester.interface.methods.init(
                 entry_key, // entry key
                 entry_contract.address, // entry address
                 encoded_cap_list, // entry cap list
@@ -67,11 +68,21 @@ describe('Access Control List', function () {
                 encoded_cap_list, // admin cap list
                 mainAccount // admin account
             ).send();
-
+            const keys2 = await tester.kernel.listStorageKeys(100);
+            console.log("keys2", keys2);
             // Update the ABI. The entry procedure is now "acl_entry" so we need
             // to use that ABI. We also need to be careful to keep the old
             // address.
             tester.interface = entry_contract;
+
+            const n_accounts = await tester.interface.methods.n_accounts().call().then(x=>x.toNumber());
+            const n = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
+                .then(bufferToHex)
+                .then(web3.utils.hexToNumber);
+            console.log("n_accounts:", n_accounts);
+            const keys = await tester.kernel.listStorageKeys(100);
+            console.log(keys)
+            // assert.strictEqual(n_accounts, 1, "There should be one account");
 
             const procName = "randomProcName";
             // Successfuly register a procedure for Group 5

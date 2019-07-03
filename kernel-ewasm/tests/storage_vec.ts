@@ -25,7 +25,7 @@ async function listStorageKeys(address, n) {
 
 describe('StorgeVec', function () {
     this.timeout(40_000);
-    describe('test ACL boostrap', function () {
+    describe('test vector', function () {
         let tester;
         this.beforeAll(async function () {
             tester = new Tester();

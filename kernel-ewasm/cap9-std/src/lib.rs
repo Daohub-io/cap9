@@ -363,8 +363,185 @@ impl Storable for U256 {
 
 use core::marker::PhantomData;
 
+
+// /// An iterator over the values of a StorageVec.
+// pub struct StorageEnumerableMapIter<'a, K, V> {
+//     /// The StorageVec we are iterating over.
+//     storage_map: &'a StorageEnumerableMap<K, V>,
+//     /// The current offset into the StorageVec.
+//     offset: U256,
+// }
+
+// impl<'a, K: Keyable, V: Storable> StorageEnumerableMapIter<'a, K, V> {
+//     fn new(storage_map: &'a StorageEnumerableMap<K, V>) -> Self {
+//         StorageEnumerableMapIter {
+//             storage_map,
+//             offset: U256::zero(),
+//         }
+//     }
+// }
+
+// impl<'a, K: Keyable, V: Storable> Iterator for StorageEnumerableMapIter<'a, K, V> {
+//     type Item = V;
+//     // Needs to be able to enumerate keys
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         match self.storage_map.get(self.offset) {
+//             Some(val) => {
+//                 self.offset += U256::from(1);
+//                 Some(val)
+//             },
+//             None => None,
+//         }
+//     }
+// }
+
+pub struct StorageEnumerableMap<K,V> {
+    cap_index: u8,
+    /// The start location of the map.
+    location: H256,
+    /// The key type of the map.
+    key_type: PhantomData<K>,
+    /// The data type of the map.
+    data_type: PhantomData<V>,
+    /// Possible the cached number of elements in the map.
+    length: Option<U256>,
+}
+
+
+/// Capabilities means that data structures are not nestable.
+impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
+
+    // The location is dictated by the capability. A more specific location will
+    // simply require a more specific capability. This means the procedure needs
+    // to access capability data.
+    //
+    // TODO: this should be fallible.
+    //
+    // TODO: should probably be called `from` as it will instantiate an already
+    // existing storage data structure.
+    //
+    // TODO: there is some risk that there is storage on this cap that is not
+    // compatible. I don't know if there is a way to make this type-safe, as
+    // there is no type information. Validating the current contents would be
+    // prohibitively expensive.
+    pub fn from(cap_index: u8) -> Self {
+        // The size of the cap needs to be key_width+1 in bytes
+        let address_bytes = K::key_width()+1;
+        let address_bits = address_bytes*8;
+        let address_size = U256::from(2).pow(U256::from(address_bits));
+        // The address also need to be aligned.
+        let this_proc_key = proc_table::get_current_proc_id();
+        if let Some(proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size})) =
+                proc_table::get_proc_cap(this_proc_key, proc_table::cap::CAP_STORE_WRITE, cap_index) {
+                    // Check that the size of the cap is correct.
+                    if U256::from(size) < address_size {
+                        panic!("cap too small")
+                    } else if U256::from(location).trailing_zeros() < (address_bits as u32 + 1 + 1) {
+                        // the trailing number of 0 bits should be equal to or greater than the address_bits
+                        panic!("cap not aligned: {}-{}", U256::from(location).trailing_zeros(), address_bits)
+                    } else {
+                        StorageEnumerableMap {
+                            cap_index,
+                            location: location.into(),
+                            key_type: PhantomData,
+                            data_type: PhantomData,
+                            length: None,
+                        }
+                    }
+        } else {
+            panic!("wrong cap: {:?}", this_proc_key)
+        }
+    }
+
+    pub fn location(&self) -> H256 {
+        self.location
+    }
+
+    fn base_key(&self, key: &K) -> [u8; 32] {
+        let mut base: [u8; 32] = [0; 32];
+        // The key start 32 - width - 1, the -1 is for data and presence
+        let key_start = 32 - K::key_width() as usize - 1;
+        // First we copy in the relevant parts of the location.
+        base[0..key_start].copy_from_slice(&self.location().as_bytes()[0..key_start]);
+        // Then we copy in the key
+        // TODO: overflow
+        base[key_start..(key_start+K::key_width() as usize)].clone_from_slice(key.key_slice().as_slice());
+        base
+    }
+
+    fn presence_key(&self, key: &K) -> H256 {
+        // The presence_key is the storage key which indicates whether there is
+        // a value associated with this key.
+        let mut presence_key = self.base_key(&key);
+        // The first bit of the data byte indicates presence
+        presence_key[31] = presence_key[31] | 0b10000000;
+        presence_key.into()
+    }
+
+    fn length_key(&self) -> H256 {
+        // The presence_key is the storage key which indicates whether there is
+        // a value associated with this key.
+        let mut location = self.location.clone();
+        let length_key = location.as_fixed_bytes_mut();
+        // let mut length_key: [u8; 32] = [0xee; 32];
+        let index = 31 - 1 - K::key_width();
+        length_key[index as usize] = length_key[index as usize] | 0b00000001;
+        length_key.into()
+    }
+
+    pub fn length(&self) -> U256 {
+        match self.length {
+            // A cached value exists, use that.
+            Some(l) => l,
+            // No cached value exists, read from storage.
+            None => {
+                let length = U256::from(pwasm_ethereum::read(&self.length_key()));
+                length
+            }
+        }
+    }
+
+    fn increment_length(&mut self) {
+        self.length = Some(self.length().checked_add(1.into()).unwrap());
+        // Store length value.
+        pwasm_ethereum::write(&self.length_key(), &self.length().into());
+        // write(self.cap_index, &self.length_key().to_fixed_bytes(), &self.length().into()).unwrap();
+    }
+
+    pub fn present(&self, key: &K) -> bool {
+        // If the value at the presence key is non-zero, then a value is
+        // present.
+        let present = pwasm_ethereum::read(&self.presence_key(key));
+        present != [0; 32]
+    }
+
+    fn set_present(&self, key: K) {
+        // If the value at the presence key is non-zero, then a value is
+        // present.
+        write(self.cap_index, &self.presence_key(&key).as_fixed_bytes(), H256::repeat_byte(0xff).as_fixed_bytes()).unwrap();
+    }
+
+    pub fn get(&self, key: K) -> Option<V> {
+        let base = self.base_key(&key);
+        if self.present(&key) {
+            V::read(base.into())
+        } else {
+            None
+        }
+    }
+
+    pub fn insert(&mut self, key: K, value: V) {
+        let base = self.base_key(&key);
+        self.set_present(key);
+        value.store(self.cap_index, U256::from_big_endian(&base));
+        // Increment length
+        self.increment_length();
+    }
+}
+
 /// This is a Cap9 map. The way Solidity maps and Cap9 caps work are not
-/// compatible, as Cap9 uses contigous storage blocks in the caps. It is
+/// compatible, as Cap9 uses contiguous storage blocks in the caps. It is
 /// _generally_ expected that caps will be used in such a way that they are
 /// non-overlapping (although possibly shared). This means that key-size is
 /// relevant in a map that we create. This map does not do any hashing, and if a
@@ -401,7 +578,12 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
     //
     // TODO: should probably be called `from` as it will instantiate an already
     // existing storage data structure.
-    pub fn new(cap_index: u8) -> Self {
+    //
+    // TODO: there is some risk that there is storage on this cap that is not
+    // compatible. I don't know if there is a way to make this type-safe, as
+    // there is no type information. Validating the current contents would be
+    // prohibitively expensive.
+    pub fn from(cap_index: u8) -> Self {
         // The size of the cap needs to be key_width+1 in bytes
         let address_bytes = K::key_width()+1;
         let address_bits = address_bytes*8;
@@ -537,7 +719,7 @@ impl<V: Storable> StorageVec<V> {
     /// will simply require a more specific capability. This means the procedure
     /// needs to access capability data. The capacity is also defined by the
     /// capability. The capability does not need to be aligned to the data size.
-    pub fn new(cap_index: u8) -> Self {
+    pub fn from(cap_index: u8) -> Self {
         let this_proc_key = proc_table::get_current_proc_id();
         if let Some(proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size})) =
                 proc_table::get_proc_cap(this_proc_key, proc_table::cap::CAP_STORE_WRITE, cap_index) {
@@ -660,7 +842,7 @@ mod test {
             parent_index: 0,
         });
         proc_table::insert_proc(this_proc_key, Address::zero(), proc_table::cap::NewCapList(cap_list)).unwrap();
-        let mut map: StorageMap<u8,ExampleData> = StorageMap::new(0);
+        let mut map: StorageMap<u8,ExampleData> = StorageMap::from(0);
         assert_eq!(map.location(), location.into());
         assert_eq!(map.get(1), None);
         let example = ExampleData {
@@ -701,7 +883,7 @@ mod test {
             parent_index: 0,
         });
         proc_table::insert_proc(this_proc_key, Address::zero(), proc_table::cap::NewCapList(cap_list)).unwrap();
-        let mut map: StorageMap<Address,ExampleData> = StorageMap::new(0);
+        let mut map: StorageMap<Address,ExampleData> = StorageMap::from(0);
         assert_eq!(map.location(), location.into());
         assert_eq!(map.get(example_address), None);
         let example = ExampleData {

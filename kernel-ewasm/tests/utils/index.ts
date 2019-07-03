@@ -9,6 +9,12 @@ const path = require("path")
 const http = require('http')
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+const jayson = require('jayson');
+
+const client = jayson.client.http({
+    port: 8545
+  });
+
 
 type BN = typeof BN;
 
@@ -131,6 +137,15 @@ export class KernelInstance {
     public async getProcedureKeysAscii(): Promise<Array<string>> {
         const procs = await this.getProcedureKeys();
         return procs.map(x=>decoder.decode(x));
+    }
+
+    public async listStorageKeys(n) {
+        return new Promise((resolve,reject) => {
+            client.request('parity_listStorageKeys', [this.contract.address, n], function(err, response) {
+                if(err) reject(err);
+                resolve(response.result);
+            });
+        });
     }
 
     // TODO: deprecate

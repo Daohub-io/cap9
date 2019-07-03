@@ -18,6 +18,8 @@ extern crate cap9_test;
 
 fn main() {}
 
+// struct CapIndex(pub u8);
+
 pub mod ACL {
     use pwasm_abi::types::*;
     use pwasm_abi_derive::eth_abi;
@@ -46,11 +48,13 @@ pub mod ACL {
             cap9_std::entry(0, entry_key.into()).unwrap();
             // Add admin to the admin group (1)
             let admin_group: u8 = 1;
-            let mut procecedure_map: cap9_std::StorageMap<Address, u8> = cap9_std::StorageMap::new(0);
-            procecedure_map.insert(admin_account, admin_group);
+            let mut account_map: cap9_std::StorageEnumerableMap<Address, u8>
+                = cap9_std::StorageEnumerableMap::from(0);
+            account_map.insert(admin_account, admin_group);
             // Set the procedure of the admin group (1) to the admin procedure
-            let mut procecedure_map: cap9_std::StorageMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageMap::new(0);
-            procecedure_map.insert(admin_group, admin_key.into());
+            let mut procedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey>
+                = cap9_std::StorageEnumerableMap::from(0);
+            procedure_map.insert(admin_group, admin_key.into());
             // Unregister this bootstrap procedure, note that the contract will
             // not be reaped.
             let current_proc = cap9_std::proc_table::get_current_proc_id();
