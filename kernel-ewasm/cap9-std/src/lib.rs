@@ -288,10 +288,19 @@ impl Keyable for Address {
 
 // TODO: we might be able to make this a little more typesafe, currently this is
 // limited to 256 keys.
-pub trait Storable {
+pub trait Storable: Sized {
+    /// Return the number of 32-byte keys required to store a single instance of
+    /// this data type.
     fn n_keys() -> U256;
+
+    // TODO: this should use the cursor method to write directly (thereby
+    // requiring a cap etc.).
+    /// Convert this data into a vector of 32-byte values to be stored.
     fn store(&self) -> Vec<H256>;
-    fn read(vals: Vec<H256>) -> Self;
+
+    // TODO: this should use the cursor method to write directly.
+    /// Read an instance of this data from storage.
+    fn read(location: U256) -> Option<Self>;
 }
 
 impl Storable for u8 {
@@ -306,13 +315,15 @@ impl Storable for u8 {
         vals
     }
 
-    fn read(vals: Vec<H256>) -> Self {
-        let u: U256 = vals[0].into();
-        u.as_u32() as u8
+    fn read(location: U256) -> Option<Self> {
+        let u = pwasm_ethereum::read(&location.into());
+        let u: U256 = u.into();
+        Some(u.as_u32() as u8)
     }
 }
 
 impl Storable for SysCallProcedureKey {
+
     fn n_keys() -> U256 {
         1.into()
     }
@@ -322,9 +333,12 @@ impl Storable for SysCallProcedureKey {
         res.push(self.into());
         res
     }
-    fn read(h: Vec<H256>) -> Self {
-        h[0].into()
+
+    fn read(location: U256) -> Option<Self> {
+        let h: H256 = pwasm_ethereum::read(&location.into()).into();
+        Some(h.into())
     }
+
 }
 
 use core::marker::PhantomData;
@@ -362,6 +376,11 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
     // The location is dictated by the capability. A more specific location will
     // simply require a more specific capability. This means the procedure needs
     // to access capability data.
+    //
+    // TODO: this should be fallible.
+    //
+    // TODO: should probably be called `from` as it will instantiate an already
+    // existing storage data structure.
     pub fn new(cap_index: u8) -> Self {
         // // This casts the log2 of the value size to u8. value_size is a u32, and
         // // therefore the log2 of it will always fit inside a u8. See test:
@@ -436,18 +455,9 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
     }
 
     pub fn get(&self, key: K) -> Option<V> {
-        // First question: Is there a value associated with this key?
-        //
-        // The presence_key is the storage key which indicates whether there is
-        // a value associated with this key.
-        let mut base = self.base_key(&key);
+        let base = self.base_key(&key);
         if self.present(&key) {
-            let mut vals: Vec<H256> = Vec::with_capacity(V::n_keys().as_usize());
-            for _ in 0..V::n_keys().as_usize() {
-                base[31] = base[31] + 1;
-                vals.push(pwasm_ethereum::read(&base.into()).into());
-            }
-            Some(V::read(vals))
+            V::read(base.into())
         } else {
             None
         }
@@ -458,8 +468,8 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
         self.set_present(key);
         let vals: Vec<H256> = value.store();
         for val in vals {
-            base[31] = base[31] + 1;
             write(self.cap_index, &base, &val.into()).unwrap();
+            base[31] = base[31] + 1;
         }
     }
 }
@@ -518,6 +528,9 @@ impl<V: Storable> StorageVec<V> {
     }
 
     pub fn get(&self, index: U256) -> Option<V> {
+        if index >= self.length {
+            return None;
+        }
         let start_key_opt: Option<U256> = match V::n_keys().checked_mul(index) {
             None => None,
             Some(x) => U256::from(self.location).checked_add(x),
@@ -525,11 +538,12 @@ impl<V: Storable> StorageVec<V> {
         let start_key: U256 = start_key_opt.unwrap();
         // TOOD: use cursor method rather than building a vector
         let mut vals: Vec<H256> = Vec::with_capacity(V::n_keys().as_usize());
-        for i in 0..V::n_keys().as_usize() {
-            let offset = start_key.checked_add(i.into()).unwrap();
-            vals.push(pwasm_ethereum::read(&offset.into()).into());
-        }
-        Some(V::read(vals))
+        let offset = start_key.checked_add(1.into()).unwrap();
+        V::read(offset)
+        // for i in 0..V::n_keys().as_usize() {
+        //     vals.push(pwasm_ethereum::read(&offset.into()).into());
+        // }
+        // Some(V::read(vals))
     }
 
     pub fn push(&mut self, value: V) {
@@ -568,11 +582,13 @@ mod test {
             res.push(self.key_v2);
             res
         }
-        fn read(h: Vec<H256>) -> Self {
-            ExampleData {
-                key_v1: h[0],
-                key_v2: h[1],
-            }
+        fn read(location: U256) -> Option<Self> {
+            let h1: H256 = pwasm_ethereum::read(&location.into()).into();
+            let h2: H256 = pwasm_ethereum::read(&(location + U256::from(1)).into()).into();
+            Some(ExampleData {
+                key_v1: h1,
+                key_v2: h2,
+            })
         }
     }
 

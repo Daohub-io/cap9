@@ -21,7 +21,6 @@ fn main() {}
 pub mod ACL {
     use pwasm_abi::types::*;
     use pwasm_abi_derive::eth_abi;
-    use cap9_std;
 
     #[eth_abi(ACLGroup5Endpoint, KernelClient)]
     pub trait ACLGroup5Interface {

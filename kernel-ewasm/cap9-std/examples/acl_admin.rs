@@ -144,7 +144,7 @@ pub trait ACLAdminInterface {
             // Here the cap is hard coded. This procedure expects its first
             // procedure call capability to give it all the necessary
             // permissions.
-            cap9_std::call(0_u8, procedure_key, payload);
+            cap9_std::call(0_u8, procedure_key, payload).unwrap();
             pwasm_ethereum::ret(&cap9_std::result());
         }
 
