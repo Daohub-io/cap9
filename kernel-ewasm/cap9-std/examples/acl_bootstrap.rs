@@ -49,11 +49,11 @@ pub mod ACL {
             // Add admin to the admin group (1)
             let admin_group: u8 = 1;
             let mut account_map: cap9_std::StorageEnumerableMap<Address, u8>
-                = cap9_std::StorageEnumerableMap::from(0);
+                = cap9_std::StorageEnumerableMap::from(0).unwrap();
             account_map.insert(admin_account, admin_group);
             // Set the procedure of the admin group (1) to the admin procedure
             let mut procedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey>
-                = cap9_std::StorageEnumerableMap::from(1);
+                = cap9_std::StorageEnumerableMap::from(1).unwrap();
             procedure_map.insert(admin_group, admin_key.into());
             // Unregister this bootstrap procedure, note that the contract will
             // not be reaped.

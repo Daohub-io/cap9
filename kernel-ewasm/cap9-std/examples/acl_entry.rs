@@ -53,7 +53,8 @@ pub mod ACL {
             // This relies on a mapping of groups -> procedures. Therefore we
             // need a map mechanism. Here we will just create the mechanism each
             // time at the same address.
-            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1);
+            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey>
+                = cap9_std::StorageEnumerableMap::from(1).unwrap();
             match procecedure_map.get(group_id.as_u32() as u8) {
                 Some(x) => x.into(),
                 None => H256::zero(),
@@ -61,7 +62,8 @@ pub mod ACL {
         }
 
         fn get_account_group(&mut self, account: Address) -> U256 {
-            let procecedure_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0);
+            let procecedure_map: cap9_std::StorageEnumerableMap<Address, u8>
+                = cap9_std::StorageEnumerableMap::from(0).unwrap();
             match procecedure_map.get(account) {
                 Some(x) => x.into(),
                 None => U256::zero(),
@@ -69,12 +71,14 @@ pub mod ACL {
         }
 
         fn n_accounts(&mut self) -> U256 {
-            let account_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0);
+            let account_map: cap9_std::StorageEnumerableMap<Address, u8>
+                = cap9_std::StorageEnumerableMap::from(0).unwrap();
             account_map.length()
         }
 
         fn accounts(&mut self) -> Vec<Address> {
-            let account_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0);
+            let account_map: cap9_std::StorageEnumerableMap<Address, u8>
+                = cap9_std::StorageEnumerableMap::from(0).unwrap();
             let mut accounts = Vec::new();
             for account in account_map.keys() {
                 accounts.push(account)
@@ -83,7 +87,8 @@ pub mod ACL {
         }
 
         fn procedures(&mut self) -> Vec<H256> {
-            let procedure_map: cap9_std::StorageEnumerableMap<u8, cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1);
+            let procedure_map: cap9_std::StorageEnumerableMap<u8, cap9_std::SysCallProcedureKey>
+                = cap9_std::StorageEnumerableMap::from(1).unwrap();
             let mut procedures: Vec<H256> = Vec::new();
             for (_group_id, procedure) in procedure_map.iter() {
                 procedures.push(procedure.into())
@@ -96,7 +101,8 @@ pub mod ACL {
         fn proxy(&mut self, payload: Vec<u8>) {
             let sender = pwasm_ethereum::origin();
             let group_id = self.get_account_group(sender).as_u32() as u8;
-            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1);
+            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey>
+                = cap9_std::StorageEnumerableMap::from(1).unwrap();
             let procedure_key = procecedure_map.get(group_id).unwrap();
             // Here the cap is hard coded. This procedure expects its first
             // procedure call capability to give it all the necessary

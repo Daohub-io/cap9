@@ -45,22 +45,22 @@ pub mod StorageVecTest {
         fn constructor(&mut self) {}
 
         fn create_vector(&mut self) {
-            let _vector: cap9_std::StorageVec<cap9_std::SysCallProcedureKey> = cap9_std::StorageVec::from(0);
+            let _vector: cap9_std::StorageVec<cap9_std::SysCallProcedureKey> = cap9_std::StorageVec::from(0).unwrap();
         }
 
         fn push_this_proc(&mut self) {
-            let mut vector: cap9_std::StorageVec<cap9_std::SysCallProcedureKey> = cap9_std::StorageVec::from(0);
+            let mut vector: cap9_std::StorageVec<cap9_std::SysCallProcedureKey> = cap9_std::StorageVec::from(0).unwrap();
             let current_proc = cap9_std::proc_table::get_current_proc_id();
             vector.push(current_proc.into());
         }
 
         fn push_num(&mut self, num: U256) {
-            let mut vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::from(0);
+            let mut vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::from(0).unwrap();
             vector.push(num);
         }
 
         fn sum(&mut self) -> U256 {
-            let vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::from(0);
+            let vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::from(0).unwrap();
             let mut total: U256 = U256::zero();
             for val in vector.iter() {
                 total += val;

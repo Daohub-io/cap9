@@ -1,5 +1,3 @@
-//! # Cap9 Core
-//!
 //! This crate contains some of the base types and mechanism used throughout the
 //! kernel and contracts. Most critically at this stage it contains the Cursor
 //! and Serialization types.
@@ -259,9 +257,9 @@ impl Serialize<u8> for Address {
 }
 
 
-/// A `StorageValue` is a single 32-byte value that would be write/read from
-/// storage. As well as forming a nice API, it is necessary to have our own
-/// definition in order to define certain traits.
+/// A single 32-byte value that would be write/read from storage. As well as
+/// forming a nice API, it is necessary to have our own definition in order to
+/// define certain traits.
 pub struct StorageValue(pub H256);
 
 impl From<StorageValue> for H256 {
