@@ -255,10 +255,64 @@ pub fn acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) 
     cap9_syscall(&input, &mut Vec::new())
 }
 
+pub struct StorageValue(pub H256);
+
+impl From<StorageValue> for H256 {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0
+    }
+}
+
+impl Into<StorageValue> for H256 {
+    fn into(self) -> StorageValue {
+        StorageValue(self)
+    }
+}
+
+
+impl From<StorageValue> for u8 {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.to_fixed_bytes()[31]
+    }
+}
+
+impl Into<StorageValue> for u8 {
+    fn into(self) -> StorageValue {
+        let u: U256 = self.into();
+        StorageValue(u.into())
+    }
+}
+
+
+impl From<StorageValue> for Address {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.into()
+    }
+}
+
+impl Into<StorageValue> for Address {
+    fn into(self) -> StorageValue {
+        StorageValue(self.into())
+    }
+}
+
+
+impl From<StorageValue> for [u8; 32] {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.into()
+    }
+}
+
+impl Into<StorageValue> for [u8; 32] {
+    fn into(self) -> StorageValue {
+        StorageValue(self.into())
+    }
+}
+
 // A type which implements Keyable must follow these rules:
 //    1. key width must be 32 or less.
 //    2. key_slice() must return a vec with a length of exactly key width.
-pub trait Keyable {
+pub trait Keyable: From<StorageValue> + Into<StorageValue> + Clone {
     /// The width of the key in bytes.
     fn key_width() -> u8;
     fn key_slice(&self) -> Vec<u8>;
@@ -364,37 +418,106 @@ impl Storable for U256 {
 use core::marker::PhantomData;
 
 
-// /// An iterator over the values of a StorageVec.
-// pub struct StorageEnumerableMapIter<'a, K, V> {
-//     /// The StorageVec we are iterating over.
-//     storage_map: &'a StorageEnumerableMap<K, V>,
-//     /// The current offset into the StorageVec.
-//     offset: U256,
-// }
+/// An iterator over the values of a StorageVec.
+pub struct StorageEnumerableMapValues<'a, K, V> {
+    /// The StorageVec we are iterating over.
+    storage_map: &'a StorageEnumerableMap<K, V>,
+    /// The current offset into the StorageVec.
+    offset: U256,
+}
 
-// impl<'a, K: Keyable, V: Storable> StorageEnumerableMapIter<'a, K, V> {
-//     fn new(storage_map: &'a StorageEnumerableMap<K, V>) -> Self {
-//         StorageEnumerableMapIter {
-//             storage_map,
-//             offset: U256::zero(),
-//         }
-//     }
-// }
+impl<'a, K: Keyable, V: Storable> StorageEnumerableMapValues<'a, K, V> {
+    fn new(storage_map: &'a StorageEnumerableMap<K, V>) -> Self {
+        StorageEnumerableMapValues {
+            storage_map,
+            offset: U256::zero(),
+        }
+    }
+}
 
-// impl<'a, K: Keyable, V: Storable> Iterator for StorageEnumerableMapIter<'a, K, V> {
-//     type Item = V;
-//     // Needs to be able to enumerate keys
+impl<'a, K: Keyable, V: Storable> Iterator for StorageEnumerableMapValues<'a, K, V> {
+    type Item = V;
+    // Needs to be able to enumerate keys
 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         match self.storage_map.get(self.offset) {
-//             Some(val) => {
-//                 self.offset += U256::from(1);
-//                 Some(val)
-//             },
-//             None => None,
-//         }
-//     }
-// }
+    fn next(&mut self) -> Option<Self::Item> {
+        let key = match self.storage_map.get_key_at_index(self.offset) {
+            Some(val) => {
+                self.offset += U256::from(1);
+                Some(val)
+            },
+            None => None,
+        };
+        self.storage_map.get(key?)
+    }
+}
+
+/// An iterator over the values of a StorageVec.
+pub struct StorageEnumerableMapKeys<'a, K, V> {
+    /// The StorageVec we are iterating over.
+    storage_map: &'a StorageEnumerableMap<K, V>,
+    /// The current offset into the StorageVec.
+    offset: U256,
+}
+
+impl<'a, K: Keyable, V: Storable> StorageEnumerableMapKeys<'a, K, V> {
+    fn new(storage_map: &'a StorageEnumerableMap<K, V>) -> Self {
+        StorageEnumerableMapKeys {
+            storage_map,
+            offset: U256::zero(),
+        }
+    }
+}
+
+impl<'a, K: Keyable, V: Storable> Iterator for StorageEnumerableMapKeys<'a, K, V> {
+    type Item = K;
+    // Needs to be able to enumerate keys
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let key = match self.storage_map.get_key_at_index(self.offset) {
+            Some(val) => {
+                self.offset += U256::from(1);
+                Some(val)
+            },
+            None => None,
+        };
+        key
+    }
+}
+
+/// An iterator over the values of a StorageVec.
+pub struct StorageEnumerableMapIter<'a, K, V> {
+    /// The StorageVec we are iterating over.
+    storage_map: &'a StorageEnumerableMap<K, V>,
+    /// The current offset into the StorageVec.
+    offset: U256,
+}
+
+impl<'a, K: Keyable, V: Storable> StorageEnumerableMapIter<'a, K, V> {
+    fn new(storage_map: &'a StorageEnumerableMap<K, V>) -> Self {
+        StorageEnumerableMapIter {
+            storage_map,
+            offset: U256::zero(),
+        }
+    }
+}
+
+impl<'a, K: Keyable, V: Storable> Iterator for StorageEnumerableMapIter<'a, K, V> {
+    type Item = (K, V);
+    // Needs to be able to enumerate keys
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let key = match self.storage_map.get_key_at_index(self.offset) {
+            Some(val) => {
+                self.offset += U256::from(1);
+                val
+            },
+            None => {
+                return None;
+            },
+        };
+        Some((key.clone(), self.storage_map.get(key)?))
+    }
+}
 
 pub struct StorageEnumerableMap<K,V> {
     cap_index: u8,
@@ -515,10 +638,10 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         present != [0; 32]
     }
 
-    fn set_present(&self, key: K) {
+    fn set_present(&self, key: &K) {
         // If the value at the presence key is non-zero, then a value is
         // present.
-        write(self.cap_index, &self.presence_key(&key).as_fixed_bytes(), H256::repeat_byte(0xff).as_fixed_bytes()).unwrap();
+        write(self.cap_index, &self.presence_key(key).as_fixed_bytes(), H256::repeat_byte(0xff).as_fixed_bytes()).unwrap();
     }
 
     pub fn get(&self, key: K) -> Option<V> {
@@ -530,12 +653,39 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         }
     }
 
+    pub fn get_key_at_index(&self, index: U256) -> Option<K> {
+        if index >= self.length() {
+            return None;
+        }
+        let mut storage_key = self.length_key().clone();
+        storage_key = H256::from(U256::from(storage_key) + index + U256::from(1));
+        let storage_value: StorageValue = pwasm_ethereum::read(&storage_key).into();
+        Some(storage_value.into())
+    }
+
     pub fn insert(&mut self, key: K, value: V) {
         let base = self.base_key(&key);
-        self.set_present(key);
+        self.set_present(&key);
         value.store(self.cap_index, U256::from_big_endian(&base));
         // Increment length
         self.increment_length();
+        // Insert the key into the enumeration 'vector'
+        let mut length_key = self.length_key().clone();
+        length_key = H256::from(U256::from(length_key) + self.length());
+        let k_val: StorageValue = key.into();
+        pwasm_ethereum::write(&length_key, &k_val.into());
+    }
+
+    pub fn iter(&self) -> StorageEnumerableMapIter<K,V> {
+        StorageEnumerableMapIter::new(self)
+    }
+
+    pub fn keys(&self) -> StorageEnumerableMapKeys<K,V> {
+        StorageEnumerableMapKeys::new(self)
+    }
+
+    pub fn values(&self) -> StorageEnumerableMapValues<K,V> {
+        StorageEnumerableMapValues::new(self)
     }
 }
 

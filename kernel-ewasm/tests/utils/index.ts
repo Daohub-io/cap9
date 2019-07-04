@@ -246,17 +246,9 @@ export class Caps {
             .then(bufferToHex)
             .then(web3.utils.hexToNumber);
         const writeCaps = [];
-        for (let i = 0; i < n_write_caps; i++) {
-            const location_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,i+1,0x00]))
-            const size_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,i+1,0x01]))
-            const location_p = kernel.getStorageAt(location_ptr)
-                .then(bufferToHex)
-                ;
-            const size_p = kernel.getStorageAt(size_ptr)
-                .then(bufferToHex)
-                ;
-            const [location, size] = await Promise.all([location_p, size_p]);
-            writeCaps.push(new WriteCap(location, size))
+        for (let index = 0; index < n_write_caps; index++) {
+            const writeCap = await WriteCap.from(kernel, key, index);
+            writeCaps.push(writeCap);
         }
 
         const reg_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.PROC_REGISTER,0x00,0x00]))
@@ -266,15 +258,15 @@ export class Caps {
         const regCaps = [];
         for (let index = 0; index < n_reg_caps; index++) {
             const regCap = await RegisterCap.from(kernel, key, index);
-            regCaps.push(regCap)
+            regCaps.push(regCap);
         }
         return new Caps(writeCaps, regCaps);
     }
 
     toString() {
         return `Caps:
-    WRITE:\n${this.writeCaps.map(x=> `      ${x.toString()}`).join("\n")}
-    REGISTER:\n${this.regCaps.map(x=>`      ${x.toString()}`).join("\n")}`
+    WRITE(${this.writeCaps.length}):\n${this.writeCaps.map(x=> `      ${x.toString()}`).join("\n")}
+    REGISTER(${this.writeCaps.length}):\n${this.regCaps.map(x=>`      ${x.toString()}`).join("\n")}`
     }
 }
 
@@ -405,6 +397,19 @@ export class WriteCap implements Capability {
         return `WriteCap
         location: ${this.location}
         size: ${this.size}`;
+    }
+
+    static async from(kernel: KernelInstance, key: Uint8Array, index: number): Promise<WriteCap> {
+        const location_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,index+1,0x00]))
+        const size_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,index+1,0x01]))
+        const location_p = kernel.getStorageAt(location_ptr)
+            .then(bufferToHex)
+            ;
+        const size_p = kernel.getStorageAt(size_ptr)
+            .then(bufferToHex)
+            ;
+        const [location, size] = await Promise.all([location_p, size_p]);
+        return new WriteCap(location, size);
     }
 }
 

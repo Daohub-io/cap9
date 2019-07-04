@@ -147,6 +147,17 @@ describe('Access Control List', function () {
             const [res,] = web3.eth.abi.decodeParameters(regInterface.jsonInterface.abi.methods.testNum.abiItem.outputs,return_value);
             // Check the value is correct.
             assert.strictEqual(res.toNumber(), 78, "testNum() should return 78");
+            // const procs = await tester.kernel.getProcedures();
+            // procs.forEach(proc => {
+            //     console.log(proc.toString())
+            // });
+            // const keys = await tester.kernel.listStorageKeys(100);
+            // console.log(keys)
+            // Switch to entry inteface
+            tester.interface = entry_contract;
+            const acl_accounts = await tester.interface.methods.accounts().call();
+            const acl_procedures = await tester.interface.methods.procedures().call();
+            assert.deepEqual(acl_accounts, [mainAccount, testAccount], "Correct accounts should be returned");
         })
     })
 })

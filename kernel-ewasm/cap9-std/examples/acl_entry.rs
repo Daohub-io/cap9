@@ -35,6 +35,10 @@ pub mod ACL {
 
         fn n_accounts(&mut self) -> U256;
 
+        fn accounts(&mut self) -> Vec<Address>;
+
+        fn procedures(&mut self) -> Vec<H256>;
+
         fn proxy(&mut self, payload: Vec<u8>);
 
     }
@@ -67,6 +71,24 @@ pub mod ACL {
         fn n_accounts(&mut self) -> U256 {
             let account_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0);
             account_map.length()
+        }
+
+        fn accounts(&mut self) -> Vec<Address> {
+            let account_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0);
+            let mut accounts = Vec::new();
+            for account in account_map.keys() {
+                accounts.push(account)
+            }
+            accounts
+        }
+
+        fn procedures(&mut self) -> Vec<H256> {
+            let procedure_map: cap9_std::StorageEnumerableMap<u8, cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1);
+            let mut procedures: Vec<H256> = Vec::new();
+            for (_group_id, procedure) in procedure_map.iter() {
+                procedures.push(procedure.into())
+            }
+            procedures
         }
 
         /// The proxy function forwards the transaction to the procedure to
