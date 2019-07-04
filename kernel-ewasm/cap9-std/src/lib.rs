@@ -541,9 +541,6 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
     //
     // TODO: this should be fallible.
     //
-    // TODO: should probably be called `from` as it will instantiate an already
-    // existing storage data structure.
-    //
     // TODO: there is some risk that there is storage on this cap that is not
     // compatible. I don't know if there is a way to make this type-safe, as
     // there is no type information. Validating the current contents would be
@@ -672,7 +669,7 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         let mut length_key = self.length_key().clone();
         length_key = H256::from(U256::from(length_key) + self.length());
         let k_val: StorageValue = key.into();
-        write(self.cap_index, &length_key.to_fixed_bytes(), &k_val.into());
+        write(self.cap_index, &length_key.to_fixed_bytes(), &k_val.into()).unwrap();
     }
 
     pub fn iter(&self) -> StorageEnumerableMapIter<K,V> {
