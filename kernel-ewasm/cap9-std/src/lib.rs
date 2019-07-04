@@ -627,8 +627,7 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
     fn increment_length(&mut self) {
         self.length = Some(self.length().checked_add(1.into()).unwrap());
         // Store length value.
-        pwasm_ethereum::write(&self.length_key(), &self.length().into());
-        // write(self.cap_index, &self.length_key().to_fixed_bytes(), &self.length().into()).unwrap();
+        write(self.cap_index, &self.length_key().to_fixed_bytes(), &self.length().into()).unwrap();
     }
 
     pub fn present(&self, key: &K) -> bool {
@@ -673,7 +672,7 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         let mut length_key = self.length_key().clone();
         length_key = H256::from(U256::from(length_key) + self.length());
         let k_val: StorageValue = key.into();
-        pwasm_ethereum::write(&length_key, &k_val.into());
+        write(self.cap_index, &length_key.to_fixed_bytes(), &k_val.into());
     }
 
     pub fn iter(&self) -> StorageEnumerableMapIter<K,V> {
