@@ -116,9 +116,15 @@ export class KernelInstance {
         for (let i = 1; i <= nProcs; i++) {
             const ptr = this.getListPtr(i);
             const proc = this.getStorageAt(ptr).then(x=>x.slice(8,32)).then(async (key) => {
+                // Get the pointer the the base of the Procedure Data in the
+                // Procedure Heap.
                 const proc_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([0x00,0x00,0x00]))
+                // Read the Ethereum address of the contract for this procedure.
                 const address = await this.getStorageAt(proc_ptr).then(x=>x.slice(12,32));
-                return new Procedure(key, address);
+                // Read the capabilities for this procedure.
+                const caps = await Caps.from(this, key);
+                // Return a new Procedure object.
+                return new Procedure(key, address, caps);
             });
             procs.push(proc);
         }
@@ -211,7 +217,7 @@ const KERNEL_ENTRY_PROC_PTR: Uint8Array = new Uint8Array([
 
 // A representation of a procedure in the kernel.
 export class Procedure {
-    constructor(public key: Uint8Array, public address: Uint8Array) {
+    constructor(public key: Uint8Array, public address: Uint8Array, public caps: any) {
 
     }
 
@@ -220,8 +226,55 @@ export class Procedure {
         str += "Procedure {\n";
         str += `\tkey: ("${bufferToString(this.key)}") ${bufferToHex(this.key)}\n`;
         str += `\taddress: ${bufferToHex(this.address)}\n`;
+        str += `\tcaps: ${this.caps.toString()}\n`;
         str += `}\n`;
         return str;
+    }
+}
+
+export class Caps {
+    constructor (public writeCaps: WriteCap[], public regCaps: RegisterCap[]) {
+
+    }
+
+    static async from(kernel: KernelInstance, key: Uint8Array) {
+        const write_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,0x00,0x00]))
+        const n_write_caps = await kernel.getStorageAt(write_ptr)
+            .then(bufferToHex)
+            .then(web3.utils.hexToNumber);
+        const writeCaps = [];
+        for (let i = 0; i < n_write_caps; i++) {
+            const location_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,i+1,0x00]))
+            const size_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,i+1,0x01]))
+            const location_p = kernel.getStorageAt(location_ptr)
+                .then(bufferToHex)
+                ;
+            const size_p = kernel.getStorageAt(size_ptr)
+                .then(bufferToHex)
+                ;
+            const [location, size] = await Promise.all([location_p, size_p]);
+            writeCaps.push(new WriteCap(location, size))
+        }
+
+        const reg_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.PROC_REGISTER,0x00,0x00]))
+        const n_reg_caps = await kernel.getStorageAt(reg_ptr)
+            .then(bufferToHex)
+            .then(web3.utils.hexToNumber);
+        const regCaps = [];
+        for (let i = 0; i < n_reg_caps; i++) {
+            const value_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.PROC_REGISTER,i+1,0x00]))
+            const value = await kernel.getStorageAt(value_ptr);
+            const prefix = value[0];
+            const cap_key = value.slice(8,32);
+            regCaps.push(new RegisterCap(prefix, bufferToHex(cap_key)))
+        }
+        return new Caps(writeCaps, regCaps);
+    }
+
+    toString() {
+        return `  Caps:
+    WRITE:\n${this.writeCaps.map(x=> `      ${x.toString()}`).join("\n")}
+    REGISTER:\n${this.regCaps.map(x=>`      ${x.toString()}`).join("\n")}`
     }
 }
 
@@ -242,7 +295,7 @@ export interface Capability {
 
 export class NewCap {
     constructor(public parent_index: number, public cap: Capability) {}
-    to_input(): (string| number)[] {
+    to_input(): (string | number)[] {
         let cap_input = this.cap.to_input();
         let cap_size = cap_input.length + 3;
         return [cap_size, this.cap.cap_type, this.parent_index].concat(cap_input as any) as any
@@ -293,6 +346,10 @@ export class RegisterCap implements Capability {
 
         return [key as any]
     }
+    toString(): string {
+        const baseKey = hexToBuffer(this.baseKey);
+        return `RegProc {prefix: ${this.prefixLength}, ("${bufferToString(baseKey)}") ${bufferToHex(baseKey)}}`;
+    }
 }
 
 export class DeleteCap implements Capability {
@@ -327,9 +384,13 @@ export class EntryCap implements Capability {
 
 export class WriteCap implements Capability {
     public cap_type = CAP_TYPE.STORE_WRITE;
+    // TODO: these types are not quite correct
     constructor(public location: number, public size: number) { }
     to_input(): number[] {
         return [this.location, this.size]
+    }
+    toString(): string {
+        return `WriteCap {location: ${this.location}, size: ${this.size}}`;
     }
 }
 

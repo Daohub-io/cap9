@@ -484,7 +484,6 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         // a value associated with this key.
         let mut location = self.location.clone();
         let length_key = location.as_fixed_bytes_mut();
-        // let mut length_key: [u8; 32] = [0xee; 32];
         let index = 31 - 1 - K::key_width();
         length_key[index as usize] = length_key[index as usize] | 0b00000001;
         length_key.into()

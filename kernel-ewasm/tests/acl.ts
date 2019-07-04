@@ -7,7 +7,7 @@ import { Tester, TestContract } from './utils/tester';
 import { notEqual } from 'assert';
 
 
-describe.only('Access Control List', function () {
+describe('Access Control List', function () {
     this.timeout(40_000);
     describe('test ACL boostrap', function () {
         let tester;
@@ -17,17 +17,17 @@ describe.only('Access Control List', function () {
         const cap_key = "write";
         const entryCaps = [
             new NewCap(0, new RegisterCap(prefix, cap_key)),
-            new NewCap(0, new RegisterCap(prefix, cap_key)),
+            new NewCap(1, new RegisterCap(prefix, cap_key)),
             new NewCap(0, new CallCap(prefix, cap_key)),
             new NewCap(0, new DeleteCap(prefix, cap_key)),
             new NewCap(0, new WriteCap(
                 web3.utils.hexToBytes("0x0000000000000000000000000000000000000000000000000000000000000000"),
-                web3.utils.hexToBytes("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+                web3.utils.hexToBytes("0x1000000000000000000000000000000000000000000000000000000000000000"),
             )),
-            // new NewCap(0, new WriteCap(
-            //     web3.utils.hexToBytes("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-            //     web3.utils.hexToBytes("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-            // )),
+            new NewCap(1, new WriteCap(
+                web3.utils.hexToBytes("0x3000000000000000000000000000000000000000000000000000000000000000"),
+                web3.utils.hexToBytes("0x1000000000000000000000000000000000000000000000000000000000000000"),
+            )),
             new NewCap(0, new EntryCap()),
         ];
 
@@ -55,9 +55,8 @@ describe.only('Access Control List', function () {
             const entry_key = "0x" + web3.utils.fromAscii("entry", 24).slice(2).padStart(64, "0");
             const admin_key = "0x" + web3.utils.fromAscii("admin", 24).slice(2).padStart(64, "0");
 
-            let encoded_cap_list: string[] = entryCaps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
+            const encoded_cap_list: string[] = entryCaps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
             const keys1 = await tester.kernel.listStorageKeys(100);
-            console.log("keys1", keys1)
             // Bootstrap the ACL system.
             const r = await tester.interface.methods.init(
                 entry_key, // entry key
@@ -67,9 +66,8 @@ describe.only('Access Control List', function () {
                 admin_contract.address, // admin address
                 encoded_cap_list, // admin cap list
                 mainAccount // admin account
-            ).send();
+            ).send({gas:2_000_000});
             const keys2 = await tester.kernel.listStorageKeys(100);
-            console.log("keys2", keys2);
             // Update the ABI. The entry procedure is now "acl_entry" so we need
             // to use that ABI. We also need to be careful to keep the old
             // address.
@@ -79,10 +77,8 @@ describe.only('Access Control List', function () {
             const n = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
                 .then(bufferToHex)
                 .then(web3.utils.hexToNumber);
-            console.log("n_accounts:", n_accounts);
             const keys = await tester.kernel.listStorageKeys(100);
-            console.log(keys)
-            // assert.strictEqual(n_accounts, 1, "There should be one account");
+            assert.strictEqual(n_accounts, 1, "There should be one account");
 
             const procName = "randomProcName";
             // Successfuly register a procedure for Group 5
@@ -97,7 +93,7 @@ describe.only('Access Control List', function () {
                 const encodedRequestedCaps = requestedCaps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
                 const message = admin_contract.methods.regProc(cap_index, proc_key, contract.address, encodedRequestedCaps).encodeABI();
                 const proxy_message = tester.interface.methods.proxy(message).encodeABI();
-                await web3.eth.sendTransaction({ to: tester.kernel.contract.address, data: proxy_message });
+                await web3.eth.sendTransaction({ to: tester.kernel.contract.address, data: proxy_message, gas:2_100_000});
                 regInterface = contract;
             }
 
@@ -110,7 +106,8 @@ describe.only('Access Control List', function () {
                 await web3.eth.sendTransaction({
                     from: mainAccount,
                     to: tester.interface.address,
-                    data: pm1
+                    data: pm1,
+                    gas: 6_000_000,
                 });
             }
             // Add testAccount to Group 5
@@ -120,7 +117,8 @@ describe.only('Access Control List', function () {
                 await web3.eth.sendTransaction({
                     from: mainAccount,
                     to: tester.interface.address,
-                    data: pm1
+                    data: pm1,
+                    gas:2_200_000,
                 });
             }
             // When testAccount sends a transaction to the kernel, the message

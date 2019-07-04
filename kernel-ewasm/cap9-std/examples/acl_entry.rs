@@ -49,7 +49,7 @@ pub mod ACL {
             // This relies on a mapping of groups -> procedures. Therefore we
             // need a map mechanism. Here we will just create the mechanism each
             // time at the same address.
-            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(0);
+            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1);
             match procecedure_map.get(group_id.as_u32() as u8) {
                 Some(x) => x.into(),
                 None => H256::zero(),
@@ -74,7 +74,7 @@ pub mod ACL {
         fn proxy(&mut self, payload: Vec<u8>) {
             let sender = pwasm_ethereum::origin();
             let group_id = self.get_account_group(sender).as_u32() as u8;
-            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(0);
+            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1);
             let procedure_key = procecedure_map.get(group_id).unwrap();
             // Here the cap is hard coded. This procedure expects its first
             // procedure call capability to give it all the necessary

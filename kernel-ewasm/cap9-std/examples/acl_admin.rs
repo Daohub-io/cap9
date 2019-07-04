@@ -61,7 +61,7 @@ pub trait ACLAdminInterface {
             // This relies on a mapping of groups -> procedures. Therefore we
             // need a map mechanism. Here we will just create the mechanism each
             // time at the same address.
-            let mut procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(0);
+            let mut procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1);
             procecedure_map.insert(group_id.as_u32() as u8, proc_key.into());
         }
 
@@ -69,7 +69,7 @@ pub trait ACLAdminInterface {
             // This relies on a mapping of groups -> procedures. Therefore we
             // need a map mechanism. Here we will just create the mechanism each
             // time at the same address.
-            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(0);
+            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1);
             match procecedure_map.get(group_id.as_u32() as u8) {
                 Some(x) => x.into(),
                 None => H256::zero(),
