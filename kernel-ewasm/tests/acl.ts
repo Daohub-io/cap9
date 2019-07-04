@@ -13,6 +13,8 @@ describe('Access Control List', function () {
         let tester;
         let entry_contract;
         let admin_contract;
+        let testAccount;
+        let mainAccount;
         const prefix = 0;
         const cap_key = "write";
         const entryCaps = [
@@ -40,17 +42,18 @@ describe('Access Control List', function () {
             admin_contract = await deployContract("acl_admin", "ACLAdminInterface", []);
             tester.setFirstEntry("init", new TestContract("acl_bootstrap", "ACLBootstrapInterface", entryCaps));
             await tester.init();
-        });
 
-        it('set and retrieve values', async function () {
             const testAccountName = "extra_account";
             const testAccountPassword = "extra_password";
             const testAccountRaw = await createAccount(testAccountName, testAccountPassword);
-            const testAccount = web3.utils.toChecksumAddress(testAccountRaw, web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
+            testAccount = web3.utils.toChecksumAddress(testAccountRaw, web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
             await web3.eth.personal.unlockAccount(testAccount, testAccountPassword, null);
 
             const accounts = await web3.eth.getAccounts();
-            const mainAccount = accounts[1];
+            mainAccount = accounts[1];
+        });
+
+        it('initialise ACL', async function () {
 
             const entry_key = "0x" + web3.utils.fromAscii("entry", 24).slice(2).padStart(64, "0");
             const admin_key = "0x" + web3.utils.fromAscii("admin", 24).slice(2).padStart(64, "0");
@@ -73,6 +76,9 @@ describe('Access Control List', function () {
 
             const n_accounts = await tester.interface.methods.n_accounts().call().then(x=>x.toNumber());
             assert.strictEqual(n_accounts, 1, "There should be one account");
+        });
+
+        it('register and set group procedures', async function () {
 
             const procName = "randomProcName";
             // Successfuly register a procedure for Group 5
@@ -158,6 +164,6 @@ describe('Access Control List', function () {
             const acl_accounts = await tester.interface.methods.accounts().call();
             const acl_procedures = await tester.interface.methods.procedures().call();
             assert.deepEqual(acl_accounts, [mainAccount, testAccount], "Correct accounts should be returned");
-        })
+        });
     })
 })
