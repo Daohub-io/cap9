@@ -5,6 +5,7 @@
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
 use cap9_core::Serialize;
+use cap9_core::StorageValue;
 
 /// Generic wasm error
 #[derive(Debug)]
@@ -253,60 +254,6 @@ pub fn acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) 
     };
     syscall.serialize(&mut input).unwrap();
     cap9_syscall(&input, &mut Vec::new())
-}
-
-pub struct StorageValue(pub H256);
-
-impl From<StorageValue> for H256 {
-    fn from(s_val: StorageValue) -> Self {
-        s_val.0
-    }
-}
-
-impl Into<StorageValue> for H256 {
-    fn into(self) -> StorageValue {
-        StorageValue(self)
-    }
-}
-
-
-impl From<StorageValue> for u8 {
-    fn from(s_val: StorageValue) -> Self {
-        s_val.0.to_fixed_bytes()[31]
-    }
-}
-
-impl Into<StorageValue> for u8 {
-    fn into(self) -> StorageValue {
-        let u: U256 = self.into();
-        StorageValue(u.into())
-    }
-}
-
-
-impl From<StorageValue> for Address {
-    fn from(s_val: StorageValue) -> Self {
-        s_val.0.into()
-    }
-}
-
-impl Into<StorageValue> for Address {
-    fn into(self) -> StorageValue {
-        StorageValue(self.into())
-    }
-}
-
-
-impl From<StorageValue> for [u8; 32] {
-    fn from(s_val: StorageValue) -> Self {
-        s_val.0.into()
-    }
-}
-
-impl Into<StorageValue> for [u8; 32] {
-    fn into(self) -> StorageValue {
-        StorageValue(self.into())
-    }
 }
 
 // A type which implements Keyable must follow these rules:

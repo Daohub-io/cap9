@@ -257,3 +257,61 @@ impl Serialize<u8> for Address {
         Ok(())
     }
 }
+
+
+/// A `StorageValue` is a single 32-byte value that would be write/read from
+/// storage. As well as forming a nice API, it is necessary to have our own
+/// definition in order to define certain traits.
+pub struct StorageValue(pub H256);
+
+impl From<StorageValue> for H256 {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0
+    }
+}
+
+impl Into<StorageValue> for H256 {
+    fn into(self) -> StorageValue {
+        StorageValue(self)
+    }
+}
+
+
+impl From<StorageValue> for u8 {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.to_fixed_bytes()[31]
+    }
+}
+
+impl Into<StorageValue> for u8 {
+    fn into(self) -> StorageValue {
+        let u: U256 = self.into();
+        StorageValue(u.into())
+    }
+}
+
+
+impl From<StorageValue> for Address {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.into()
+    }
+}
+
+impl Into<StorageValue> for Address {
+    fn into(self) -> StorageValue {
+        StorageValue(self.into())
+    }
+}
+
+
+impl From<StorageValue> for [u8; 32] {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.into()
+    }
+}
+
+impl Into<StorageValue> for [u8; 32] {
+    fn into(self) -> StorageValue {
+        StorageValue(self.into())
+    }
+}
