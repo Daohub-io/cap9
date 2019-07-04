@@ -171,11 +171,11 @@ fn dummy_syscall() {
 
 /// Perform a raw system call.
 ///
-/// This is to replace pwasm_ethereum::call_code, and uses [`external::cap9_syscall_low`]: fn.cap9_syscall_low.html
-/// underneath instead of dcall. This is a slightly higher level abstraction
-/// over cap9_syscall_low that uses Result types and the like. This is by no
-/// means part of the spec, but more ergonomic Rust level library code. Actual
-/// syscalls should be built on top of this.
+/// This is to replace pwasm_ethereum::call_code, and uses
+/// [`external::cap9_syscall_low`] underneath instead of dcall. This is a
+/// slightly higher level abstraction over cap9_syscall_low that uses Result
+/// types and the like. This is by no means part of the spec, but more ergonomic
+/// Rust level library code. Actual syscalls should be built on top of this.
 ///
 /// # Errors
 ///
