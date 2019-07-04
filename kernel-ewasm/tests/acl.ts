@@ -56,9 +56,8 @@ describe('Access Control List', function () {
             const admin_key = "0x" + web3.utils.fromAscii("admin", 24).slice(2).padStart(64, "0");
 
             const encoded_cap_list: string[] = entryCaps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
-            const keys1 = await tester.kernel.listStorageKeys(100);
             // Bootstrap the ACL system.
-            const r = await tester.interface.methods.init(
+            await tester.interface.methods.init(
                 entry_key, // entry key
                 entry_contract.address, // entry address
                 encoded_cap_list, // entry cap list
@@ -67,17 +66,12 @@ describe('Access Control List', function () {
                 encoded_cap_list, // admin cap list
                 mainAccount // admin account
             ).send({gas:2_000_000});
-            const keys2 = await tester.kernel.listStorageKeys(100);
             // Update the ABI. The entry procedure is now "acl_entry" so we need
             // to use that ABI. We also need to be careful to keep the old
             // address.
             tester.interface = entry_contract;
 
             const n_accounts = await tester.interface.methods.n_accounts().call().then(x=>x.toNumber());
-            const n = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
-                .then(bufferToHex)
-                .then(web3.utils.hexToNumber);
-            const keys = await tester.kernel.listStorageKeys(100);
             assert.strictEqual(n_accounts, 1, "There should be one account");
 
             const procName = "randomProcName";
