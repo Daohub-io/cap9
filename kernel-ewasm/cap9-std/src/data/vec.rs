@@ -70,6 +70,10 @@ impl<V: Storable> StorageVec<V> {
         self.capacity
     }
 
+    pub fn length(&self) -> U256 {
+        self.length
+    }
+
     pub fn location(&self) -> H256 {
         self.location
     }
@@ -103,6 +107,30 @@ impl<V: Storable> StorageVec<V> {
         self.length = self.length.checked_add(1.into()).unwrap();
         // Store length value.
         write(self.cap_index, &U256::from(self.location).into(), &self.length.into()).unwrap();
+    }
+
+    /// Pop a value off the end of the vector.
+    pub fn pop(&mut self) -> Option<V> {
+        if self.length() < U256::from(1) {
+            return None;
+        }
+        // The location of the first value in the vector (i.e. after the length
+        // value).
+        let base_key: U256 = U256::from(self.location);
+        // The offset into the vector for the last value.
+        let offset: U256 = self.length.checked_mul(V::n_keys()).unwrap();
+        let val_location: U256 = base_key.checked_add(offset).unwrap();
+        let value = V::read(val_location);
+        // Clear the value from storage. Clearing away values is usually good
+        // but not done on most systems as it is cheaper to overwrite it later.
+        // On Ethereum we get a refund for clearing unused storage, so it is
+        // actually cheaper to do so than not.
+        V::clear(self.cap_index, val_location);
+        // Update length value.
+        self.length = self.length.checked_sub(1.into()).unwrap();
+        // Store length value.
+        write(self.cap_index, &U256::from(self.location).into(), &self.length.into()).unwrap();
+        value
     }
 
     /// Produce an iterator over values in the vector.

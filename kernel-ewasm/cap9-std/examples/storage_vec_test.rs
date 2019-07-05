@@ -34,6 +34,8 @@ pub mod StorageVecTest {
 
         fn push_num(&mut self, num: U256);
 
+        fn pop_num(&mut self) -> U256;
+
         fn sum(&mut self) -> U256;
 
     }
@@ -57,6 +59,11 @@ pub mod StorageVecTest {
         fn push_num(&mut self, num: U256) {
             let mut vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::from(0).unwrap();
             vector.push(num);
+        }
+
+        fn pop_num(&mut self) -> U256 {
+            let mut vector: cap9_std::StorageVec<U256> = cap9_std::StorageVec::from(0).unwrap();
+            vector.pop().unwrap()
         }
 
         fn sum(&mut self) -> U256 {

@@ -65,19 +65,27 @@ impl Keyable for Address {
     }
 }
 
-// TODO: we might be able to make this a little more typesafe, currently this is
-// limited to 256 keys.
+
+/// A value which can be stored in Ethereum storage as a sequence of 32-byte
+/// values.
+///
+/// TODO: we might be able to make this a little more typesafe, currently this
+/// is limited to 256 keys.
+///
+/// Storable inherently has the 32-byte alignment required by storage, but no
+/// other alignment requirements. Location is any storage key that leaves enough
+/// space.
 pub trait Storable: Sized {
     /// Return the number of 32-byte keys required to store a single instance of
     /// this data type.
     fn n_keys() -> U256;
 
-    // TODO: this should use the cursor method to write directly (thereby
-    // requiring a cap etc.).
     /// Convert this data into a vector of 32-byte values to be stored.
     fn store(&self, cap_index: u8, location: U256);
 
-    // TODO: this should use the cursor method to write directly.
+    // Clear a value of the given type from storage.
+    fn clear(cap_index: u8, location: U256);
+
     /// Read an instance of this data from storage.
     fn read(location: U256) -> Option<Self>;
 }
@@ -93,6 +101,11 @@ impl Storable for u8 {
         let storage_address: H256 = H256::from(location);
         let value: H256 = u.into();
         write(cap_index, storage_address.as_fixed_bytes(), value.as_fixed_bytes()).unwrap();
+    }
+
+    fn clear(cap_index: u8, location: U256) {
+        let storage_address: H256 = H256::from(location);
+        write(cap_index, storage_address.as_fixed_bytes(), &[0; 32]).unwrap();
     }
 
     fn read(location: U256) -> Option<Self> {
@@ -114,6 +127,11 @@ impl Storable for SysCallProcedureKey {
         write(cap_index, storage_address.as_fixed_bytes(), value.as_fixed_bytes()).unwrap();
     }
 
+    fn clear(cap_index: u8, location: U256) {
+        let storage_address: H256 = H256::from(location);
+        write(cap_index, storage_address.as_fixed_bytes(), &[0; 32]).unwrap();
+    }
+
     fn read(location: U256) -> Option<Self> {
         let h: H256 = pwasm_ethereum::read(&location.into()).into();
         Some(h.into())
@@ -131,6 +149,11 @@ impl Storable for U256 {
         let storage_address: H256 = H256::from(location);
         let value: H256 = self.into();
         write(cap_index, storage_address.as_fixed_bytes(), value.as_fixed_bytes()).unwrap();
+    }
+
+    fn clear(cap_index: u8, location: U256) {
+        let storage_address: H256 = H256::from(location);
+        write(cap_index, storage_address.as_fixed_bytes(), &[0; 32]).unwrap();
     }
 
     fn read(location: U256) -> Option<Self> {

@@ -87,8 +87,46 @@ describe('StorgeVec', function () {
             assert.strictEqual(length3, 2, "There should be 2 elements");
         });
 
+        it('push and pop third value', async function () {
+            // The number randomly chosen to be out test element.
+            const testValue = 105;
+            // At the start of this test the vector should have 2 elements.
+            const length1 = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
+                .then(bufferToHex)
+                .then(web3.utils.hexToNumber);
+            assert.strictEqual(length1, 2, "There should be 2 elements");
+            // Push another element
+            await tester.interface.methods.push_num(testValue).send();
+            // The vector should now have 3 elements.
+            const length2 = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
+                .then(bufferToHex)
+                .then(web3.utils.hexToNumber);
+            assert.strictEqual(length2, 3, "There should be 3 elements");
+            // The third element should be the value we just pushed.
+            const pushedElement = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3]))
+                .then(bufferToHex)
+                .then(web3.utils.hexToNumber);
+            assert.strictEqual(pushedElement, testValue, "The third stored value be still be the testValue");
+            // Pop the last element. We perform a call (to actually get the
+            // value), and a send (to make the change in the vector permanent).
+            const poppedVal = await tester.interface.methods.pop_num().call();
+            await tester.interface.methods.pop_num().send();
+            assert.strictEqual(poppedVal.toNumber(), testValue, "The popped value should be the testValue");
+            const length3 = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
+                .then(bufferToHex)
+                .then(web3.utils.hexToNumber);
+            assert.strictEqual(length3, 2, "There should be 2 elements");
+
+            // Get the value in the storage space where the element was.
+            const pushedElementSpace = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3]))
+                .then(bufferToHex);
+            assert.strictEqual(pushedElementSpace, "0x", "The popped value should have been cleared");
+        });
+
         it('sum over iterator', async function () {
             const result = await tester.interface.methods.sum().call();
+            // The sum should be the first two numbers, but not the third (as it
+            // was popped).
             assert.strictEqual(result.toNumber(), 85+95, "The sum should be correct");
         });
     })
