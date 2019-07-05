@@ -37,6 +37,8 @@ pub trait ACLAdminInterface {
 
         fn set_account_group(&mut self, account: Address, group_id: U256);
 
+        fn remove_account_group(&mut self, account: Address);
+
         fn get_account_group(&mut self, account: Address) -> U256;
 
         fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>);
@@ -79,6 +81,11 @@ pub trait ACLAdminInterface {
         fn set_account_group(&mut self, account: Address, group_id: U256) {
             let mut procecedure_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0).unwrap();
             procecedure_map.insert(account, group_id.as_u32() as u8);
+        }
+
+        fn remove_account_group(&mut self, account: Address) {
+            let mut procecedure_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0).unwrap();
+            procecedure_map.remove(account);
         }
 
         fn get_account_group(&mut self, account: Address) -> U256 {

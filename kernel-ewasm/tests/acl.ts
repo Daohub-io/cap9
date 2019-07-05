@@ -165,5 +165,20 @@ describe('Access Control List', function () {
             const acl_procedures = await tester.interface.methods.procedures().call();
             assert.deepEqual(acl_accounts, [mainAccount, testAccount], "Correct accounts should be returned");
         });
+
+        it('remove a user', async function () {
+            {
+                const m1 = admin_contract.methods.remove_account_group(testAccount).encodeABI();
+                const pm1 = tester.interface.methods.proxy(m1).encodeABI();
+                await web3.eth.sendTransaction({
+                    from: mainAccount,
+                    to: tester.interface.address,
+                    data: pm1,
+                    gas:2_200_000,
+                });
+            }
+            const acl_accounts = await tester.interface.methods.accounts().call();
+            assert.deepEqual(acl_accounts, [mainAccount], "Correct accounts should be returned");
+        })
     })
 })

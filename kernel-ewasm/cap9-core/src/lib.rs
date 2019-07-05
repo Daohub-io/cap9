@@ -260,6 +260,7 @@ impl Serialize<u8> for Address {
 /// A single 32-byte value that would be write/read from storage. As well as
 /// forming a nice API, it is necessary to have our own definition in order to
 /// define certain traits.
+#[derive(Clone,Debug)]
 pub struct StorageValue(pub H256);
 
 impl From<StorageValue> for H256 {
@@ -301,6 +302,18 @@ impl Into<StorageValue> for Address {
     }
 }
 
+
+impl From<StorageValue> for U256 {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.into()
+    }
+}
+
+impl Into<StorageValue> for U256 {
+    fn into(self) -> StorageValue {
+        StorageValue(self.into())
+    }
+}
 
 impl From<StorageValue> for [u8; 32] {
     fn from(s_val: StorageValue) -> Self {

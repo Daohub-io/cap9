@@ -20,6 +20,8 @@ use core::marker::PhantomData;
 /// additional data that allows it to be enumerable/iterateable. Both data
 /// structures are made available as the enumerable variant is more expensive
 /// due to the extra data it must store.
+///
+/// No guarantee is made on the ordering of enumeration.
 pub struct StorageEnumerableMap<K,V> {
     cap_index: u8,
     /// The start location of the map.
@@ -129,6 +131,12 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         write(self.cap_index, &self.length_key().to_fixed_bytes(), &self.length().into()).unwrap();
     }
 
+    fn decrement_length(&mut self) {
+        self.length = Some(self.length().checked_sub(1.into()).unwrap());
+        // Store length value.
+        write(self.cap_index, &self.length_key().to_fixed_bytes(), &self.length().into()).unwrap();
+    }
+
     /// Return true if the given key is associated with a value in the map.
     pub fn present(&self, key: &K) -> bool {
         // If the value at the presence key is non-zero, then a value is
@@ -137,10 +145,21 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         present != [0; 32]
     }
 
-    fn set_present(&self, key: &K) {
-        // If the value at the presence key is non-zero, then a value is
-        // present.
-        write(self.cap_index, &self.presence_key(key).as_fixed_bytes(), H256::repeat_byte(0xff).as_fixed_bytes()).unwrap();
+    fn index(&self, key: &K) -> Option<U256> {
+        let present = pwasm_ethereum::read(&self.presence_key(key));
+        Some(present.into())
+    }
+
+    fn set_present(&self, key: &K, index: U256) {
+        // For the enumerable map, the presence value is a 1-based index into
+        // the enumeration vector.
+        let storable_index: StorageValue = index.into();
+        // let storable_index = index.into();
+        write(self.cap_index, &self.presence_key(key).as_fixed_bytes(), &storable_index.into()).unwrap();
+    }
+
+    fn set_absent(&self, key: K) {
+        write(self.cap_index, &self.presence_key(&key).as_fixed_bytes(), H256::repeat_byte(0x00).as_fixed_bytes()).unwrap();
     }
 
     /// Get the value associated with a given key, if it exists.
@@ -167,16 +186,53 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
 
     /// Insert a value at a given key.
     pub fn insert(&mut self, key: K, value: V) {
-        let base = self.base_key(&key);
-        self.set_present(&key);
-        value.store(self.cap_index, U256::from_big_endian(&base));
         // Increment length
         self.increment_length();
+        let base = self.base_key(&key);
+        self.set_present(&key, self.length());
+        value.store(self.cap_index, U256::from_big_endian(&base));
         // Insert the key into the enumeration 'vector'
         let mut length_key = self.length_key().clone();
         length_key = H256::from(U256::from(length_key) + self.length());
         let k_val: StorageValue = key.into();
         write(self.cap_index, &length_key.to_fixed_bytes(), &k_val.into()).unwrap();
+    }
+
+    /// Remove a value at a given key.
+    pub fn remove(&mut self, key: K) {
+        if self.length() < U256::from(1) {
+            // If the map is empty do nothing.
+            return ();
+        }
+        let base = self.base_key(&key);
+        // element_index is the index of the key in the enumeration vector.
+        match self.index(&key) {
+            // Key is not in the map.
+            None => return (),
+            Some(element_index) => {
+                // element key is the the storage key of the map key in the
+                // enumeration vector.
+                let mut element_key = self.length_key().clone();
+                element_key = H256::from(U256::from(element_key) + element_index);
+                // We want to overwite this enumeration vector position with the
+                // last value of the enumeration vector.
+                let mut last_element_key = self.length_key().clone();
+                last_element_key = H256::from(U256::from(last_element_key) + self.length());
+                // Read the map key stored in the final position of the
+                // enumeration vector.
+                let last_element_value: StorageValue = pwasm_ethereum::read(&last_element_key).into();
+                // Write this value over the key we are removing.
+                write(self.cap_index, &element_key.to_fixed_bytes(), &last_element_value.clone().into()).unwrap();
+                // Update the presence value of this map key to point to the new
+                // index in the enumeration vector.
+                let storable_index: StorageValue = element_index.into();
+                write(self.cap_index, &self.presence_key(&last_element_value.into()).into(), &storable_index.into()).unwrap();
+                self.set_absent(key);
+                V::clear(self.cap_index, U256::from_big_endian(&base));
+                // Decrement length
+                self.decrement_length();
+            },
+        }
     }
 
     /// Produce an iterator over keys and values.

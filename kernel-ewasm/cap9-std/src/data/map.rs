@@ -124,6 +124,10 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
         write(self.cap_index, &self.presence_key(&key).as_fixed_bytes(), H256::repeat_byte(0xff).as_fixed_bytes()).unwrap();
     }
 
+    fn set_absent(&self, key: K) {
+        write(self.cap_index, &self.presence_key(&key).as_fixed_bytes(), H256::repeat_byte(0x00).as_fixed_bytes()).unwrap();
+    }
+
     /// Get the value associated with a given key, if it exists.
     pub fn get(&self, key: K) -> Option<V> {
         let base = self.base_key(&key);
@@ -139,5 +143,12 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
         let base = self.base_key(&key);
         self.set_present(key);
         value.store(self.cap_index, U256::from_big_endian(&base));
+    }
+
+    /// Remove a value at a given key.
+    pub fn remove(&mut self, key: K) {
+        let base = self.base_key(&key);
+        self.set_absent(key);
+        V::clear(self.cap_index, U256::from_big_endian(&base));
     }
 }
