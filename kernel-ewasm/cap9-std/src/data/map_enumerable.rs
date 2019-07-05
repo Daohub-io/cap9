@@ -16,12 +16,44 @@ use core::marker::PhantomData;
 
 /// Same as [`StorageMap`], but can be enumerated/iterated.
 ///
-/// A [`StorageEnumerableMap`] is the same as a [`StorageMap`] except that it stores
-/// additional data that allows it to be enumerable/iterateable. Both data
-/// structures are made available as the enumerable variant is more expensive
-/// due to the extra data it must store.
+/// A [`StorageEnumerableMap`] is the same as a [`StorageMap`] except that it
+/// stores additional data that allows it to be enumerable/iterateable. Both
+/// data structures are made available as the enumerable variant is more
+/// expensive due to the extra data it must store.
 ///
 /// No guarantee is made on the ordering of enumeration.
+///
+/// ## Alignment
+///
+/// [`StorageEnumerableMap`] is aligned to a certain boundary that is determined
+/// by it's key type (`K`). The last `key_with_in_bits+2+6` bits of the location
+/// of the storage capability must be zeroes. If a [`StorageEnumerableMap`]
+/// tries to be derived from a capability that does not align on this boundary,
+/// a `DataStructureError::MisAligned` error will be returned.
+///
+/// The 2 bits in the sum above are for presence and enumeration, and the 6 bits
+/// are for data. Let's take an example of a map that maps [`Address`] to
+/// [`u8`]. That is `StorageEnumerableMap<Address,u8>`. It takes 160 bits or 20
+/// bytes to store an address, therefore our key width is 160 bits. Storage keys
+/// that form part of this map will have the following format:
+///
+/// * `0xaa`: Adress
+/// * `0x--`: Arbitrary bytes dictating the location of the map in storage.
+/// * `p` in the final byte indicates it is a "presence" value.
+/// * `e` in the final byte indicates it is part of the enumeration vector.
+/// * `d` in the final byte are the 6 bits that allow for data of up to 64
+///   32-byte values.
+///
+/// TODO: Presence only requires a single key, and could be stored in one of the
+/// data values.
+///
+/// TODO: Allow variable data size.
+///
+/// ```compile_fail
+///     *----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----------*
+///     |0x--|0x--|0x--|0x--|0x--|0x--|0x--|0x--|0x--|0x--|0x--|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0bpedddddd|
+///     *----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----------*
+/// ```
 pub struct StorageEnumerableMap<K,V> {
     cap_index: u8,
     /// The start location of the map.
@@ -108,7 +140,7 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         let mut location = self.location.clone();
         let length_key = location.as_fixed_bytes_mut();
         let index = 31 - 1 - K::key_width();
-        length_key[index as usize] = length_key[index as usize] | 0b00000001;
+        length_key[index as usize] = length_key[index as usize] | 0b01000000;
         length_key.into()
     }
 
@@ -154,7 +186,6 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         // For the enumerable map, the presence value is a 1-based index into
         // the enumeration vector.
         let storable_index: StorageValue = index.into();
-        // let storable_index = index.into();
         write(self.cap_index, &self.presence_key(key).as_fixed_bytes(), &storable_index.into()).unwrap();
     }
 
