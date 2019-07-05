@@ -54,6 +54,12 @@ use core::marker::PhantomData;
 ///     |0x--|0x--|0x--|0x--|0x--|0x--|0x--|0x--|0x--|0x--|0x--|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0xaa|0bpedddddd|
 ///     *----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----*----------*
 /// ```
+///
+/// Note that key widths must be byte-aligned, and are therefore always
+/// multiples of bits. Currently the data width is fixed to 6 bits. If the data
+/// width is allowed to be variable it will be aligned to `2^x - 2` bits. I.e. it
+/// will also be byte-aligned, but minus 2 bits which are used for key presence
+/// and the enumeration vector.
 pub struct StorageEnumerableMap<K,V> {
     cap_index: u8,
     /// The start location of the map.
@@ -115,7 +121,8 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
     /// Return the base storage key of a given map key.
     fn base_key(&self, key: &K) -> [u8; 32] {
         let mut base: [u8; 32] = [0; 32];
-        // The key start 32 - width - 1, the -1 is for data and presence
+        // The key start 32 - width - 1, the - 1 is for data and presence. This
+        // is in bytes.
         let key_start = 32 - K::key_width() as usize - 1;
         // First we copy in the relevant parts of the location.
         base[0..key_start].copy_from_slice(&self.location().as_bytes()[0..key_start]);
@@ -139,7 +146,7 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
         // a value associated with this key.
         let mut location = self.location.clone();
         let length_key = location.as_fixed_bytes_mut();
-        let index = 31 - 1 - K::key_width();
+        let index = 31;
         length_key[index as usize] = length_key[index as usize] | 0b01000000;
         length_key.into()
     }
@@ -243,17 +250,17 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
             Some(element_index) => {
                 // element key is the the storage key of the map key in the
                 // enumeration vector.
-                let mut element_key = self.length_key().clone();
-                element_key = H256::from(U256::from(element_key) + element_index);
+                let element_key = H256::from(U256::from(self.length_key()) + element_index);
                 // We want to overwite this enumeration vector position with the
                 // last value of the enumeration vector.
-                let mut last_element_key = self.length_key().clone();
-                last_element_key = H256::from(U256::from(last_element_key) + self.length());
+                let last_element_key = H256::from(U256::from(self.length_key()) + self.length());
                 // Read the map key stored in the final position of the
                 // enumeration vector.
                 let last_element_value: StorageValue = pwasm_ethereum::read(&last_element_key).into();
                 // Write this value over the key we are removing.
                 write(self.cap_index, &element_key.to_fixed_bytes(), &last_element_value.clone().into()).unwrap();
+                // Clear the last value in the enumeration vector.
+                write(self.cap_index, &last_element_key.to_fixed_bytes(), &[0; 32]).unwrap();
                 // Update the presence value of this map key to point to the new
                 // index in the enumeration vector.
                 let storable_index: StorageValue = element_index.into();
@@ -302,7 +309,6 @@ impl<'a, K: Keyable, V: Storable> StorageEnumerableMapValues<'a, K, V> {
 
 impl<'a, K: Keyable, V: Storable> Iterator for StorageEnumerableMapValues<'a, K, V> {
     type Item = V;
-    // Needs to be able to enumerate keys
 
     fn next(&mut self) -> Option<Self::Item> {
         let key = match self.storage_map.get_key_at_index(self.offset) {
@@ -335,7 +341,6 @@ impl<'a, K: Keyable, V: Storable> StorageEnumerableMapKeys<'a, K, V> {
 
 impl<'a, K: Keyable, V: Storable> Iterator for StorageEnumerableMapKeys<'a, K, V> {
     type Item = K;
-    // Needs to be able to enumerate keys
 
     fn next(&mut self) -> Option<Self::Item> {
         let key = match self.storage_map.get_key_at_index(self.offset) {
@@ -368,7 +373,6 @@ impl<'a, K: Keyable, V: Storable> StorageEnumerableMapIter<'a, K, V> {
 
 impl<'a, K: Keyable, V: Storable> Iterator for StorageEnumerableMapIter<'a, K, V> {
     type Item = (K, V);
-    // Needs to be able to enumerate keys
 
     fn next(&mut self) -> Option<Self::Item> {
         let key = match self.storage_map.get_key_at_index(self.offset) {

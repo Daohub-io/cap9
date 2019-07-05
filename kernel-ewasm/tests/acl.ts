@@ -2,7 +2,7 @@ const Web3 = require('web3')
 const assert = require('assert')
 const fs = require('fs')
 
-import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap, AccCallCap, CHAIN_CONFIG, CallCap, DeleteCap, bufferToHex} from './utils'
+import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap, AccCallCap, CHAIN_CONFIG, CallCap, DeleteCap, bufferToHex, hexToBuffer} from './utils'
 import { Tester, TestContract } from './utils/tester';
 import { notEqual } from 'assert';
 
@@ -179,6 +179,94 @@ describe('Access Control List', function () {
             }
             const acl_accounts = await tester.interface.methods.accounts().call();
             assert.deepEqual(acl_accounts, [mainAccount], "Correct accounts should be returned");
+            const keys = await tester.kernel.listStorageKeys(1000);
+            await checkKernelState(tester.kernel, keys, {
+                StorageEnumerableMaps: [
+                    "0x3000000000000000000000000000000000000000000000000000000000000000",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                ]
+            });
         })
     })
 })
+
+// In this function we cycle through all of the storage keys which are being
+// used and check that they match our expectations of what should be in the
+// kernel. It does this by remove each of the well formed items that we expect
+// to be found. If either an item that we expect is _not_ well formed, or there
+// are entries left over in storage that we have not accounted for, we through
+// an error.
+async function checkKernelState(kernel, keys, data) {
+    // const keys = keysHex.map(hexToBuffer);
+    // Build a map of all storage values.
+    const storage: Map<string, string> = new Map();
+    for (const key of keys) {
+        const val = await kernel.getStorageAt(hexToBuffer(key));
+        storage.set(key, bufferToHex(val));
+    }
+    // Remove all the kernel space keys, we won't check those for
+    // now.
+    for (const keyHex of storage.keys()) {
+        const key = hexToBuffer(keyHex);
+        if (key[0] === 0xff && key[1] === 0xff && key[2] === 0xff && key[3] === 0xff) {
+            storage.delete(bufferToHex(key));
+        }
+    }
+    // Remove all the keys associated with StorageEnumerableMaps
+    for (const mapBase of data.StorageEnumerableMaps) {
+        removeMap(storage, mapBase);
+    }
+    for (const [key,val] of storage) {
+        console.log(`${key}: ${val}`);
+    }
+    if (storage.size > 0) {
+        throw new Error(`The following storage entries were found in the kernel but not accounted for ${Array.from(storage.keys())}`)
+    }
+}
+
+// Given a (hex) map from storage keys to storage values, remove each of the
+// key/value pairs associated with StorageEnumerable map, roughly checking that
+// the StorageEnumerableMap is well formed.
+function removeMap(storage, baseHex) {
+    const baseKey = hexToBuffer(baseHex);
+    // The length value is stored at the baseKey with the length bit set. Does
+    // this entry exist?
+    baseKey[31] = baseKey[31] | 0b01000000;
+    const baseKeyBN = web3.utils.toBN(bufferToHex(baseKey));
+    const mapLength = web3.utils.hexToNumber(storage.get(bufferToHex(baseKey)));
+    // console.log(`baseKey: ${baseKey}`)
+    // console.log(`baseKey: ${bufferToHex(baseKey)}`)
+    // console.log(`baseKey: ${hexToBuffer(bufferToHex(baseKey))}`)
+    // console.log(`mapLength: ${mapLength}`)
+    storage.delete(bufferToHex(baseKey));
+    const mapKeys = [];
+    // Enumerate all the keys in the map and remove them from our storage map.
+    for (let i = 0; i < mapLength; i++) {
+        const k = "0x" + web3.utils.toHex(baseKeyBN.add(web3.utils.toBN(1 + i))).slice(2).padStart(64, "0");
+        // console.log(`k: ${k}`);
+        const val = storage.get(k);
+        // console.log(`${i}: ${val}`);
+        storage.delete(k);
+        mapKeys.push(val);
+    }
+    // For each of the map keys, remove the presence indicator, and the value.
+    // key width in bytes
+    for (const mapKeyRaw of mapKeys) {
+        const mapKey = hexToBuffer(baseHex);
+        // console.log(`mapKeyRaw: ${mapKeyRaw}`)
+        const startIndex = hexToBuffer(mapKeyRaw).findIndex(x => x !== 0x00);
+        // console.log(`startIndex: ${startIndex}`);
+        for (let i = startIndex; i < 32; i++) {
+            // shift left 1 byte
+            mapKey[i - 1] = hexToBuffer(mapKeyRaw)[i];
+        }
+        const presenceKey = mapKey.slice();
+        presenceKey[31] = presenceKey[31] | 0b10000000;
+        // console.log(`mapKey: ${bufferToHex(mapKey)}`)
+        // console.log(`presenceKey: ${bufferToHex(presenceKey)}`)
+        // Remove map key
+        storage.delete(bufferToHex(mapKey));
+        // Remove presence key
+        storage.delete(bufferToHex(presenceKey));
+    }
+}

@@ -122,7 +122,7 @@ export class KernelInstance {
                 // Read the Ethereum address of the contract for this procedure.
                 const address = await this.getStorageAt(proc_ptr).then(x=>x.slice(12,32));
                 const index_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([0x00,0x00,0x01]))
-                const index = await this.getStorageAt(index_ptr)
+                const index: number = await this.getStorageAt(index_ptr)
                     .then(bufferToHex)
                     .then(web3.utils.hexToNumber);
                 // Read the capabilities for this procedure.
@@ -176,8 +176,11 @@ export function bufferToString(buffer: Uint8Array) {
     return decoder.decode(buffer.slice(0,sliceIndex));
 }
 
-export function bufferToHex(buffer: Uint8Array) {
-    return web3.utils.bytesToHex(Array.from<number>(buffer));
+export function bufferToHex(buffer: Uint8Array): string {
+    // We need to do some manipulation so that the length of the hex is the same
+    // as the length of the buffer.
+    const rawHex = web3.utils.bytesToHex(Array.from<number>(buffer));
+    return "0x" + rawHex.slice(2).padStart(buffer.length*2, "0");
 }
 
 export function hexToBuffer(str: string): Uint8Array {
@@ -242,7 +245,7 @@ export class Caps {
 
     static async from(kernel: KernelInstance, key: Uint8Array) {
         const write_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,0x00,0x00]))
-        const n_write_caps = await kernel.getStorageAt(write_ptr)
+        const n_write_caps: number = await kernel.getStorageAt(write_ptr)
             .then(bufferToHex)
             .then(web3.utils.hexToNumber);
         const writeCaps = [];
@@ -252,7 +255,7 @@ export class Caps {
         }
 
         const reg_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.PROC_REGISTER,0x00,0x00]))
-        const n_reg_caps = await kernel.getStorageAt(reg_ptr)
+        const n_reg_caps: number = await kernel.getStorageAt(reg_ptr)
             .then(bufferToHex)
             .then(web3.utils.hexToNumber);
         const regCaps = [];
@@ -389,9 +392,9 @@ export class EntryCap implements Capability {
 export class WriteCap implements Capability {
     public cap_type = CAP_TYPE.STORE_WRITE;
     // TODO: these types are not quite correct
-    constructor(public location: number, public size: number) { }
+    constructor(public location: number | string, public size: number | string) { }
     to_input(): number[] {
-        return [this.location, this.size]
+        return [this.location as number, this.size as number]
     }
     toString(): string {
         return `WriteCap

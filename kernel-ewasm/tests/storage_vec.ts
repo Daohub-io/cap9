@@ -120,7 +120,7 @@ describe('StorgeVec', function () {
             // Get the value in the storage space where the element was.
             const pushedElementSpace = await tester.kernel.getStorageAt(Uint8Array.from([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3]))
                 .then(bufferToHex);
-            assert.strictEqual(pushedElementSpace, "0x", "The popped value should have been cleared");
+            assert.strictEqual(pushedElementSpace, "0x0000000000000000000000000000000000000000000000000000000000000000", "The popped value should have been cleared");
         });
 
         it('sum over iterator', async function () {
