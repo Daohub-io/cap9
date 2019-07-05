@@ -68,7 +68,7 @@ impl<K: Keyable, V: Storable> StorageMap<K,V> {
                     // Check that the size of the cap is correct.
                     if U256::from(size) < address_size {
                         Err(DataStructureError::TooSmall)
-                    } else if U256::from(location).trailing_zeros() < address_bits as u32 {
+                    } else if U256::from(location).trailing_zeros() < (address_bits as u32 + 6) {
                         Err(DataStructureError::MisAligned)
                     } else {
                         Ok(StorageMap {

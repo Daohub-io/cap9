@@ -90,7 +90,7 @@ impl<K: Keyable, V: Storable> StorageEnumerableMap<K,V> {
                     // Check that the size of the cap is correct.
                     if U256::from(size) < address_size {
                         Err(DataStructureError::TooSmall)
-                    } else if U256::from(location).trailing_zeros() < (address_bits as u32 + 1 + 1) {
+                    } else if U256::from(location).trailing_zeros() < (address_bits as u32 + 1 + 1 + 6) {
                         // the trailing number of 0 bits should be equal to or greater than the address_bits
                         Err(DataStructureError::MisAligned)
                     } else {
