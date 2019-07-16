@@ -7,13 +7,43 @@ const Web3 = require('web3');
 const fs = require("fs");
 const path = require("path")
 const http = require('http')
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+const jayson = require('jayson');
+
+const client = jayson.client.http({
+    port: 8545
+  });
+
 
 type BN = typeof BN;
+
+// Global singleton object which remembers the ABI associated with each
+// contract. This maps contract addresses => ABIs. Ethereum itself has a
+// mechanism for this via swarm data etc., but for testing we want to emulate it
+// here, particularly given pwasm support for such swarm may not be feature
+// complete.
+class ABICache {
+    private map: Map<string, any>;
+    constructor() {
+        this.map = new Map();
+    }
+
+    public add(address: string, abi: any) {
+        this.map.set(address, abi);
+    }
+
+    public get(address: string, abi: any): any {
+        return this.map.get(address);
+    }
+}
+
+const abi_cache = new ABICache();
 
 // Get BuildPath
 const TARGET_PATH = path.resolve(process.cwd(), './target');
 // Get Dev Chain Config
-const CHAIN_CONFIG = require(path.resolve(process.cwd(), './wasm-dev-chain.json'));
+export const CHAIN_CONFIG = require(path.resolve(process.cwd(), './wasm-dev-chain.json'));
 // Web3 Config
 const WEB3_OPTIONS = {
     transactionConfirmationBlocks: 1
@@ -32,22 +62,215 @@ const DEFAULT_PORT = 8545;
 // Connect to our local node
 export const web3 = new Web3(new Web3.providers.HttpProvider(`http://localhost:${DEFAULT_PORT}`), null, WEB3_OPTIONS);
 
+
+// The default ABI of a cap9 kernel is the ABI of it's entry kernel. Often we
+// will want to use a variety of other ABIs depending on which procedure we want
+// to interact with. This API also uses direct storage reads to perform some
+// tests. The necessarily reimplements some storage location logic accoding to
+// the standard.
 export class KernelInstance {
-
-    constructor(public contract: Contract) { }
-
-    async getEntryProcedure(): Promise<string> {
-        return web3.utils.hexToAscii(await this.contract.methods.entryProcedure().call()).replace(/\0.*$/g, '');
+    private abi_cache: ABICache;
+    constructor(public contract: Contract) {
+        this.abi_cache = abi_cache;
     }
 
-    async getCurrentProcedure(): Promise<string> {
-        return web3.utils.hexToAscii(await this.contract.methods.currentProcedure().call()).replace(/\0.*$/g, '');
+    public async getStorageAt(location: Uint8Array): Promise<Uint8Array> {
+        const storageValue = await web3.eth.getStorageAt(this.contract.address, bufferToHex(location));
+        return hexToBuffer(storageValue);
     }
 
+    // Return the 24 bytes of the entry procedure key.
+    public async getEntryProcedure(): Promise<Uint8Array> {
+        const storageValue = await this.getStorageAt(KERNEL_ENTRY_PROC_PTR);
+        return storageValue.slice(8,32);
+    }
+
+    // Return the 24 bytes of the current procedure key.
+    public async getCurrentProcedure(): Promise<Uint8Array> {
+        const storageValue = await this.getStorageAt(KERNEL_CURRENT_PROC_PTR);
+        return storageValue.slice(8,32);
+    }
+
+    public async getNProcedures(): Promise<BN> {
+        const storageValue = await this.getStorageAt(KERNEL_PROC_LIST_PTR);
+        return web3.utils.toBN(bufferToHex(storageValue));
+    }
+
+    private getListPtr(index: number): Uint8Array {
+        if (index > 255) {
+            throw new Error("indices of greather than 255 not supported");
+        }
+        const ptr = KERNEL_PROC_LIST_PTR.slice();
+        ptr[28] = index;
+        return ptr;
+    }
+
+    public async getProcedureKey(index: number): Promise<Uint8Array> {
+        const ptr = this.getListPtr(index);
+        return this.getStorageAt(ptr).then(x=>x.slice(8,32));
+    }
+
+    public async getProcedures(): Promise<Array<Procedure>> {
+        const procs: Array<Promise<Procedure>> = [];
+        const nProcs = await this.getNProcedures().then(x=>x.toNumber());
+        for (let i = 1; i <= nProcs; i++) {
+            const ptr = this.getListPtr(i);
+            const proc = this.getStorageAt(ptr).then(x=>x.slice(8,32)).then(async (key) => {
+                // Get the pointer the the base of the Procedure Data in the
+                // Procedure Heap.
+                const proc_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([0x00,0x00,0x00]))
+                // Read the Ethereum address of the contract for this procedure.
+                const address = await this.getStorageAt(proc_ptr).then(x=>x.slice(12,32));
+                const index_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([0x00,0x00,0x01]))
+                const index: number = await this.getStorageAt(index_ptr)
+                    .then(bufferToHex)
+                    .then(web3.utils.hexToNumber);
+                // Read the capabilities for this procedure.
+                const caps = await Caps.from(this, key);
+                // Return a new Procedure object.
+                return new Procedure(key, address, index, caps);
+            });
+            procs.push(proc);
+        }
+        return Promise.all(procs);
+    }
+
+    public async getProcedureKeys(): Promise<Array<Uint8Array>> {
+        const procs: Array<Promise<Uint8Array>> = [];
+        const nProcs = await this.getNProcedures().then(x=>x.toNumber());
+        for (let i = 1; i <= nProcs; i++) {
+            procs.push(this.getProcedureKey(i));
+        }
+        return Promise.all(procs);
+    }
+
+    public async getProcedureKeysAscii(): Promise<Array<string>> {
+        const procs = await this.getProcedureKeys();
+        return procs.map(x=>decoder.decode(x));
+    }
+
+    public async listStorageKeys(n) {
+        return new Promise((resolve,reject) => {
+            client.request('parity_listStorageKeys', [this.contract.address, n], function(err, response) {
+                if(err) reject(err);
+                resolve(response.result);
+            });
+        });
+    }
+
+    // TODO: deprecate
     async getProcCapTypeLen(proc_key: string, cap_type: CAP_TYPE): Promise<number> {
         return utils.toDecimal(await this.contract.methods.get_cap_type_len(proc_key, cap_type).call());
     }
 
+    // TODO: every time we add a contract to the kernel, that contract address
+    // is immutably associated with an ABI, so we can cache those.
+
+}
+
+// WARNING: this is a lossy conversion, and should be used for
+// display/convinience only.
+export function bufferToString(buffer: Uint8Array) {
+    const nullIndex = buffer.indexOf(0x00);
+    const sliceIndex = nullIndex ? nullIndex : undefined;
+    return decoder.decode(buffer.slice(0,sliceIndex));
+}
+
+export function bufferToHex(buffer: Uint8Array): string {
+    // We need to do some manipulation so that the length of the hex is the same
+    // as the length of the buffer.
+    const rawHex = web3.utils.bytesToHex(Array.from<number>(buffer));
+    return "0x" + rawHex.slice(2).padStart(buffer.length*2, "0");
+}
+
+export function hexToBuffer(str: string): Uint8Array {
+    return Uint8Array.from(web3.utils.hexToBytes(str));
+}
+
+const KERNEL_PROC_HEAP_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]);
+
+const KERNEL_PROC_LIST_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]);
+
+const KERNEL_ADDRESS_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 0x02, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]);
+
+const KERNEL_CURRENT_PROC_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 0x03, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]);
+
+const KERNEL_ENTRY_PROC_PTR: Uint8Array = new Uint8Array([
+    0xff, 0xff, 0xff, 0xff, 0x04, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]);
+
+// A representation of a procedure in the kernel.
+export class Procedure {
+    constructor(public key: Uint8Array, public address: Uint8Array, public index: number, public caps: Caps) {
+
+    }
+
+    public toString() {
+        let str = "";
+        str += `Procedure[${this.index}]:\n`;
+        str += `  Key: ("${bufferToString(this.key)}") ${bufferToHex(this.key)}\n`;
+        str += `  Address: ${bufferToHex(this.address)}\n`;
+        str += `  ${this.caps.toString()}\n`;
+        return str;
+    }
+}
+
+export class Caps {
+    constructor (public writeCaps: WriteCap[], public regCaps: RegisterCap[]) {
+
+    }
+
+    static async from(kernel: KernelInstance, key: Uint8Array) {
+        const write_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,0x00,0x00]))
+        const n_write_caps: number = await kernel.getStorageAt(write_ptr)
+            .then(bufferToHex)
+            .then(web3.utils.hexToNumber);
+        const writeCaps = [];
+        for (let index = 0; index < n_write_caps; index++) {
+            const writeCap = await WriteCap.from(kernel, key, index);
+            writeCaps.push(writeCap);
+        }
+
+        const reg_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.PROC_REGISTER,0x00,0x00]))
+        const n_reg_caps: number = await kernel.getStorageAt(reg_ptr)
+            .then(bufferToHex)
+            .then(web3.utils.hexToNumber);
+        const regCaps = [];
+        for (let index = 0; index < n_reg_caps; index++) {
+            const regCap = await RegisterCap.from(kernel, key, index);
+            regCaps.push(regCap);
+        }
+        return new Caps(writeCaps, regCaps);
+    }
+
+    toString() {
+        return `Caps:
+    WRITE(${this.writeCaps.length}):\n${this.writeCaps.map(x=> `      ${x.toString()}`).join("\n")}
+    REGISTER(${this.writeCaps.length}):\n${this.regCaps.map(x=>`      ${x.toString()}`).join("\n")}`
+    }
 }
 
 export enum CAP_TYPE {
@@ -67,7 +290,7 @@ export interface Capability {
 
 export class NewCap {
     constructor(public parent_index: number, public cap: Capability) {}
-    to_input(): (string| number)[] {
+    to_input(): (string | number)[] {
         let cap_input = this.cap.to_input();
         let cap_size = cap_input.length + 3;
         return [cap_size, this.cap.cap_type, this.parent_index].concat(cap_input as any) as any
@@ -118,6 +341,22 @@ export class RegisterCap implements Capability {
 
         return [key as any]
     }
+    toString(): string {
+        const baseKey = hexToBuffer(this.baseKey);
+        return `RegProc
+        prefix: ${this.prefixLength}
+        key: ("${bufferToString(baseKey)}") ${bufferToHex(baseKey)}`;
+    }
+
+    static async from(kernel: KernelInstance, key: Uint8Array, index: number): Promise<RegisterCap> {
+        const value_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00]
+            .concat(Array.from(key))
+            .concat([CAP_TYPE.PROC_REGISTER,index+1,0x00]));
+        const value = await kernel.getStorageAt(value_ptr);
+        const prefix = value[0];
+        const cap_key = value.slice(8,32);
+        return new RegisterCap(prefix, bufferToHex(cap_key));
+    }
 }
 
 export class DeleteCap implements Capability {
@@ -152,9 +391,28 @@ export class EntryCap implements Capability {
 
 export class WriteCap implements Capability {
     public cap_type = CAP_TYPE.STORE_WRITE;
-    constructor(public location: number, public size: number) { }
+    // TODO: these types are not quite correct
+    constructor(public location: number | string, public size: number | string) { }
     to_input(): number[] {
-        return [this.location, this.size]
+        return [this.location as number, this.size as number]
+    }
+    toString(): string {
+        return `WriteCap
+        location: ${this.location}
+        size: ${this.size}`;
+    }
+
+    static async from(kernel: KernelInstance, key: Uint8Array, index: number): Promise<WriteCap> {
+        const location_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,index+1,0x00]))
+        const size_ptr = Uint8Array.from([0xff,0xff,0xff,0xff,0x00].concat(Array.from(key)).concat([CAP_TYPE.STORE_WRITE,index+1,0x01]))
+        const location_p = kernel.getStorageAt(location_ptr)
+            .then(bufferToHex)
+            ;
+        const size_p = kernel.getStorageAt(size_ptr)
+            .then(bufferToHex)
+            ;
+        const [location, size] = await Promise.all([location_p, size_p]);
+        return new WriteCap(location, size);
     }
 }
 
@@ -211,7 +469,7 @@ export function createAccount(name, password): Promise<string> {
                 chunk += data;
             });
             res.on('end', () => {
-                resolve(chunk);
+                resolve(JSON.parse(chunk).result);
             });
             res.on('error', reject);
         });
@@ -223,14 +481,14 @@ export function createAccount(name, password): Promise<string> {
     });
 }
 
-export async function deployContract(file_name: string, abi_name: string): Promise<Contract> {
+export async function deployContract(file_name: string, abi_name: string, args?: []): Promise<Contract> {
     // Create Account
     const newAccount = await createAccount(DEFAULT_ACCOUNT.NAME, DEFAULT_ACCOUNT.PASSWORD);
     const accounts = await web3.eth.personal.getAccounts();
     if (accounts.length == 0)
         throw `Got zero accounts`;
 
-    const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
+    const account = web3.utils.toChecksumAddress(newAccount, web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
     web3.eth.defaultAccount = account;
 
     // read JSON ABI
@@ -239,9 +497,9 @@ export async function deployContract(file_name: string, abi_name: string): Promi
     // convert Wasm binary to hex format
     const codeHex = '0x' + fs.readFileSync(path.resolve(TARGET_PATH, `./${file_name}.wasm`)).toString('hex');
     const Contract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 } as any);
-    const DeploymentTx = Contract.deploy({ data: codeHex });
+    const DeploymentTx = Contract.deploy({ data: codeHex, arguments: args });
 
-    await web3.eth.personal.unlockAccount(accounts[0], DEFAULT_ACCOUNT.PASSWORD, null);
+    await web3.eth.personal.unlockAccount(account, DEFAULT_ACCOUNT.PASSWORD, null);
     let gas = await DeploymentTx.estimateGas();
     let contract_tx = DeploymentTx.send({ gasLimit: gas, from: account } as any);
     let tx_hash: string = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));
@@ -249,7 +507,7 @@ export async function deployContract(file_name: string, abi_name: string): Promi
     let contract_addr = tx_receipt.contractAddress;
     let contract = Contract.clone();
     contract.address = contract_addr;
-
+    abi_cache.add(contract.address, contract);
     return contract;
 }
 
@@ -259,9 +517,8 @@ export async function newKernelInstance(proc_key: string, proc_address: string, 
     const accounts = await web3.eth.personal.getAccounts();
     if (accounts.length == 0)
         throw `Got zero accounts`;
-    const account = web3.utils.toChecksumAddress(accounts[0], web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
+    const account = web3.utils.toChecksumAddress(newAccount, web3.utils.hexToNumber(CHAIN_CONFIG.params.networkId));
     web3.eth.defaultAccount = account;
-
     const abi = KERNEL_WASM_ABI
     const codeHex = KERNEL_WASM
 
@@ -270,7 +527,7 @@ export async function newKernelInstance(proc_key: string, proc_address: string, 
 
     const KernelContract = new web3.eth.Contract(abi, null, { data: codeHex, from: account, transactionConfirmationBlocks: 1 } as any);
     const TokenDeployTransaction = KernelContract.deploy({ data: codeHex, arguments: [proc_key, proc_address, encoded_cap_list] });
-    await web3.eth.personal.unlockAccount(accounts[0], "user", null);
+    await web3.eth.personal.unlockAccount(account, DEFAULT_ACCOUNT.PASSWORD, null);
     let gas = await TokenDeployTransaction.estimateGas();
     let contract_tx = TokenDeployTransaction.send({ gasLimit: gas, from: account, value: initial_balance } as any);
     let tx_hash: string = await new Promise((res, rej) => contract_tx.on('transactionHash', res).on('error', rej));

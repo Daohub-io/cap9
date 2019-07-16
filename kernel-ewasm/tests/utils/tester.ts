@@ -2,7 +2,8 @@
 // required in tests.
 import { Contract } from "web3-eth-contract";
 import * as utils from 'web3-utils';
-import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, normalize, EntryCap, WriteCap, RegisterCap, NewCap} from '../utils'
+import { newKernelInstance, web3, createAccount, KernelInstance, deployContract,
+    normalize, EntryCap, WriteCap, RegisterCap, NewCap, bufferToHex, hexToBuffer} from '../utils'
 
 const assert = require('assert')
 
@@ -16,28 +17,45 @@ const http = require('http')
 export class Tester {
     entry_proc: TestContract = null;
     entry_proc_name: string;
+    entry_args: [];
     kernel: any;
-    interface: any;
+    private _interface: any;
     initial_balance: number = 0;
+
     constructor() {
+
     }
 
     // Configure the entry procedure that will be used on first deployment of
     // the kernel. This procedure will be deployed during init(). This should be
     // used before init().
-    setFirstEntry(name: string, contract: TestContract) {
+    public setFirstEntry(name: string, contract: TestContract, args?: []) {
         this.entry_proc_name = name;
         this.entry_proc = contract;
+        this.entry_args = args;
+    }
+
+    public get interface() {
+        return this._interface;
+    }
+
+    // Always preserve the kernel address when setting a new interface.
+    public set interface(newInterface) {
+        const int = newInterface.clone();
+        if (this._interface) {
+            int.address = this._interface.address
+        }
+        this._interface = int;
     }
 
     // Deploy the kernel and any initial entry procedure. This also creates the
     // interface for the kernel using the ABI of the entry procedure.
-    async init() {
+    public async init() {
         if (this.entry_proc === null) {
             throw new Error("no entry proc has been set")
         }
         // Deploy the first entry procedure
-        const firstEntry = await deployContract(this.entry_proc.name, this.entry_proc.abiName);
+        const firstEntry = await deployContract(this.entry_proc.name, this.entry_proc.abiName, this.entry_args);
         this.kernel = await newKernelInstance(this.entry_proc_name, firstEntry.address, this.entry_proc.caps, this.initial_balance);
         // Here we make a copy of the entry procedure contract interface, but
         // change the address so that it's pointing at the kernel. This
@@ -64,7 +82,7 @@ export class Tester {
     //
     // This method will also execute tests to ensure that the registration
     // occurs successfully.
-    async registerTest(requestedCaps, procName, contractName, contractABIName, result) {
+    public async registerTest(requestedCaps, procName, contractName, contractABIName, result) {
         // This is the key of the procedure that we will be registering.
         const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
         // This is the index of the capability (in the procedures capability
@@ -76,21 +94,21 @@ export class Tester {
         const writer_caps = requestedCaps;
         const encoded_writer_caps = writer_caps.reduce((payload, cap) => payload.concat(cap.to_input()), []);
         // This is the address of the new procedure that we wish to register.
-
-        const procList1 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+        const procList1 = await this.kernel.getProcedureKeys().then(x=>x.map(bufferToHex));
+        // this.kernel.getProcedureKeysAscii().then(console.log)
         // We then send that message via a call procedure syscall.
         const message = this.interface.methods.regProc(cap_index, key, writeProc.address, encoded_writer_caps).encodeABI();
         if (result) {
             // The transaction should succeed
             const return_value = await web3.eth.sendTransaction({ to: this.kernel.contract.address, data: message });
-            const procList2 = await this.interface.methods.listProcs().call().then(x=>x.map(normalize));
+            const procList2 = await this.kernel.getProcedureKeys().then(x=>x.map(bufferToHex));
             assert.strictEqual(procList2.length, procList1.length + 1, "The number of procedures should have increased by 1");
-            assert(procList2.includes(normalize(web3.utils.fromAscii(procName,24))), "The new procedure key should be included in the table");
+            assert(procList2.includes(web3.utils.fromAscii(procName,24)), "The new procedure key should be included in the table");
 
             // Check that the new procedure has the correct caps.
-            // TODO: update for other cap types.
             const resulting_caps = await this.interface.methods.getNCaps(web3.utils.fromAscii("write",24)).call();
             assert.strictEqual(normalize(resulting_caps), normalize(requestedCaps.length), "The requested number of write caps should be written");
+            return writeProc;
         } else {
             // The transaction should not succeed
             let success;
@@ -115,7 +133,7 @@ export class Tester {
     //
     // This method will also execute tests to ensure that the registration
     // occurs successfully.
-    async setEntryTest(procName, result) {
+    public async setEntryTest(procName, result) {
         const old_entry_proc = await this.interface.methods.getEntry().call();
         // This is the key of the procedure that we will be setting to the entry
         // procedure.
@@ -157,7 +175,7 @@ export class Tester {
     //
     // This method will also execute tests to ensure that the registration
     // occurs successfully.
-    async deleteTest(requestedCaps, procName, result) {
+    public async deleteTest(requestedCaps, procName, result) {
         // This is the key of the procedure that we will be registering.
         const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
         // This is the index of the capability (in the procedures capability
@@ -194,7 +212,7 @@ export class Tester {
     //
     //    * fn callExternal(&mut self, cap_idx: U256, address: Address, value:
     //      U256, payload: Vec<u8>)
-    async externalCallTest(address, value, payload, result) {
+    public async externalCallTest(address, value, payload, result) {
         const cap_index = 0;
         const messageSend = this.interface.methods.callExternal(cap_index, address, value, payload).encodeABI();
         const messageCall = this.interface.methods.callExternal(cap_index, address, 0, payload).encodeABI();

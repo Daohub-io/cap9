@@ -19,6 +19,7 @@ impl AsCap for StoreWriteCap {
             return false;
         }
         // Number of additional storage keys
+        // TODO: overflow
         if (U256::from_big_endian(&self.location) + U256::from_big_endian(&self.size)) > (U256::from_big_endian(&parent_cap.location) + U256::from_big_endian(&parent_cap.size)) {
             return false;
         }

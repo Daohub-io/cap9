@@ -1,5 +1,3 @@
-//! # Cap9 Core
-//!
 //! This crate contains some of the base types and mechanism used throughout the
 //! kernel and contracts. Most critically at this stage it contains the Cursor
 //! and Serialization types.
@@ -255,5 +253,76 @@ impl Serialize<u8> for Address {
         let h: H256 = (*self).into();
         writer.write(&h.to_fixed_bytes())?;
         Ok(())
+    }
+}
+
+
+/// A single 32-byte value that would be write/read from storage. As well as
+/// forming a nice API, it is necessary to have our own definition in order to
+/// define certain traits.
+#[derive(Clone,Debug)]
+pub struct StorageValue(pub H256);
+
+impl From<StorageValue> for H256 {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0
+    }
+}
+
+impl Into<StorageValue> for H256 {
+    fn into(self) -> StorageValue {
+        StorageValue(self)
+    }
+}
+
+
+impl From<StorageValue> for u8 {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.to_fixed_bytes()[31]
+    }
+}
+
+impl Into<StorageValue> for u8 {
+    fn into(self) -> StorageValue {
+        let u: U256 = self.into();
+        StorageValue(u.into())
+    }
+}
+
+
+impl From<StorageValue> for Address {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.into()
+    }
+}
+
+impl Into<StorageValue> for Address {
+    fn into(self) -> StorageValue {
+        StorageValue(self.into())
+    }
+}
+
+
+impl From<StorageValue> for U256 {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.into()
+    }
+}
+
+impl Into<StorageValue> for U256 {
+    fn into(self) -> StorageValue {
+        StorageValue(self.into())
+    }
+}
+
+impl From<StorageValue> for [u8; 32] {
+    fn from(s_val: StorageValue) -> Self {
+        s_val.0.into()
+    }
+}
+
+impl Into<StorageValue> for [u8; 32] {
+    fn into(self) -> StorageValue {
+        StorageValue(self.into())
     }
 }

@@ -5,14 +5,28 @@
 extern crate pwasm_abi;
 use pwasm_abi::types::*;
 use cap9_core::Serialize;
+use cap9_core::StorageValue;
 
-/// Generic wasm error
-#[derive(Debug)]
-pub struct Error;
-
+/// Procedure table.
 pub mod proc_table;
+
+/// Implementations of syscalls.
 pub mod syscalls;
 pub use syscalls::*;
+
+/// Capability compatible data structures for use with Ethereum storage.
+mod data;
+pub use data::map::StorageMap;
+use data::map::*;
+pub use data::map_enumerable::StorageEnumerableMap;
+use data::map_enumerable::*;
+pub use data::vec::StorageVec;
+use data::vec::*;
+
+// Re-export pwasm::Vec as the Vec type for cap9_std
+pub use pwasm_std::Vec;
+
+use core::marker::PhantomData;
 
 // When we are compiling to WASM, unresolved references are left as (import)
 // expressions. However, under any other target symbols will have to be linked
@@ -25,6 +39,8 @@ extern crate pwasm_test;
 #[cfg(not(target_arch = "wasm32"))]
 extern crate cap9_test;
 
+/// Low level Ethereum calls.
+///
 /// TODO: this is duplicated from pwasm_ethereum as it is currently in a private
 /// module.
 pub mod external {
@@ -79,10 +95,12 @@ pub mod external {
 
 }
 
+/// Return the size of the code at a given address (in bytes).
 pub fn extcodesize(address: &Address) -> i32 {
     unsafe { external::extcodesize(address.as_ptr()) }
 }
 
+/// Retrieve the code at a given address.
 pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
     let len = unsafe { external::extcodesize(address.as_ptr()) };
     match len {
@@ -98,7 +116,7 @@ pub fn extcodecopy(address: &Address) -> pwasm_std::Vec<u8> {
     }
 }
 
-
+/// Performs the `CALLCODE` EVM opcode.
 pub fn actual_call_code(gas: u64, address: &Address, value: U256, input: &[u8], result: &mut [u8]) -> Result<(), Error> {
     let mut value_arr = [0u8; 32];
     value.to_big_endian(&mut value_arr);
@@ -151,11 +169,13 @@ fn dummy_syscall() {
     }
 }
 
-/// This is to replace pwasm_ethereum::call_code, and uses [`cap9_syscall_low`]: fn.cap9_syscall_low.html
-/// underneath instead of dcall. This is a slightly higher level abstraction
-/// over cap9_syscall_low that uses Result types and the like. This is by no
-/// means part of the spec, but more ergonomic Rust level library code. Actual
-/// syscalls should be built on top of this.
+/// Perform a raw system call.
+///
+/// This is to replace pwasm_ethereum::call_code, and uses
+/// [`external::cap9_syscall_low`] underneath instead of dcall. This is a
+/// slightly higher level abstraction over cap9_syscall_low that uses Result
+/// types and the like. This is by no means part of the spec, but more ergonomic
+/// Rust level library code. Actual syscalls should be built on top of this.
 ///
 /// # Errors
 ///
@@ -177,7 +197,8 @@ pub fn cap9_syscall(input: &[u8], result: &mut [u8]) -> Result<(), Error> {
     }
 }
 
-pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
+/// Perform a write system call.
+pub fn write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result<(), Error> {
     let mut input = Vec::with_capacity(1 + 1 + 32 + 32);
     let syscall = SysCall {
         cap_index,
@@ -187,7 +208,8 @@ pub fn raw_proc_write(cap_index: u8, key: &[u8; 32], value: &[u8; 32]) -> Result
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u8>) -> Result<(), Error> {
+/// Perform a procedure call system call.
+pub fn call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u8>) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {
         cap_index,
@@ -197,7 +219,8 @@ pub fn raw_proc_call(cap_index: u8, proc_id: SysCallProcedureKey, payload: Vec<u
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<(), Error> {
+/// Perform a log system call.
+pub fn log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<(), Error> {
     let mut input: Vec<u8> = Vec::new();
     let syscall = SysCall {
         cap_index,
@@ -207,7 +230,8 @@ pub fn raw_proc_log(cap_index: u8, topics: Vec<H256>, value: Vec<u8>) -> Result<
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_reg(cap_index: u8, proc_id: SysCallProcedureKey, address: Address, cap_list: Vec<H256>) -> Result<(), Error> {
+/// Perform a register procedure system call.
+pub fn reg(cap_index: u8, proc_id: SysCallProcedureKey, address: Address, cap_list: Vec<H256>) -> Result<(), Error> {
     let mut input = Vec::new();
     let u256_list: Vec<U256> = cap_list.iter().map(|x| x.into()).collect();
     let cap_list = proc_table::cap::NewCapList::from_u256_list(&u256_list).unwrap();
@@ -219,7 +243,8 @@ pub fn raw_proc_reg(cap_index: u8, proc_id: SysCallProcedureKey, address: Addres
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_delete(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
+/// Perform a delete procedure system call.
+pub fn delete(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {
         cap_index,
@@ -229,7 +254,8 @@ pub fn raw_proc_delete(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<()
     cap9_syscall(&input, &mut Vec::new())
 }
 
-pub fn raw_proc_entry(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
+/// Perform a set entry system call.
+pub fn entry(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {
         cap_index,
@@ -238,7 +264,9 @@ pub fn raw_proc_entry(cap_index: u8, proc_id: SysCallProcedureKey) -> Result<(),
     syscall.serialize(&mut input).unwrap();
     cap9_syscall(&input, &mut Vec::new())
 }
-pub fn raw_proc_acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) -> Result<(), Error> {
+
+/// Perform an external account call system call.
+pub fn acc_call(cap_index: u8, address: Address, value: U256, payload: Vec<u8>) -> Result<(), Error> {
     let mut input = Vec::new();
     let syscall = SysCall {
         cap_index,

@@ -18,23 +18,28 @@ extern crate cap9_test;
 
 fn main() {}
 
-pub mod writer {
+pub mod ACL {
     use pwasm_abi::types::*;
     use pwasm_ethereum;
     use pwasm_abi_derive::eth_abi;
     use cap9_std;
-    // use cap9_std::proc_table::*;
     use cap9_std::proc_table::cap::*;
     use cap9_std::syscalls::*;
 
-    #[eth_abi(TestRegisterEndpoint)]
-    pub trait TestRegisterInterface {
+    #[eth_abi(ACLAdminEndpoint)]
+pub trait ACLAdminInterface {
         /// The constructor set with Initial Entry Procedure
         fn constructor(&mut self);
 
-        /// Get Number
-        #[constant]
-        fn testNum(&mut self) -> U256;
+        fn set_group_procedure(&mut self, group_id: U256, proc_key: H256);
+
+        fn get_group_procedure(&mut self, group_id: U256) -> H256;
+
+        fn set_account_group(&mut self, account: Address, group_id: U256);
+
+        fn remove_account_group(&mut self, account: Address);
+
+        fn get_account_group(&mut self, account: Address) -> U256;
 
         fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>);
 
@@ -44,16 +49,51 @@ pub mod writer {
 
         fn getNCaps(&mut self, key: H256) -> u64;
 
+        fn proxy(&mut self, payload: Vec<u8>);
+
     }
 
-    pub struct RegisterContract;
+    pub struct ACLContract;
 
-    impl TestRegisterInterface for RegisterContract {
+    impl ACLAdminInterface for ACLContract {
 
         fn constructor(&mut self) {}
 
-        fn testNum(&mut self) -> U256 {
-            76.into()
+        fn set_group_procedure(&mut self, group_id: U256, proc_key: H256) {
+            // This relies on a mapping of groups -> procedures. Therefore we
+            // need a map mechanism. Here we will just create the mechanism each
+            // time at the same address.
+            let mut procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1).unwrap();
+            procecedure_map.insert(group_id.as_u32() as u8, proc_key.into());
+        }
+
+        fn get_group_procedure(&mut self, group_id: U256) -> H256 {
+            // This relies on a mapping of groups -> procedures. Therefore we
+            // need a map mechanism. Here we will just create the mechanism each
+            // time at the same address.
+            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(1).unwrap();
+            match procecedure_map.get(group_id.as_u32() as u8) {
+                Some(x) => x.into(),
+                None => H256::zero(),
+            }
+        }
+
+        fn set_account_group(&mut self, account: Address, group_id: U256) {
+            let mut procecedure_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0).unwrap();
+            procecedure_map.insert(account, group_id.as_u32() as u8);
+        }
+
+        fn remove_account_group(&mut self, account: Address) {
+            let mut procecedure_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0).unwrap();
+            procecedure_map.remove(account);
+        }
+
+        fn get_account_group(&mut self, account: Address) -> U256 {
+            let procecedure_map: cap9_std::StorageEnumerableMap<Address, u8> = cap9_std::StorageEnumerableMap::from(0).unwrap();
+            match procecedure_map.get(account) {
+                Some(x) => x.into(),
+                None => U256::zero(),
+            }
         }
 
         fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>) {
@@ -101,6 +141,20 @@ pub mod writer {
             n_caps
         }
 
+        /// The proxy function forwards the transaction to the procedure to
+        /// which the sender belongs.
+        fn proxy(&mut self, payload: Vec<u8>) {
+            let sender = pwasm_ethereum::origin();
+            let group_id = self.get_account_group(sender).as_u32() as u8;
+            let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(0).unwrap();
+            let procedure_key = procecedure_map.get(group_id).unwrap();
+            // Here the cap is hard coded. This procedure expects its first
+            // procedure call capability to give it all the necessary
+            // permissions.
+            cap9_std::call(0_u8, procedure_key, payload).unwrap();
+            pwasm_ethereum::ret(&cap9_std::result());
+        }
+
     }
 }
 // Declares the dispatch and dispatch_ctor methods
@@ -108,13 +162,13 @@ use pwasm_abi::eth::EndpointInterface;
 
 #[no_mangle]
 pub fn call() {
-    let mut endpoint = writer::TestRegisterEndpoint::new(writer::RegisterContract {});
+    let mut endpoint = ACL::ACLAdminEndpoint::new(ACL::ACLContract {});
     // Read http://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding for details
     pwasm_ethereum::ret(&endpoint.dispatch(&pwasm_ethereum::input()));
 }
 
 #[no_mangle]
 pub fn deploy() {
-    let mut endpoint = writer::TestRegisterEndpoint::new(writer::RegisterContract {});
+    let mut endpoint = ACL::ACLAdminEndpoint::new(ACL::ACLContract {});
     endpoint.dispatch_ctor(&pwasm_ethereum::input());
 }
