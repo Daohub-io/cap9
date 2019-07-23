@@ -7,8 +7,9 @@ const Web3 = require('web3');
 const fs = require("fs");
 const path = require("path")
 const http = require('http')
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
+const node_utils = require('util')
+const encoder = new node_utils.TextEncoder();
+const decoder = new node_utils.TextDecoder();
 const jayson = require('jayson');
 
 const client = jayson.client.http({

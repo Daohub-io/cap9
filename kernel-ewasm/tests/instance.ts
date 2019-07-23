@@ -1,9 +1,10 @@
 const Web3 = require('web3')
 const assert = require('assert')
+const util = require('util')
 
 import { newKernelInstance, web3, createAccount, KernelInstance, deployContract, NewCap, WriteCap, CAP_TYPE, CallCap, LogCap, RegisterCap, DeleteCap, EntryCap, AccCallCap } from './utils'
 import { Contract } from 'web3-eth-contract';
-const encoder = new TextEncoder();
+const encoder = new util.TextEncoder();
 
 
 describe('Kernel', function () {
