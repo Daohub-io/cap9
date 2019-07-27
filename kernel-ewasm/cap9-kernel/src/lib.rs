@@ -41,25 +41,12 @@ pub mod kernel {
         /// The constructor set with Initial Entry Procedure
         #[payable]
         fn constructor(&mut self, _entry_proc_key: String, _entry_proc_address: Address, _cap_list: Vec<U256>);
-        /// Get Entry Procedure
-        #[constant]
-        fn entryProcedure(&mut self) -> [u8; 24];
-        /// Get Current Executing Procedure
-        #[constant]
-        fn currentProcedure(&mut self) -> [u8; 24];
-
-        /// Get Procedure Address By Key
-        /// Returns 0 if Procedure Not Found
-        fn getProcedureByKey(&mut self, _proc_key: String) -> Address;
         /// Check if Procedure Contract is Valid
         fn check_contract(&mut self, _to: Address) -> bool;
         /// Get the size (in bytes) of another contract
         fn get_code_size(&mut self, _to: Address) -> i32;
         /// Copy the code of another contract into memory
         fn code_copy(&mut self, _to: Address) -> pwasm_std::Vec<u8>;
-
-        /// Get Cap Length by Type
-        fn get_cap_type_len(&mut self, _proc_key: String, _cap_type: U256) -> U256;
 
         /// Toggle Syscall Mode
         /// (Forwards all calls to entry procedure)
@@ -91,26 +78,6 @@ pub mod kernel {
             proc_table::set_entry_proc_id(_entry_proc_key).unwrap();
         }
 
-        fn entryProcedure(&mut self) -> [u8; 24] {
-            proc_table::get_entry_proc_id()
-        }
-
-        fn currentProcedure(&mut self) -> [u8; 24] {
-            proc_table::get_current_proc_id()
-        }
-
-        fn getProcedureByKey(&mut self, _proc_key: String) -> Address {
-            let _proc_key = {
-                let byte_key = _proc_key.as_bytes();
-                let len = byte_key.len();
-                let mut output = [0u8; 24];
-                output[..len].copy_from_slice(byte_key);
-                output
-            };
-
-            proc_table::get_proc_addr(_proc_key).unwrap_or(H160::zero())
-        }
-
         fn check_contract(&mut self, target: Address) -> bool {
             // First we check if the target is the null address. If so we return
             // false.
@@ -140,17 +107,17 @@ pub mod kernel {
             code
         }
 
-        fn get_cap_type_len(&mut self, _proc_key: String, _cap_type: U256) -> U256 {
-            let _proc_key = {
-                let byte_key = _proc_key.as_bytes();
-                let len = byte_key.len();
-                let mut output = [0u8; 24];
-                output[..len].copy_from_slice(byte_key);
-                output
-            };
+        // fn get_cap_type_len(&mut self, _proc_key: String, _cap_type: U256) -> U256 {
+        //     let _proc_key = {
+        //         let byte_key = _proc_key.as_bytes();
+        //         let len = byte_key.len();
+        //         let mut output = [0u8; 24];
+        //         output[..len].copy_from_slice(byte_key);
+        //         output
+        //     };
 
-            U256::from(proc_table::get_proc_cap_list_len(_proc_key, _cap_type.as_u32() as u8))
-        }
+        //     U256::from(proc_table::get_proc_cap_list_len(_proc_key, _cap_type.as_u32() as u8))
+        // }
 
         fn toggle_syscall(&mut self) {
             toggle_syscall();
@@ -264,6 +231,29 @@ mod tests {
 
     use cap9_std::proc_table::cap::*;
 
+    /// Test function to take the entry procedure key directly from a contracts
+    /// storage.
+    fn get_entry_proc_id() -> [u8; 24] {
+        get_proc_id(cap9_std::proc_table::KERNEL_ENTRY_PROC_PTR)
+    }
+
+    /// Test function to take the currrent procedure key directly from a
+    /// contracts storage.
+    fn get_current_proc_id() -> [u8; 24] {
+        get_proc_id(cap9_std::proc_table::KERNEL_CURRENT_PROC_PTR)
+    }
+
+    /// Test function to take a procedure key directly from a contracts storage.
+    fn get_proc_id(address: [u8; 32]) -> [u8; 24] {
+        let mut result = [0; 24];
+        let mut entry_buffer = [0;32];
+        unsafe {
+            pwasm_test::storage_read(address.as_ptr(), entry_buffer.as_mut_ptr());
+        }
+        result.copy_from_slice(&entry_buffer[8..]);
+        result
+    }
+
     #[test]
     fn should_initialize_with_entry_procedure() {
         let mut contract = kernel::KernelContract {};
@@ -278,9 +268,10 @@ mod tests {
         ext_reset(|e| e.sender(owner_address.clone()));
 
         contract.constructor(entry_proc_key.clone(), entry_proc_address.clone(), Vec::new());
-
-        assert_eq!(&contract.entryProcedure()[0..4], entry_proc_key.as_bytes());
-        assert_eq!(contract.currentProcedure(), [0u8; 24]);
+        let entry_proc = get_entry_proc_id();
+        assert_eq!(&entry_proc[0..4], entry_proc_key.as_bytes());
+        let current_proc = get_current_proc_id();
+        assert_eq!(current_proc, [0u8; 24]);
     }
 
     #[ignore]
