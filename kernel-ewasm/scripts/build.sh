@@ -36,6 +36,7 @@ function build_procedure {
     wasm-build --target=wasm32-unknown-unknown ./target $1
 }
 
+build_procedure validator_test
 build_procedure writer_test
 build_procedure entry_test
 build_procedure caller_test

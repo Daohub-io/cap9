@@ -22,15 +22,6 @@ describe('Write Syscall', function () {
             let kernel_asWriter = newProc.clone();
             kernel_asWriter.address = kernel.contract.address;
 
-            // The writer_test procedure is now set as the entry procedure. In
-            // order to execute this procedure, we first have to put the kernel
-            // into "entry procedure mode".
-            const toggle1 = await kernel.contract.methods.get_mode().call();
-            assert.strictEqual(toggle1, 0, "The kernel should be in test mode (0)");
-            await kernel.contract.methods.toggle_syscall().send();
-            // Once we have toggled entry procedure on, we have no way to switch
-            // back.
-
             // This is the key that we will be modifying in storage.
             const key = "0xdeadbeef";
 
@@ -50,15 +41,6 @@ describe('Write Syscall', function () {
             // the writer contract directly to the kernel.
             let kernel_asWriter = newProc.clone();
             kernel_asWriter.address = kernel.contract.address;
-
-            // The writer_test procedure is now set as the entry procedure. In
-            // order to execute this procedure, we first have to put the kernel
-            // into "entry procedure mode".
-            const toggle1 = await kernel.contract.methods.get_mode().call();
-            assert.strictEqual(toggle1, 0, "The kernel should be in test mode (0)");
-            await kernel.contract.methods.toggle_syscall().send();
-            // Once we have toggled entry procedure on, we have no way to switch
-            // back.
 
             // This is the key that we will be modifying in storage.
             const key = "0xdeadbeef";
@@ -92,15 +74,6 @@ describe('Write Syscall', function () {
             // the writer contract directly to the kernel.
             let kernel_asWriter = newProc.clone();
             kernel_asWriter.address = kernel.contract.address;
-
-            // The writer_test procedure is now set as the entry procedure. In
-            // order to execute this procedure, we first have to put the kernel
-            // into "entry procedure mode".
-            const toggle1 = await kernel.contract.methods.get_mode().call();
-            assert.strictEqual(toggle1, 0, "The kernel should be in test mode (0)");
-            await kernel.contract.methods.toggle_syscall().send();
-            // Once we have toggled entry procedure on, we have no way to switch
-            // back.
 
             // This is the key that we will be modifying in storage.
             const key = "0xdeadbeef";
@@ -138,15 +111,6 @@ describe('Write Syscall', function () {
             // the writer contract directly to the kernel.
             let kernel_asWriter = newProc.clone();
             kernel_asWriter.address = kernel.contract.address;
-
-            // The writer_test procedure is now set as the entry procedure. In
-            // order to execute this procedure, we first have to put the kernel
-            // into "entry procedure mode".
-            const toggle1 = await kernel.contract.methods.get_mode().call();
-            assert.strictEqual(toggle1, 0, "The kernel should be in test mode (0)");
-            await kernel.contract.methods.toggle_syscall().send();
-            // Once we have toggled entry procedure on, we have no way to switch
-            // back.
 
             // This is the key that we will be modifying in storage.
             const key = "0xdeadbeef";
