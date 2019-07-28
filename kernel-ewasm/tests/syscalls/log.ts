@@ -83,15 +83,6 @@ async function logCapTest(capTopics, logTopics, data, result: boolean) {
     let kernel_asLogger = newProc.clone();
     kernel_asLogger.address = kernel.contract.address;
 
-    // The logger_test procedure is now set as the entry procedure. In
-    // order to execute this procedure, we first have to put the kernel
-    // into "entry procedure mode".
-    const toggle1 = await kernel.contract.methods.get_mode().call();
-    assert.strictEqual(toggle1, 0, "The kernel should be in test mode (0)");
-    await kernel.contract.methods.toggle_syscall().send();
-    // Once we have toggled entry procedure on, we have no way to switch
-    // back.
-
     // This is the index of the capability (in the procedures capability
     // list) that we will be using to perform the writes.
     const cap_index = 0;

@@ -19,11 +19,11 @@ const KERNEL_ADDRESS_PTR: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0,
 ];
-const KERNEL_CURRENT_PROC_PTR: [u8; 32] = [
+pub const KERNEL_CURRENT_PROC_PTR: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0,
 ];
-const KERNEL_ENTRY_PROC_PTR: [u8; 32] = [
+pub const KERNEL_ENTRY_PROC_PTR: [u8; 32] = [
     0xff, 0xff, 0xff, 0xff, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0,
 ];

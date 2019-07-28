@@ -65,15 +65,30 @@ describe('Kernel', function () {
     describe('validator', function () {
         this.timeout(40_000);
         let kernel: Contract;
+        let kernel_asValidator: Contract;
 
         before(async function () {
-            let instance = await newKernelInstance("init", "0xc1912fee45d61c87cc5ea59dae31190fffff232d");
-            kernel = instance.contract;
+            let newProc = await deployContract("validator_test", "TestValidatorInterface");
+            let kernel = await newKernelInstance("init", newProc.address);
+            // kernel = instance.contract;
+
+            const accounts = await web3.eth.personal.getAccounts()
+
+
+            // Here we make a copy of the "writer_test" contract interface, but
+            // change the address so that it's pointing at the kernel. This
+            // means the web3 library will send a message crafted to be read by
+            // the writer contract directly to the kernel.
+            kernel_asValidator = newProc.clone();
+            kernel_asValidator.address = kernel.contract.address;
+
+
         })
 
         it('should return false when given the null address', async function () {
             this.timeout(20000);
-            let rec_validation = await kernel.methods.check_contract('0x0000000000000000000000000000000000000000').call();
+
+            const rec_validation = await kernel_asValidator.methods.check_contract('0x0000000000000000000000000000000000000000').call();
             assert.strictEqual(rec_validation, false)
         })
 
@@ -81,32 +96,32 @@ describe('Kernel', function () {
             const accounts = await web3.eth.personal.getAccounts()
             assert(web3.utils.isAddress(accounts[0]), "The example should be a valid address")
             try {
-                let rec_validation = await kernel.methods.check_contract(accounts[0]).call();
+                let rec_validation = await kernel_asValidator.methods.check_contract(accounts[0]).call();
                 throw new Error("check_contract should no succeed");
             } catch (e) {
                 // console.log(e)
             }
         })
         it('should return the code size of the kernel', async function () {
-            const kernelAddress = kernel.options.address;
+            const kernelAddress = kernel_asValidator.options.address;
             assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
-            let rec_validation = await kernel.methods.get_code_size(kernelAddress).call();
+            let rec_validation = await kernel_asValidator.methods.get_code_size(kernelAddress).call();
             assert.strictEqual(typeof rec_validation, "number")
         })
 
         it('should copy the code of the kernel', async function () {
-            const kernelAddress = kernel.options.address;
+            const kernelAddress = kernel_asValidator.options.address;
             assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
-            const code_size = await kernel.methods.get_code_size(kernelAddress).call();
-            const code_hex = await kernel.methods.code_copy(kernelAddress).call();
+            const code_size = await kernel_asValidator.methods.get_code_size(kernelAddress).call();
+            const code_hex = await kernel_asValidator.methods.code_copy(kernelAddress).call();
             const code = web3.utils.hexToBytes(code_hex);
             assert.strictEqual(code.length, code_size, "The code length should be as given by EXTCODESIZE");
         })
 
         it('should return a boolean when trying to validate the kernel itself', async function () {
-            const kernelAddress = kernel.options.address;
+            const kernelAddress = kernel_asValidator.options.address;
             assert(web3.utils.isAddress(kernelAddress), "The kernel address should be a valid address")
-            let rec_validation = await kernel.methods.check_contract(kernelAddress).call();
+            let rec_validation = await kernel_asValidator.methods.check_contract(kernelAddress).call();
             assert.strictEqual(typeof rec_validation, "boolean");
         })
 
@@ -114,15 +129,15 @@ describe('Kernel', function () {
             const contract = await deployContract("entry_test", "TestEntryInterface");
             assert(web3.utils.isAddress(contract.address), "The contract address should be a valid address")
 
-            const code_size = await kernel.methods.get_code_size(contract.address).call();
-            const code_hex = await kernel.methods.code_copy(contract.address).call();
+            const code_size = await kernel_asValidator.methods.get_code_size(contract.address).call();
+            const code_hex = await kernel_asValidator.methods.code_copy(contract.address).call();
             const code = web3.utils.hexToBytes(code_hex);
             assert.strictEqual(code_size, code.length, "The code length should be as given by EXTCODESIZE");
         })
 
         it('should return a boolean when validating an example contract', async function () {
             const contract = await deployContract("entry_test", "TestEntryInterface");
-            let rec_validation = await kernel.methods.check_contract(contract.address).call();
+            let rec_validation = await kernel_asValidator.methods.check_contract(contract.address).call();
             assert.strictEqual(typeof rec_validation, "boolean");
         })
 

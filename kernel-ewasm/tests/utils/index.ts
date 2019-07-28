@@ -159,9 +159,29 @@ export class KernelInstance {
         });
     }
 
-    // TODO: deprecate
+    getStorePtr(proc_key: Uint8Array): Uint8Array {
+        let key = KERNEL_PROC_HEAP_PTR;
+        for (let i = 0; i < 24; i++) {
+            key[i+5] = proc_key[i];
+        }
+        return key;
+    }
+
+    getCapTypeLenPtr(proc_key: Uint8Array, cap_type: number): Uint8Array {
+        let pointer = this.getStorePtr(proc_key);
+        pointer[29] = cap_type;
+        return pointer;
+    }
+
+    async getProcCapListLen(proc_key: Uint8Array, cap_type: number): Promise<number> {
+        const ptr = this.getCapTypeLenPtr(proc_key, cap_type);
+        const procCapListLen = await this.getStorageAt(ptr);
+        return procCapListLen[31];
+    }
+
     async getProcCapTypeLen(proc_key: string, cap_type: CAP_TYPE): Promise<number> {
-        return utils.toDecimal(await this.contract.methods.get_cap_type_len(proc_key, cap_type).call());
+        const baseKey24 = hexToBuffer(web3.utils.fromAscii(proc_key.padEnd(24, '\0')));
+        return this.getProcCapListLen(baseKey24, cap_type);
     }
 
     // TODO: every time we add a contract to the kernel, that contract address

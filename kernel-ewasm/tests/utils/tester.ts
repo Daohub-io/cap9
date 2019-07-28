@@ -63,11 +63,6 @@ export class Tester {
         // the writer contract directly to the kernel.
         this.interface = firstEntry.clone();
         this.interface.address = this.kernel.contract.address;
-        // In order to execute procedures, we first have to put the kernel into
-        // "entry procedure mode".
-        const toggle1 = await this.kernel.contract.methods.get_mode().call();
-        assert.strictEqual(toggle1, 0, "The kernel should be in test mode (0)");
-        await this.kernel.contract.methods.toggle_syscall().send();
     }
 
     // Register a procedure. This assumes the current entry procedure for the

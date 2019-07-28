@@ -744,14 +744,6 @@ async function registerTest(registerCaps, requestedCaps, procName, contractName,
     // the writer contract directly to the kernel.
     let kernel_asRegister = newProc.clone();
     kernel_asRegister.address = kernel.contract.address;
-    // The register_test procedure is now set as the entry procedure. In
-    // order to execute this procedure, we first have to put the kernel
-    // into "entry procedure mode".
-    const toggle1 = await kernel.contract.methods.get_mode().call();
-    assert.strictEqual(toggle1, 0, "The kernel should be in test mode (0)");
-    await kernel.contract.methods.toggle_syscall().send();
-    // Once we have toggled entry procedure on, we have no way to switch
-    // back.
 
     // This is the key of the procedure that we will be registering.
     const key = "0x" + web3.utils.fromAscii(procName, 24).slice(2).padStart(64, "0");
