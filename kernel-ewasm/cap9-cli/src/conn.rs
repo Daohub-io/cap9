@@ -8,7 +8,11 @@ pub struct EthConn<T: Transport> {
 }
 
 impl<T: Transport> EthConn<T> {
-    pub fn new_http() -> EthConn<web3::transports::Http> {
+
+}
+
+impl EthConn<web3::transports::Http> {
+    pub fn new_http() -> Self {
         let (_eloop, transport) = web3::transports::Http::new("http://localhost:8545").expect("No network");
         let web3 = web3::Web3::new(transport);
         let sender = match web3.eth().accounts().wait() {
