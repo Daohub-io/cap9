@@ -1,4 +1,4 @@
-use clap::{Arg, App, SubCommand};
+use clap::{Arg, App, SubCommand, AppSettings};
 use std::process::Command;
 use std::str::FromStr;
 use web3::futures::Future;
@@ -10,6 +10,7 @@ mod conn;
 
 fn main() {
     let matches = App::new("Cap9 CLI")
+            .setting(AppSettings::ArgRequiredElseHelp)
             .version("0.2.0")
             .author("Daolab <info@daolab.io>")
             .about("A command-line interface for BeakerOS on the Ethereum blockchain.")
