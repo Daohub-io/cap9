@@ -1,27 +1,54 @@
-extern crate assert_cli;
-
 #[cfg(test)]
 mod integration {
-    use assert_cli;
+    use std::process::Command;
+    use assert_cmd::prelude::*;
 
     #[test]
-    fn calling_beaker_without_args() {
-        assert_cli::Assert::main_binary()
-            .fails()
-            .unwrap();
+    fn calling_cli_without_args() {
+        let mut cmd = Command::cargo_bin("cap9-cli").unwrap();
+        cmd.assert().failure();
     }
 
     #[test]
     fn calling_new_example_no_arg() {
-        assert_cli::Assert::command(&["cargo", "run", "--", "new"])
-            .fails()
-            .unwrap();
+        let mut cmd = Command::cargo_bin("cap9-cli").unwrap();
+        cmd
+            .arg("new");
+        cmd.assert().failure();
     }
 
     #[test]
-    fn calling_deploy_example() {
-        assert_cli::Assert::command(&["cargo", "run", "--", "deploy"])
-            .fails()
-            .unwrap();
+    fn create_and_deploy() {
+        use tempfile::tempdir;
+        use std::fs::File;
+        use std::io::{self, Write};
+
+        let project_name = "example";
+
+        // Create a directory inside the temporary directory of the system.
+        let dir = tempdir().unwrap();
+
+        // Create a new project
+        let mut create_cmd = Command::cargo_bin("cap9-cli").unwrap();
+        create_cmd
+            .arg("new")
+            .arg(project_name)
+            .current_dir(dir.path());
+        create_cmd.assert().success();
+
+        let mut project_dir = std::path::PathBuf::new();
+        project_dir.push(dir.path());
+        project_dir.push(project_name);
+
+        // Deploy the kernel
+        println!("Deploying project");
+        let mut deploy_cmd = Command::cargo_bin("cap9-cli").unwrap();
+        deploy_cmd
+            .arg("deploy")
+            .current_dir(project_dir);
+        deploy_cmd.assert().success();
+
+        // Explicity close the temp directory.
+        dir.close().unwrap();
     }
 }
