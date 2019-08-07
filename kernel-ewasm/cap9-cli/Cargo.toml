@@ -6,8 +6,16 @@ edition = "2018"
 
 [dependencies]
 clap = "~2.32.0"
-web3 = "0.8.0"
-serde = "1.0.98"
+# web3 = "0.8.0"
+serde = { version = "1.0.98", features = ["derive"] }
+serde_bytes = "0.11.1"
 serde_json = "1.0.40"
+web3 = { git = "https://github.com/Daolab/rust-web3", rev = "eda5d97db3133dabba9358fa9d34eef27a0a44c2" }
+# web3 = { path = "../../rust-web3" }
+jsonrpc = "0.11.0"
+rustc-hex = "2.0.1"
+ethabi = "6.0.1"
+time = "0.1"
+
 [dev-dependencies]
 assert_cli = "~0.6.3"

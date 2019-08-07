@@ -5,12 +5,25 @@ use serde::{Deserialize, Serialize};
 // use serde_json::Result;
 
 const ACL_BOOTSTRAP: &[u8] = include_bytes!("acl_bootstrap.wasm");
+const KERNEL_CODE: &[u8] = include_bytes!("cap9-kernel.wasm");
 
 
 #[derive(Serialize, Deserialize)]
 pub struct DeployFile {
     // pub sender: Address,
     pub deploy_spec: DeploySpec,
+    pub kernel_code: ContractSpec,
+}
+
+impl DeployFile {
+    pub fn new() -> Self {
+        DeployFile {
+            deploy_spec: DeploySpec::new(),
+            kernel_code: ContractSpec {
+                bytes: KERNEL_CODE.clone().to_vec()
+            },
+        }
+    }
 }
 
 /// The information defining the structure of a deployed kernel. For example,
@@ -33,5 +46,6 @@ impl DeploySpec {
 
 #[derive(Serialize, Deserialize)]
 pub struct ContractSpec {
+    #[serde(with = "serde_bytes")]
     pub bytes: Vec<u8>,
 }
