@@ -20,8 +20,6 @@ mod integration {
     #[test]
     fn create_and_deploy() {
         use tempfile::tempdir;
-        use std::fs::File;
-        use std::io::{self, Write};
 
         let project_name = "example";
 

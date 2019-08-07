@@ -6,14 +6,15 @@ extern crate std;
 
 use web3::futures::Future;
 use web3::contract::{Contract, Options};
-use web3::types::{Address, U256, TransactionReceipt};
+use web3::types::{Address, U256};
+// use web3::types::TransactionReceipt;
 use web3::Transport;
-use rustc_hex::FromHex;
-use ethabi::Token::Uint;
+// use rustc_hex::FromHex;
+// use ethabi::Token::Uint;
 use crate::conn::EthConn;
 use crate::project::*;
 
-const REQ_CONFIRMATIONS: usize = 1;
+const REQ_CONFIRMATIONS: usize = 0;
 
 // pub fn string_to_proc_key(mut name: String) -> [u8; 24] {
 //     if !name.is_ascii() {
@@ -137,7 +138,7 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) 
 // Deploy a contract
 pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interface: &[u8]) -> Contract<T> {
     println!("Deploying contract");
-    conn.web3.personal().unlock_account(conn.sender, "user", None).wait();
+    conn.web3.personal().unlock_account(conn.sender, "user", None).wait().unwrap();
     let bal = conn.web3.eth().balance(conn.sender, None).wait();
     println!("bal: {:?}", bal);
     // await web3.eth.personal.unlockAccount(account, DEFAULT_ACCOUNT.PASSWORD, null);

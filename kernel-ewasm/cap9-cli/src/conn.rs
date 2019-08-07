@@ -42,7 +42,7 @@ impl EthConn<web3::transports::Http> {
 fn create_account(name: String, password: String) -> Address {
     let name_json = serde_json::to_value(name).unwrap();
     let password_json = serde_json::to_value(password).unwrap();
-    let mut client = jsonrpc::client::Client::new(String::from("http://localhost:8545"), None, None);
+    let client = jsonrpc::client::Client::new(String::from("http://localhost:8545"), None, None);
     let params = &[name_json, password_json];
     let request = client.build_request("parity_newAccountFromPhrase", params);
     match client.send_request(&request).and_then(|res| res.into_result::<Address>()) {

@@ -1,5 +1,5 @@
 // use web3::Transport;
-use web3::types::{Address};
+// use web3::types::{Address};
 // use web3::futures::Future;
 use serde::{Deserialize, Serialize};
 // use serde_json::Result;

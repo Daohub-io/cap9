@@ -27,10 +27,10 @@ fn main() {
                 .about("Deploy a project to the chain"))
             .get_matches();
 
-    if let Some(deploy_matches) = matches.subcommand_matches("deploy") {
+    if let Some(_deploy_matches) = matches.subcommand_matches("deploy") {
         // Connect to a local network over http.
         let network: conn::EthConn<web3::transports::Http> = conn::EthConn::new_http();
-        let mut f = File::open("deploy.json").expect("could not open file");
+        let f = File::open("deploy.json").expect("could not open file");
         let deploy_file = serde_json::from_reader(f).expect("Could not parse deploy file");
         deploy::deploy_kernel(&network, deploy_file);
     } else if let Some(new_matches) = matches.subcommand_matches("new") {
