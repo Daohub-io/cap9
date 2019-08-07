@@ -15,7 +15,7 @@ fi
 cargo build --examples --target wasm32-unknown-unknown --release --features std
 
 # Compile everything else.
-cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
+cargo build --all --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg" --exclude cap9-cli
 pushd cap9-kernel
 # Recompile the kernel with panic messages.
 cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
