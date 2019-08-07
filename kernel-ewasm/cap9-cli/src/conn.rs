@@ -17,18 +17,7 @@ impl EthConn<web3::transports::Http> {
         let (eloop, transport) = web3::transports::Http::new("http://localhost:8545").expect("No network");
         // eloop.intos_remote();
         let web3 = web3::Web3::new(transport);
-        let sender = match web3.eth().accounts().wait() {
-            Err(_r) => {
-                println!("No Ethereum network available");
-                std::process::exit(1);
-            },
-            Ok(x) => if x.len() > 0 {
-                x[0]
-            } else {
-                let resp = create_account(String::from("user"), String::from("user"));
-                resp
-            },
-        };
+        let sender = create_account(String::from("user"), String::from("user"));
         EthConn {
             web3,
             sender,

@@ -141,7 +141,6 @@ pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interfac
     conn.web3.personal().unlock_account(conn.sender, "user", None).wait().unwrap();
     let bal = conn.web3.eth().balance(conn.sender, None).wait();
     println!("bal: {:?}", bal);
-    // await web3.eth.personal.unlockAccount(account, DEFAULT_ACCOUNT.PASSWORD, null);
     let (contract, receipt) = Contract::deploy(conn.web3.eth(), interface)
             .expect("deploy construction failed")
             .confirmations(REQ_CONFIRMATIONS)
