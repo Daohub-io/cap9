@@ -5,15 +5,17 @@ authors = ["DaoHub <info@daohub.io>"]
 edition = "2018"
 
 [dependencies]
+cap9-std = { path = "../cap9-std" }
 clap = "~2.32.0"
+ethabi = "6.0.1"
+jsonrpc = "0.11.0"
+pwasm-abi = "0.2"
+rustc-hex = "2.0.1"
 serde = { version = "1.0.98", features = ["derive"] }
 serde_bytes = "0.11.1"
 serde_json = "1.0.40"
-web3 = { git = "https://github.com/Daolab/rust-web3", rev = "eda5d97db3133dabba9358fa9d34eef27a0a44c2" }
-jsonrpc = "0.11.0"
-rustc-hex = "2.0.1"
-ethabi = "6.0.1"
 time = "0.1"
+web3 = { git = "https://github.com/Daolab/rust-web3", rev = "eda5d97db3133dabba9358fa9d34eef27a0a44c2" }
 
 [dev-dependencies]
 tempfile = "3.1.0"

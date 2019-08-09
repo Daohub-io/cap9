@@ -3,6 +3,7 @@ use clap::{Arg, App, SubCommand, AppSettings};
 // use std::str::FromStr;
 use web3::futures::Future;
 // use web3::types::{Address};
+use web3::contract::{Contract, Options};
 
 use std::fs::create_dir;
 use std::fs::File;
@@ -32,7 +33,9 @@ fn main() {
         let network: conn::EthConn<web3::transports::Http> = conn::EthConn::new_http();
         let f = File::open("deploy.json").expect("could not open file");
         let deploy_file = serde_json::from_reader(f).expect("Could not parse deploy file");
-        deploy::deploy_kernel(&network, deploy_file);
+        // Deploy a kernel with the ACL Bootstrap procedure
+        let (init_contract, kernel_contract) = deploy::deploy_kernel(&network, deploy_file);
+
     } else if let Some(new_matches) = matches.subcommand_matches("new") {
         let project_name = new_matches.value_of("PROJECT-NAME").expect("No project name");
         // Create a new directory, throw an error if the directory exists.

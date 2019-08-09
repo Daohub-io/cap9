@@ -6,32 +6,43 @@ extern crate std;
 
 use web3::futures::Future;
 use web3::contract::{Contract, Options};
-use web3::types::{Address, U256};
+use web3::types::{Address, U256, H256};
 // use web3::types::TransactionReceipt;
 use web3::Transport;
-// use rustc_hex::FromHex;
+use rustc_hex::FromHex;
+use rustc_hex::ToHex;
 // use ethabi::Token::Uint;
+use crate::conn;
 use crate::conn::EthConn;
 use crate::project::*;
+use cap9_std::proc_table::cap::*;
+use pwasm_abi;
 
-const REQ_CONFIRMATIONS: usize = 0;
+const REQ_CONFIRMATIONS: usize = 5;
 
-// pub fn string_to_proc_key(mut name: String) -> [u8; 24] {
-//     if !name.is_ascii() {
-//         println!("{}", name);
-//         panic!("name is not ascii");
-//     }
-//     if name.len() > 24 {
-//         println!("{}", name);
-//         panic!("name ({}) is greater than 24 characters, it is {} characters", name, name.len());
-//     }
-//     name.push_str("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
-//     name.truncate(24);
-//     let mut procedure_key : [u8; 24] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-//     let byte_name = name.into_bytes();
-//     procedure_key.clone_from_slice(&byte_name[..24]);
-//     procedure_key
-// }
+pub fn string_to_proc_key(mut name: String) -> [u8; 24] {
+    if !name.is_ascii() {
+        println!("{}", name);
+        panic!("name is not ascii");
+    }
+    if name.len() > 24 {
+        println!("{}", name);
+        panic!("name ({}) is greater than 24 characters, it is {} characters", name, name.len());
+    }
+    name.push_str("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
+    name.truncate(24);
+    let mut procedure_key : [u8; 24] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    let byte_name = name.into_bytes();
+    procedure_key.clone_from_slice(&byte_name[..24]);
+    procedure_key
+}
+
+pub fn proc_key_to_32_bytes(proc_key: &[u8; 24]) -> [u8; 32] {
+    let mut buf = [0; 32];
+    buf[8..].copy_from_slice(proc_key);
+    buf
+}
+
 
 // pub fn register_procedure<'a, T: Transport>(conn:  &'a EthConn<T>, kernel_contract: &'a Contract<T>, procedure_address: Address, name: String, caps : Vec<Cap>) -> Box<Future<Item = TransactionReceipt, Error = String>+'a> {
 //     let caps_vals = caps_into_u256s(caps);
@@ -103,21 +114,75 @@ const REQ_CONFIRMATIONS: usize = 0;
 //     println!("Kernel Instance Address: {:?}", &kernel_contract.address());
 // }
 
-// deploy_file.deploy_spec.initial_entry.bytes
-pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) -> Contract<T> {
+pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) -> (Contract<T>, Contract<T>) {
     // Deploy initial procedure
-    let init_contract = deploy_contract(conn, deploy_file.deploy_spec.initial_entry.bytes, include_bytes!("ACLBootstrapInterface.json"));
+
+    let init_contract = deploy_contract(conn, include_bytes!("acl_bootstrap.wasm").to_vec(), include_bytes!("ACLBootstrapInterface.json"));
+    // let init_contract = deploy_contract(conn, include_bytes!("writer_test.wasm").to_vec(), include_bytes!("TestWriterInterface.json"));
+    // let init_contract = deploy_contract(conn, include_str!("Adder.bin").from_hex().unwrap(), include_bytes!("Adder.abi"));
     println!("init_contract: {:?}", init_contract);
     // Deploying a kernel instance
     let kernel_code: Vec<u8> = deploy_file.kernel_code.bytes;
-    let proc_key = String::from("EntryProc");
-    let proc_address = Address::zero();
-    let encoded_cap_list: Vec<U256> = vec![];
+    let proc_key = String::from("init");
+    let proc_address = init_contract.address();
+    let empty_key = string_to_proc_key("".to_string());
+    let entry_caps: Vec<NewCapability> = vec![
+            NewCapability {
+                cap: Capability::ProcedureRegister(ProcedureRegisterCap {
+                    prefix: 0,
+                    key: empty_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureRegister(ProcedureRegisterCap {
+                    prefix: 0,
+                    key: empty_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureCall(ProcedureCallCap {
+                    prefix: 0,
+                    key: empty_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureDelete(ProcedureDeleteCap {
+                    prefix: 0,
+                    key: empty_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+                    size:     [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe],
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+                    size:     [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe],
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureEntry(ProcedureEntryCap),
+                parent_index: 0,
+            },
+        ];
+
+    let cap_list: NewCapList = NewCapList(entry_caps.clone());
+    let encoded_cap_list: Vec<U256> = from_common_u256_vec(cap_list.to_u256_list());
+
     let (kernel_contract, kernel_receipt) = Contract::deploy(conn.web3.eth(), include_bytes!("KernelInterface.json"))
             .expect("deploy construction failed")
             .confirmations(REQ_CONFIRMATIONS)
             .options(Options::with(|opt| {
-                opt.gas = Some(5_700_000.into())
+                opt.gas = Some(200_800_000.into())
             }))
             .execute(
                 kernel_code,
@@ -131,21 +196,172 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) 
     let web3::types::Bytes(code_vec_kernel)= conn.web3.eth().code(kernel_contract.address(), None).wait().unwrap();
     println!("Kernel Code Length: {:?}", code_vec_kernel.len());
     println!("Kernel Gas Used (Deployment): {:?}", kernel_receipt.gas_used);
+    if kernel_receipt.status != Some(web3::types::U64::one()) {
+        panic!("Kernel Contract deployment failed!");
+    }
 
-    kernel_contract
+    let proxied_init_contract = web3::contract::Contract::from_json(
+            conn.web3.eth(),
+            kernel_contract.address(),
+            include_bytes!("ACLBootstrapInterface.json"),
+        ).expect("proxied_init_contract");
+
+    let entry_contract = deploy_contract(conn, include_bytes!("acl_entry.wasm").to_vec(), include_bytes!("ACLEntryInterface.json"));
+    let admin_contract = deploy_contract(conn, include_bytes!("acl_admin.wasm").to_vec(), include_bytes!("ACLAdminInterface.json"));
+    let entry_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("entry".to_string())).into();
+    let admin_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("admin".to_string())).into();
+    let prefix = 0;
+    let cap_key = string_to_proc_key("write".to_string());
+    let caps: Vec<NewCapability> = vec![
+            NewCapability {
+                cap: Capability::ProcedureRegister(ProcedureRegisterCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureRegister(ProcedureRegisterCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 1,
+            },
+            NewCapability {
+                cap: Capability::ProcedureCall(ProcedureCallCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureDelete(ProcedureDeleteCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+                    size:     [0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: [0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+                    size:     [0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+                }),
+                parent_index: 1,
+            },
+            NewCapability {
+                cap: Capability::ProcedureEntry(ProcedureEntryCap),
+                parent_index: 0,
+            },
+        ];
+
+    let encoded_cap_list_entry: NewCapList = NewCapList(caps.clone());
+    let encoded_cap_list_admin: NewCapList = NewCapList(caps.clone());
+
+    // let encoded_cap_list_entry: NewCapList = NewCapList(vec![]);
+    // let encoded_cap_list_admin: NewCapList = NewCapList(vec![]);
+
+    // Be wary of conflicting U256 types
+    let encoded_cap_list_entry_u256: Vec<U256> = from_common_u256_vec(encoded_cap_list_entry.to_u256_list());
+    let encoded_cap_list_admin_u256: Vec<U256> = from_common_u256_vec(encoded_cap_list_admin.to_u256_list());
+
+
+    for i in &encoded_cap_list_admin_u256 {
+        println!("entry_caps: {:?}", i);
+    }
+    let main_account = &conn.sender;
+
+    {
+        let entry_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        // println!("EntryProcAddress: 0x{}", entry_proc_address.to_hex());
+        let store_val = conn.web3.eth().storage(kernel_contract.address(), entry_proc_address, None).wait();
+        println!("EntryProc: {:?}", store_val);
+    }
+    {
+        let storage_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x00, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x63, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        let storage_value = conn.web3.eth().storage(kernel_contract.address(), storage_address, None).wait();
+        println!("EntryProcAddress: {:?}", storage_value);
+    }
+    {
+        let entry_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        let store_val2 = conn.web3.eth().storage(kernel_contract.address(), entry_proc_address, None).wait();
+        println!("N Procs: {:?}", store_val2);
+    }
+
+    let keys = conn::list_storage_keys(kernel_contract.address());
+    println!("keys: {:?}", keys);
+
+    println!("entry_key: 0x{:?}", entry_key);
+    println!("entry_address: {:?}", entry_contract.address());
+    println!("admin_key: 0x{:?}", admin_key);
+    println!("admin_address: {:?}", admin_contract.address());
+    println!("main_account: {:?}", main_account);
+
+    // Initialise ACL via bootstrap procedure.
+    let res = proxied_init_contract.call("init", (
+            entry_key, // entry key
+            entry_contract.address(), // entry address
+            encoded_cap_list_entry_u256, // entry cap list
+            admin_key, // admin key
+            admin_contract.address(), // admin address
+            encoded_cap_list_admin_u256, // admin cap list
+            main_account.clone() // admin account
+        ), conn.sender,
+        Options::with(|opts| {
+            opts.gas = Some(550_621_180.into());
+        }),
+        // None
+        ).wait().expect("ACL init");
+    println!("res: {:?}", res);
+
+    let init_receipt = conn.web3.eth().transaction_receipt(res).wait().expect("init receipt").unwrap();
+    println!("Init Receipt: {:?}", init_receipt);
+
+
+    if init_receipt.status != Some(web3::types::U64::one()) {
+        panic!("ACL init failed!");
+    }
+
+    let entry_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+    println!("EntryProcAddress: 0x{}", entry_proc_address.to_hex());
+    let store_val = conn.web3.eth().storage(kernel_contract.address(), entry_proc_address, None).wait();
+    println!("EntryProc: {:?}", store_val);
+
+    let keys = conn::list_storage_keys(kernel_contract.address());
+    println!("keys: {:?}", keys);
+
+    (proxied_init_contract, kernel_contract)
+}
+
+fn from_common_u256(u: pwasm_abi::types::U256) -> U256 {
+    let mut buf = [0; 32];
+    u.to_little_endian(&mut buf);
+    U256::from_little_endian(&buf)
+}
+
+fn from_common_u256_vec(v: Vec<pwasm_abi::types::U256>) -> Vec<U256> {
+    let mut new_v = Vec::new();
+    for n in v {
+        new_v.push(from_common_u256(n))
+    }
+    new_v
 }
 
 // Deploy a contract
 pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interface: &[u8]) -> Contract<T> {
     println!("Deploying contract");
     conn.web3.personal().unlock_account(conn.sender, "user", None).wait().unwrap();
-    let bal = conn.web3.eth().balance(conn.sender, None).wait();
-    println!("bal: {:?}", bal);
     let (contract, receipt) = Contract::deploy(conn.web3.eth(), interface)
             .expect("deploy construction failed")
             .confirmations(REQ_CONFIRMATIONS)
             .options(Options::with(|opt| {
-                opt.gas = Some(5_700_000.into())
+                opt.gas = Some(200_800_000.into())
             }))
             .execute(
                 code,
@@ -159,7 +375,10 @@ pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interfac
     let web3::types::Bytes(code_vec_kernel)= conn.web3.eth().code(contract.address(), None).wait().unwrap();
     println!("Code Length: {:?}", code_vec_kernel.len());
     println!("Gas Used (Deployment): {:?}", receipt.gas_used);
-
+    println!("Receipt: {:?}", receipt);
+    if receipt.status != Some(web3::types::U64::one()) {
+        panic!("Contract deployment failed!");
+    }
     contract
 }
 
@@ -228,39 +447,39 @@ pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interfac
 //             }))
 // }
 
-// #[derive(Clone)]
-// pub enum Cap {
-//     WriteCap {address: U256, add_keys: U256},
-//     RegisterCap,
-//     CallCap(Vec<U256>),
-//     LogCap(Vec<U256>), // vec is of length 0-4
-// }
+#[derive(Clone)]
+pub enum Cap {
+    WriteCap {address: U256, add_keys: U256},
+    RegisterCap,
+    CallCap(Vec<U256>),
+    LogCap(Vec<U256>), // vec is of length 0-4
+}
 
-// impl Cap {
-//     fn to_u256s(&self) -> Vec<U256> {
-//         match self {
-//             Cap::WriteCap {address, add_keys} => vec![/* length */ U256::from(3), /* type */ U256::from(7),U256::from(address),U256::from(add_keys)],
-//             Cap::RegisterCap => vec![/* length */ U256::from(1), /* type */ U256::from(11)],
-//             Cap::LogCap(topics) => {
-//                 let mut v = vec![/* length */ U256::from(1+topics.len()), /* type */ U256::from(9)];
-//                 v.extend(topics);
-//                 v
-//                 },
-//             Cap::CallCap(keys) => vec![/* length */ U256::from(1), /* type */ U256::from(3)],
-//         }
-//     }
-// }
+impl Cap {
+    fn to_u256s(&self) -> Vec<U256> {
+        match self {
+            Cap::WriteCap {address, add_keys} => vec![/* length */ U256::from(3), /* type */ U256::from(7),U256::from(address),U256::from(add_keys)],
+            Cap::RegisterCap => vec![/* length */ U256::from(1), /* type */ U256::from(11)],
+            Cap::LogCap(topics) => {
+                let mut v = vec![/* length */ U256::from(1+topics.len()), /* type */ U256::from(9)];
+                v.extend(topics);
+                v
+                },
+            Cap::CallCap(keys) => vec![/* length */ U256::from(1), /* type */ U256::from(3)],
+        }
+    }
+}
 
-// fn caps_into_u256s(caps: Vec<Cap>) -> Vec<U256> {
-//     concat_vecs(caps.iter().map(|c| {c.to_u256s()}).collect())
-// }
+fn caps_into_u256s(caps: Vec<Cap>) -> Vec<U256> {
+    concat_vecs(caps.iter().map(|c| {c.to_u256s()}).collect())
+}
 
-// fn concat_vecs(vecs: Vec<Vec<U256>>) -> Vec<U256> {
-//     let size = vecs.iter().fold(0, |a, b| a + b.len());
-//     vecs.into_iter().fold(Vec::with_capacity(size), |mut acc, v| {
-//         acc.extend(v); acc
-//     })
-// }
+fn concat_vecs(vecs: Vec<Vec<U256>>) -> Vec<U256> {
+    let size = vecs.iter().fold(0, |a, b| a + b.len());
+    vecs.into_iter().fold(Vec::with_capacity(size), |mut acc, v| {
+        acc.extend(v); acc
+    })
+}
 
 
 // #[cfg(test)]

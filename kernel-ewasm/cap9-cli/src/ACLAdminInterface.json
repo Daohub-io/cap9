@@ -1,0 +1,185 @@
+[
+  {
+    "type": "function",
+    "name": "set_group_procedure",
+    "inputs": [
+      {
+        "name": "group_id",
+        "type": "uint256"
+      },
+      {
+        "name": "proc_key",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "get_group_procedure",
+    "inputs": [
+      {
+        "name": "group_id",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "uint256"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "set_account_group",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "name": "group_id",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "remove_account_group",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "get_account_group",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "uint256"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "regProc",
+    "inputs": [
+      {
+        "name": "cap_idx",
+        "type": "uint256"
+      },
+      {
+        "name": "key",
+        "type": "uint256"
+      },
+      {
+        "name": "address",
+        "type": "address"
+      },
+      {
+        "name": "cap_list",
+        "type": "uint256[]"
+      }
+    ],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "listProcs",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "uint256[]"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "getCap",
+    "inputs": [
+      {
+        "name": "cap_type",
+        "type": "uint256"
+      },
+      {
+        "name": "cap_index",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "uint256"
+      },
+      {
+        "name": "returnValue1",
+        "type": "uint256"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "getNCaps",
+    "inputs": [
+      {
+        "name": "key",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "uint64"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
+    "name": "proxy",
+    "inputs": [
+      {
+        "name": "payload",
+        "type": "bytes"
+      }
+    ],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "constructor",
+    "inputs": [],
+    "payable": false
+  }
+]
