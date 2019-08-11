@@ -61,7 +61,7 @@ fn main() {
             // List procedures
             let procs = fetch::list_procedures(&network, &local_project);
             for procedure in procs {
-                println!("{:?}", procedure);
+                println!("{}", procedure);
             }
         }
     }

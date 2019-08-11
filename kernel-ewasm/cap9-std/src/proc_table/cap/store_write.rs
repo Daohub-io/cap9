@@ -2,6 +2,9 @@ use super::AsCap;
 use cap9_core::{Serialize, Deserialize};
 use pwasm_abi::types::*;
 
+#[cfg(feature="std")]
+use rustc_hex::ToHex;
+
 pub const CAP_STORE_WRITE: u8 = 7;
 pub const CAP_STORE_WRITE_SIZE: u8 = 2;
 
@@ -11,6 +14,15 @@ pub struct StoreWriteCap {
     pub size: [u8; 32],
 }
 
+
+#[cfg(feature="std")]
+impl std::fmt::Display for StoreWriteCap {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let location_hex: String = self.location.to_hex();
+        let size_hex: String = self.size.to_hex();
+        write!(f, "StoreWriteCap: location: 0x{}, size: 0x{}", location_hex, size_hex)
+    }
+}
 
 impl AsCap for StoreWriteCap {
     fn is_subset_of(&self, parent_cap: &Self) -> bool {

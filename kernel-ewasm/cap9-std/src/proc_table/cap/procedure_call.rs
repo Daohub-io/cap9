@@ -2,6 +2,9 @@ use super::{AsCap,ProcedureKey,matching_keys};
 use cap9_core::{Serialize, Deserialize};
 use pwasm_abi::types::*;
 
+#[cfg(feature="std")]
+use rustc_hex::ToHex;
+
 pub const CAP_PROC_CALL: u8 = 3;
 pub const CAP_PROC_CALL_SIZE: u8 = 1;
 
@@ -9,6 +12,14 @@ pub const CAP_PROC_CALL_SIZE: u8 = 1;
 pub struct ProcedureCallCap {
     pub prefix: u8,
     pub key: ProcedureKey,
+}
+
+#[cfg(feature="std")]
+impl std::fmt::Display for ProcedureCallCap {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let key_hex: String = self.key.to_hex();
+        write!(f, "ProcedureCallCap: prefix: {}, key: 0x{}", self.prefix, key_hex)
+    }
 }
 
 impl AsCap for ProcedureCallCap {

@@ -5,7 +5,7 @@ authors = ["DaoHub <info@daohub.io>"]
 edition = "2018"
 
 [dependencies]
-cap9-std = { path = "../cap9-std" }
+cap9-std = { path = "../cap9-std", features = ["std"] }
 cap9-core = { path = "../cap9-core" }
 clap = "~2.32.0"
 env_logger = "0.6.2"

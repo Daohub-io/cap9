@@ -1,11 +1,22 @@
 use super::{AsCap,ProcedureKey,matching_keys};
 use cap9_core::{Serialize, Deserialize};
 use pwasm_abi::types::*;
+
+#[cfg(feature="std")]
+use rustc_hex::ToHex;
+
 pub const CAP_PROC_ENTRY: u8 = 6;
 pub const CAP_PROC_ENTRY_SIZE: u8 = 0;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ProcedureEntryCap;
+
+#[cfg(feature="std")]
+impl std::fmt::Display for ProcedureEntryCap {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "ProcedureEntryCap")
+    }
+}
 
 impl AsCap for ProcedureEntryCap {
     fn is_subset_of(&self, _parent_cap: &Self) -> bool {

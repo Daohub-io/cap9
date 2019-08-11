@@ -14,6 +14,7 @@ use crate::project::LocalProject;
 use cap9_std::proc_table::cap::*;
 use pwasm_abi;
 use std::fs::File;
+use std::fmt;
 use cap9_std::proc_table::ProcPointer;
 use cap9_core::*;
 use cap9_core::Error;
@@ -120,10 +121,12 @@ struct CapReader<'a, T> where T: Transport {
 
 impl<'a, T: Transport> Read<pwasm_abi::types::U256> for CapReader<'a, T> {
     fn read(&mut self, buf: &mut [pwasm_abi::types::U256]) -> Result<(), Error> {
-        let next_val_ptr = self.proc_pointer.get_cap_val_ptr(self.cap_type, self.cap_index, self.current_val);
-        let next_val = self.conn.web3.eth().storage(self.kernel_address, U256::from_big_endian(&next_val_ptr), None).wait().expect("proc key raw");
-        self.current_val += 1;
-        buf[0] = pwasm_abi::types::U256::from_big_endian(&next_val.to_fixed_bytes());
+        for i in 0..buf.len() {
+            let next_val_ptr = self.proc_pointer.get_cap_val_ptr(self.cap_type, self.cap_index, self.current_val);
+            let next_val = self.conn.web3.eth().storage(self.kernel_address, U256::from_big_endian(&next_val_ptr), None).wait().expect("proc key raw");
+            self.current_val += 1;
+            buf[i] = pwasm_abi::types::U256::from_big_endian(&next_val.to_fixed_bytes());
+        }
         Ok(())
     }
 
@@ -142,12 +145,80 @@ pub struct Caps {
     pub acc_call: Vec<Capability>,
 }
 
+impl Caps {
+    pub fn len(&self) -> usize {
+        self.proc_call.len()
+            + self.proc_register.len()
+            + self.proc_delete.len()
+            + self.proc_entry.len()
+            + self.store_write.len()
+            + self.log.len()
+            + self.acc_call.len()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Procedure {
     pub key: [u8; 24],
     pub index: U256,
     pub address: Address,
     pub caps: Caps,
+}
+
+impl fmt::Display for Procedure {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let key_hex: String = self.key.to_hex();
+        write!(f, "Procedure[{}]: 0x{}\n  Address: {:?}\n  Caps({}):\n{}",
+            self.index.as_u64(), key_hex, self.address, self.caps.len(), self.caps)
+    }
+}
+
+impl fmt::Display for Caps {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.proc_call.len() > 0 {
+            write!(f, "    CAP_PROC_CALL({}):\n", self.proc_call.len())?;
+            for (i, cap) in self.proc_call.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.proc_register.len() > 0 {
+            write!(f, "    CAP_PROC_REGISTER({}):\n", self.proc_register.len())?;
+            for (i, cap) in self.proc_register.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.proc_delete.len() > 0 {
+            write!(f, "    CAP_PROC_DELETE({}):\n", self.proc_delete.len())?;
+            for (i, cap) in self.proc_delete.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.proc_entry.len() > 0 {
+            write!(f, "    CAP_PROC_CALL({}):\n", self.proc_entry.len())?;
+            for (i, cap) in self.proc_entry.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.store_write.len() > 0 {
+            write!(f, "    CAP_STORE_WRITE({}):\n", self.store_write.len())?;
+            for (i, cap) in self.store_write.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.log.len() > 0 {
+            write!(f, "    CAP_LOG({}):\n", self.log.len())?;
+            for (i, cap) in self.log.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.acc_call.len() > 0 {
+            write!(f, "    CAP_ACC_CALL({}):\n", self.acc_call.len())?;
+            for (i, cap) in self.acc_call.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        write!(f, "")
+    }
 }
 
 fn get_idx_proc_address(i: u64) -> U256 {

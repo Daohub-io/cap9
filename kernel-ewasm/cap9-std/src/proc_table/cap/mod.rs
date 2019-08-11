@@ -56,6 +56,21 @@ pub enum Capability {
     AccountCall(AccountCallCap),
 }
 
+#[cfg(feature="std")]
+impl std::fmt::Display for Capability {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Capability::ProcedureCall(x) => write!(f, "{}", x),
+            Capability::ProcedureRegister(x) => write!(f, "{}", x),
+            Capability::ProcedureDelete(x) => write!(f, "{}", x),
+            Capability::ProcedureEntry(x) => write!(f, "{}", x),
+            Capability::StoreWrite(x) => write!(f, "{}", x),
+            Capability::Log(x) => write!(f, "{:?}", x),
+            Capability::AccountCall(x) => write!(f, "{}", x),
+        }
+    }
+}
+
 impl Capability {
     #[inline]
     pub fn get_cap_size(&self) -> u8 {
