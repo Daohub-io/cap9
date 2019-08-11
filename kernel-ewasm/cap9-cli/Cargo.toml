@@ -7,8 +7,10 @@ edition = "2018"
 [dependencies]
 cap9-std = { path = "../cap9-std" }
 clap = "~2.32.0"
+env_logger = "0.6.2"
 ethabi = "6.0.1"
 jsonrpc = "0.11.0"
+log = "0.4.0"
 pwasm-abi = "0.2"
 rustc-hex = "2.0.1"
 serde = { version = "1.0.98", features = ["derive"] }

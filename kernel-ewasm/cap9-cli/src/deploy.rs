@@ -17,6 +17,7 @@ use crate::conn::EthConn;
 use crate::project::*;
 use cap9_std::proc_table::cap::*;
 use pwasm_abi;
+use std::fs::File;
 
 const REQ_CONFIRMATIONS: usize = 0;
 
@@ -114,15 +115,13 @@ pub fn proc_key_to_32_bytes(proc_key: &[u8; 24]) -> [u8; 32] {
 //     println!("Kernel Instance Address: {:?}", &kernel_contract.address());
 // }
 
-pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) -> (Contract<T>, Contract<T>) {
+pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, local_project: &mut LocalProject) -> (Contract<T>, Contract<T>) {
     // Deploy initial procedure
-
     let init_contract = deploy_contract(conn, include_bytes!("acl_bootstrap.wasm").to_vec(), include_bytes!("ACLBootstrapInterface.json"));
-    // let init_contract = deploy_contract(conn, include_bytes!("writer_test.wasm").to_vec(), include_bytes!("TestWriterInterface.json"));
-    // let init_contract = deploy_contract(conn, include_str!("Adder.bin").from_hex().unwrap(), include_bytes!("Adder.abi"));
-    println!("init_contract: {:?}", init_contract);
+    // println!("init_contract: {:?}", init_contract);
+    let deploy_file = local_project.deploy_file();
     // Deploying a kernel instance
-    let kernel_code: Vec<u8> = deploy_file.kernel_code.bytes;
+    let kernel_code: &Vec<u8> = &deploy_file.kernel_code.bytes;
     let proc_key = String::from("init");
     let proc_address = init_contract.address();
     let empty_key = string_to_proc_key("".to_string());
@@ -185,7 +184,7 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) 
                 opt.gas = Some(200_800_000.into())
             }))
             .execute(
-                kernel_code,
+                kernel_code.clone(),
                 (proc_key, proc_address, encoded_cap_list),
                 conn.sender,
             )
@@ -264,9 +263,6 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) 
     let encoded_cap_list_entry: NewCapList = NewCapList(caps.clone());
     let encoded_cap_list_admin: NewCapList = NewCapList(caps.clone());
 
-    // let encoded_cap_list_entry: NewCapList = NewCapList(vec![]);
-    // let encoded_cap_list_admin: NewCapList = NewCapList(vec![]);
-
     // Be wary of conflicting U256 types
     let encoded_cap_list_entry_u256: Vec<U256> = from_common_u256_vec(encoded_cap_list_entry.to_u256_list());
     let encoded_cap_list_admin_u256: Vec<U256> = from_common_u256_vec(encoded_cap_list_admin.to_u256_list());
@@ -316,7 +312,6 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) 
         Options::with(|opts| {
             opts.gas = Some(550_621_180.into());
         }),
-        // None
         ).wait().expect("ACL init");
     println!("res: {:?}", res);
 
@@ -336,15 +331,23 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, deploy_file: DeployFile) 
     let keys = conn::list_storage_keys(kernel_contract.address());
     println!("keys: {:?}", keys);
 
+    local_project.add_status_file(kernel_contract.address());
+
     (proxied_init_contract, kernel_contract)
 }
 
+
+/// Convert one U256 of the ABI type a U256 of the web3 library type (the web3
+/// library and the ABI use different U256s).
 fn from_common_u256(u: pwasm_abi::types::U256) -> U256 {
     let mut buf = [0; 32];
     u.to_little_endian(&mut buf);
     U256::from_little_endian(&buf)
 }
 
+
+/// Convert a vector of U256 of the ABI type a U256 of the web3 library type
+/// (the web3 library and the ABI use different U256s).
 fn from_common_u256_vec(v: Vec<pwasm_abi::types::U256>) -> Vec<U256> {
     let mut new_v = Vec::new();
     for n in v {
@@ -447,39 +450,39 @@ pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interfac
 //             }))
 // }
 
-#[derive(Clone)]
-pub enum Cap {
-    WriteCap {address: U256, add_keys: U256},
-    RegisterCap,
-    CallCap(Vec<U256>),
-    LogCap(Vec<U256>), // vec is of length 0-4
-}
+// #[derive(Clone)]
+// pub enum Cap {
+//     WriteCap {address: U256, add_keys: U256},
+//     RegisterCap,
+//     CallCap(Vec<U256>),
+//     LogCap(Vec<U256>), // vec is of length 0-4
+// }
 
-impl Cap {
-    fn to_u256s(&self) -> Vec<U256> {
-        match self {
-            Cap::WriteCap {address, add_keys} => vec![/* length */ U256::from(3), /* type */ U256::from(7),U256::from(address),U256::from(add_keys)],
-            Cap::RegisterCap => vec![/* length */ U256::from(1), /* type */ U256::from(11)],
-            Cap::LogCap(topics) => {
-                let mut v = vec![/* length */ U256::from(1+topics.len()), /* type */ U256::from(9)];
-                v.extend(topics);
-                v
-                },
-            Cap::CallCap(keys) => vec![/* length */ U256::from(1), /* type */ U256::from(3)],
-        }
-    }
-}
+// impl Cap {
+//     fn to_u256s(&self) -> Vec<U256> {
+//         match self {
+//             Cap::WriteCap {address, add_keys} => vec![/* length */ U256::from(3), /* type */ U256::from(7),U256::from(address),U256::from(add_keys)],
+//             Cap::RegisterCap => vec![/* length */ U256::from(1), /* type */ U256::from(11)],
+//             Cap::LogCap(topics) => {
+//                 let mut v = vec![/* length */ U256::from(1+topics.len()), /* type */ U256::from(9)];
+//                 v.extend(topics);
+//                 v
+//                 },
+//             Cap::CallCap(keys) => vec![/* length */ U256::from(1), /* type */ U256::from(3)],
+//         }
+//     }
+// }
 
-fn caps_into_u256s(caps: Vec<Cap>) -> Vec<U256> {
-    concat_vecs(caps.iter().map(|c| {c.to_u256s()}).collect())
-}
+// fn caps_into_u256s(caps: Vec<Cap>) -> Vec<U256> {
+//     concat_vecs(caps.iter().map(|c| {c.to_u256s()}).collect())
+// }
 
-fn concat_vecs(vecs: Vec<Vec<U256>>) -> Vec<U256> {
-    let size = vecs.iter().fold(0, |a, b| a + b.len());
-    vecs.into_iter().fold(Vec::with_capacity(size), |mut acc, v| {
-        acc.extend(v); acc
-    })
-}
+// fn concat_vecs(vecs: Vec<Vec<U256>>) -> Vec<U256> {
+//     let size = vecs.iter().fold(0, |a, b| a + b.len());
+//     vecs.into_iter().fold(Vec::with_capacity(size), |mut acc, v| {
+//         acc.extend(v); acc
+//     })
+// }
 
 
 // #[cfg(test)]

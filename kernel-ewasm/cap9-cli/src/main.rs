@@ -1,3 +1,5 @@
+#[macro_use] extern crate log;
+
 use clap::{Arg, App, SubCommand, AppSettings};
 // use std::process::Command;
 // use std::str::FromStr;
@@ -9,11 +11,14 @@ use std::fs::create_dir;
 use std::fs::File;
 use std::path::PathBuf;
 
+use env_logger;
+
 mod conn;
 mod deploy;
 mod project;
 
 fn main() {
+    env_logger::init();
     let matches = App::new("Cap9 CLI")
             .setting(AppSettings::ArgRequiredElseHelp)
             .version("0.2.0")
@@ -31,30 +36,14 @@ fn main() {
     if let Some(_deploy_matches) = matches.subcommand_matches("deploy") {
         // Connect to a local network over http.
         let network: conn::EthConn<web3::transports::Http> = conn::EthConn::new_http();
-        let f = File::open("deploy.json").expect("could not open file");
-        let deploy_file = serde_json::from_reader(f).expect("Could not parse deploy file");
+        // Read the local project from out current directory.
+        let mut local_project = project::LocalProject::read();
         // Deploy a kernel with the ACL Bootstrap procedure
-        let (init_contract, kernel_contract) = deploy::deploy_kernel(&network, deploy_file);
+        let (init_contract, kernel_contract) = deploy::deploy_kernel(&network, &mut local_project);
 
     } else if let Some(new_matches) = matches.subcommand_matches("new") {
         let project_name = new_matches.value_of("PROJECT-NAME").expect("No project name");
-        // Create a new directory, throw an error if the directory exists.
-        let creation_result = create_dir(project_name);
-        // Check that the directory was correctly created.
-        match creation_result {
-            Ok(_) => (),
-            Err(ref err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
-                println!("The directory {} already exists.", project_name);
-                std::process::exit(1);
-            },
-            e => e.unwrap(),
-        }
-        let deploy_file = project::DeployFile::new();
-        let mut path = PathBuf::new();
-        path.push(project_name);
-        path.push("deploy");
-        path.set_extension("json");
-        let f = File::create(path).expect("Could not create file");
-        serde_json::ser::to_writer_pretty(f, &deploy_file).expect("Could not serialise deploy data");
+        let local_project = project::LocalProject::create(project_name);
+        info!("New Project Created: {}", project_name);
     }
 }
