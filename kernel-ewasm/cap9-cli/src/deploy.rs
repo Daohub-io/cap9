@@ -18,7 +18,7 @@ use crate::project::*;
 use cap9_std::proc_table::cap::*;
 use pwasm_abi;
 
-const REQ_CONFIRMATIONS: usize = 5;
+const REQ_CONFIRMATIONS: usize = 0;
 
 pub fn string_to_proc_key(mut name: String) -> [u8; 24] {
     if !name.is_ascii() {
