@@ -177,14 +177,16 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, local_project: &mut Local
     let cap_list: NewCapList = NewCapList(entry_caps.clone());
     let encoded_cap_list: Vec<U256> = from_common_u256_vec(cap_list.to_u256_list());
 
-    let (kernel_contract, kernel_receipt) = Contract::deploy(conn.web3.eth(), include_bytes!("KernelInterface.json"))
+    let code_hex: String = kernel_code.clone().to_hex();
+    // let (kernel_contract, kernel_receipt) = Contract::deploy(conn.web3.eth(), include_bytes!("KernelInterface.json"))
+    let kernel_contract = Contract::deploy(conn.web3.eth(), include_bytes!("KernelInterface.json"))
             .expect("deploy construction failed")
             .confirmations(REQ_CONFIRMATIONS)
             .options(Options::with(|opt| {
                 opt.gas = Some(200_800_000.into())
             }))
             .execute(
-                kernel_code.clone(),
+                code_hex,
                 (proc_key, proc_address, encoded_cap_list),
                 conn.sender,
             )
@@ -194,10 +196,10 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, local_project: &mut Local
     println!("Kernel Instance Address: {:?}", kernel_contract.address());
     let web3::types::Bytes(code_vec_kernel)= conn.web3.eth().code(kernel_contract.address(), None).wait().unwrap();
     println!("Kernel Code Length: {:?}", code_vec_kernel.len());
-    println!("Kernel Gas Used (Deployment): {:?}", kernel_receipt.gas_used);
-    if kernel_receipt.status != Some(web3::types::U64::one()) {
-        panic!("Kernel Contract deployment failed!");
-    }
+    // println!("Kernel Gas Used (Deployment): {:?}", kernel_receipt.gas_used);
+    // if kernel_receipt.status != Some(web3::types::U64::one()) {
+    //     panic!("Kernel Contract deployment failed!");
+    // }
 
     let proxied_init_contract = web3::contract::Contract::from_json(
             conn.web3.eth(),
@@ -324,7 +326,7 @@ pub fn deploy_kernel<T: Transport>(conn:  &EthConn<T>, local_project: &mut Local
     }
 
     let entry_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-    println!("EntryProcAddress: 0x{}", entry_proc_address.to_hex());
+    println!("EntryProcAddress: 0x{:x?}", entry_proc_address);
     let store_val = conn.web3.eth().storage(kernel_contract.address(), entry_proc_address, None).wait();
     println!("EntryProc: {:?}", store_val);
 
@@ -360,14 +362,16 @@ fn from_common_u256_vec(v: Vec<pwasm_abi::types::U256>) -> Vec<U256> {
 pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interface: &[u8]) -> Contract<T> {
     println!("Deploying contract");
     conn.web3.personal().unlock_account(conn.sender, "user", None).wait().unwrap();
-    let (contract, receipt) = Contract::deploy(conn.web3.eth(), interface)
+    // let (contract, receipt) = Contract::deploy(conn.web3.eth(), interface)
+    let code_hex: String = code.to_hex();
+    let contract = Contract::deploy(conn.web3.eth(), interface)
             .expect("deploy construction failed")
             .confirmations(REQ_CONFIRMATIONS)
             .options(Options::with(|opt| {
                 opt.gas = Some(200_800_000.into())
             }))
             .execute(
-                code,
+                code_hex,
                 ( ),
                 conn.sender,
             )
@@ -377,11 +381,11 @@ pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interfac
     println!("Contract Address: {:?}", contract.address());
     let web3::types::Bytes(code_vec_kernel)= conn.web3.eth().code(contract.address(), None).wait().unwrap();
     println!("Code Length: {:?}", code_vec_kernel.len());
-    println!("Gas Used (Deployment): {:?}", receipt.gas_used);
-    println!("Receipt: {:?}", receipt);
-    if receipt.status != Some(web3::types::U64::one()) {
-        panic!("Contract deployment failed!");
-    }
+    // println!("Gas Used (Deployment): {:?}", receipt.gas_used);
+    // println!("Receipt: {:?}", receipt);
+    // if receipt.status != Some(web3::types::U64::one()) {
+    //     panic!("Contract deployment failed!");
+    // }
     contract
 }
 

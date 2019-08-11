@@ -16,6 +16,7 @@ use env_logger;
 mod conn;
 mod deploy;
 mod project;
+mod fetch;
 
 fn main() {
     env_logger::init();
@@ -31,6 +32,14 @@ fn main() {
                     .help("project name")))
             .subcommand(SubCommand::with_name("deploy")
                 .about("Deploy a project to the chain"))
+            .subcommand(SubCommand::with_name("fetch")
+                .setting(AppSettings::ArgRequiredElseHelp)
+                .about("Query information about the current project")
+                .subcommand(SubCommand::with_name("procedures")
+                    .about("List all the registered procedures"))
+                .subcommand(SubCommand::with_name("acl")
+                    .about("Query information pertaining to a standard ACL"))
+            )
             .get_matches();
 
     if let Some(_deploy_matches) = matches.subcommand_matches("deploy") {
@@ -45,5 +54,15 @@ fn main() {
         let project_name = new_matches.value_of("PROJECT-NAME").expect("No project name");
         let local_project = project::LocalProject::create(project_name);
         info!("New Project Created: {}", project_name);
+    } else if let Some(fetch_matches) = matches.subcommand_matches("fetch") {
+        let network: conn::EthConn<web3::transports::Http> = conn::EthConn::new_http();
+        let local_project = project::LocalProject::read();
+        if let Some(procs_matches) = fetch_matches.subcommand_matches("procedures") {
+            // List procedures
+            let procs = fetch::list_procedures(&network, &local_project);
+            for procedure in procs {
+                println!("{:?}", procedure);
+            }
+        }
     }
 }
