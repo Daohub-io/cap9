@@ -1,4 +1,5 @@
 #![allow(unused_imports)]
+// #![allow(dead_code)]
 #[macro_use] extern crate log;
 #[macro_use] extern crate lazy_static;
 
@@ -17,11 +18,13 @@ use rustc_hex::ToHex;
 
 use env_logger;
 
-mod conn;
+mod connection;
 mod deploy;
 mod project;
 mod fetch;
 mod constants;
+mod default_procedures;
+mod utils;
 
 use fetch::{DeployedKernel, DeployedKernelWithACL};
 
@@ -36,7 +39,11 @@ fn main() {
                 .about("Create a new Cap9 project in directory PROJECT-NAME")
                 .arg(Arg::with_name("PROJECT-NAME")
                     .required(true)
-                    .help("project name")))
+                    .help("project name"))
+                .arg(Arg::with_name("acl")
+                    .long("acl")
+                    .help("Create with the default acl"))
+            )
             .subcommand(SubCommand::with_name("deploy")
                 .about("Deploy a project to the chain"))
             .subcommand(SubCommand::with_name("fetch")
@@ -56,20 +63,24 @@ fn main() {
             )
             .get_matches();
 
-    if let Some(_deploy_matches) = matches.subcommand_matches("deploy") {
+    if let Some(deploy_matches) = matches.subcommand_matches("deploy") {
         // Connect to a local network over http.
-        let network: conn::EthConn<web3::transports::Http> = conn::EthConn::new_http();
+        let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
         let mut local_project = project::LocalProject::read();
         // Deploy a kernel with the ACL Bootstrap procedure
-        let (_init_contract, _kernel_contract) = deploy::deploy_kernel(&network, &mut local_project);
+        local_project.deploy(&conn);
 
     } else if let Some(new_matches) = matches.subcommand_matches("new") {
         let project_name = new_matches.value_of("PROJECT-NAME").expect("No project name");
-        let _local_project = project::LocalProject::create(project_name);
+        let _local_project = if new_matches.is_present("acl") {
+            project::LocalProject::create_with_acl(project_name)
+        } else {
+            project::LocalProject::create(project_name)
+        };
         info!("New Project Created: {}", project_name);
     } else if let Some(fetch_matches) = matches.subcommand_matches("fetch") {
-        let network: conn::EthConn<web3::transports::Http> = conn::EthConn::new_http();
+        let network: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         let local_project = project::LocalProject::read();
         let kernel = DeployedKernel::new(&network, &local_project);
         if let Some(_procs_matches) = fetch_matches.subcommand_matches("procedures") {

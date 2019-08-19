@@ -7,8 +7,8 @@ use web3::Transport;
 use rustc_hex::FromHex;
 use rustc_hex::ToHex;
 // use ethabi::Token::Uint;
-use crate::conn;
-use crate::conn::EthConn;
+use crate::connection;
+use crate::connection::EthConn;
 use crate::project::LocalProject;
 use cap9_std::proc_table::cap::*;
 use pwasm_abi;
@@ -20,7 +20,7 @@ use cap9_core::*;
 use cap9_core::Error;
 use cap9_core::Read;
 use crate::constants;
-use crate::deploy::{from_common_u256, to_common_u256, to_common_h256,
+use crate::utils::{from_common_u256, to_common_u256, to_common_h256,
     from_common_address, to_common_address
 };
 use std::collections::{HashMap, HashSet};
@@ -44,6 +44,10 @@ impl<'a, 'b, T: Transport> DeployedKernel<'a, 'b, T> {
             local_project,
             address: status_file.kernel_address
         }
+    }
+
+    pub fn address(&self) -> Address {
+        self.address
     }
 
     pub fn gas(&self) -> U256 {
@@ -72,10 +76,6 @@ impl<'a, 'b, T: Transport> DeployedKernel<'a, 'b, T> {
 
     /// List the procedures registered in the kernel.
     pub fn procedures(&self) -> Vec<Procedure> {
-        let status_file = match self.local_project.status_file() {
-            Some(status_file) => status_file,
-            None => panic!("Project not deployed"),
-        };
         let kernel_address = self.address;
         let n_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
         let store_val = self.conn.web3.eth().storage(kernel_address, n_proc_address, None).wait();

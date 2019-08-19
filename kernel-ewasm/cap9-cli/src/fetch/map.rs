@@ -8,8 +8,8 @@ use web3::Transport;
 use rustc_hex::FromHex;
 use rustc_hex::ToHex;
 // use ethabi::Token::Uint;
-use crate::conn;
-use crate::conn::EthConn;
+use crate::connection;
+use crate::connection::EthConn;
 use crate::project::LocalProject;
 use cap9_std::proc_table::cap::*;
 use pwasm_abi;
@@ -21,7 +21,7 @@ use cap9_core::*;
 use cap9_core::Error;
 use cap9_core::Read;
 use crate::constants;
-use crate::deploy::{from_common_u256, to_common_u256, to_common_h256,
+use crate::utils::{from_common_u256, to_common_u256, to_common_h256,
     from_common_address, to_common_address
 };
 use std::collections::{HashMap, HashSet};
@@ -195,7 +195,7 @@ impl<'a, 'b, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, 'b, T
         if index >= self.length() {
             return None;
         }
-        let mut storage_key_h = self.length_key().clone();
+        let storage_key_h = self.length_key().clone();
         let storage_key: U256 = h256_to_u256(storage_key_h) + index + U256::from(1);
         let mut store_buf: [u8; 32] = [0; 32];
         storage_key.to_big_endian(&mut store_buf);
