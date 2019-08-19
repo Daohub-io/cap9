@@ -46,6 +46,10 @@ impl<'a, 'b, T: Transport> DeployedKernel<'a, 'b, T> {
         }
     }
 
+    pub fn gas(&self) -> U256 {
+        self.conn.web3.eth().balance(self.address, None).wait().expect("could not retrieve gas")
+    }
+
     pub fn get_storage(&self, storage_address: U256) -> H256 {
         self.conn.web3.eth().storage(self.address, storage_address, None).wait().expect("storage value")
     }

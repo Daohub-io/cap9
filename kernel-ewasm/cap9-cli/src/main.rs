@@ -42,6 +42,8 @@ fn main() {
             .subcommand(SubCommand::with_name("fetch")
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .about("Query information about the current project")
+                .subcommand(SubCommand::with_name("gas")
+                    .about("Get the amount of gas held by the kernel"))
                 .subcommand(SubCommand::with_name("procedures")
                     .about("List all the registered procedures"))
                 .subcommand(SubCommand::with_name("acl")
@@ -76,6 +78,9 @@ fn main() {
             for procedure in procs {
                 println!("{}", procedure);
             }
+        } else if let Some(_gas_matches) = fetch_matches.subcommand_matches("gas") {
+            let gas = kernel.gas();
+            println!("Gas: {}", gas);
         } else if let Some(acl_matches) = fetch_matches.subcommand_matches("acl") {
             let kernel_with_acl = DeployedKernelWithACL::new(kernel);
             if let Some(_groups_matches) = acl_matches.subcommand_matches("groups") {
