@@ -24,9 +24,6 @@ use crate::utils::*;
 use crate::constants::*;
 use cap9_std::proc_table::cap::*;
 
-const KERNEL_CODE: &[u8] = include_bytes!("cap9-kernel.wasm");
-
-
 #[derive(Serialize, Deserialize)]
 pub struct DeployFile {
     // pub sender: Address,
@@ -79,7 +76,6 @@ impl ContractSpec {
     pub fn from_default(def: DefaultProcedure, dir: &PathBuf, name: String) -> Self {
         let code = def.code();
         let abi = def.abi().to_vec();
-        let code_path = format!("{}.bin", name);
         let mut code_path = PathBuf::new();
         code_path.push(&dir);
         code_path.push(&name);
@@ -88,7 +84,7 @@ impl ContractSpec {
         code_path_rel.push(&name);
         code_path_rel.set_extension("bin");
         let mut code_file = File::create(&code_path).expect(format!("Could not create file: {:?}", code_path).as_str());
-        code_file.write_all(code.as_slice());
+        code_file.write_all(code.as_slice()).unwrap();
         let mut abi_path = PathBuf::new();
         abi_path.push(&dir);
         abi_path.push(&name);
@@ -97,7 +93,7 @@ impl ContractSpec {
         abi_path_rel.push(&name);
         abi_path_rel.set_extension("json");
         let mut abi_file = File::create(&abi_path).expect("Could not create file");
-        abi_file.write_all(abi.as_slice());
+        abi_file.write_all(abi.as_slice()).unwrap();
         ContractSpec {
             code_path: code_path_rel.to_str().unwrap().to_string(),
             abi_path: abi_path_rel.to_str().unwrap().to_string(),
@@ -107,14 +103,14 @@ impl ContractSpec {
     pub fn code(&self) -> Vec<u8> {
         let mut f_code = File::open(&self.code_path).expect("could not open file");
         let mut code: Vec<u8> = Vec::new();
-        f_code.read_to_end(&mut code);
+        f_code.read_to_end(&mut code).unwrap();
         code
     }
 
     pub fn abi(&self) -> Vec<u8> {
         let mut f_abi = File::open(&self.abi_path).expect("could not open file");
         let mut abi: Vec<u8> = Vec::new();
-        f_abi.read_to_end(&mut abi);
+        f_abi.read_to_end(&mut abi).unwrap();
         abi
     }
 }
@@ -245,7 +241,7 @@ impl LocalProject {
 
     pub fn deploy<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) {
         // Deploy initial procedure
-        let init_contract = deploy_contract(conn, ACL_BOOTSTRAP.code(), ACL_BOOTSTRAP.abi());
+        let _init_contract = deploy_contract(conn, ACL_BOOTSTRAP.code(), ACL_BOOTSTRAP.abi());
         let deploy_file = self.deploy_file();
         if deploy_file.standard_acl_abi {
             self.deploy_with_acl(&conn);
@@ -424,7 +420,7 @@ impl LocalProject {
         // await web3.eth.sendTransaction({ to: tester.kernel.contract.address, data: proxy_message, gas:2_100_000});
         // regInterface = contract;
 
-        let proxied_admin_contract = web3::contract::Contract::from_json(
+        let _proxied_admin_contract = web3::contract::Contract::from_json(
                 conn.web3.eth(),
                 deployed_kernel.address(),
                 include_bytes!("ACLAdminInterface.json"),

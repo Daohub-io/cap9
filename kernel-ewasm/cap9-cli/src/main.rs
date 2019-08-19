@@ -63,7 +63,7 @@ fn main() {
             )
             .get_matches();
 
-    if let Some(deploy_matches) = matches.subcommand_matches("deploy") {
+    if let Some(_deploy_matches) = matches.subcommand_matches("deploy") {
         // Connect to a local network over http.
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
