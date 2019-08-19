@@ -48,7 +48,7 @@ pub fn list_storage_keys(address: Address) -> jsonrpc::Response {
     let address_json = serde_json::to_value(address).unwrap();
     println!("address_json: {:?}", address_json);
     let client = jsonrpc::client::Client::new(String::from("http://localhost:8545"), None, None);
-    let params = &[address_json, serde_json::to_value(100).unwrap(), serde_json::Value::Null];
+    let params = &[address_json, serde_json::to_value(1000).unwrap(), serde_json::Value::Null];
     let request = client.build_request("parity_listStorageKeys", params);
     println!("request: {:?}", request);
     match client.send_request(&request) {

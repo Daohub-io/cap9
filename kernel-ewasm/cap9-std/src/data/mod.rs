@@ -88,6 +88,9 @@ pub trait Storable: Sized {
 
     /// Read an instance of this data from storage.
     fn read(location: U256) -> Option<Self>;
+
+    /// Read from a vector of U256.
+    fn read_vec_u256(vals: Vec<U256>) -> Option<Self>;
 }
 
 impl Storable for u8 {
@@ -113,6 +116,15 @@ impl Storable for u8 {
         let u: U256 = u.into();
         Some(u.as_u32() as u8)
     }
+
+    fn read_vec_u256(vals: Vec<U256>) -> Option<Self> {
+        if vals.len() < 1 {
+            None
+        } else {
+            let u: U256 = vals[0].into();
+            Some(u.as_u32() as u8)
+        }
+    }
 }
 
 impl Storable for SysCallProcedureKey {
@@ -137,6 +149,19 @@ impl Storable for SysCallProcedureKey {
         Some(h.into())
     }
 
+    fn read_vec_u256(vals: Vec<U256>) -> Option<Self> {
+        if vals.len() < 1 {
+            None
+        } else {
+            Some(u256_to_h256(vals[0]).into())
+        }
+    }
+}
+
+fn u256_to_h256(u: U256) -> H256 {
+    let mut buf: [u8; 32] = [0; 32];
+    u.to_big_endian(&mut buf);
+    H256::from_slice(&buf)
 }
 
 impl Storable for U256 {
@@ -159,6 +184,14 @@ impl Storable for U256 {
     fn read(location: U256) -> Option<Self> {
         let h: H256 = pwasm_ethereum::read(&location.into()).into();
         Some(h.into())
+    }
+
+    fn read_vec_u256(vals: Vec<U256>) -> Option<Self> {
+        if vals.len() < 1 {
+            None
+        } else {
+            Some(vals[0])
+        }
     }
 
 }
