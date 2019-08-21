@@ -33,7 +33,7 @@ use super::map::*;
 
 /// As with [DeployKernel] but with a standard ACL.
 pub struct DeployedKernelWithACL<'a, 'b, T: Transport> {
-    kernel: DeployedKernel<'a, 'b, T>,
+    pub kernel: DeployedKernel<'a, 'b, T>,
 }
 
 impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
@@ -73,21 +73,12 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
         }
         users_map
     }
-    // let contract = Spec(&conn, include_bytes!("acl_group_5.wasm").to_vec(), include_bytes!("ACLGroup5Interface.json"), ( )).expect("Contract not deployed");
-
-    // new_group("randomProcName".to_string(), contract)
 
     pub fn new_group(&self, group_number: u8, proc_name: String, group_proc: ContractSpec) -> Result<(), ProjectDeploymentError> {
-
-        // Add a group
         let proc_key = crate::utils::string_to_proc_key(proc_name);
         let cap_index = 0;
         let contract = group_proc.deploy(&self.kernel.conn, ( )).unwrap();
         let cap_list: Vec<U256> = vec![];
-        // let message = admin_contract.methods.regProc(cap_index, proc_key, contract.address, encodedRequestedCaps).encodeABI();
-        // let proxy_message = tester.interface.methods.proxy(message).encodeABI();
-        // await web3.eth.sendTransaction({ to: tester.kernel.contract.address, data: proxy_message, gas:2_100_000});
-        // regInterface = contract;
 
         let _proxied_admin_contract = web3::contract::Contract::from_json(
                 self.kernel.conn.web3.eth(),
@@ -117,29 +108,6 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
             )
             .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
 
-
-
-        // let res: U256 = proxied_entry_contract.query("n_accounts", ( ), self.kernel.conn.sender,
-        //         Options::with(|opts| {
-        //             opts.gas = Some(550_621_180.into());
-        //         }),
-        //         None,
-        //         ).wait().expect("proxy");
-        // println!("n_accounts: {:?}", res);
-        // let res: U256 = proxied_entry_contract.query("get_account_group", self.kernel.conn.sender, self.kernel.conn.sender,
-        //         Options::with(|opts| {
-        //             opts.gas = Some(550_621_180.into());
-        //         }),
-        //         None,
-        //         ).wait().expect("proxy");
-        // println!("our account group: {:?}", res);
-        // let res: U256 = proxied_entry_contract.query("get_group_procedure", res, self.kernel.conn.sender,
-        //         Options::with(|opts| {
-        //             opts.gas = Some(550_621_180.into());
-        //         }),
-        //         None,
-        //         ).wait().expect("proxy");
-        // println!("our proc: {:?}", res);
         let res = proxied_entry_contract.call("proxy", (
                 message,
             ), self.kernel.conn.sender,
@@ -147,9 +115,7 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
                 opts.gas = Some(550_621_180.into());
             }),
             ).wait().expect("proxy");
-        println!("res: {:?}", res);
         let reg_receipt = &self.kernel.conn.web3.eth().transaction_receipt(res).wait().expect("reg receipt").unwrap();
-        println!("Register Group 5 Procedure Receipt: {:?}", reg_receipt);
         if reg_receipt.status != Some(web3::types::U64::one()) {
             panic!("ACL register proc failed!");
         }
@@ -171,7 +137,6 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
             }),
             ).wait().expect("proxy");
         let new_group_receipt = &self.kernel.conn.web3.eth().transaction_receipt(res).wait().expect("new_group receipt").unwrap();
-        println!("New Group Receipt: {:?}", new_group_receipt);
         if new_group_receipt.status != Some(web3::types::U64::one()) {
             panic!("ACL register proc failed!");
         }
@@ -191,15 +156,59 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
             }),
             ).wait().expect("proxy");
         let new_group_receipt = &self.kernel.conn.web3.eth().transaction_receipt(res).wait().expect("new_group receipt").unwrap();
-        println!("New Group Receipt: {:?}", new_group_receipt);
         if new_group_receipt.status != Some(web3::types::U64::one()) {
             panic!("ACL register proc failed!");
         }
+        Ok(())
+    }
 
-        let entry_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-        println!("EntryProcAddress: 0x{:x?}", entry_proc_address);
-        let store_val = &self.kernel.conn.web3.eth().storage(self.kernel.address(), entry_proc_address, None).wait();
-        println!("EntryProc: {:?}", store_val);
+    /// Simply take a contract, deploy it, and register it as a procedure.
+    pub fn deploy_procedure(&self, proc_name: String, proc_spec: ContractSpec) -> Result<(), ProjectDeploymentError> {
+        let proc_key = crate::utils::string_to_proc_key(proc_name);
+        let cap_index = 0;
+        let contract = proc_spec.deploy(&self.kernel.conn, ( )).unwrap();
+        let cap_list: Vec<U256> = vec![];
+
+        let _proxied_admin_contract = web3::contract::Contract::from_json(
+                self.kernel.conn.web3.eth(),
+                self.kernel.address(),
+                proc_spec.abi().as_slice(),
+            )
+            .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
+
+        let encoded_proc_key: U256 = crate::utils::proc_key_to_32_bytes(&proc_key).into();
+
+        let params = (
+                cap_index,
+                encoded_proc_key,
+                contract.address(),
+                cap_list,
+            );
+        // Register the procedure
+        let file: &[u8] = default_procedures::ACL_ADMIN.abi();
+        let admin_abi = ethabi::Contract::load(file).expect("no ABI");
+        let message: Vec<u8> = admin_abi
+                .function("regProc")
+                .and_then(|function| function.encode_input(params.into_tokens().as_slice())).expect("message encoding failed");
+        let proxied_entry_contract = web3::contract::Contract::from_json(
+                self.kernel.conn.web3.eth(),
+                self.kernel.address(),
+                default_procedures::ACL_ENTRY.abi(),
+            )
+            .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
+
+        let res = proxied_entry_contract.call("proxy", (
+                message,
+            ), self.kernel.conn.sender,
+            Options::with(|opts| {
+                opts.gas = Some(550_621_180.into());
+            }),
+            ).wait().expect("proxy");
+        let reg_receipt = &self.kernel.conn.web3.eth().transaction_receipt(res).wait().expect("reg receipt").unwrap();
+        if reg_receipt.status != Some(web3::types::U64::one()) {
+            panic!("ACL register proc failed!");
+        }
+        println!("reg receipt: {:?}", reg_receipt);
         Ok(())
     }
 }

@@ -51,7 +51,7 @@ mod integration {
             .current_dir(&project_dir);
         deploy_cmd.assert().success();
 
-        // // There should be one group (1)
+        // There should be one group (1)
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
         let local_project = project::LocalProject::read_dir(&project_dir);
@@ -93,6 +93,39 @@ mod integration {
 
         let groups_2 = kernel_with_acl.groups();
         assert_eq!(groups_2.len(), 2, "There should be one group, but there are {}", groups_2.len());
+
+        {
+            // There should be 3 procedures:
+            //   1. Entry
+            //   2. Admin
+            //   3. Group 5
+            let procedures = kernel_with_acl.kernel.procedures();
+            assert_eq!(procedures.len(), 3, "There should be 3 procedures, but there are {}", procedures.len());
+        }
+
+        // Add a new procedure to the kernel
+        Command::cargo_bin("cap9-cli").unwrap()
+            // The command
+            .arg("deploy-procedure")
+            // The name of the group's procedure
+            .arg("anotherProcName")
+            // The file path of the binary code
+            .arg("acl_group_5.wasm")
+            // The file path of the JSON ABI
+            .arg("ACLGroup5Interface.json")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+
+        {
+            // There should be 4 procedures:
+            //   1. Entry
+            //   2. Admin
+            //   3. Group 5
+            //   4. New Procedure
+            let procedures = kernel_with_acl.kernel.procedures();
+            assert_eq!(procedures.len(), 4, "There should be 4 procedures, but there are {}", procedures.len());
+        }
 
         // Explicity close the temp directory.
         dir.close().unwrap();

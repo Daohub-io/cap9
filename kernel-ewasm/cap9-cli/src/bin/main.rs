@@ -55,6 +55,17 @@ fn main() {
                     .required(true)
                     .help("JSON ABI file"))
                 .about("Deploy a contract to the chain"))
+            .subcommand(SubCommand::with_name("deploy-procedure")
+                .arg(Arg::with_name("PROCEDURE-NAME")
+                    .required(true)
+                    .help("Name of the procedure"))
+                .arg(Arg::with_name("CODE-FILE")
+                    .required(true)
+                    .help("Binary code file"))
+                .arg(Arg::with_name("ABI-FILE")
+                    .required(true)
+                    .help("JSON ABI file"))
+                .about("Deploy a contract to the chain and register it as a procedure"))
             .subcommand(SubCommand::with_name("new-group")
                 .arg(Arg::with_name("GROUP-NUMBER")
                     .required(true)
@@ -106,6 +117,18 @@ fn main() {
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
         let group_5_spec = project::ContractSpec::from_files(&code_file, &abi_file);
         kernel_with_acl.new_group(group_number, proc_name.to_string(), group_5_spec).unwrap();
+    } else if let Some(deploy_procedure_matches) = matches.subcommand_matches("deploy-procedure") {
+        let proc_name = deploy_procedure_matches.value_of("PROCEDURE-NAME").expect("No code file");
+        let code_file = PathBuf::from(deploy_procedure_matches.value_of("CODE-FILE").expect("No code file"));
+        let abi_file = PathBuf::from(deploy_procedure_matches.value_of("ABI-FILE").expect("No ABI file"));
+        // Connect to a local network over http.
+        let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        // Read the local project from out current directory.
+        let local_project = project::LocalProject::read();
+        let kernel = DeployedKernel::new(&conn, &local_project);
+        let kernel_with_acl = DeployedKernelWithACL::new(kernel);
+        let proc_spec = project::ContractSpec::from_files(&code_file, &abi_file);
+        kernel_with_acl.deploy_procedure(proc_name.to_string(), proc_spec).unwrap();
     } else if let Some(deploy_contract_matches) = matches.subcommand_matches("deploy-contract") {
         let code_file = PathBuf::from(deploy_contract_matches.value_of("CODE-FILE").expect("No code file"));
         let abi_file = PathBuf::from(deploy_contract_matches.value_of("ABI-FILE").expect("No ABI file"));
