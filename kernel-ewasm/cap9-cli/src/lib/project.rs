@@ -312,6 +312,9 @@ impl LocalProject {
         let proc_key = String::from("init");
         let proc_address = init_contract.address();
         let entry_caps: Vec<NewCapability> = DEFAULT_CAPS.to_vec();
+        let serial_cap_list = SerialNewCapList(NewCapList(entry_caps.clone()));
+        let json = serde_json::to_string_pretty(&serial_cap_list);
+        println!("json_cap_list: {}", json.unwrap());
 
         let cap_list: NewCapList = NewCapList(entry_caps.clone());
         let encoded_cap_list: Vec<U256> = from_common_u256_vec(cap_list.to_u256_list());
