@@ -22,34 +22,36 @@ use crate::default_procedures::*;
 use crate::utils::*;
 use crate::constants::*;
 use ethabi;
+use failure::Error;
+
+#[derive(Debug, Fail)]
+pub enum ContractDeploymentError {
+    #[fail(display = "failed to read interface into contract: {}", err)]
+    ConstructionFailure {
+        err: String,
+    },
+    #[fail(display = "incorrect parameters passed to constructor: {}", err)]
+    BadParameters {
+        err: String,
+    },
+    #[fail(display = "deployment failure: {}", err)]
+    DeploymentFailure {
+        err: String,
+    },
+}
 
 // Deploy a contract
-pub fn deploy_contract<T: Transport>(conn:  &EthConn<T>, code: Vec<u8>, interface: &[u8]) -> Contract<T> {
-    println!("Deploying contract");
+pub fn deploy_contract<T: Transport, P: Tokenize>(conn:  &EthConn<T>, code: Vec<u8>, interface: &[u8], params: P) -> Result<Contract<T>,ContractDeploymentError> {
     conn.web3.personal().unlock_account(conn.sender, "user", None).wait().unwrap();
-    // let (contract, receipt) = Contract::deploy(conn.web3.eth(), interface)
     let code_hex: String = code.to_hex();
-    let contract = Contract::deploy(conn.web3.eth(), interface)
-            .expect("deploy construction failed")
-            .confirmations(REQ_CONFIRMATIONS)
-            .options(Options::with(|opt| {
-                opt.gas = Some(200_800_000.into())
-            }))
-            .execute(
-                code_hex,
-                ( ),
-                conn.sender,
-            )
-            .expect("Correct parameters are passed to the constructor.")
-            .wait()
-            .expect("deployment failed");
-    println!("Contract Address: {:?}", contract.address());
-    let web3::types::Bytes(code_vec_kernel)= conn.web3.eth().code(contract.address(), None).wait().unwrap();
-    println!("Code Length: {:?}", code_vec_kernel.len());
-    // println!("Gas Used (Deployment): {:?}", receipt.gas_used);
-    // println!("Receipt: {:?}", receipt);
-    // if receipt.status != Some(web3::types::U64::one()) {
-    //     panic!("Contract deployment failed!");
-    // }
-    contract
+    Contract::deploy(conn.web3.eth(), interface)
+        .map_err(|err| ContractDeploymentError::ConstructionFailure {err: format!("{:?}", err)})?
+        .confirmations(REQ_CONFIRMATIONS)
+        .options(Options::with(|opt| {
+            opt.gas = Some(200_800_000.into())
+        }))
+        .execute( code_hex, params, conn.sender, )
+        .map_err(|err| ContractDeploymentError::BadParameters {err: format!("{:?}", err)})?
+        .wait()
+        .map_err(|err| ContractDeploymentError::DeploymentFailure {err: format!("{:?}", err)})
 }

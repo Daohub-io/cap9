@@ -10,6 +10,8 @@ cap9-core = { path = "../cap9-core" }
 clap = "~2.32.0"
 env_logger = "0.6.2"
 ethabi = "8.0.0"
+failure = "0.1.5"
+failure_derive = "0.1.5"
 jsonrpc = "0.11.0"
 lazy_static = "1.3.0"
 log = "0.4.0"

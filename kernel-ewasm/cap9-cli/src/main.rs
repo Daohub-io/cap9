@@ -1,7 +1,8 @@
 #![allow(unused_imports)]
-// #![allow(dead_code)]
+#![allow(dead_code)]
 #[macro_use] extern crate log;
 #[macro_use] extern crate lazy_static;
+#[macro_use] extern crate failure_derive;
 
 use clap::{Arg, App, SubCommand, AppSettings};
 // use std::process::Command;
@@ -46,6 +47,16 @@ fn main() {
             )
             .subcommand(SubCommand::with_name("deploy")
                 .about("Deploy a project to the chain"))
+            .subcommand(SubCommand::with_name("deploy-contract")
+                .arg(Arg::with_name("CODE-FILE")
+                    .required(true)
+                    .help("Binary code file"))
+                .arg(Arg::with_name("ABI-FILE")
+                    .required(true)
+                    .help("JSON ABI file"))
+                .about("Deploy a contract to the chain"))
+            .subcommand(SubCommand::with_name("new-group")
+                .about("Add group 5"))
             .subcommand(SubCommand::with_name("fetch")
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .about("Query information about the current project")
@@ -69,8 +80,32 @@ fn main() {
         // Read the local project from out current directory.
         let mut local_project = project::LocalProject::read();
         // Deploy a kernel with the ACL Bootstrap procedure
-        local_project.deploy(&conn);
-
+        local_project.deploy(&conn).unwrap_or_else(|err| panic!("Deployment failure: {}", err));
+    } else if let Some(_new_group_matches) = matches.subcommand_matches("new-group") {
+        // Connect to a local network over http.
+        let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        // Read the local project from out current directory.
+        let local_project = project::LocalProject::read();
+        let kernel = DeployedKernel::new(&conn, &local_project);
+        let kernel_with_acl = DeployedKernelWithACL::new(kernel);
+        let group_5_spec = project::ContractSpec::from_files(&PathBuf::from("acl_group_5.wasm"), &PathBuf::from("ACLGroup5Interface.json"));
+        kernel_with_acl.new_group("randomProcName".to_string(), group_5_spec).unwrap();
+    } else if let Some(deploy_contract_matches) = matches.subcommand_matches("deploy-contract") {
+        let code_file = PathBuf::from(deploy_contract_matches.value_of("CODE-FILE").expect("No code file"));
+        let abi_file = PathBuf::from(deploy_contract_matches.value_of("ABI-FILE").expect("No ABI file"));
+        // Connect to a local network over http.
+        let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        // // Read the local project from out current directory.
+        // let local_project = project::LocalProject::read();
+        // // The project directory is our current directory.
+        // let project_directory = std::env::current_dir().expect("Could not get CWD");
+        // Create a contract specification from the given files.
+        let contract_spec = project::ContractSpec::from_files(&code_file, &abi_file);
+        // Deploy the contract onto the chain.
+        match contract_spec.deploy(&conn, ( )) {
+            Ok(contract) => println!("Contract deployed to {}", contract.address()),
+            Err(err) => println!("Contract not deployed: {:?}", err),
+        }
     } else if let Some(new_matches) = matches.subcommand_matches("new") {
         let project_name = new_matches.value_of("PROJECT-NAME").expect("No project name");
         let _local_project = if new_matches.is_present("acl") {

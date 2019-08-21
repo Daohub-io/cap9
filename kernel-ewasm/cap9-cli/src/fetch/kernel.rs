@@ -27,7 +27,7 @@ use std::collections::{HashMap, HashSet};
 /// A representation and connection to a deployed kernel. This has both a
 /// connection to the node and a filesystem representation.
 pub struct DeployedKernel<'a, 'b, T: Transport> {
-    conn: &'a EthConn<T>,
+    pub conn: &'a EthConn<T>,
     local_project: &'b LocalProject,
     address: Address,
 }

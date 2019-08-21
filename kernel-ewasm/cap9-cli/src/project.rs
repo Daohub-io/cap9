@@ -23,6 +23,7 @@ use crate::default_procedures::*;
 use crate::utils::*;
 use crate::constants::*;
 use cap9_std::proc_table::cap::*;
+use failure::Error;
 
 #[derive(Serialize, Deserialize)]
 pub struct DeployFile {
@@ -100,6 +101,21 @@ impl ContractSpec {
         }
     }
 
+    /// Get a ['ContractSpec'] from files. The paths are relative to the project
+    /// directory.
+    pub fn from_files(code_file: &PathBuf, abi_file: &PathBuf) -> Self {
+        ContractSpec {
+            code_path: code_file.to_str().unwrap().to_string(),
+            abi_path: abi_file.to_str().unwrap().to_string(),
+        }
+    }
+
+    pub fn deploy<T: Transport, P: Tokenize>(&self, conn: &EthConn<T>, params: P) -> Result<Contract<T>, ContractDeploymentError> {
+        let code: Vec<u8> = self.code();
+        let abi: Vec<u8> = self.abi();
+        deploy_contract(conn, code, &abi, params)
+    }
+
     pub fn code(&self) -> Vec<u8> {
         let mut f_code = File::open(&self.code_path).expect("could not open file");
         let mut code: Vec<u8> = Vec::new();
@@ -126,6 +142,23 @@ impl StatusFile {
             kernel_address: address,
         }
     }
+}
+
+#[derive(Debug, Fail)]
+pub enum ProjectDeploymentError {
+    #[fail(display = "failed to deploy a contract \"{}\" which is necessary for project, due to: {}", contract_name, error)]
+    ContractDeploymentError {
+        contract_name: String,
+        error: String,
+    },
+    #[fail(display = "incorrect parameters passed to constructor: {}", err)]
+    BadParameters {
+        err: String,
+    },
+    #[fail(display = "Could not form a proxied contract: {}", err)]
+    ProxiedProcedureError {
+        err: String,
+    },
 }
 
 /// A representation of the local project information. Methods on this struct
@@ -239,23 +272,23 @@ impl LocalProject {
         self.status_file = Some(status_file);
     }
 
-    pub fn deploy<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) {
+    pub fn deploy<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> Result<(),ProjectDeploymentError> {
         // Deploy initial procedure
-        let _init_contract = deploy_contract(conn, ACL_BOOTSTRAP.code(), ACL_BOOTSTRAP.abi());
         let deploy_file = self.deploy_file();
         if deploy_file.standard_acl_abi {
-            self.deploy_with_acl(&conn);
+            self.deploy_with_acl(&conn).map(|_| ())
         } else {
-            self.deploy_std(&conn);
+            self.deploy_std(&conn).map(|_| ())
         }
     }
 
-    pub fn deploy_std<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> DeployedKernel<'a, 'b, T> {
-        // Deploy initial procedure
-        let init_contract = deploy_contract(conn, ACL_BOOTSTRAP.code(), ACL_BOOTSTRAP.abi());
+    pub fn deploy_std<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> Result<DeployedKernel<'a, 'b, T>, ProjectDeploymentError> {
         let deploy_file = self.deploy_file();
-        // Deploying a kernel instance
-        let kernel_code: &Vec<u8> = &deploy_file.kernel.code();
+        // Deploy initial procedure
+        // TODO: does the initial procedure need contructor parameters?
+        let init_contract = &deploy_file.deploy_spec.initial_entry.deploy(&conn, ( ))
+            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "Init contract".to_string(), error: format!("{:?}", err)})?;
+        // Setup some parameters for the the kernel constructor
         let proc_key = String::from("init");
         let proc_address = init_contract.address();
         let entry_caps: Vec<NewCapability> = DEFAULT_CAPS.to_vec();
@@ -263,41 +296,25 @@ impl LocalProject {
         let cap_list: NewCapList = NewCapList(entry_caps.clone());
         let encoded_cap_list: Vec<U256> = from_common_u256_vec(cap_list.to_u256_list());
 
-        let code_hex: String = kernel_code.clone().to_hex();
-        let kernel_contract = Contract::deploy(conn.web3.eth(), KERNEL.abi())
-                .expect("deploy construction failed")
-                .confirmations(REQ_CONFIRMATIONS)
-                .options(Options::with(|opt| {
-                    opt.gas = Some(200_800_000.into())
-                }))
-                .execute(
-                    code_hex,
-                    (proc_key, proc_address, encoded_cap_list),
-                    conn.sender,
-                )
-                .expect("Correct parameters are passed to the constructor.")
-                .wait()
-                .expect("deployment failed");
-                println!("Kernel Instance Address: {:?}", kernel_contract.address());
-                let web3::types::Bytes(code_vec_kernel)= conn.web3.eth().code(kernel_contract.address(), None).wait().unwrap();
-                println!("Kernel Code Length: {:?}", code_vec_kernel.len());
-                // println!("Kernel Gas Used (Deployment): {:?}", kernel_receipt.gas_used);
-                // if kernel_receipt.status != Some(web3::types::U64::one()) {
-                //     panic!("Kernel Contract deployment failed!");
-                // }
+        let kernel_constructor_params = (proc_key, proc_address, encoded_cap_list);
+        let kernel_contract = &deploy_file.kernel.deploy(&conn, kernel_constructor_params)
+            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "Kernel contract".to_string(), error: format!("{:?}", err)})?;
         self.add_status_file(kernel_contract.address());
-        DeployedKernel::new(conn, self)
+        Ok(DeployedKernel::new(conn, self))
     }
 
-    pub fn deploy_with_acl<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> DeployedKernelWithACL<'a, 'b, T> {
-        let deployed_kernel = self.deploy_std(conn);
+    pub fn deploy_with_acl<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> Result<DeployedKernelWithACL<'a, 'b, T>, ProjectDeploymentError> {
+        let deployed_kernel = self.deploy_std(conn)?;
         let proxied_init_contract = web3::contract::Contract::from_json(
                 conn.web3.eth(),
                 deployed_kernel.address(),
                 ACL_BOOTSTRAP.abi(),
-            ).expect("proxied_init_contract");
-        let entry_contract = deploy_contract(conn, ACL_ENTRY.code(), ACL_ENTRY.abi());
-        let admin_contract = deploy_contract(conn, ACL_ADMIN.code(), ACL_ADMIN.abi());
+            )
+            .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
+        let entry_contract = deploy_contract(conn, ACL_ENTRY.code(), ACL_ENTRY.abi(), ( ))
+            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL entry contract".to_string(), error: format!("{:?}", err)})?;
+        let admin_contract = deploy_contract(conn, ACL_ADMIN.code(), ACL_ADMIN.abi(), ( ))
+            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL admin contract".to_string(), error: format!("{:?}", err)})?;
         let entry_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("entry".to_string())).into();
         let admin_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("admin".to_string())).into();
         let prefix = 0;
@@ -408,134 +425,12 @@ impl LocalProject {
             panic!("ACL init failed!");
         }
 
-        // Add a group
-        let proc_name = "randomProcName".to_string();
-        let proc_key = string_to_proc_key(proc_name);
-        let cap_index = 0;
-
-        let contract = deploy_contract(&conn, include_bytes!("acl_group_5.wasm").to_vec(), include_bytes!("ACLGroup5Interface.json"));
-        let cap_list: Vec<U256> = vec![];
-        // let message = admin_contract.methods.regProc(cap_index, proc_key, contract.address, encodedRequestedCaps).encodeABI();
-        // let proxy_message = tester.interface.methods.proxy(message).encodeABI();
-        // await web3.eth.sendTransaction({ to: tester.kernel.contract.address, data: proxy_message, gas:2_100_000});
-        // regInterface = contract;
-
-        let _proxied_admin_contract = web3::contract::Contract::from_json(
-                conn.web3.eth(),
-                deployed_kernel.address(),
-                include_bytes!("ACLAdminInterface.json"),
-            ).expect("proxied_init_contract");
-
-        let encoded_proc_key: U256 = proc_key_to_32_bytes(&proc_key).into();
-
-        let params = (
-                cap_index,
-                encoded_proc_key,
-                contract.address(),
-                cap_list,
-            );
-        // Register the procedure
-        let file: &[u8] = include_bytes!("ACLAdminInterface.json");
-        let admin_abi = ethabi::Contract::load(file).expect("no ABI");
-        let message: Vec<u8> = admin_abi
-                .function("regProc")
-                .and_then(|function| function.encode_input(params.into_tokens().as_slice())).expect("message encoding failed");
-        println!("message: {:?}", message);
-        let proxied_entry_contract = web3::contract::Contract::from_json(
-                conn.web3.eth(),
-                deployed_kernel.address(),
-                include_bytes!("ACLEntryInterface.json"),
-            ).expect("proxied_entry_contract");
-
-
-        let res: U256 = proxied_entry_contract.query("n_accounts", ( ), conn.sender,
-                Options::with(|opts| {
-                    opts.gas = Some(550_621_180.into());
-                }),
-                None,
-                ).wait().expect("proxy");
-        println!("n_accounts: {:?}", res);
-        let res: U256 = proxied_entry_contract.query("get_account_group", ( conn.sender ), conn.sender,
-                Options::with(|opts| {
-                    opts.gas = Some(550_621_180.into());
-                }),
-                None,
-                ).wait().expect("proxy");
-        println!("our account group: {:?}", res);
-        let res: U256 = proxied_entry_contract.query("get_group_procedure", ( res ), conn.sender,
-                Options::with(|opts| {
-                    opts.gas = Some(550_621_180.into());
-                }),
-                None,
-                ).wait().expect("proxy");
-        println!("our proc: {:?}", res);
-        let res = proxied_entry_contract.call("proxy", (
-                message,
-            ), conn.sender,
-            Options::with(|opts| {
-                opts.gas = Some(550_621_180.into());
-            }),
-            ).wait().expect("proxy");
-        println!("res: {:?}", res);
-        let reg_receipt = conn.web3.eth().transaction_receipt(res).wait().expect("reg receipt").unwrap();
-        println!("Register Group 5 Procedure Receipt: {:?}", reg_receipt);
-        if reg_receipt.status != Some(web3::types::U64::one()) {
-            panic!("ACL register proc failed!");
-        }
-        // use the kernel address as the test account
-        let test_account = deployed_kernel.address().clone();
-
-        let new_group_params = (
-            test_account,
-            U256::from(5),
-        );
-        let new_group_message: Vec<u8> = admin_abi
-                .function("set_account_group")
-                .and_then(|function| function.encode_input(new_group_params.into_tokens().as_slice())).expect("message encoding failed");
-        let res = proxied_entry_contract.call("proxy", (
-                new_group_message,
-            ), conn.sender,
-            Options::with(|opts| {
-                opts.gas = Some(550_621_180.into());
-            }),
-            ).wait().expect("proxy");
-        let new_group_receipt = conn.web3.eth().transaction_receipt(res).wait().expect("new_group receipt").unwrap();
-        println!("New Group Receipt: {:?}", new_group_receipt);
-        if new_group_receipt.status != Some(web3::types::U64::one()) {
-            panic!("ACL register proc failed!");
-        }
-
-        let new_group_params = (
-            U256::from(5),
-            encoded_proc_key,
-        );
-        let new_group_message: Vec<u8> = admin_abi
-                .function("set_group_procedure")
-                .and_then(|function| function.encode_input(new_group_params.into_tokens().as_slice())).expect("message encoding failed");
-        let res = proxied_entry_contract.call("proxy", (
-                new_group_message,
-            ), conn.sender,
-            Options::with(|opts| {
-                opts.gas = Some(550_621_180.into());
-            }),
-            ).wait().expect("proxy");
-        let new_group_receipt = conn.web3.eth().transaction_receipt(res).wait().expect("new_group receipt").unwrap();
-        println!("New Group Receipt: {:?}", new_group_receipt);
-        if new_group_receipt.status != Some(web3::types::U64::one()) {
-            panic!("ACL register proc failed!");
-        }
-
-        let entry_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-        println!("EntryProcAddress: 0x{:x?}", entry_proc_address);
-        let store_val = conn.web3.eth().storage(deployed_kernel.address(), entry_proc_address, None).wait();
-        println!("EntryProc: {:?}", store_val);
-
         let keys: Vec<H256> = serde_json::value::from_value(connection::list_storage_keys(deployed_kernel.address()).result.unwrap()).unwrap();
         for key in keys {
             let val = conn.web3.eth().storage(deployed_kernel.address(), key.as_fixed_bytes().into(), None).wait().expect("storage value");
             println!("key: {:?}, val: {:?}", key, val);
         }
-        DeployedKernelWithACL::new(deployed_kernel)
+        Ok(DeployedKernelWithACL::new(deployed_kernel))
     }
 }
 
