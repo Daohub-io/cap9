@@ -20,7 +20,10 @@ use cap9_core::*;
 use cap9_core::Error;
 use cap9_core::Read;
 use crate::constants;
+use crate::utils;
 use std::collections::{HashMap, HashSet};
+use serde_json::json;
+use serde::ser::{Serialize, Serializer, SerializeSeq, SerializeMap, SerializeStruct};
 
 #[derive(Clone, Debug)]
 pub struct Procedure {
@@ -140,4 +143,122 @@ impl<'a, T: Transport> Read<pwasm_abi::types::U256> for CapReader<'a, T> {
 fn get_idx_proc_address(i: u64) -> U256 {
     let idx: u8 = i as u8;
     U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, idx, 0x00, 0x00, 0x00])
+}
+
+pub struct SerialNewCapList(pub NewCapList);
+pub struct SerialNewCap(NewCapability);
+pub struct SerialCapability(Capability);
+pub struct SerialAddress(Address);
+
+impl Serialize for SerialNewCapList {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let cap_list = &(self.0).0;
+
+        let mut seq = serializer.serialize_seq(Some(cap_list.len()))?;
+        for e in cap_list {
+            seq.serialize_element(&SerialNewCap(e.clone()))?;
+        }
+        seq.end()
+    }
+}
+
+impl Serialize for SerialNewCap {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let cap = &(self.0).cap;
+        let parent_index = (self.0).parent_index;
+
+        let mut state = serializer.serialize_struct("NewCapability", 2)?;
+        state.serialize_field("cap", &SerialCapability(cap.clone()))?;
+        state.serialize_field("parent_index", &parent_index)?;
+        state.end()
+    }
+}
+
+fn key_to_str(key: [u8; 24]) -> String {
+    let mut key_hex: String = String::from("0x");;
+    let s: String = key.to_hex();
+    key_hex.push_str(&s);
+    key_hex
+}
+
+fn b32_to_str(key: [u8; 32]) -> String {
+    let mut key_hex: String = String::from("0x");;
+    let s: String = key.to_hex();
+    key_hex.push_str(&s);
+    key_hex
+}
+
+impl Serialize for SerialCapability {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match &self.0 {
+            Capability::ProcedureCall(cap) => {
+                let mut state = serializer.serialize_struct("ProcedureCallCap", 2)?;
+                state.serialize_field("prefix", &cap.prefix)?;
+                state.serialize_field("key", &key_to_str(cap.key))?;
+                state.end()
+            },
+            Capability::ProcedureRegister(cap) => {
+                let mut state = serializer.serialize_struct("ProcedureRegisterCap", 2)?;
+                state.serialize_field("prefix", &cap.prefix)?;
+                state.serialize_field("key", &key_to_str(cap.key))?;
+                state.end()
+
+            },
+            Capability::ProcedureDelete(cap) => {
+                let mut state = serializer.serialize_struct("ProcedureDeleteCap", 2)?;
+                state.serialize_field("prefix", &cap.prefix)?;
+                state.serialize_field("key", &key_to_str(cap.key))?;
+                state.end()
+
+            },
+            Capability::ProcedureEntry(_cap) => {
+                let state = serializer.serialize_struct("ProcedureEntryCap", 0)?;
+                state.end()
+
+            },
+            Capability::StoreWrite(cap) => {
+                let mut state = serializer.serialize_struct("StoreWriteCap", 2)?;
+                state.serialize_field("location", &b32_to_str(cap.location))?;
+                state.serialize_field("size", &b32_to_str(cap.size))?;
+                state.end()
+
+            },
+            Capability::Log(cap) => {
+                let mut state = serializer.serialize_struct("LogCap", 5)?;
+                state.serialize_field("topics", &cap.topics)?;
+                state.serialize_field("t1", &b32_to_str(cap.t1))?;
+                state.serialize_field("t2", &b32_to_str(cap.t2))?;
+                state.serialize_field("t3", &b32_to_str(cap.t3))?;
+                state.serialize_field("t4", &b32_to_str(cap.t4))?;
+                state.end()
+
+            },
+            Capability::AccountCall(cap) => {
+                let mut state = serializer.serialize_struct("AccountCallCap", 2)?;
+                state.serialize_field("can_call_any", &cap.can_call_any)?;
+                state.serialize_field("can_send", &cap.can_send)?;
+                state.serialize_field("address", &SerialAddress(utils::from_common_address(cap.address)))?;
+                state.end()
+
+            },
+        }
+    }
+}
+
+impl Serialize for SerialAddress {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(format!("{}",(self.0)).as_ref())
+    }
 }
