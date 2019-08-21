@@ -77,7 +77,7 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
 
     // new_group("randomProcName".to_string(), contract)
 
-    pub fn new_group(&self, proc_name: String, group_proc: ContractSpec) -> Result<(), ProjectDeploymentError> {
+    pub fn new_group(&self, group_number: u8, proc_name: String, group_proc: ContractSpec) -> Result<(), ProjectDeploymentError> {
 
         // Add a group
         let proc_key = crate::utils::string_to_proc_key(proc_name);
@@ -158,7 +158,7 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
 
         let new_group_params = (
             test_account,
-            U256::from(5),
+            U256::from(group_number),
         );
         let new_group_message: Vec<u8> = admin_abi
                 .function("set_account_group")

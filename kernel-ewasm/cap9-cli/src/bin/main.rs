@@ -19,13 +19,13 @@ use rustc_hex::ToHex;
 
 use env_logger;
 
-mod connection;
-mod deploy;
-mod project;
-mod fetch;
-mod constants;
-mod default_procedures;
-mod utils;
+use cap9_cli::connection;
+use cap9_cli::deploy;
+use cap9_cli::project;
+use cap9_cli::fetch;
+use cap9_cli::constants;
+use cap9_cli::default_procedures;
+use cap9_cli::utils;
 
 use fetch::{DeployedKernel, DeployedKernelWithACL};
 
@@ -56,7 +56,19 @@ fn main() {
                     .help("JSON ABI file"))
                 .about("Deploy a contract to the chain"))
             .subcommand(SubCommand::with_name("new-group")
-                .about("Add group 5"))
+                .arg(Arg::with_name("GROUP-NUMBER")
+                    .required(true)
+                    .help("Group number/id"))
+                .arg(Arg::with_name("PROCEDURE-NAME")
+                    .required(true)
+                    .help("Name of the group's procedure"))
+                .arg(Arg::with_name("CODE-FILE")
+                    .required(true)
+                    .help("Binary code file of the group's procedure"))
+                .arg(Arg::with_name("ABI-FILE")
+                    .required(true)
+                    .help("JSON ABI file of the group's procedure"))
+                .about("Add an new group"))
             .subcommand(SubCommand::with_name("fetch")
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .about("Query information about the current project")
@@ -81,15 +93,19 @@ fn main() {
         let mut local_project = project::LocalProject::read();
         // Deploy a kernel with the ACL Bootstrap procedure
         local_project.deploy(&conn).unwrap_or_else(|err| panic!("Deployment failure: {}", err));
-    } else if let Some(_new_group_matches) = matches.subcommand_matches("new-group") {
+    } else if let Some(new_group_matches) = matches.subcommand_matches("new-group") {
+        let group_number: u8 = new_group_matches.value_of("GROUP-NUMBER").expect("No code file").parse().unwrap();
+        let proc_name = new_group_matches.value_of("PROCEDURE-NAME").expect("No code file");
+        let code_file = PathBuf::from(new_group_matches.value_of("CODE-FILE").expect("No code file"));
+        let abi_file = PathBuf::from(new_group_matches.value_of("ABI-FILE").expect("No ABI file"));
         // Connect to a local network over http.
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
         let local_project = project::LocalProject::read();
         let kernel = DeployedKernel::new(&conn, &local_project);
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
-        let group_5_spec = project::ContractSpec::from_files(&PathBuf::from("acl_group_5.wasm"), &PathBuf::from("ACLGroup5Interface.json"));
-        kernel_with_acl.new_group("randomProcName".to_string(), group_5_spec).unwrap();
+        let group_5_spec = project::ContractSpec::from_files(&code_file, &abi_file);
+        kernel_with_acl.new_group(group_number, proc_name.to_string(), group_5_spec).unwrap();
     } else if let Some(deploy_contract_matches) = matches.subcommand_matches("deploy-contract") {
         let code_file = PathBuf::from(deploy_contract_matches.value_of("CODE-FILE").expect("No code file"));
         let abi_file = PathBuf::from(deploy_contract_matches.value_of("ABI-FILE").expect("No ABI file"));

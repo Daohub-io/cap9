@@ -19,7 +19,11 @@ mod integration {
 
     #[test]
     fn create_and_deploy() {
+        use std::path::PathBuf;
         use tempfile::tempdir;
+        use cap9_cli::connection;
+        use cap9_cli::project;
+        use cap9_cli::fetch::{DeployedKernel, DeployedKernelWithACL};
 
         let project_name = "example";
 
@@ -30,6 +34,7 @@ mod integration {
         let mut create_cmd = Command::cargo_bin("cap9-cli").unwrap();
         create_cmd
             .arg("new")
+            .arg("--acl")
             .arg(project_name)
             .current_dir(dir.path());
         create_cmd.assert().success();
@@ -43,8 +48,51 @@ mod integration {
         let mut deploy_cmd = Command::cargo_bin("cap9-cli").unwrap();
         deploy_cmd
             .arg("deploy")
-            .current_dir(project_dir);
+            .current_dir(&project_dir);
         deploy_cmd.assert().success();
+
+        // // There should be one group (1)
+        let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        // Read the local project from out current directory.
+        let local_project = project::LocalProject::read_dir(&project_dir);
+        let kernel = DeployedKernel::new(&conn, &local_project);
+        let kernel_with_acl = DeployedKernelWithACL::new(kernel);
+        let groups_1 = kernel_with_acl.groups();
+        assert_eq!(groups_1.len(), 1, "There should be one group, but there are {}", groups_1.len());
+
+        let res = Command::cargo_bin("cap9-cli").unwrap()
+            .arg("fetch")
+            .arg("acl")
+            .arg("groups")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+        let out = res.get_output();
+        println!("out: {}", String::from_utf8(out.stdout.clone()).unwrap());
+
+        let wasm_path: PathBuf = [&project_dir, &PathBuf::from("acl_group_5.wasm")].iter().collect();
+        let json_path: PathBuf = [&project_dir, &PathBuf::from("ACLGroup5Interface.json")].iter().collect();
+        std::fs::copy(PathBuf::from("src/lib/acl_group_5.wasm"), wasm_path).unwrap();
+        std::fs::copy(PathBuf::from("src/lib/ACLGroup5Interface.json"), json_path).unwrap();
+        println!("files copied", );
+        // Add a new group to the kernel
+        Command::cargo_bin("cap9-cli").unwrap()
+            // The command
+            .arg("new-group")
+            // The number/id of the group
+            .arg("5")
+            // The name of the group's procedure
+            .arg("randomProcName")
+            // The file path of the binary code
+            .arg("acl_group_5.wasm")
+            // The file path of the JSON ABI
+            .arg("ACLGroup5Interface.json")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+
+        let groups_2 = kernel_with_acl.groups();
+        assert_eq!(groups_2.len(), 2, "There should be one group, but there are {}", groups_2.len());
 
         // Explicity close the temp directory.
         dir.close().unwrap();

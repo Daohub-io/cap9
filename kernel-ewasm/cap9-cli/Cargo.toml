@@ -28,3 +28,12 @@ web3 = "0.8.0"
 [dev-dependencies]
 tempfile = "3.1.0"
 assert_cmd = "0.11"
+
+
+[[bin]]
+name = "cap9-cli"
+path = "src/bin/main.rs"
+
+[lib]
+name = "cap9_cli"
+path = "src/lib/lib.rs"

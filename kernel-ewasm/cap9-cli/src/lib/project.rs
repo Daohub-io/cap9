@@ -164,6 +164,8 @@ pub enum ProjectDeploymentError {
 /// A representation of the local project information. Methods on this struct
 /// operate on the local filesystem.
 pub struct LocalProject {
+    /// The location of the project.
+    abs_path: PathBuf,
     /// The deployment information for this project. This is necessary for the
     /// project to exist.
     deploy_file: DeployFile,
@@ -199,7 +201,9 @@ impl LocalProject {
         let deploy_file = DeployFile::new(kernel_spec, deploy_spec);
         let f = File::create(&path).expect("Could not create file");
         serde_json::ser::to_writer_pretty(f, &deploy_file).expect("Could not serialise deploy data");
+        let abs_path = PathBuf::from(".").canonicalize().unwrap();
         LocalProject {
+            abs_path,
             deploy_file,
             status_file: None,
         }
@@ -231,16 +235,24 @@ impl LocalProject {
         let deploy_file = DeployFile::new_with_acl(kernel_spec, deploy_spec);
         let f = File::create(&path).expect("Could not create file");
         serde_json::ser::to_writer_pretty(f, &deploy_file).expect("Could not serialise deploy data");
+        let abs_path = PathBuf::from(".").canonicalize().unwrap();
         LocalProject {
+            abs_path,
             deploy_file,
             status_file: None,
         }
     }
 
     pub fn read() -> Self {
-        let f_deploy = File::open("deploy.json").expect("could not open file");
+        Self::read_dir(&PathBuf::from("."))
+    }
+
+    pub fn read_dir(dir: &PathBuf) -> Self {
+        let deploy_file_path: PathBuf = [dir, &PathBuf::from("deploy.json")].iter().collect();
+        let status_file_path: PathBuf = [dir, &PathBuf::from("status.json")].iter().collect();
+        let f_deploy = File::open(deploy_file_path).expect("could not open file");
         let deploy_file = serde_json::from_reader(f_deploy).expect("Could not parse deploy file");
-        let f_status = File::open("status.json");
+        let f_status = File::open(status_file_path);
         let status_file = match f_status {
             Ok(f) => Some(serde_json::from_reader(f).expect("Could not parse status file")),
             Err(e) => {
@@ -251,7 +263,9 @@ impl LocalProject {
                 }
             }
         };
+        let abs_path = dir.canonicalize().unwrap();
         LocalProject {
+            abs_path,
             deploy_file,
             status_file,
         }
@@ -267,7 +281,8 @@ impl LocalProject {
 
     pub fn add_status_file(&mut self, address: Address) {
         let status_file = StatusFile::new(address);
-        let out_file = File::create("status.json").expect("could not create status file");
+        let status_file_path: PathBuf = [&self.abs_path, &PathBuf::from("status.json")].iter().collect();
+        let out_file = File::create(status_file_path).expect("could not create status file");
         serde_json::to_writer_pretty(out_file, &status_file).expect("could not serialise to file");
         self.status_file = Some(status_file);
     }
@@ -280,6 +295,11 @@ impl LocalProject {
         } else {
             self.deploy_std(&conn).map(|_| ())
         }
+    }
+
+    /// Convert a path to be relative to the location of the project.
+    pub fn rel_path(&self, path: &PathBuf) -> PathBuf {
+        [&self.abs_path, path].iter().collect()
     }
 
     pub fn deploy_std<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> Result<DeployedKernel<'a, 'b, T>, ProjectDeploymentError> {
