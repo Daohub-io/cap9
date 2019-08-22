@@ -101,8 +101,7 @@ jobs:
             else
               cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
             fi
-            which parity
-            cp $(which parity) /root/workspace/parity
+            cp ~/.cargo/bin/parity /root/workspace/parity
       - persist_to_workspace:
           # Must be an absolute path, or relative path from working_directory. This is a directory on the container which is
           # taken to be the root directory of the workspace.
