@@ -190,6 +190,79 @@ jobs:
             cd kernel-ewasm && npm install
             npm run test
             cargo test
+  cli-build:
+    docker:
+      - image: centos:latest
+    working_directory: /tmp/my-project
+    steps:
+      - restore_cache:
+          keys:
+            - deps10-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps10-ewasm-{{ .Branch }}-
+            - deps10-ewasm
+      - run:
+          name: Install native build prequisites
+          command: |
+            yum -y update
+            yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
+            curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
+            tar -xzf cmake.tar.gz
+            cp -r cmake-3.12.0-Linux-x86_64/* /usr/
+            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+            # only update cargo if it is not installed
+            if [ ! -d /root/.rustup ]
+            then
+              echo "Installing rustup"
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              . ~/.profile
+              rustup default stable
+            else
+              echo "rustup already installed"
+              . ~/.profile
+            fi
+            RUST_BACKTRACE=1
+            rustc -vV
+            cargo -V
+            gcc -v
+            g++ -v
+            cmake --version
+      - attach_workspace:
+          at: /tmp/my-project
+      - checkout:
+          path: cap9
+      - run:
+          name: Get Submodules
+          command: |
+            cd cap9
+            git submodule update --init
+      - run:
+          name: Start local Ethereum network
+          command: |
+            . ~/.profile
+            cd cap9
+            cd kernel-ewasm
+            /tmp/my-project/parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0 --geth --fat-db on
+          background: true
+      - run:
+          name: Wait for Parity startup
+          command: sleep 10
+      - run:
+          name: Build cap9-cli
+          command: |
+            . ~/.profile
+            cd cap9/kernel-ewasm/cap9-cli
+            cargo build
+      - save_cache:
+          key: deps10-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+            - "~/.rustup"
+      - run:
+          name: Test cap9-cli
+          command: |
+            . ~/.profile
+            cd cap9/kernel-ewasm/cap9-cli
+            cargo test
 
 workflows:
   version: 2
@@ -197,5 +270,8 @@ workflows:
     jobs:
       - build-parity
       - build:
+          requires:
+            - build-parity
+      - cli-build:
           requires:
             - build-parity
