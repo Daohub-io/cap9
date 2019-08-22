@@ -60,7 +60,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - deps10-parity-{{ .Branch }}-{{ checksum "parity-ethereum/Cargo.lock" }}
+            - deps10-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
             - deps10-parity-{{ .Branch }}
             - deps10-parity
       - run:
@@ -119,7 +119,7 @@ jobs:
           paths:
             - parity
       - save_cache:
-          key: deps10-parity-{{ .Branch }}-{{ checksum "parity-ethereum/Cargo.lock" }}
+          key: deps10-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
