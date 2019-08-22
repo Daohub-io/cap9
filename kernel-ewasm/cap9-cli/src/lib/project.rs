@@ -67,6 +67,13 @@ pub struct DeploySpec {
 //     }
 // }
 
+
+#[derive(Serialize, Deserialize)]
+pub struct ProcSpec {
+    pub contract_spec: ContractSpec,
+    pub cap_path: PathBuf,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ContractSpec {
     pub code_path: String,

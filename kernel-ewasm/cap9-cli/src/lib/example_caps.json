@@ -1,0 +1,56 @@
+[
+    {
+      "cap": {
+        "type": "ProcedureRegisterCap",
+        "prefix": 0,
+        "key": "0x000000000000000000000000000000000000000000000000"
+      },
+      "parent_index": 0
+    },
+    {
+      "cap": {
+        "type": "ProcedureRegisterCap",
+        "prefix": 0,
+        "key": "0x000000000000000000000000000000000000000000000000"
+      },
+      "parent_index": 0
+    },
+    {
+      "cap": {
+        "type": "ProcedureCallCap",
+        "prefix": 0,
+        "key": "0x000000000000000000000000000000000000000000000000"
+      },
+      "parent_index": 0
+    },
+    {
+      "cap": {
+        "type": "ProcedureDeleteCap",
+        "prefix": 0,
+        "key": "0x000000000000000000000000000000000000000000000000"
+      },
+      "parent_index": 0
+    },
+    {
+      "cap": {
+        "type": "StoreWriteCap",
+        "location": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "size": "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"
+      },
+      "parent_index": 0
+    },
+    {
+      "cap": {
+        "type": "StoreWriteCap",
+        "location": "0x3000000000000000000000000000000000000000000000000000000000000000",
+        "size": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "parent_index": 0
+    },
+    {
+      "cap": {
+        "type": "ProcedureEntryCap"
+      },
+      "parent_index": 0
+    }
+  ]

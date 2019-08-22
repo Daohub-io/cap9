@@ -65,6 +65,9 @@ fn main() {
                 .arg(Arg::with_name("ABI-FILE")
                     .required(true)
                     .help("JSON ABI file"))
+                .arg(Arg::with_name("CAP-FILE")
+                    .required(true)
+                    .help("JSON cap file"))
                 .about("Deploy a contract to the chain and register it as a procedure"))
             .subcommand(SubCommand::with_name("new-group")
                 .arg(Arg::with_name("GROUP-NUMBER")
@@ -121,13 +124,18 @@ fn main() {
         let proc_name = deploy_procedure_matches.value_of("PROCEDURE-NAME").expect("No code file");
         let code_file = PathBuf::from(deploy_procedure_matches.value_of("CODE-FILE").expect("No code file"));
         let abi_file = PathBuf::from(deploy_procedure_matches.value_of("ABI-FILE").expect("No ABI file"));
+        let cap_file = PathBuf::from(deploy_procedure_matches.value_of("CAP-FILE").expect("No cap file"));
         // Connect to a local network over http.
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
         let local_project = project::LocalProject::read();
         let kernel = DeployedKernel::new(&conn, &local_project);
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
-        let proc_spec = project::ContractSpec::from_files(&code_file, &abi_file);
+        let contract_spec = project::ContractSpec::from_files(&code_file, &abi_file);
+        let proc_spec = project::ProcSpec {
+            contract_spec,
+            cap_path: cap_file,
+        };
         kernel_with_acl.deploy_procedure(proc_name.to_string(), proc_spec).unwrap();
     } else if let Some(deploy_contract_matches) = matches.subcommand_matches("deploy-contract") {
         let code_file = PathBuf::from(deploy_contract_matches.value_of("CODE-FILE").expect("No code file"));

@@ -24,7 +24,10 @@ use crate::constants;
 use crate::utils::{from_common_u256, to_common_u256, to_common_h256,
     from_common_address, to_common_address
 };
+
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+
 use crate::project::*;
 use crate::default_procedures;
 use super::utils::*;
@@ -163,16 +166,22 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
     }
 
     /// Simply take a contract, deploy it, and register it as a procedure.
-    pub fn deploy_procedure(&self, proc_name: String, proc_spec: ContractSpec) -> Result<(), ProjectDeploymentError> {
+    pub fn deploy_procedure(&self, proc_name: String, proc_spec: ProcSpec) -> Result<(), ProjectDeploymentError> {
         let proc_key = crate::utils::string_to_proc_key(proc_name);
+
+        let cap_file = File::open(proc_spec.cap_path).expect("could not open file");
+        let crate::fetch::procedure::SerialNewCapList(caps) = serde_json::from_reader(cap_file).unwrap();
+
         let cap_index = 0;
-        let contract = proc_spec.deploy(&self.kernel.conn, ( )).unwrap();
+        let contract = proc_spec.contract_spec.deploy(&self.kernel.conn, ( )).unwrap();
+        // TODO: check that the caps are ok client-side
+        // let cap_list: Vec<U256> = caps.to_u256_list().into_iter().map(from_common_u256).collect();
         let cap_list: Vec<U256> = vec![];
 
         let _proxied_admin_contract = web3::contract::Contract::from_json(
                 self.kernel.conn.web3.eth(),
                 self.kernel.address(),
-                proc_spec.abi().as_slice(),
+                proc_spec.contract_spec.abi().as_slice(),
             )
             .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
 
@@ -208,7 +217,6 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
         if reg_receipt.status != Some(web3::types::U64::one()) {
             panic!("ACL register proc failed!");
         }
-        println!("reg receipt: {:?}", reg_receipt);
         Ok(())
     }
 }

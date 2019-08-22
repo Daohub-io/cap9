@@ -72,8 +72,10 @@ mod integration {
 
         let wasm_path: PathBuf = [&project_dir, &PathBuf::from("acl_group_5.wasm")].iter().collect();
         let json_path: PathBuf = [&project_dir, &PathBuf::from("ACLGroup5Interface.json")].iter().collect();
+        let caps_path: PathBuf = [&project_dir, &PathBuf::from("example_caps.json")].iter().collect();
         std::fs::copy(PathBuf::from("src/lib/acl_group_5.wasm"), wasm_path).unwrap();
         std::fs::copy(PathBuf::from("src/lib/ACLGroup5Interface.json"), json_path).unwrap();
+        std::fs::copy(PathBuf::from("src/lib/example_caps.json"), caps_path).unwrap();
         println!("files copied", );
         // Add a new group to the kernel
         Command::cargo_bin("cap9-cli").unwrap()
@@ -113,6 +115,8 @@ mod integration {
             .arg("acl_group_5.wasm")
             // The file path of the JSON ABI
             .arg("ACLGroup5Interface.json")
+            // The file path of the caps file
+            .arg("example_caps.json")
             .current_dir(&project_dir)
             .assert()
             .success();
