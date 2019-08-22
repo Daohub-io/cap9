@@ -107,9 +107,11 @@ jobs:
                 cd ..
               fi
               export LIBRARY_PATH=/usr/local/lib
-              cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
+              cargo build --release
+              # cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
             fi
-            cp ~/.cargo/bin/parity /tmp/my-project/parity
+            # cp ~/.cargo/bin/parity /tmp/my-project/parity
+            cp target/release/parity /tmp/my-project/parity
       - persist_to_workspace:
           root: /tmp/my-project
           paths:
