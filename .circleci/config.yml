@@ -41,7 +41,12 @@ jobs:
       - image: centos:latest
     working_directory: /tmp/my-project
     steps:
-      -  run:
+      - run:
+          name: Install git
+          command: |
+            yum -y update
+            yum install -y git
+      - run:
           name: Checkout parity-ethereum
           command: |
             cd ..
