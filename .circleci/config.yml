@@ -36,6 +36,85 @@ jobs:
   #         command: ./evm1/node_modules/.bin/ganache-cli
   #         background: true
   #     - run: cd evm1 && ./node_modules/.bin/truffle test
+  build-parity:
+    docker:
+      - image: centos:latest
+    working_directory: /tmp/my-project
+    steps:
+      - restore_cache:
+          keys:
+            - deps9-{{ .Branch }}-{{ .Revision }}
+            # - deps9-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps9-{{ .Branch }}-
+            - deps9-
+      - run:
+          name: Install native build prequisites
+          command: |
+            yum -y update
+            yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
+            curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
+            tar -xzf cmake.tar.gz
+            cp -r cmake-3.12.0-Linux-x86_64/* /usr/
+            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+            # only update cargo if it is not installed
+            if [ ! -d /root/.rustup ]
+            then
+              echo "Installing rustup"
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              . ~/.profile
+              rustup default stable
+            else
+              echo "rustup already installed"
+              . ~/.profile
+            fi
+            RUST_BACKTRACE=1
+            rustc -vV
+            cargo -V
+            gcc -v
+            g++ -v
+            cmake --version
+            curl -L https://nodejs.org/dist/v12.3.1/node-v12.3.1-linux-x64.tar.xz -o node.tar.xz
+            tar -xJf node.tar.xz
+            cp -r node-v12.3.1-linux-x64/* /usr/
+      - run:
+          name: Install Parity
+          command: |
+            . ~/.profile
+            cd ..
+            # If the parity-ethereum directory does not exist, clone it
+            pwd
+            ls
+            if [ ! -d parity-ethereum ]
+            then
+              echo "Parity not installed, cloning..."
+              git clone https://github.com/Daohub-io/parity-ethereum.git
+            fi
+            cd parity-ethereum
+            git fetch --all
+            git checkout master
+            # cargo build -j 1
+            # cargo build --verbose --release --features final
+            # strip target/debug/parity
+            # file target/debug/parity
+            if parity --version; then
+              echo "Parity node installed"
+            else
+              cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
+            fi
+            cp .cargo/parity /root/workspace/parity
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory. This is a directory on the container which is
+          # taken to be the root directory of the workspace.
+          root: /root/workspace
+          # Must be relative path from root
+          paths:
+            - parity
+      - save_cache:
+          key: deps9-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+            - "~/.rustup"
+            - /tmp/parity-ethereum
   build:
     docker:
       - image: centos:latest
@@ -144,3 +223,12 @@ jobs:
             cd kernel-ewasm && npm install
             npm run test
             cargo test
+
+workflows:
+  version: 2
+  build-test:
+    jobs:
+      - build-parity
+      - build:
+          requires:
+            - build-parity
