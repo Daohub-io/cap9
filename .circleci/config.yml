@@ -66,7 +66,6 @@ jobs:
       - run:
           name: Install Parity
           command: |
-            . ~/.profile
             cd ..
             pwd
             ls
