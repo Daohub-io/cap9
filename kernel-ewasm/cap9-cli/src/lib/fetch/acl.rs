@@ -175,8 +175,7 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
         let cap_index = 0;
         let contract = proc_spec.contract_spec.deploy(&self.kernel.conn, ( )).unwrap();
         // TODO: check that the caps are ok client-side
-        // let cap_list: Vec<U256> = caps.to_u256_list().into_iter().map(from_common_u256).collect();
-        let cap_list: Vec<U256> = vec![];
+        let cap_list: Vec<U256> = caps.to_u256_list().into_iter().map(from_common_u256).collect();
 
         let _proxied_admin_contract = web3::contract::Contract::from_json(
                 self.kernel.conn.web3.eth(),

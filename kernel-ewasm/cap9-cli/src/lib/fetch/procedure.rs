@@ -295,7 +295,6 @@ impl<'de> Visitor<'de> for SerialNewCapListVisitor {
         // Update the max while there are additional values.
         while let Some(value) = seq.next_element()? {
             let v: serde_json::Value = value;
-            println!("value: {:?}", v);
             let SerialNewCap(new_cap) = serde_json::from_value(v).unwrap();
             cap_list.push(new_cap);
         }
