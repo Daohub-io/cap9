@@ -41,12 +41,23 @@ jobs:
       - image: centos:latest
     working_directory: /tmp/my-project
     steps:
+      -  run:
+          name: Checkout parity-ethereum
+          command: |
+            cd ..
+            # If the parity-ethereum directory does not exist, clone it
+            pwd
+            ls
+            if [ ! -d parity-ethereum ]
+            then
+              echo "Parity not installed, cloning..."
+              git clone https://github.com/Daohub-io/parity-ethereum.git
+            fi
       - restore_cache:
           keys:
-            - deps9-{{ .Branch }}-{{ .Revision }}
-            # - deps9-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps9-{{ .Branch }}-
-            - deps9-
+            - deps10-parity-{{ .Branch }}-{{ checksum "parity-ethereum/Cargo.lock" }}
+            - deps10-parity-{{ .Branch }}
+            - deps10-parity
       - run:
           name: Install native build prequisites
           command: |
@@ -92,10 +103,6 @@ jobs:
             cd parity-ethereum
             git fetch --all
             git checkout master
-            # cargo build -j 1
-            # cargo build --verbose --release --features final
-            # strip target/debug/parity
-            # file target/debug/parity
             if parity --version; then
               echo "Parity node installed"
             else
@@ -103,14 +110,11 @@ jobs:
             fi
             cp ~/.cargo/bin/parity /tmp/my-project/parity
       - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory. This is a directory on the container which is
-          # taken to be the root directory of the workspace.
           root: /tmp/my-project
-          # Must be relative path from root
           paths:
             - parity
       - save_cache:
-          key: deps9-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps10-parity-{{ .Branch }}-{{ checksum "parity-ethereum/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -122,10 +126,9 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps9-{{ .Branch }}-{{ .Revision }}
-            # - deps9-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps9-{{ .Branch }}-
-            - deps9-
+            - deps10-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps10-ewasm-{{ .Branch }}-
+            - deps10-ewasm
       - run:
           name: Install native build prequisites
           command: |
@@ -156,14 +159,7 @@ jobs:
             tar -xJf node.tar.xz
             cp -r node-v12.3.1-linux-x64/* /usr/
       - attach_workspace:
-          # Must be absolute path or relative path from working_directory
           at: /tmp/my-project
-      # - save_cache:
-      #     key: deps9-{{ .Branch }}-cargo #-{{ checksum "kernel-ewasm/Cargo.lock" }}
-      #     paths:
-      #       - "~/.cargo"
-      #       - "~/.rustup"
-      #       - /tmp/parity-ethereum
       - checkout:
           path: cap9
       - run:
@@ -177,11 +173,6 @@ jobs:
             . ~/.profile
             cd cap9
             cd kernel-ewasm
-            # we need to run parity once to set up the accounts and keys
-            # this only needs to be active for a few seconds (hence timeout)
-            # timeout 5 parity --config dev || true
-            # We then run parity properly, now unlocking the previously setup
-            # account
             /tmp/my-project/parity  --config dev --chain ./wasm-dev-chain.json --jsonrpc-apis=all --ws-apis=all --reseal-min-period 0 --gasprice 0 --geth --fat-db on
           background: true
       - run:
@@ -193,6 +184,11 @@ jobs:
             . ~/.profile
             cd cap9
             cd kernel-ewasm && ./scripts/build.sh
+      - save_cache:
+          key: deps10-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+            - "~/.rustup"
       - run:
           name: Test Rust Component
           command: |
