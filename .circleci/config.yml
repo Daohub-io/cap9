@@ -98,6 +98,12 @@ jobs:
               gcc -v
               g++ -v
               cmake --version
+              git clone https://github.com/gflags/gflags.git
+              cd gflags
+              git checkout v2.0
+              ./configure && make && make install
+              cd ..
+              export LIBRARY_PATH=/usr/local/lib
               cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
             fi
             cp ~/.cargo/bin/parity /tmp/my-project/parity
@@ -111,7 +117,7 @@ jobs:
             - "~/.cargo"
             - "~/.rustup"
             - /tmp/parity-ethereum
-  build:
+  build-kernel:
     docker:
       - image: centos:latest
     working_directory: /tmp/my-project
@@ -268,7 +274,7 @@ workflows:
   build-test:
     jobs:
       - build-parity
-      - build:
+      - build-kernel:
           requires:
             - build-parity
       - cli-build:
