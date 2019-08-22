@@ -117,6 +117,7 @@ jobs:
             - "~/.cargo"
             - "~/.rustup"
             - /tmp/parity-ethereum
+          when: always
   build-kernel:
     docker:
       - image: centos:latest
