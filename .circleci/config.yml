@@ -64,53 +64,41 @@ jobs:
             - deps10-parity-{{ .Branch }}
             - deps10-parity
       - run:
-          name: Install native build prequisites
-          command: |
-            yum -y update
-            yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
-            curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
-            tar -xzf cmake.tar.gz
-            cp -r cmake-3.12.0-Linux-x86_64/* /usr/
-            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
-            # only update cargo if it is not installed
-            if [ ! -d /root/.rustup ]
-            then
-              echo "Installing rustup"
-              curl https://sh.rustup.rs -sSf | sh -s -- -y
-              . ~/.profile
-              rustup default stable
-            else
-              echo "rustup already installed"
-              . ~/.profile
-            fi
-            RUST_BACKTRACE=1
-            rustc -vV
-            cargo -V
-            gcc -v
-            g++ -v
-            cmake --version
-            curl -L https://nodejs.org/dist/v12.3.1/node-v12.3.1-linux-x64.tar.xz -o node.tar.xz
-            tar -xJf node.tar.xz
-            cp -r node-v12.3.1-linux-x64/* /usr/
-      - run:
           name: Install Parity
           command: |
             . ~/.profile
             cd ..
-            # If the parity-ethereum directory does not exist, clone it
             pwd
             ls
-            if [ ! -d parity-ethereum ]
-            then
-              echo "Parity not installed, cloning..."
-              git clone https://github.com/Daohub-io/parity-ethereum.git
-            fi
             cd parity-ethereum
             git fetch --all
             git checkout master
             if parity --version; then
               echo "Parity node installed"
             else
+              yum -y update
+              yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
+              curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
+              tar -xzf cmake.tar.gz
+              cp -r cmake-3.12.0-Linux-x86_64/* /usr/
+              echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+              # only update cargo if it is not installed
+              if [ ! -d /root/.rustup ]
+              then
+                echo "Installing rustup"
+                curl https://sh.rustup.rs -sSf | sh -s -- -y
+                . ~/.profile
+                rustup default stable
+              else
+                echo "rustup already installed"
+                . ~/.profile
+              fi
+              RUST_BACKTRACE=1
+              rustc -vV
+              cargo -V
+              gcc -v
+              g++ -v
+              cmake --version
               cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
             fi
             cp ~/.cargo/bin/parity /tmp/my-project/parity
