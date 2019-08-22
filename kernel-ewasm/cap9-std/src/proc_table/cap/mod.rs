@@ -483,9 +483,9 @@ impl From<Vec<Capability>> for Capabilities {
     }
 }
 
-use std::fmt;
-impl fmt::Display for Capabilities {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+#[cfg(feature="std")]
+impl std::fmt::Display for Capabilities {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if self.proc_call_caps.len() > 0 {
             write!(f, "    CAP_PROC_CALL({}):\n", self.proc_call_caps.len())?;
             for (i, cap) in self.proc_call_caps.iter().enumerate() {
