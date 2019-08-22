@@ -188,6 +188,13 @@ pub struct NewCapability {
     pub parent_index: u8,
 }
 
+/// Information about which capability is not a subset and why.
+#[derive(Clone, Debug)]
+pub struct NewCapListSubsetError {
+    /// Index into the NewCapList
+    pub index: usize,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct NewCapList(pub Vec<NewCapability>);
 
@@ -199,6 +206,329 @@ impl NewCapList {
 
     pub fn inner(self) -> Vec<NewCapability> {
         self.0
+    }
+
+    /// Assess whether the NewCapList is a subset of the given capabilties,
+    /// returning information on which capabilities are not compliant and why.
+    /// If the returned vector is empty all the new capabilities are valid
+    /// subsets.
+    pub fn check_subset_of(&self, caps: Capabilities) -> Vec<NewCapListSubsetError> {
+        let mut errors = Vec::new();
+        let NewCapList(new_caps) = self;
+        for (i, new_cap) in new_caps.iter().enumerate() {
+            match &new_cap.cap {
+                Capability::ProcedureCall(cap) => {
+                    let caps_of_type = &caps.proc_call_caps;
+                    match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(parent_cap) => {
+                            if !cap.is_subset_of(parent_cap) {
+                                errors.push(NewCapListSubsetError {
+                                    index: i,
+                                });
+                            }
+                        },
+                        None => {
+                            errors.push(NewCapListSubsetError {
+                                index: i,
+                            });
+                        }
+                    };
+                },
+                Capability::ProcedureRegister(cap) => {
+                    let caps_of_type = &caps.proc_register_caps;
+                    match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(parent_cap) => {
+                            if !cap.is_subset_of(parent_cap) {
+                                errors.push(NewCapListSubsetError {
+                                    index: i,
+                                });
+                            }
+                        },
+                        None => {
+                            errors.push(NewCapListSubsetError {
+                                index: i,
+                            });
+                        }
+                    };
+                },
+                Capability::ProcedureDelete(cap) => {
+                    let caps_of_type = &caps.proc_delete_caps;
+                    match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(parent_cap) => {
+                            if !cap.is_subset_of(parent_cap) {
+                                errors.push(NewCapListSubsetError {
+                                    index: i,
+                                });
+                            }
+                        },
+                        None => {
+                            errors.push(NewCapListSubsetError {
+                                index: i,
+                            });
+                        }
+                    };
+                },
+                Capability::ProcedureEntry(cap) => {
+                    let caps_of_type = &caps.proc_entry_caps;
+                    match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(parent_cap) => {
+                            if !cap.is_subset_of(parent_cap) {
+                                errors.push(NewCapListSubsetError {
+                                    index: i,
+                                });
+                            }
+                        },
+                        None => {
+                            errors.push(NewCapListSubsetError {
+                                index: i,
+                            });
+                        }
+                    };
+                },
+                Capability::StoreWrite(cap) => {
+                    let caps_of_type = &caps.store_write_caps;
+                    match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(parent_cap) => {
+                            if !cap.is_subset_of(parent_cap) {
+                                errors.push(NewCapListSubsetError {
+                                    index: i,
+                                });
+                            }
+                        },
+                        None => {
+                            errors.push(NewCapListSubsetError {
+                                index: i,
+                            });
+                        }
+                    };
+                },
+                Capability::Log(cap) => {
+                    let caps_of_type = &caps.log_caps;
+                    match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(parent_cap) => {
+                            if !cap.is_subset_of(parent_cap) {
+                                errors.push(NewCapListSubsetError {
+                                    index: i,
+                                });
+                            }
+                        },
+                        None => {
+                            errors.push(NewCapListSubsetError {
+                                index: i,
+                            });
+                        }
+                    };
+                },
+                Capability::AccountCall(cap) => {
+                    let caps_of_type = &caps.account_call_caps;
+                    match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(parent_cap) => {
+                            if !cap.is_subset_of(parent_cap) {
+                                errors.push(NewCapListSubsetError {
+                                    index: i,
+                                });
+                            }
+                        },
+                        None => {
+                            errors.push(NewCapListSubsetError {
+                                index: i,
+                            });
+                        }
+                    };
+                },
+            }
+        }
+        errors
+    }
+
+    /// A simple boolean check to see if the NewCapList is a valid subset of the
+    /// existing capabilities.
+    pub fn is_subset_of(&self, caps: Capabilities) -> bool {
+        let NewCapList(new_caps) = self;
+        for new_cap in new_caps {
+            match &new_cap.cap {
+                Capability::ProcedureCall(cap) => {
+                    let caps_of_type = &caps.proc_call_caps;
+                    let parent_cap = match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(x) => x,
+                        None => return false,
+                    };
+                    if !cap.is_subset_of(&parent_cap) {
+                        return false;
+                    }
+                },
+                Capability::ProcedureRegister(cap) => {
+                    let caps_of_type = &caps.proc_register_caps;
+                    let parent_cap = match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(x) => x,
+                        None => return false,
+                    };
+                    if !cap.is_subset_of(&parent_cap) {
+                        return false;
+                    }
+                },
+                Capability::ProcedureDelete(cap) => {
+                    let caps_of_type = &caps.proc_delete_caps;
+                    let parent_cap = match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(x) => x,
+                        None => return false,
+                    };
+                    if !cap.is_subset_of(&parent_cap) {
+                        return false;
+                    }
+                },
+                Capability::ProcedureEntry(cap) => {
+                    let caps_of_type = &caps.proc_entry_caps;
+                    let parent_cap = match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(x) => x,
+                        None => return false,
+                    };
+                    if !cap.is_subset_of(&parent_cap) {
+                        return false;
+                    }
+                },
+                Capability::StoreWrite(cap) => {
+                    let caps_of_type = &caps.store_write_caps;
+                    let parent_cap = match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(x) => x,
+                        None => return false,
+                    };
+                    if !cap.is_subset_of(&parent_cap) {
+                        return false;
+                    }
+                },
+                Capability::Log(cap) => {
+                    let caps_of_type = &caps.log_caps;
+                    let parent_cap = match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(x) => x,
+                        None => return false,
+                    };
+                    if !cap.is_subset_of(&parent_cap) {
+                        return false;
+                    }
+                },
+                Capability::AccountCall(cap) => {
+                    let caps_of_type = &caps.account_call_caps;
+                    let parent_cap = match caps_of_type.get(new_cap.parent_index as usize) {
+                        Some(x) => x,
+                        None => return false,
+                    };
+                    if !cap.is_subset_of(&parent_cap) {
+                        return false;
+                    }
+                },
+            }
+        }
+        true
+    }
+}
+
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Capabilities {
+    pub proc_call_caps: Vec<ProcedureCallCap>,
+    pub proc_register_caps: Vec<ProcedureRegisterCap>,
+    pub proc_delete_caps: Vec<ProcedureDeleteCap>,
+    pub proc_entry_caps: Vec<ProcedureEntryCap>,
+    pub store_write_caps: Vec<StoreWriteCap>,
+    pub log_caps: Vec<LogCap>,
+    pub account_call_caps: Vec<AccountCallCap>,
+}
+
+impl Capabilities {
+    /// Create Empty CapList
+    pub fn new() -> Self {
+        Capabilities {
+            proc_call_caps: Vec::new(),
+            proc_register_caps: Vec::new(),
+            proc_delete_caps: Vec::new(),
+            proc_entry_caps: Vec::new(),
+            store_write_caps: Vec::new(),
+            log_caps: Vec::new(),
+            account_call_caps: Vec::new(),
+        }
+    }
+
+    /// Create from list of Caps
+    pub fn from(caps: Vec<Capability>) -> Self {
+        let mut full_caps = Capabilities::new();
+        for cap in caps {
+            match cap {
+                Capability::ProcedureCall(cap) => {full_caps.proc_call_caps.push(cap);},
+                Capability::ProcedureRegister(cap) => {full_caps.proc_register_caps.push(cap);},
+                Capability::ProcedureDelete(cap) => {full_caps.proc_delete_caps.push(cap);},
+                Capability::ProcedureEntry(cap) => {full_caps.proc_entry_caps.push(cap);},
+                Capability::StoreWrite(cap) => {full_caps.store_write_caps.push(cap);},
+                Capability::Log(cap) => {full_caps.log_caps.push(cap);},
+                Capability::AccountCall(cap) => {full_caps.account_call_caps.push(cap);},
+            }
+        }
+        full_caps
+    }
+
+    pub fn len(&self) -> usize {
+        self.proc_call_caps.len()
+            + self.proc_register_caps.len()
+            + self.proc_delete_caps.len()
+            + self.proc_entry_caps.len()
+            + self.store_write_caps.len()
+            + self.log_caps.len()
+            + self.account_call_caps.len()
+    }
+}
+
+impl From<Vec<Capability>> for Capabilities {
+    fn from(caps: Vec<Capability>) -> Self {
+        Capabilities::from(caps)
+    }
+}
+
+use std::fmt;
+impl fmt::Display for Capabilities {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.proc_call_caps.len() > 0 {
+            write!(f, "    CAP_PROC_CALL({}):\n", self.proc_call_caps.len())?;
+            for (i, cap) in self.proc_call_caps.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.proc_register_caps.len() > 0 {
+            write!(f, "    CAP_PROC_REGISTER({}):\n", self.proc_register_caps.len())?;
+            for (i, cap) in self.proc_register_caps.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.proc_delete_caps.len() > 0 {
+            write!(f, "    CAP_PROC_DELETE({}):\n", self.proc_delete_caps.len())?;
+            for (i, cap) in self.proc_delete_caps.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.proc_entry_caps.len() > 0 {
+            write!(f, "    CAP_PROC_CALL({}):\n", self.proc_entry_caps.len())?;
+            for (i, cap) in self.proc_entry_caps.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.store_write_caps.len() > 0 {
+            write!(f, "    CAP_STORE_WRITE({}):\n", self.store_write_caps.len())?;
+            for (i, cap) in self.store_write_caps.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.log_caps.len() > 0 {
+            write!(f, "    CAP_LOG({}):\n", self.log_caps.len())?;
+            for (i, cap) in self.log_caps.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        if self.account_call_caps.len() > 0 {
+            write!(f, "    CAP_ACC_CALL({}):\n", self.account_call_caps.len())?;
+            for (i, cap) in self.account_call_caps.iter().enumerate() {
+                write!(f, "        {}: {}\n", i, cap)?;
+            }
+        }
+        write!(f, "")
     }
 }
 

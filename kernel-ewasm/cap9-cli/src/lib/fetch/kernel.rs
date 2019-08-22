@@ -91,14 +91,14 @@ impl<'a, 'b, T: Transport> DeployedKernel<'a, 'b, T> {
             let address_raw: H256 = self.conn.web3.eth().storage(kernel_address, U256::from_big_endian(&proc_pointer.get_addr_ptr()), None).wait().expect("proc key raw");
             let address = Address::from_slice(&address_raw[12..]);
 
-            let caps = Caps {
-                proc_call: parse_procs(self.conn, kernel_address.clone(), proc_pointer.clone(), CAP_PROC_CALL),
-                proc_register: parse_procs(self.conn, kernel_address.clone(), proc_pointer.clone(), CAP_PROC_REGISTER),
-                proc_delete: parse_procs(self.conn, kernel_address.clone(), proc_pointer.clone(), CAP_PROC_DELETE),
-                proc_entry: parse_procs(self.conn, kernel_address.clone(), proc_pointer.clone(), CAP_PROC_ENTRY),
-                store_write: parse_procs(self.conn, kernel_address.clone(), proc_pointer.clone(), CAP_STORE_WRITE),
-                log: parse_procs(self.conn, kernel_address.clone(), proc_pointer.clone(), CAP_LOG),
-                acc_call: parse_procs(self.conn, kernel_address.clone(), proc_pointer.clone(), CAP_ACC_CALL),
+            let caps = Capabilities {
+                proc_call_caps:     parse_proc_call_caps(self.conn, kernel_address.clone(), proc_pointer.clone()),
+                proc_register_caps: parse_proc_register_caps(self.conn, kernel_address.clone(), proc_pointer.clone()),
+                proc_delete_caps:   parse_proc_delete_caps(self.conn, kernel_address.clone(), proc_pointer.clone()),
+                proc_entry_caps:    parse_proc_entry_caps(self.conn, kernel_address.clone(), proc_pointer.clone()),
+                store_write_caps:   parse_store_write_caps(self.conn, kernel_address.clone(), proc_pointer.clone()),
+                log_caps:           parse_log_caps(self.conn, kernel_address.clone(), proc_pointer.clone()),
+                account_call_caps:  parse_account_call_caps(self.conn, kernel_address.clone(), proc_pointer.clone()),
             };
 
             let procedure = Procedure {
@@ -110,6 +110,18 @@ impl<'a, 'b, T: Transport> DeployedKernel<'a, 'b, T> {
             procs.push(procedure);
         }
         procs
+    }
+
+    /// Retrieve a specific procedure.
+    /// TODO: this is currently inefficient as it retrieves all procs first.
+    pub fn procedure(&self, proc_key: cap9_std::SysCallProcedureKey) -> Option<Procedure> {
+        let procs = self.procedures();
+        for procedure in procs {
+            if procedure.key == proc_key.0 {
+                return Some(procedure);
+            }
+        }
+        None
     }
 }
 
@@ -160,7 +172,138 @@ fn parse_procs<T: Transport>(conn: &EthConn<T>, kernel_address: Address, proc_po
     proc_call_caps
 }
 
+fn parse_proc_call_caps<T: Transport>(conn: &EthConn<T>, kernel_address: Address, proc_pointer: ProcPointer) -> Vec<ProcedureCallCap> {
+    let cap_type: u8 = CAP_PROC_CALL;
+    let n_caps = U256::from_big_endian(&conn.web3.eth().storage(kernel_address, U256::from_big_endian(&proc_pointer.get_cap_type_len_ptr(cap_type)), None).wait().expect("proc key raw").to_fixed_bytes());
+    let mut caps = Vec::new();
+    for i in 0..(n_caps.as_u64() as u8 ) {
+        let mut caps_reader = CapReader {
+            conn: conn,
+            kernel_address,
+            proc_pointer: proc_pointer.clone(),
+            cap_type: cap_type,
+            cap_index: i,
+            current_val: 0,
+        };
+        let procedure = ProcedureCallCap::deserialize(&mut caps_reader);
+        caps.push(procedure.unwrap());
+    }
+    caps
+}
 
+fn parse_proc_register_caps<T: Transport>(conn: &EthConn<T>, kernel_address: Address, proc_pointer: ProcPointer) -> Vec<ProcedureRegisterCap> {
+    let cap_type: u8 = CAP_PROC_REGISTER;
+    let n_caps = U256::from_big_endian(&conn.web3.eth().storage(kernel_address, U256::from_big_endian(&proc_pointer.get_cap_type_len_ptr(cap_type)), None).wait().expect("proc key raw").to_fixed_bytes());
+    let mut caps = Vec::new();
+    for i in 0..(n_caps.as_u64() as u8 ) {
+        let mut caps_reader = CapReader {
+            conn: conn,
+            kernel_address,
+            proc_pointer: proc_pointer.clone(),
+            cap_type: cap_type,
+            cap_index: i,
+            current_val: 0,
+        };
+        let procedure = ProcedureRegisterCap::deserialize(&mut caps_reader);
+        caps.push(procedure.unwrap());
+    }
+    caps
+}
+
+fn parse_proc_delete_caps<T: Transport>(conn: &EthConn<T>, kernel_address: Address, proc_pointer: ProcPointer) -> Vec<ProcedureDeleteCap> {
+    let cap_type: u8 = CAP_PROC_DELETE;
+    let n_caps = U256::from_big_endian(&conn.web3.eth().storage(kernel_address, U256::from_big_endian(&proc_pointer.get_cap_type_len_ptr(cap_type)), None).wait().expect("proc key raw").to_fixed_bytes());
+    let mut caps = Vec::new();
+    for i in 0..(n_caps.as_u64() as u8 ) {
+        let mut caps_reader = CapReader {
+            conn: conn,
+            kernel_address,
+            proc_pointer: proc_pointer.clone(),
+            cap_type: cap_type,
+            cap_index: i,
+            current_val: 0,
+        };
+        let procedure = ProcedureDeleteCap::deserialize(&mut caps_reader);
+        caps.push(procedure.unwrap());
+    }
+    caps
+}
+
+fn parse_proc_entry_caps<T: Transport>(conn: &EthConn<T>, kernel_address: Address, proc_pointer: ProcPointer) -> Vec<ProcedureEntryCap> {
+    let cap_type: u8 = CAP_PROC_ENTRY;
+    let n_caps = U256::from_big_endian(&conn.web3.eth().storage(kernel_address, U256::from_big_endian(&proc_pointer.get_cap_type_len_ptr(cap_type)), None).wait().expect("proc key raw").to_fixed_bytes());
+    let mut caps = Vec::new();
+    for i in 0..(n_caps.as_u64() as u8 ) {
+        let mut caps_reader = CapReader {
+            conn: conn,
+            kernel_address,
+            proc_pointer: proc_pointer.clone(),
+            cap_type: cap_type,
+            cap_index: i,
+            current_val: 0,
+        };
+        let procedure = ProcedureEntryCap::deserialize(&mut caps_reader);
+        caps.push(procedure.unwrap());
+    }
+    caps
+}
+
+fn parse_store_write_caps<T: Transport>(conn: &EthConn<T>, kernel_address: Address, proc_pointer: ProcPointer) -> Vec<StoreWriteCap> {
+    let cap_type: u8 = CAP_STORE_WRITE;
+    let n_caps = U256::from_big_endian(&conn.web3.eth().storage(kernel_address, U256::from_big_endian(&proc_pointer.get_cap_type_len_ptr(cap_type)), None).wait().expect("proc key raw").to_fixed_bytes());
+    let mut caps = Vec::new();
+    for i in 0..(n_caps.as_u64() as u8 ) {
+        let mut caps_reader = CapReader {
+            conn: conn,
+            kernel_address,
+            proc_pointer: proc_pointer.clone(),
+            cap_type: cap_type,
+            cap_index: i,
+            current_val: 0,
+        };
+        let procedure = StoreWriteCap::deserialize(&mut caps_reader);
+        caps.push(procedure.unwrap());
+    }
+    caps
+}
+
+fn parse_log_caps<T: Transport>(conn: &EthConn<T>, kernel_address: Address, proc_pointer: ProcPointer) -> Vec<LogCap> {
+    let cap_type: u8 = CAP_LOG;
+    let n_caps = U256::from_big_endian(&conn.web3.eth().storage(kernel_address, U256::from_big_endian(&proc_pointer.get_cap_type_len_ptr(cap_type)), None).wait().expect("proc key raw").to_fixed_bytes());
+    let mut caps = Vec::new();
+    for i in 0..(n_caps.as_u64() as u8 ) {
+        let mut caps_reader = CapReader {
+            conn: conn,
+            kernel_address,
+            proc_pointer: proc_pointer.clone(),
+            cap_type: cap_type,
+            cap_index: i,
+            current_val: 0,
+        };
+        let procedure = LogCap::deserialize(&mut caps_reader);
+        caps.push(procedure.unwrap());
+    }
+    caps
+}
+
+fn parse_account_call_caps<T: Transport>(conn: &EthConn<T>, kernel_address: Address, proc_pointer: ProcPointer) -> Vec<AccountCallCap> {
+    let cap_type: u8 = CAP_ACC_CALL;
+    let n_caps = U256::from_big_endian(&conn.web3.eth().storage(kernel_address, U256::from_big_endian(&proc_pointer.get_cap_type_len_ptr(cap_type)), None).wait().expect("proc key raw").to_fixed_bytes());
+    let mut caps = Vec::new();
+    for i in 0..(n_caps.as_u64() as u8 ) {
+        let mut caps_reader = CapReader {
+            conn: conn,
+            kernel_address,
+            proc_pointer: proc_pointer.clone(),
+            cap_type: cap_type,
+            cap_index: i,
+            current_val: 0,
+        };
+        let procedure = AccountCallCap::deserialize(&mut caps_reader);
+        caps.push(procedure.unwrap());
+    }
+    caps
+}
 struct CapReader<'a, T> where T: Transport {
     conn: &'a EthConn<T>,
     kernel_address: Address,
@@ -185,35 +328,14 @@ impl<'a, T: Transport> Read<pwasm_abi::types::U256> for CapReader<'a, T> {
         1_usize
     }
 }
-#[derive(Clone, Debug)]
-pub struct Caps {
-    pub proc_call: Vec<Capability>,
-    pub proc_register: Vec<Capability>,
-    pub proc_delete: Vec<Capability>,
-    pub proc_entry: Vec<Capability>,
-    pub store_write: Vec<Capability>,
-    pub log: Vec<Capability>,
-    pub acc_call: Vec<Capability>,
-}
 
-impl Caps {
-    pub fn len(&self) -> usize {
-        self.proc_call.len()
-            + self.proc_register.len()
-            + self.proc_delete.len()
-            + self.proc_entry.len()
-            + self.store_write.len()
-            + self.log.len()
-            + self.acc_call.len()
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct Procedure {
     pub key: [u8; 24],
     pub index: U256,
     pub address: Address,
-    pub caps: Caps,
+    pub caps: Capabilities,
 }
 
 impl fmt::Display for Procedure {
@@ -222,54 +344,6 @@ impl fmt::Display for Procedure {
         let key_utf8: &str = std::str::from_utf8(&self.key).unwrap().trim_end_matches('\0');
         write!(f, "Procedure[{}]: 0x{} (\"{}\")\n  Address: {:?}\n  Caps({}):\n{}",
             self.index.as_u64(), key_hex, key_utf8, self.address, self.caps.len(), self.caps)
-    }
-}
-
-impl fmt::Display for Caps {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.proc_call.len() > 0 {
-            write!(f, "    CAP_PROC_CALL({}):\n", self.proc_call.len())?;
-            for (i, cap) in self.proc_call.iter().enumerate() {
-                write!(f, "        {}: {}\n", i, cap)?;
-            }
-        }
-        if self.proc_register.len() > 0 {
-            write!(f, "    CAP_PROC_REGISTER({}):\n", self.proc_register.len())?;
-            for (i, cap) in self.proc_register.iter().enumerate() {
-                write!(f, "        {}: {}\n", i, cap)?;
-            }
-        }
-        if self.proc_delete.len() > 0 {
-            write!(f, "    CAP_PROC_DELETE({}):\n", self.proc_delete.len())?;
-            for (i, cap) in self.proc_delete.iter().enumerate() {
-                write!(f, "        {}: {}\n", i, cap)?;
-            }
-        }
-        if self.proc_entry.len() > 0 {
-            write!(f, "    CAP_PROC_CALL({}):\n", self.proc_entry.len())?;
-            for (i, cap) in self.proc_entry.iter().enumerate() {
-                write!(f, "        {}: {}\n", i, cap)?;
-            }
-        }
-        if self.store_write.len() > 0 {
-            write!(f, "    CAP_STORE_WRITE({}):\n", self.store_write.len())?;
-            for (i, cap) in self.store_write.iter().enumerate() {
-                write!(f, "        {}: {}\n", i, cap)?;
-            }
-        }
-        if self.log.len() > 0 {
-            write!(f, "    CAP_LOG({}):\n", self.log.len())?;
-            for (i, cap) in self.log.iter().enumerate() {
-                write!(f, "        {}: {}\n", i, cap)?;
-            }
-        }
-        if self.acc_call.len() > 0 {
-            write!(f, "    CAP_ACC_CALL({}):\n", self.acc_call.len())?;
-            for (i, cap) in self.acc_call.iter().enumerate() {
-                write!(f, "        {}: {}\n", i, cap)?;
-            }
-        }
-        write!(f, "")
     }
 }
 

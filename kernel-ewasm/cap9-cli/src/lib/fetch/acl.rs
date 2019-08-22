@@ -165,6 +165,22 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
         Ok(())
     }
 
+    pub fn group_key(&self, index: u8) -> Option<cap9_std::SysCallProcedureKey> {
+        // Currently we assume the group map is at cap index 1
+        let groups: LocalEnumerableMap<_, u8, cap9_std::SysCallProcedureKey> = LocalEnumerableMap::from(&self.kernel, 1).expect("could not create group map");
+        groups.get(index)
+    }
+
+    pub fn admin_proc_key(&self) -> Option<cap9_std::SysCallProcedureKey> {
+        self.group_key(1_u8)
+    }
+
+    // pub fn group(&self, index: u8) -> Option<Group> {
+    //     // Currently we assume the group map is at cap index 1
+    //     let groups: LocalEnumerableMap<_, u8, cap9_std::SysCallProcedureKey> = LocalEnumerableMap::from(&self.kernel, 1).expect("could not create group map");
+    //     groups.get(index)
+    // }
+
     /// Simply take a contract, deploy it, and register it as a procedure.
     pub fn deploy_procedure(&self, proc_name: String, proc_spec: ProcSpec) -> Result<(), ProjectDeploymentError> {
         let proc_key = crate::utils::string_to_proc_key(proc_name);
@@ -174,9 +190,12 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
 
         let cap_index = 0;
         let contract = proc_spec.contract_spec.deploy(&self.kernel.conn, ( )).unwrap();
-        // TODO: check that the caps are ok client-side
+        let existing_caps: Capabilities = self.kernel.procedure(self.admin_proc_key().expect("no admin key")).expect("no admin proc").caps.into();
+        let cap_test = caps.check_subset_of(existing_caps);
+        if cap_test.len() != 0 {
+            panic!("invalid caps: {:?}", cap_test);
+        }
         let cap_list: Vec<U256> = caps.to_u256_list().into_iter().map(from_common_u256).collect();
-
         let _proxied_admin_contract = web3::contract::Contract::from_json(
                 self.kernel.conn.web3.eth(),
                 self.kernel.address(),
