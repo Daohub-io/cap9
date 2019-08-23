@@ -275,6 +275,7 @@ jobs:
             cd cap9/kernel-ewasm/cap9-cli
             cargo test
 
+
 workflows:
   version: 2
   build-test:
