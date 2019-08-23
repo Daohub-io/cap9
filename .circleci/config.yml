@@ -65,6 +65,7 @@ jobs:
             - deps11-parity
       - run:
           name: Install Parity
+          no_output_timeout: 1.25h
           command: |
             cd ..
             pwd
@@ -274,7 +275,6 @@ jobs:
             . ~/.profile
             cd cap9/kernel-ewasm/cap9-cli
             cargo test
-
 
 workflows:
   version: 2
