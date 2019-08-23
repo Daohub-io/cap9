@@ -190,7 +190,7 @@ jobs:
             cd cap9
             cd kernel-ewasm && ./scripts/build.sh
       - save_cache:
-          key: deps11-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps11-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -209,7 +209,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps11-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps11-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
             - deps11-ewasm-{{ .Branch }}-
             - deps11-ewasm
       - run:
