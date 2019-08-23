@@ -60,9 +60,9 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - deps10-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
-            - deps10-parity-{{ .Branch }}
-            - deps10-parity
+            - deps11-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
+            - deps11-parity-{{ .Branch }}
+            - deps11-parity
       - run:
           name: Install Parity
           command: |
@@ -117,7 +117,7 @@ jobs:
           paths:
             - parity
       - save_cache:
-          key: deps10-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
+          key: deps11-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -130,9 +130,9 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps10-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps10-ewasm-{{ .Branch }}-
-            - deps10-ewasm
+            - deps11-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps11-ewasm-{{ .Branch }}-
+            - deps11-ewasm
       - run:
           name: Install native build prequisites
           command: |
@@ -189,7 +189,7 @@ jobs:
             cd cap9
             cd kernel-ewasm && ./scripts/build.sh
       - save_cache:
-          key: deps10-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps11-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -208,9 +208,9 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps10-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps10-ewasm-{{ .Branch }}-
-            - deps10-ewasm
+            - deps11-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps11-ewasm-{{ .Branch }}-
+            - deps11-ewasm
       - run:
           name: Install native build prequisites
           command: |
@@ -264,7 +264,7 @@ jobs:
             cd cap9/kernel-ewasm/cap9-cli
             cargo build
       - save_cache:
-          key: deps10-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps11-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -274,7 +274,6 @@ jobs:
             . ~/.profile
             cd cap9/kernel-ewasm/cap9-cli
             cargo test
-
 
 workflows:
   version: 2
