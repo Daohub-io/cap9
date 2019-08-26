@@ -10,6 +10,8 @@ use clap::{Arg, App, SubCommand, AppSettings};
 // use web3::futures::Future;
 use web3::types::{Address};
 use web3::contract::{Contract, Options};
+use ethabi::token::Tokenizer;
+
 use cap9_std::data::{Keyable, Storable};
 
 use std::fs::create_dir;
@@ -145,29 +147,24 @@ fn main() {
         // let local_project = project::LocalProject::read();
     } else if let Some(call_matches) = matches.subcommand_matches("call") {
         let function_name = call_matches.value_of("FUNCTION-NAME").expect("No code file");
-        // TODO: we need to parse these inputs
-        let inputs: Vec<&str> = match call_matches.values_of("INPUTS") {
-            Some(vals) => vals.collect(),
-            None => Vec::new(),
-        };
 
         let network: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         let local_project = project::LocalProject::read();
         let kernel = DeployedKernel::new(&network, local_project);
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
 
-        let result = kernel_with_acl.call(function_name, &vec![]);
+        // TODO: we need to parse these inputs
+        let inputs: Vec<ethabi::Token> = match call_matches.values_of("INPUTS") {
+            Some(vals) => vals.map(|s| ethabi::token::LenientTokenizer::tokenize(&ethabi::ParamType::Address, s).unwrap()).collect(),
+            None => Vec::new(),
+        };
+        println!("inputs: {:?}", inputs);
+        let result = kernel_with_acl.call(function_name, &inputs);
         println!("result: {:?}", result);
         // Read the local project from out current directory.
         // let local_project = project::LocalProject::read();
     } else if let Some(query_matches) = matches.subcommand_matches("query") {
         let function_name = query_matches.value_of("FUNCTION-NAME").expect("No code file");
-        // TODO: we need to parse these inputs
-        let inputs: Vec<&str> = match query_matches.values_of("INPUTS") {
-            Some(vals) => vals.collect(),
-            None => Vec::new(),
-        };
-
 
         let network: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         let local_project = project::LocalProject::read();
@@ -183,8 +180,27 @@ fn main() {
         let abi = ethabi::Contract::load(abi_file).unwrap();
         // How do we determine what the return type should be? We need the ABI,
         // but how do we make it interact nicely?
-        let result: Vec<ethabi::Token> = kernel_with_acl.query(function_name, &vec![]).unwrap();
+
+        // TODO: use the ABI to parse inputs
+        println!("function: {:?}", abi.functions.get(function_name));
+        let inputs: Vec<ethabi::Token> = match query_matches.values_of("INPUTS") {
+            Some(vals) => vals
+                .zip(abi.functions.get(function_name).unwrap().inputs.clone())
+                .map(|(s, input)|
+                    ethabi::token::LenientTokenizer::tokenize(&input.kind, s).expect("input parse failure")
+                )
+                .collect(),
+            None => Vec::new(),
+        };
+        println!("addr: {:?}", kernel_with_acl.kernel.conn.sender);
+        println!("inputs: {:?}", inputs);
+        let result: Vec<ethabi::Token> = kernel_with_acl.query(function_name, &inputs).unwrap();
         println!("result: {:?}", result);
+        // result.iter().zip(abi.functions.get(function_name).unwrap().outputs)
+        //     .map(|tok, output|
+        //         tok
+        //         // ethabi::token::LenientTokenizer::tokenize(&output.kind, s).expect("input parse failure")
+        //     );
         // Read the local project from out current directory.
         // let local_project = project::LocalProject::read();
     } else if let Some(new_group_matches) = matches.subcommand_matches("new-group") {
