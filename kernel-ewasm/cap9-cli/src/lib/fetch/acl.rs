@@ -35,13 +35,13 @@ use super::kernel::*;
 use super::map::*;
 
 /// As with [DeployKernel] but with a standard ACL.
-pub struct DeployedKernelWithACL<'a, 'b, T: Transport> {
-    pub kernel: DeployedKernel<'a, 'b, T>,
+pub struct DeployedKernelWithACL<'a, T: Transport> {
+    pub kernel: DeployedKernel<'a, T>,
 }
 
-impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
+impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
 
-    pub fn new(kernel: DeployedKernel<'a, 'b, T>) -> Self {
+    pub fn new(kernel: DeployedKernel<'a, T>) -> Self {
         DeployedKernelWithACL {
             kernel: kernel,
         }
@@ -182,7 +182,7 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
     // }
 
     /// Simply take a contract, deploy it, and register it as a procedure.
-    pub fn deploy_procedure(&self, proc_name: String, proc_spec: ProcSpec) -> Result<(), ProjectDeploymentError> {
+    pub fn deploy_procedure(&mut self, proc_name: String, proc_spec: ProcSpec) -> Result<(), ProjectDeploymentError> {
         let proc_key = crate::utils::string_to_proc_key(proc_name);
 
         let cap_file = File::open(proc_spec.cap_path).expect("could not open file");
@@ -235,8 +235,24 @@ impl<'a, 'b, T: Transport> DeployedKernelWithACL<'a, 'b, T> {
         if reg_receipt.status != Some(web3::types::U64::one()) {
             panic!("ACL register proc failed!");
         }
+        // Add the ABI to the status file.
+        let status_file: &mut StatusFile = (&mut self.kernel.local_project).status_file_mut().as_mut().unwrap();
+        status_file.add_abi(contract.address(), PathBuf::from(proc_spec.contract_spec.abi_path));
+        // Rewrite the status file to disk.
+        self.kernel.local_project.write_status_file();
         Ok(())
     }
+
+    // pub fn abis(&self, proc_key: cap9_std::SysCallProcedureKey) -> Option<Procedure> {
+    //     let status_file = self.kernel.local_project.status_file()?;
+    //     let procs = self.procedures();
+    //     for procedure in procs {
+    //         if procedure.key == proc_key.0 {
+    //             return Some(procedure);
+    //         }
+    //     }
+    //     None
+    // }
 }
 
 #[derive(Clone, Debug)]

@@ -55,7 +55,7 @@ mod integration {
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
         let local_project = project::LocalProject::read_dir(&project_dir);
-        let kernel = DeployedKernel::new(&conn, &local_project);
+        let kernel = DeployedKernel::new(&conn, local_project);
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
         let groups_1 = kernel_with_acl.groups();
         assert_eq!(groups_1.len(), 1, "There should be one group, but there are {}", groups_1.len());

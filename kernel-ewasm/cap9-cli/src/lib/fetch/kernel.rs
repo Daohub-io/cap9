@@ -26,23 +26,23 @@ use crate::utils::{from_common_u256, to_common_u256, to_common_h256,
 use std::collections::{HashMap, HashSet};
 /// A representation and connection to a deployed kernel. This has both a
 /// connection to the node and a filesystem representation.
-pub struct DeployedKernel<'a, 'b, T: Transport> {
+pub struct DeployedKernel<'a, T: Transport> {
     pub conn: &'a EthConn<T>,
-    local_project: &'b LocalProject,
-    address: Address,
+    pub local_project: LocalProject,
+    pub address: Address,
 }
 
-impl<'a, 'b, T: Transport> DeployedKernel<'a, 'b, T> {
+impl<'a, T: Transport> DeployedKernel<'a, T> {
 
-    pub fn new(conn: &'a EthConn<T>, local_project: &'b LocalProject,) -> Self {
-        let status_file = match local_project.status_file() {
-            Some(status_file) => status_file,
+    pub fn new(conn: &'a EthConn<T>, local_project: LocalProject,) -> Self {
+        let kernel_address = match local_project.status_file() {
+            Some(status_file) => status_file.kernel_address.clone(),
             None => panic!("Project not deployed"),
         };
         DeployedKernel {
             conn,
             local_project,
-            address: status_file.kernel_address
+            address: kernel_address
         }
     }
 

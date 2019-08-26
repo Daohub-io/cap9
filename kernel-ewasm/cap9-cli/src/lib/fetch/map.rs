@@ -30,7 +30,7 @@ use core::marker::PhantomData;
 use super::utils::*;
 use super::kernel::*;
 
-pub struct LocalEnumerableMap<'a, 'b, T: Transport, K: Keyable, V: Storable> {
+pub struct LocalEnumerableMap<'a, T: Transport, K: Keyable, V: Storable> {
     cap_index: u8,
     /// The start location of the map.
     location: H256,
@@ -41,12 +41,12 @@ pub struct LocalEnumerableMap<'a, 'b, T: Transport, K: Keyable, V: Storable> {
     /// Possible the cached number of elements in the map.
     length: Option<U256>,
     /// The deployed kernel used as the source of information
-    kernel: &'a DeployedKernel<'a, 'b, T>,
+    kernel: &'a DeployedKernel<'a, T>,
 }
 
-impl<'a, 'b, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, 'b, T, K, V> {
+impl<'a, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, T, K, V> {
 
-    pub fn from(kernel: &'a DeployedKernel<'a, 'b, T>, cap_index: u8) -> Result<Self, DataStructureError> {
+    pub fn from(kernel: &'a DeployedKernel<'a, T>, cap_index: u8) -> Result<Self, DataStructureError> {
         // The size of the cap needs to be key_width+1 in bytes
         let address_bytes = K::key_width()+1;
         let address_bits = address_bytes*8;
@@ -221,15 +221,15 @@ impl<'a, 'b, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, 'b, T
 
 
 /// An iterator over the keys and values of a [`StorageEnumerableMap`].
-pub struct LocalEnumerableMapIter<'a, 'b, 'c, T: Transport, K: Keyable, V: Storable> {
+pub struct LocalEnumerableMapIter<'a, 'b, T: Transport, K: Keyable, V: Storable> {
     /// The StorageVec we are iterating over.
-    storage_map: &'a LocalEnumerableMap<'b, 'c, T, K, V>,
+    storage_map: &'a LocalEnumerableMap<'b, T, K, V>,
     /// The current offset into the StorageVec.
     offset: U256,
 }
 
-impl<'a, 'b, 'c, T: Transport, K: Keyable, V: Storable> LocalEnumerableMapIter<'a, 'b, 'c, T, K, V> {
-    fn new(storage_map: &'a LocalEnumerableMap<'b, 'c, T, K, V>) -> Self {
+impl<'a, 'b, 'c, T: Transport, K: Keyable, V: Storable> LocalEnumerableMapIter<'a, 'b, T, K, V> {
+    fn new(storage_map: &'a LocalEnumerableMap<'b, T, K, V>) -> Self {
         LocalEnumerableMapIter {
             storage_map,
             offset: U256::zero(),
@@ -237,7 +237,7 @@ impl<'a, 'b, 'c, T: Transport, K: Keyable, V: Storable> LocalEnumerableMapIter<'
     }
 }
 
-impl<'a, 'b, 'c, T: Transport, K: Keyable, V: Storable> Iterator for LocalEnumerableMapIter<'a, 'b, 'c, T, K, V> {
+impl<'a, 'b, T: Transport, K: Keyable, V: Storable> Iterator for LocalEnumerableMapIter<'a, 'b, T, K, V> {
     type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {

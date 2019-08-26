@@ -25,6 +25,8 @@ use crate::constants::*;
 use cap9_std::proc_table::cap::*;
 use failure::Error;
 
+use std::collections::HashMap;
+
 #[derive(Serialize, Deserialize)]
 pub struct DeployFile {
     // pub sender: Address,
@@ -141,13 +143,20 @@ impl ContractSpec {
 #[derive(Serialize, Deserialize)]
 pub struct StatusFile {
     pub kernel_address: Address,
+    /// A map from Contract addresses to ABI files.
+    pub abis: HashMap<Address, PathBuf>,
 }
 
 impl StatusFile {
     pub fn new(address: Address) -> Self {
         StatusFile {
             kernel_address: address,
+            abis: HashMap::new(),
         }
+    }
+
+    pub fn add_abi(&mut self, contract_address: Address, abi_path: PathBuf) {
+        self.abis.insert(contract_address, abi_path);
     }
 }
 
@@ -286,6 +295,11 @@ impl LocalProject {
         &self.status_file
     }
 
+    pub fn status_file_mut(&mut self) -> &mut Option<StatusFile> {
+        &mut self.status_file
+    }
+
+    /// Write out a status file.
     pub fn add_status_file(&mut self, address: Address) {
         let status_file = StatusFile::new(address);
         let status_file_path: PathBuf = [&self.abs_path, &PathBuf::from("status.json")].iter().collect();
@@ -294,7 +308,14 @@ impl LocalProject {
         self.status_file = Some(status_file);
     }
 
-    pub fn deploy<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> Result<(),ProjectDeploymentError> {
+    pub fn write_status_file(&self) {
+        let status_file: &StatusFile = self.status_file().as_ref().unwrap();
+        let status_file_path: PathBuf = [&self.abs_path, &PathBuf::from("status.json")].iter().collect();
+        let out_file = File::create(status_file_path).expect("could not create status file");
+        serde_json::to_writer_pretty(out_file, &status_file).expect("could not serialise to file");
+    }
+
+    pub fn deploy<'a, 'b, T: Transport>(self, conn:  &'a EthConn<T>) -> Result<(),ProjectDeploymentError> {
         // Deploy initial procedure
         let deploy_file = self.deploy_file();
         if deploy_file.standard_acl_abi {
@@ -309,7 +330,7 @@ impl LocalProject {
         [&self.abs_path, path].iter().collect()
     }
 
-    pub fn deploy_std<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> Result<DeployedKernel<'a, 'b, T>, ProjectDeploymentError> {
+    pub fn deploy_std<'a, T: Transport>(mut self, conn:  &'a EthConn<T>) -> Result<DeployedKernel<'a, T>, ProjectDeploymentError> {
         let deploy_file = self.deploy_file();
         // Deploy initial procedure
         // TODO: does the initial procedure need contructor parameters?
@@ -333,7 +354,7 @@ impl LocalProject {
         Ok(DeployedKernel::new(conn, self))
     }
 
-    pub fn deploy_with_acl<'a, 'b, T: Transport>(&'b mut self, conn:  &'a EthConn<T>) -> Result<DeployedKernelWithACL<'a, 'b, T>, ProjectDeploymentError> {
+    pub fn deploy_with_acl<'a, T: Transport>(self, conn:  &'a EthConn<T>) -> Result<DeployedKernelWithACL<'a, T>, ProjectDeploymentError> {
         let deployed_kernel = self.deploy_std(conn)?;
         let proxied_init_contract = web3::contract::Contract::from_json(
                 conn.web3.eth(),

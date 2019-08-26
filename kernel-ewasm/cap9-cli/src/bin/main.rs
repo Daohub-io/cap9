@@ -104,7 +104,7 @@ fn main() {
         // Connect to a local network over http.
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
-        let mut local_project = project::LocalProject::read();
+        let local_project = project::LocalProject::read();
         // Deploy a kernel with the ACL Bootstrap procedure
         local_project.deploy(&conn).unwrap_or_else(|err| panic!("Deployment failure: {}", err));
     } else if let Some(new_group_matches) = matches.subcommand_matches("new-group") {
@@ -116,7 +116,7 @@ fn main() {
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
         let local_project = project::LocalProject::read();
-        let kernel = DeployedKernel::new(&conn, &local_project);
+        let kernel = DeployedKernel::new(&conn, local_project);
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
         let group_5_spec = project::ContractSpec::from_files(&code_file, &abi_file);
         kernel_with_acl.new_group(group_number, proc_name.to_string(), group_5_spec).unwrap();
@@ -129,8 +129,8 @@ fn main() {
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
         let local_project = project::LocalProject::read();
-        let kernel = DeployedKernel::new(&conn, &local_project);
-        let kernel_with_acl = DeployedKernelWithACL::new(kernel);
+        let kernel = DeployedKernel::new(&conn, local_project);
+        let mut kernel_with_acl = DeployedKernelWithACL::new(kernel);
         let contract_spec = project::ContractSpec::from_files(&code_file, &abi_file);
         let proc_spec = project::ProcSpec {
             contract_spec,
@@ -164,7 +164,7 @@ fn main() {
     } else if let Some(fetch_matches) = matches.subcommand_matches("fetch") {
         let network: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         let local_project = project::LocalProject::read();
-        let kernel = DeployedKernel::new(&network, &local_project);
+        let kernel = DeployedKernel::new(&network, local_project);
         if let Some(_procs_matches) = fetch_matches.subcommand_matches("procedures") {
             // List procedures
             let procs = kernel.procedures();
@@ -189,6 +189,13 @@ fn main() {
                     }
                 }
             } else if let Some(_users_matches) = acl_matches.subcommand_matches("users") {
+                let users = kernel_with_acl.users();
+                println!("# Users: {}", users.len());
+                for (k, v) in users.iter() {
+                    println!("  {}: {}", k, v);
+                }
+            } else if let Some(_users_matches) = acl_matches.subcommand_matches("abi") {
+                // Take the information from the ABI files.
                 let users = kernel_with_acl.users();
                 println!("# Users: {}", users.len());
                 for (k, v) in users.iter() {
