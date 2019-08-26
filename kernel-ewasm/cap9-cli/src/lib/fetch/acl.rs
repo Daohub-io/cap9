@@ -262,7 +262,7 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
     //     None
     // }
 
-    pub fn call(&self, function_name: &str, params: &[ethabi::Token]) {
+    pub fn call(&self, function_name: &str, params: &[ethabi::Token]) -> web3::types::TransactionReceipt {
         let file: &[u8] = default_procedures::ACL_ADMIN.abi();
         let admin_abi = ethabi::Contract::load(file).expect("no ABI");
         let proxied_entry_contract = web3::contract::Contract::from_json(
@@ -286,6 +286,7 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
         if reg_receipt.status != Some(web3::types::U64::one()) {
             panic!("Call to {} failed!", function_name);
         }
+        reg_receipt.clone()
     }
 
     pub fn query(&self, function_name: &str, params: &[ethabi::Token]) -> ethabi::Result<Vec<ethabi::Token>> {
