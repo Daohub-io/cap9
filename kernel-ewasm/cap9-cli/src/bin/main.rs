@@ -96,6 +96,8 @@ fn main() {
                         .about("List the groups in the ACL"))
                     .subcommand(SubCommand::with_name("users")
                         .about("List the users in the ACL"))
+                    .subcommand(SubCommand::with_name("abi")
+                        .about("List the functions of each procedure"))
                 )
             )
             .get_matches();
@@ -196,14 +198,49 @@ fn main() {
                 }
             } else if let Some(_users_matches) = acl_matches.subcommand_matches("abi") {
                 // Take the information from the ABI files.
-                let users = kernel_with_acl.users();
-                println!("# Users: {}", users.len());
-                for (k, v) in users.iter() {
-                    println!("  {}: {}", k, v);
+                let procs = kernel_with_acl.kernel.procedures();
+                let status_file: &project::StatusFile = kernel_with_acl.kernel.local_project.status_file().as_ref().unwrap();
+                // TODO: get proc names
+                for procedure in procs {
+                    // println!("{}", procedure.address);
+                    let path = status_file.abis.get(&procedure.address).unwrap();
+                    let ks = procedure.key;
+                    let key: String = ks.to_hex();
+                    let key_utf8: &str = std::str::from_utf8(&ks).unwrap().trim_end_matches('\0');
+                    println!("Procedure: 0x{} (\"{}\")", key, key_utf8);
+                    let abi_file = File::open(path).unwrap();
+                    let abi = ethabi::Contract::load(abi_file).unwrap();
+                    for function in abi.functions() {
+                        print!("  ");
+                        print_function(function);
+                    }
+                    println!("");
                 }
             } else {
                 println!("fetching acl stuff");
             }
         }
     }
+}
+
+fn print_function(function: &ethabi::Function) {
+    print!("{}: (", function.name);
+    for (i, param) in function.inputs.iter().enumerate() {
+        print_param(param);
+        if i+1 < function.outputs.len() {
+            print!(", ");
+        }
+    }
+    print!(") -> (");
+    for (i, param) in function.outputs.iter().enumerate() {
+        print_param(param);
+        if i+1 < function.outputs.len() {
+            print!(", ");
+        }
+    }
+    println!(")");
+}
+
+fn print_param(param: &ethabi::Param) {
+    print!("{}: {:?}", param.name, param.kind);
 }

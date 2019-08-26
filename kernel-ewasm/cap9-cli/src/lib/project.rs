@@ -122,7 +122,8 @@ impl ContractSpec {
     pub fn deploy<T: Transport, P: Tokenize>(&self, conn: &EthConn<T>, params: P) -> Result<Contract<T>, ContractDeploymentError> {
         let code: Vec<u8> = self.code();
         let abi: Vec<u8> = self.abi();
-        deploy_contract(conn, code, &abi, params)
+        let deploy_result = deploy_contract(conn, code, &abi, params);
+        deploy_result
     }
 
     pub fn code(&self) -> Vec<u8> {
@@ -350,22 +351,35 @@ impl LocalProject {
         let kernel_constructor_params = (proc_key, proc_address, encoded_cap_list);
         let kernel_contract = &deploy_file.kernel.deploy(&conn, kernel_constructor_params)
             .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "Kernel contract".to_string(), error: format!("{:?}", err)})?;
+
         self.add_status_file(kernel_contract.address());
         Ok(DeployedKernel::new(conn, self))
     }
 
     pub fn deploy_with_acl<'a, T: Transport>(self, conn:  &'a EthConn<T>) -> Result<DeployedKernelWithACL<'a, T>, ProjectDeploymentError> {
-        let deployed_kernel = self.deploy_std(conn)?;
+        let mut deployed_kernel = self.deploy_std(conn)?;
         let proxied_init_contract = web3::contract::Contract::from_json(
                 conn.web3.eth(),
                 deployed_kernel.address(),
                 ACL_BOOTSTRAP.abi(),
             )
             .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
+        let entry_path = ACL_ENTRY.write_abi(&deployed_kernel.local_project.abs_path);
+        let admin_path = ACL_ADMIN.write_abi(&deployed_kernel.local_project.abs_path);
         let entry_contract = deploy_contract(conn, ACL_ENTRY.code(), ACL_ENTRY.abi(), ( ))
             .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL entry contract".to_string(), error: format!("{:?}", err)})?;
+        {
+            let local_project: &mut LocalProject = &mut deployed_kernel.local_project;
+            let status_file: &mut StatusFile = local_project.status_file.as_mut().unwrap();
+            status_file.add_abi(entry_contract.address(), entry_path);
+        }
         let admin_contract = deploy_contract(conn, ACL_ADMIN.code(), ACL_ADMIN.abi(), ( ))
             .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL admin contract".to_string(), error: format!("{:?}", err)})?;
+        {
+            let local_project: &mut LocalProject = &mut deployed_kernel.local_project;
+            let status_file: &mut StatusFile = local_project.status_file.as_mut().unwrap();
+            status_file.add_abi(admin_contract.address(), admin_path);
+        }
         let entry_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("entry".to_string())).into();
         let admin_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("admin".to_string())).into();
         let prefix = 0;
@@ -481,6 +495,7 @@ impl LocalProject {
             let val = conn.web3.eth().storage(deployed_kernel.address(), key.as_fixed_bytes().into(), None).wait().expect("storage value");
             println!("key: {:?}, val: {:?}", key, val);
         }
+        deployed_kernel.local_project.write_status_file();
         Ok(DeployedKernelWithACL::new(deployed_kernel))
     }
 }
