@@ -2,7 +2,7 @@
 use web3::futures::Future;
 use web3::contract::{Contract, Options};
 use web3::types::{Address, U256, H256};
-use web3::contract::tokens::Tokenize;
+use web3::contract::tokens::{Tokenize, Detokenize};
 // use web3::types::TransactionReceipt;
 use web3::Transport;
 use rustc_hex::FromHex;
@@ -253,6 +253,57 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
     //     }
     //     None
     // }
+
+    pub fn call(&self, function_name: &str, params: &[ethabi::Token]) {
+        let file: &[u8] = default_procedures::ACL_ADMIN.abi();
+        let admin_abi = ethabi::Contract::load(file).expect("no ABI");
+        let proxied_entry_contract = web3::contract::Contract::from_json(
+                self.kernel.conn.web3.eth(),
+                self.kernel.address(),
+                default_procedures::ACL_ENTRY.abi(),
+            )
+            .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)}).unwrap();
+        let message: Vec<u8> = admin_abi
+                .function(function_name)
+                .and_then(|function| function.encode_input(params)).expect("message encoding failed");
+        self.kernel.conn.web3.personal().unlock_account(self.kernel.conn.sender, "user", None).wait().unwrap();
+        let res = proxied_entry_contract.call("proxy", (
+                message,
+            ), self.kernel.conn.sender,
+            Options::with(|opts| {
+                opts.gas = Some(550_621_180.into());
+            }),
+            ).wait().expect("proxy");
+        let reg_receipt = &self.kernel.conn.web3.eth().transaction_receipt(res).wait().expect("reg receipt").unwrap();
+        if reg_receipt.status != Some(web3::types::U64::one()) {
+            panic!("Call to {} failed!", function_name);
+        }
+    }
+
+    pub fn query(&self, function_name: &str, params: &[ethabi::Token]) -> ethabi::Result<Vec<ethabi::Token>> {
+        let file: &[u8] = default_procedures::ACL_ADMIN.abi();
+        let admin_abi = ethabi::Contract::load(file).expect("no ABI");
+        let proxied_entry_contract = web3::contract::Contract::from_json(
+                self.kernel.conn.web3.eth(),
+                self.kernel.address(),
+                default_procedures::ACL_ENTRY.abi(),
+            )
+            .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)}).unwrap();
+        let message: Vec<u8> = admin_abi
+                .function(function_name)
+                .and_then(|function| function.encode_input(params)).expect("message encoding failed");
+        self.kernel.conn.web3.personal().unlock_account(self.kernel.conn.sender, "user", None).wait().unwrap();
+        let res: ethabi::Result<Vec<ethabi::Token>> = proxied_entry_contract.query_tokens("proxy", (
+                message,
+            ), self.kernel.conn.sender,
+            admin_abi.function(function_name).unwrap(),
+            Options::with(|opts| {
+                opts.gas = Some(550_621_180.into());
+            }),
+            None,
+            ).map_err(|_| ethabi::Error::from_kind(ethabi::ErrorKind::Msg("bad query".to_string()))).wait();
+        res
+    }
 }
 
 #[derive(Clone, Debug)]
