@@ -77,6 +77,14 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
         users_map
     }
 
+    pub fn get_group_proc(&self, address: &Address) -> cap9_std::SysCallProcedureKey {
+        let users_map = self.users();
+        let user_group = users_map.get(address).unwrap();
+        let group_map = self.groups();
+        let group = group_map.get(user_group).unwrap();
+        group.procedure_key.clone()
+    }
+
     pub fn new_group(&self, group_number: u8, proc_name: String, group_proc: ContractSpec) -> Result<(), ProjectDeploymentError> {
         let proc_key = crate::utils::string_to_proc_key(proc_name);
         let cap_index = 0;

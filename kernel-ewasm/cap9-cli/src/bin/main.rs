@@ -171,17 +171,12 @@ fn main() {
         let kernel = DeployedKernel::new(&network, local_project);
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
 
-        let admin_proc_key = kernel_with_acl.admin_proc_key().unwrap();
-        let procedure = kernel_with_acl.kernel.procedure(admin_proc_key).unwrap();
+        let proc_key = kernel_with_acl.get_group_proc(&kernel_with_acl.kernel.conn.sender);
+        let procedure = kernel_with_acl.kernel.procedure(proc_key).unwrap();
         let status_file: &project::StatusFile = kernel_with_acl.kernel.local_project.status_file().as_ref().unwrap();
         let abi_path = status_file.abis.get(&procedure.address).unwrap();
-        println!("abi_path: {:?}", abi_path);
         let abi_file = File::open(abi_path).unwrap();
         let abi = ethabi::Contract::load(abi_file).unwrap();
-        // How do we determine what the return type should be? We need the ABI,
-        // but how do we make it interact nicely?
-
-        // TODO: use the ABI to parse inputs
         println!("function: {:?}", abi.functions.get(function_name));
         let inputs: Vec<ethabi::Token> = match query_matches.values_of("INPUTS") {
             Some(vals) => vals
@@ -196,13 +191,6 @@ fn main() {
         println!("inputs: {:?}", inputs);
         let result: Vec<ethabi::Token> = kernel_with_acl.query(function_name, &inputs).unwrap();
         println!("result: {:?}", result);
-        // result.iter().zip(abi.functions.get(function_name).unwrap().outputs)
-        //     .map(|tok, output|
-        //         tok
-        //         // ethabi::token::LenientTokenizer::tokenize(&output.kind, s).expect("input parse failure")
-        //     );
-        // Read the local project from out current directory.
-        // let local_project = project::LocalProject::read();
     } else if let Some(new_group_matches) = matches.subcommand_matches("new-group") {
         let group_number: u8 = new_group_matches.value_of("GROUP-NUMBER").expect("No code file").parse().unwrap();
         let proc_name = new_group_matches.value_of("PROCEDURE-NAME").expect("No code file");
