@@ -1,5 +1,4 @@
-use std::{fs, io};
-use std::path::PathBuf;
+use std::io;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use parity_wasm::elements;
 use parity_wasm::elements::{Instruction, Instructions};
@@ -198,7 +197,7 @@ pub fn execute_wasm_build(opts: &ArgMatches) {
     parity_wasm::serialize_to_file(&output_path, new_module).map_err(Error::Encoding).unwrap();
 }
 
-fn wasm_build(opts: &ArgMatches, module: Module) -> Module {
+pub fn wasm_build(opts: &ArgMatches, module: Module) -> Module {
     let runtime_type_version = if let (Some(runtime_type), Some(runtime_version))
          = (opts.value_of("runtime_type"), opts.value_of("runtime_version")) {
         let mut ty: [u8; 4] = Default::default();
@@ -218,7 +217,7 @@ fn wasm_build(opts: &ArgMatches, module: Module) -> Module {
         .map(|val| val.split(",").collect())
         .unwrap_or(Vec::new());
 
-    let target_runtime = match opts.value_of("target-runtime").expect("target-runtime has a default value; qed") {
+    let target_runtime = match opts.value_of("target-runtime").unwrap_or("pwasm") {
         "pwasm" => TargetRuntime::pwasm(),
         "substrate" => TargetRuntime::substrate(),
         _ => unreachable!("all possible values are enumerated in clap config; qed"),
@@ -261,7 +260,7 @@ pub fn execute_full(opts: &ArgMatches) {
 }
 
 /// Perform the operations necessary for cap9 procedures.
-fn contract_build(module: Module) -> Module {
+pub fn contract_build(module: Module) -> Module {
 
     // TODO: we need to make sure these values never change between now and when
     // we use them. In the current set up they will not, but it is fragile,
@@ -335,7 +334,7 @@ fn contract_build(module: Module) -> Module {
     new_module
 }
 
-fn set_mem(mut module: Module, num_pages: u32) -> Module {
+pub fn set_mem(mut module: Module, num_pages: u32) -> Module {
     // We want to find the single memory section, and change it from its current
     // value to the one we've requested.
     let mem_entry: &mut Vec<MemoryType> = module.memory_section_mut().unwrap().entries_mut();

@@ -2,6 +2,8 @@
 /// binary.
 use std::path::PathBuf;
 use std::io::prelude::*;
+use crate::project::ContractSpec;
+use std::convert::TryInto;
 
 pub struct DefaultProcedure {
     code: &'static [u8],
@@ -28,6 +30,27 @@ impl DefaultProcedure {
         let mut abi_file = std::fs::File::create(&path).expect(format!("Could not create file: {:?}", path).as_str());
         abi_file.write_all(self.abi()).unwrap();
         rel_path
+    }
+
+    pub fn write_code(&self, dir: &PathBuf) -> PathBuf {
+        let mut rel_path = PathBuf::new();
+        rel_path.push(format!("{}-code", self.name));
+        rel_path.set_extension("wasm");
+        let mut path = PathBuf::new();
+        path.push(dir);
+        path.push(rel_path.clone());
+        let mut abi_file = std::fs::File::create(&path).expect(format!("Could not create file: {:?}", path).as_str());
+        abi_file.write_all(&self.code()).unwrap();
+        rel_path
+    }
+
+    pub fn contract_spec(self, dir: &PathBuf) -> ContractSpec {
+        let code_path: String = self.write_code(dir).to_str().unwrap().to_string();
+        let abi_path: String = self.write_abi(dir).to_str().unwrap().to_string();
+        ContractSpec {
+            code_path,
+            abi_path,
+        }
     }
 }
 

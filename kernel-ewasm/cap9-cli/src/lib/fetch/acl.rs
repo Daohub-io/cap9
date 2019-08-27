@@ -73,7 +73,8 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
     pub fn new_group(&self, group_number: u8, proc_name: String, group_proc: ProcSpec) -> Result<(), ProjectDeploymentError> {
         let proc_key = crate::utils::string_to_proc_key(proc_name);
         let cap_index = 0;
-        let contract = group_proc.contract_spec.deploy(&self.kernel.conn, ( )).unwrap();
+        // Deploy the contract to the blockchain.
+        let contract = group_proc.deploy(&self.kernel.conn, ( )).unwrap();
 
         let cap_file = File::open(group_proc.cap_path).expect("could not open file");
         let crate::fetch::procedure::SerialNewCapList(caps) = serde_json::from_reader(cap_file).unwrap();
@@ -84,6 +85,7 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
             panic!("invalid caps: {:?}", cap_test);
         }
         let cap_list: Vec<U256> = caps.to_u256_list().into_iter().map(from_common_u256).collect();
+        // let cap_list: Vec<U256> = vec![];
 
         let _proxied_admin_contract = web3::contract::Contract::from_json(
                 self.kernel.conn.web3.eth(),
@@ -122,7 +124,7 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
             ).wait().expect("proxy");
         let reg_receipt = &self.kernel.conn.web3.eth().transaction_receipt(res).wait().expect("reg receipt").unwrap();
         if reg_receipt.status != Some(web3::types::U64::one()) {
-            panic!("ACL register proc failed!");
+            panic!("ACL register proc failed! {:?}", reg_receipt);
         }
         // use the kernel address as the test account
         let test_account = self.kernel.address().clone();
@@ -143,7 +145,7 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
             ).wait().expect("proxy");
         let new_group_receipt = &self.kernel.conn.web3.eth().transaction_receipt(res).wait().expect("new_group receipt").unwrap();
         if new_group_receipt.status != Some(web3::types::U64::one()) {
-            panic!("ACL register proc failed!");
+            panic!("ACL set group failed!");
         }
 
         let new_group_params = (
@@ -187,11 +189,11 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
     pub fn deploy_procedure(&mut self, proc_name: String, proc_spec: ProcSpec) -> Result<(), ProjectDeploymentError> {
         let proc_key = crate::utils::string_to_proc_key(proc_name);
 
-        let cap_file = File::open(proc_spec.cap_path).expect("could not open file");
+        let cap_file = File::open(&proc_spec.cap_path).expect("could not open file");
         let crate::fetch::procedure::SerialNewCapList(caps) = serde_json::from_reader(cap_file).unwrap();
 
         let cap_index = 0;
-        let contract = proc_spec.contract_spec.deploy(&self.kernel.conn, ( )).unwrap();
+        let contract = proc_spec.deploy(&self.kernel.conn, ( )).unwrap();
         let existing_caps: Capabilities = self.kernel.procedure(self.admin_proc_key().expect("no admin key")).expect("no admin proc").caps.into();
         let cap_test = caps.check_subset_of(existing_caps);
         if cap_test.len() != 0 {

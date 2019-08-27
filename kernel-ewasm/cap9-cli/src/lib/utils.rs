@@ -26,8 +26,6 @@ pub fn proc_key_to_32_bytes(proc_key: &[u8; 24]) -> [u8; 32] {
     buf
 }
 
-
-
 /// Convert one U256 of the ABI type a U256 of the web3 library type (the web3
 /// library and the ABI use different U256s).
 pub fn from_common_u256(u: pwasm_abi::types::U256) -> U256 {

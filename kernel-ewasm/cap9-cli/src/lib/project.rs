@@ -51,7 +51,7 @@ impl DeployFile {
 /// the initial entry procedure.
 #[derive(Serialize, Deserialize)]
 pub struct DeploySpec {
-    pub initial_entry: ContractSpec,
+    pub initial_entry: ProcSpec,
 }
 
 // impl DeploySpec {
@@ -68,6 +68,18 @@ pub struct DeploySpec {
 pub struct ProcSpec {
     pub contract_spec: ContractSpec,
     pub cap_path: PathBuf,
+}
+
+impl ProcSpec {
+    /// Deploy the underlying contract to the blockchain.
+    pub fn deploy<T: Transport, P: Tokenize>(&self, conn: &EthConn<T>, params: P) -> Result<Contract<T>, ContractDeploymentError> {
+        // Before a procedure contract is deployed, it must go through
+        // "proc-build".
+        let module = parity_wasm::deserialize_file(&self.contract_spec.code_path).expect("ProcSpec::deploy() - parsing of input failed");
+        let new_module = crate::build::contract_build(module);
+        let code: Vec<u8> = parity_wasm::serialize(new_module).expect("serialising to output failed");
+        deploy_contract(conn, code, &self.contract_spec.abi(), params)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -127,11 +139,19 @@ impl ContractSpec {
         code
     }
 
+    pub fn code_reader(&self) -> File {
+        File::open(&self.code_path).expect("could not open file")
+    }
+
     pub fn abi(&self) -> Vec<u8> {
         let mut f_abi = File::open(&self.abi_path).expect("could not open file");
         let mut abi: Vec<u8> = Vec::new();
         f_abi.read_to_end(&mut abi).unwrap();
         abi
+    }
+
+    pub fn abi_reader(&self) -> File {
+        File::open(&self.abi_path).expect("could not open file")
     }
 }
 
@@ -205,7 +225,11 @@ impl LocalProject {
         path.push("deploy");
         path.set_extension("json");
         let kernel_spec = ContractSpec::from_default(KERNEL, &dir, "kernel".to_string());
-        let init_entry_spec = ContractSpec::from_default(ACL_BOOTSTRAP, &dir, "acl_bootstrap".to_string());
+        let init_entry_spec = ProcSpec {
+            contract_spec: ContractSpec::from_default(ACL_BOOTSTRAP, &dir, "acl_bootstrap".to_string()),
+            // TODO: fix cap path
+            cap_path: PathBuf::from("example_caps.json"),
+        };
         let deploy_spec = DeploySpec {
             initial_entry: init_entry_spec,
         };
@@ -239,7 +263,10 @@ impl LocalProject {
         path.push("deploy");
         path.set_extension("json");
         let kernel_spec = ContractSpec::from_default(KERNEL, &dir, "kernel".to_string());
-        let init_entry_spec = ContractSpec::from_default(ACL_BOOTSTRAP, &dir, "acl_bootstrap".to_string());
+        let init_entry_spec = ProcSpec {
+            contract_spec: ContractSpec::from_default(ACL_BOOTSTRAP, &dir, "acl_bootstrap".to_string()),
+            cap_path: PathBuf::from("example_caps.json"),
+        };
         let deploy_spec = DeploySpec {
             initial_entry: init_entry_spec,
         };
@@ -358,21 +385,35 @@ impl LocalProject {
                 ACL_BOOTSTRAP.abi(),
             )
             .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
-        let entry_path = ACL_ENTRY.write_abi(&deployed_kernel.local_project.abs_path);
-        let admin_path = ACL_ADMIN.write_abi(&deployed_kernel.local_project.abs_path);
-        let entry_contract = deploy_contract(conn, ACL_ENTRY.code(), ACL_ENTRY.abi(), ( ))
-            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL entry contract".to_string(), error: format!("{:?}", err)})?;
+        let entry_contract_spec = ACL_ENTRY.contract_spec(&deployed_kernel.local_project.abs_path);
+        let admin_contract_spec = ACL_ADMIN.contract_spec(&deployed_kernel.local_project.abs_path);
+
+        let entry_proc_spec = ProcSpec {
+            contract_spec: entry_contract_spec,
+            cap_path: PathBuf::from(""),
+        };
+        let admin_proc_spec = ProcSpec {
+            contract_spec: admin_contract_spec,
+            cap_path: PathBuf::from(""),
+        };
+
+        let entry_contract = entry_proc_spec.deploy(conn, ( )).unwrap();
+        let admin_contract = admin_proc_spec.deploy(conn, ( )).unwrap();
+        // let entry_path = ACL_ENTRY.write_abi(&deployed_kernel.local_project.abs_path);
+        // let admin_path = ACL_ADMIN.write_abi(&deployed_kernel.local_project.abs_path);
+        // let entry_contract = deploy_contract(conn, ACL_ENTRY.code(), ACL_ENTRY.abi(), ( ))
+            // .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL entry contract".to_string(), error: format!("{:?}", err)})?;
         {
             let local_project: &mut LocalProject = &mut deployed_kernel.local_project;
             let status_file: &mut StatusFile = local_project.status_file.as_mut().unwrap();
-            status_file.add_abi(entry_contract.address(), entry_path);
+            status_file.add_abi(entry_contract.address(), PathBuf::from(entry_proc_spec.contract_spec.abi_path));
         }
-        let admin_contract = deploy_contract(conn, ACL_ADMIN.code(), ACL_ADMIN.abi(), ( ))
-            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL admin contract".to_string(), error: format!("{:?}", err)})?;
+        // let admin_contract = deploy_contract(conn, ACL_ADMIN.code(), ACL_ADMIN.abi(), ( ))
+            // .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL admin contract".to_string(), error: format!("{:?}", err)})?;
         {
             let local_project: &mut LocalProject = &mut deployed_kernel.local_project;
             let status_file: &mut StatusFile = local_project.status_file.as_mut().unwrap();
-            status_file.add_abi(admin_contract.address(), admin_path);
+            status_file.add_abi(admin_contract.address(), PathBuf::from(admin_proc_spec.contract_spec.abi_path));
         }
         let entry_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("entry".to_string())).into();
         let admin_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("admin".to_string())).into();

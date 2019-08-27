@@ -27,8 +27,6 @@ impl EthConn<web3::transports::Http> {
     }
 }
 
-    // The two Nones are for user/pass for authentication
-
 fn create_account(name: String, password: String) -> Address {
     let name_json = serde_json::to_value(name).unwrap();
     let password_json = serde_json::to_value(password).unwrap();
@@ -40,7 +38,6 @@ fn create_account(name: String, password: String) -> Address {
         Err(e) => panic!("{:?}", e),
     }
 }
-
 
 pub fn list_storage_keys(address: Address) -> jsonrpc::Response {
     let address_json = serde_json::to_value(address).unwrap();
