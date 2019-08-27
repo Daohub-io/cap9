@@ -251,6 +251,8 @@ fn main() {
             build::execute_build_proc(build_proc_matches);
         } else if let Some(set_mem_matches) = build_matches.subcommand_matches("set-mem") {
             build::execute_set_mem(set_mem_matches);
+        } else if let Some(wasm_build_matches) = build_matches.subcommand_matches("wasm-build") {
+            build::execute_wasm_build(wasm_build_matches);
         } else {
             panic!("no build command");
         }
