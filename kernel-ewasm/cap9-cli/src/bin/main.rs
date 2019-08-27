@@ -253,6 +253,8 @@ fn main() {
             build::execute_set_mem(set_mem_matches);
         } else if let Some(wasm_build_matches) = build_matches.subcommand_matches("wasm-build") {
             build::execute_wasm_build(wasm_build_matches);
+        } else if let Some(full_matches) = build_matches.subcommand_matches("full") {
+            build::execute_full(full_matches);
         } else {
             panic!("no build command");
         }

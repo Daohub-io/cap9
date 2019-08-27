@@ -30,6 +30,15 @@ impl std::fmt::Display for Error {
 
 
 pub fn build_commands<'a, 'b>() -> Vec<App<'a, 'b>> {
+    let full_command: App = SubCommand::with_name("full")
+        .arg(Arg::with_name("INPUT-FILE")
+            .index(1)
+            .required(true)
+            .help("input .wasm file"))
+        .arg(Arg::with_name("OUTPUT-FILE")
+            .index(2)
+            .required(true)
+            .help("output .wasm file"));
     let wasm_build_command: App = SubCommand::with_name("wasm-build")
         .arg(Arg::with_name("INPUT-FILE")
             .index(1)
@@ -38,7 +47,7 @@ pub fn build_commands<'a, 'b>() -> Vec<App<'a, 'b>> {
         .arg(Arg::with_name("OUTPUT-FILE")
             .index(2)
             .required(true)
-            .help("input .wasm file"))
+            .help("output .wasm file"))
         .arg(Arg::with_name("target-runtime")
             .help("What runtime we are compiling to")
             .long("target-runtime")
@@ -111,7 +120,7 @@ pub fn build_commands<'a, 'b>() -> Vec<App<'a, 'b>> {
                 .required(true)
                 .help("Number of pages to set the memory to"),
         );
-    vec![build_command, set_mem_command, wasm_build_command]
+    vec![build_command, set_mem_command, wasm_build_command, full_command]
 }
 
 pub fn execute_build_proc(opts: &ArgMatches) {
@@ -135,12 +144,7 @@ pub fn execute_set_mem(opts: &ArgMatches) {
         .expect("number of memory pages is required");
 
     let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
-    let new_module = set_mem(
-        module,
-        mem_pages
-            .parse()
-            .expect("expected number for number of pages"),
-    );
+    let new_module = set_mem( module, mem_pages .parse() .expect("expected number for number of pages"), );
     parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
 }
 
@@ -150,7 +154,11 @@ pub fn execute_wasm_build(opts: &ArgMatches) {
 
     let module = parity_wasm::deserialize_file(&input_path)
         .map_err(|e| Error::Decoding(e, input_path.to_string())).unwrap();
+    let new_module = wasm_build(opts, module);
+    parity_wasm::serialize_to_file(&output_path, new_module).map_err(Error::Encoding).unwrap();
+}
 
+fn wasm_build(opts: &ArgMatches, module: Module) -> Module {
     let runtime_type_version = if let (Some(runtime_type), Some(runtime_version))
          = (opts.value_of("runtime_type"), opts.value_of("runtime_version")) {
         let mut ty: [u8; 4] = Default::default();
@@ -193,13 +201,23 @@ pub fn execute_wasm_build(opts: &ArgMatches) {
     }
 
     if let Some(ctor_module) = ctor_module {
-        parity_wasm::serialize_to_file(
-            &output_path,
-            ctor_module,
-        ).map_err(Error::Encoding).unwrap();
+        ctor_module
     } else {
-        parity_wasm::serialize_to_file(&output_path, module).map_err(Error::Encoding).unwrap();
+        module
     }
+}
+
+pub fn execute_full(opts: &ArgMatches) {
+    let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
+    let output_path = opts .value_of("OUTPUT-FILE") .expect("output path is required");
+
+    let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
+    let contract_module = contract_build(module);
+    let mem_pages = 4;
+    let mem_module = set_mem(contract_module, mem_pages);
+    let new_module = wasm_build(opts, mem_module);
+
+    parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
 }
 
 /// Perform the operations necessary for cap9 procedures.
