@@ -25,9 +25,7 @@ cp ./target/wasm32-unknown-unknown/release/examples/*.wasm ./target/wasm32-unkno
 # Pass example contracts through the procedure build process.
 function build_procedure {
     echo "Building $1"
-    cargo run --package cap9-cli -- build build-proc ./target/wasm32-unknown-unknown/release/$1.wasm ./target/wasm32-unknown-unknown/release/$1.wasm
-    cargo run --package cap9-cli -- build set-mem --pages 4 ./target/wasm32-unknown-unknown/release/$1.wasm ./target/wasm32-unknown-unknown/release/$1.wasm
-    cargo run --package cap9-cli -- build wasm-build --target=wasm32-unknown-unknown ./target/wasm32-unknown-unknown/release/$1.wasm ./target/$1.wasm
+    cargo run --package cap9-cli -- build full --target=wasm32-unknown-unknown ./target/wasm32-unknown-unknown/release/$1.wasm ./target/$1.wasm
 }
 
 build_procedure validator_test
