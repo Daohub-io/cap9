@@ -109,6 +109,23 @@
   },
   {
     "type": "function",
+    "name": "delProc",
+    "inputs": [
+      {
+        "name": "cap_idx",
+        "type": "uint256"
+      },
+      {
+        "name": "key",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "function",
     "name": "listProcs",
     "inputs": [],
     "outputs": [
