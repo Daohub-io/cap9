@@ -247,6 +247,51 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
         Ok(())
     }
 
+    /// Unregister an existing procedure.
+    pub fn delete_procedure(&mut self, proc_name: String) -> Result<(), ProjectDeploymentError> {
+        let proc_key = crate::utils::string_to_proc_key(proc_name);
+
+        let cap_index = 0;
+        let _proxied_admin_contract = web3::contract::Contract::from_json(
+                self.kernel.conn.web3.eth(),
+                self.kernel.address(),
+                default_procedures::ACL_ADMIN.abi(),
+            )
+            .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
+
+        let encoded_proc_key: U256 = crate::utils::proc_key_to_32_bytes(&proc_key).into();
+
+        let params = (
+                cap_index,
+                encoded_proc_key,
+            );
+        // Register the procedure
+        let file: &[u8] = default_procedures::ACL_ADMIN.abi();
+        let admin_abi = ethabi::Contract::load(file).expect("no ABI");
+        let message: Vec<u8> = admin_abi
+                .function("delProc")
+                .and_then(|function| function.encode_input(params.into_tokens().as_slice())).expect("message encoding failed");
+        let proxied_entry_contract = web3::contract::Contract::from_json(
+                self.kernel.conn.web3.eth(),
+                self.kernel.address(),
+                default_procedures::ACL_ENTRY.abi(),
+            )
+            .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
+
+        let res = proxied_entry_contract.call("proxy", (
+                message,
+            ), self.kernel.conn.sender,
+            Options::with(|opts| {
+                opts.gas = Some(550_621_180.into());
+            }),
+            ).wait().expect("proxy");
+        let reg_receipt = &self.kernel.conn.web3.eth().transaction_receipt(res).wait().expect("reg receipt").unwrap();
+        if reg_receipt.status != Some(web3::types::U64::one()) {
+            panic!("ACL register proc failed!");
+        }
+        Ok(())
+    }
+
     // pub fn abis(&self, proc_key: cap9_std::SysCallProcedureKey) -> Option<Procedure> {
     //     let status_file = self.kernel.local_project.status_file()?;
     //     let procs = self.procedures();

@@ -4,6 +4,10 @@ mod integration {
     use assert_cmd::prelude::*;
     use tempfile::TempDir;
     use std::path::PathBuf;
+    use cap9_cli::connection;
+    use tempfile::tempdir;
+    use cap9_cli::project;
+    use cap9_cli::fetch::{DeployedKernel, DeployedKernelWithACL};
 
     #[test]
     fn calling_cli_without_args() {
@@ -20,8 +24,6 @@ mod integration {
     }
 
     fn create_temp_project_with_acl() -> (TempDir, PathBuf) {
-        use tempfile::tempdir;
-
         let project_name = "example";
 
         // Create a directory inside the temporary directory of the system.
@@ -52,12 +54,6 @@ mod integration {
 
     #[test]
     fn create_and_deploy() {
-        use std::path::PathBuf;
-        use tempfile::tempdir;
-        use cap9_cli::connection;
-        use cap9_cli::project;
-        use cap9_cli::fetch::{DeployedKernel, DeployedKernelWithACL};
-
         let project_name = "example";
 
         // Create a directory inside the temporary directory of the system.
@@ -199,6 +195,7 @@ mod integration {
     #[should_panic]
     fn deploy_proc_twice() {
         let (_dir, project_dir) = create_temp_project_with_acl();
+
         let wasm_path: PathBuf = [&project_dir, &PathBuf::from("acl_group_5.wasm")].iter().collect();
         let json_path: PathBuf = [&project_dir, &PathBuf::from("ACLGroup5Interface.json")].iter().collect();
         let caps_path: PathBuf = [&project_dir, &PathBuf::from("example_caps.json")].iter().collect();
@@ -234,5 +231,69 @@ mod integration {
             .current_dir(&project_dir)
             .assert()
             .success();
+    }
+
+    /// This test demonstrates that a procedure can be replaced if it is deleted
+    /// first.
+    #[test]
+    fn deploy_proc_twice_with_delete() {
+        let (_dir, project_dir) = create_temp_project_with_acl();
+        let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        // Read the local project from out current directory.
+        let local_project = project::LocalProject::read_dir(&project_dir);
+        let kernel = DeployedKernel::new(&conn, local_project);
+        let kernel_with_acl = DeployedKernelWithACL::new(kernel);
+
+        let wasm_path: PathBuf = [&project_dir, &PathBuf::from("acl_group_5.wasm")].iter().collect();
+        let json_path: PathBuf = [&project_dir, &PathBuf::from("ACLGroup5Interface.json")].iter().collect();
+        let caps_path: PathBuf = [&project_dir, &PathBuf::from("example_caps.json")].iter().collect();
+        std::fs::copy(PathBuf::from("src/lib/acl_group_5.wasm"), wasm_path).unwrap();
+        std::fs::copy(PathBuf::from("src/lib/ACLGroup5Interface.json"), json_path).unwrap();
+        std::fs::copy(PathBuf::from("src/lib/example_caps.json"), caps_path).unwrap();
+        let procedures1 = kernel_with_acl.kernel.procedures();
+        // Add a new procedure to the kernel
+        Command::cargo_bin("cap9-cli").unwrap()
+            // The command
+            .arg("deploy-procedure")
+            // The name of the group's procedure
+            .arg("anotherProcName")
+            // The file path of the binary code
+            .arg("acl_group_5.wasm")
+            // The file path of the JSON ABI
+            .arg("ACLGroup5Interface.json")
+            // The file path of the caps file
+            .arg("example_caps.json")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+        let procedures2 = kernel_with_acl.kernel.procedures();
+        assert_eq!(procedures2.len(), procedures1.len() + 1);
+        // Delete the original procedure.
+        Command::cargo_bin("cap9-cli").unwrap()
+            // The command
+            .arg("delete-procedure")
+            // The name of the group's procedure
+            .arg("anotherProcName")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+        let procedures3 = kernel_with_acl.kernel.procedures();
+        assert_eq!(procedures3.len(), procedures1.len());
+        Command::cargo_bin("cap9-cli").unwrap()
+            // The command
+            .arg("deploy-procedure")
+            // The name of the group's procedure
+            .arg("anotherProcName")
+            // The file path of the binary code
+            .arg("acl_group_5.wasm")
+            // The file path of the JSON ABI
+            .arg("ACLGroup5Interface.json")
+            // The file path of the caps file
+            .arg("example_caps.json")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+        let procedures4= kernel_with_acl.kernel.procedures();
+        assert_eq!(procedures4.len(), procedures1.len() + 1);
     }
 }

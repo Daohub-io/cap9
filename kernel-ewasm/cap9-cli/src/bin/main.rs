@@ -90,6 +90,11 @@ fn main() {
                     .required(true)
                     .help("JSON cap file"))
                 .about("Deploy a contract to the chain and register it as a procedure"))
+            .subcommand(SubCommand::with_name("delete-procedure")
+                .arg(Arg::with_name("PROCEDURE-NAME")
+                    .required(true)
+                    .help("Name of the procedure"))
+                .about("Delete a procedure from the kernel (does not reap contract)"))
             .subcommand(SubCommand::with_name("new-group")
                 .arg(Arg::with_name("GROUP-NUMBER")
                     .required(true)
@@ -226,6 +231,15 @@ fn main() {
             cap_path: cap_file,
         };
         kernel_with_acl.deploy_procedure(proc_name.to_string(), proc_spec).unwrap();
+    } else if let Some(delete_procedure_matches) = matches.subcommand_matches("delete-procedure") {
+        let proc_name = delete_procedure_matches.value_of("PROCEDURE-NAME").expect("No code file");
+        // Connect to a local network over http.
+        let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        // Read the local project from out current directory.
+        let local_project = project::LocalProject::read();
+        let kernel = DeployedKernel::new(&conn, local_project);
+        let mut kernel_with_acl = DeployedKernelWithACL::new(kernel);
+        kernel_with_acl.delete_procedure(proc_name.to_string()).unwrap();
     } else if let Some(deploy_contract_matches) = matches.subcommand_matches("deploy-contract") {
         let code_file = PathBuf::from(deploy_contract_matches.value_of("CODE-FILE").expect("No code file"));
         let abi_file = PathBuf::from(deploy_contract_matches.value_of("ABI-FILE").expect("No ABI file"));
