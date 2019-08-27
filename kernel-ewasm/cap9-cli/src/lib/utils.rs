@@ -57,7 +57,6 @@ pub fn to_common_address(a: Address) -> pwasm_abi::types::Address {
     pwasm_abi::types::Address::from_slice(buf)
 }
 
-
 /// Convert a vector of U256 of the ABI type a U256 of the web3 library type
 /// (the web3 library and the ABI use different U256s).
 pub fn from_common_u256_vec(v: Vec<pwasm_abi::types::U256>) -> Vec<U256> {
