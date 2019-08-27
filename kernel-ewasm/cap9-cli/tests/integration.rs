@@ -2,6 +2,8 @@
 mod integration {
     use std::process::Command;
     use assert_cmd::prelude::*;
+    use tempfile::TempDir;
+    use std::path::PathBuf;
 
     #[test]
     fn calling_cli_without_args() {
@@ -15,6 +17,37 @@ mod integration {
         cmd
             .arg("new");
         cmd.assert().failure();
+    }
+
+    fn create_temp_project_with_acl() -> (TempDir, PathBuf) {
+        use tempfile::tempdir;
+
+        let project_name = "example";
+
+        // Create a directory inside the temporary directory of the system.
+        let dir = tempdir().unwrap();
+
+        // Create a new project
+        let mut create_cmd = Command::cargo_bin("cap9-cli").unwrap();
+        create_cmd
+            .arg("new")
+            .arg("--acl")
+            .arg(project_name)
+            .current_dir(dir.path());
+        create_cmd.assert().success();
+
+        let mut project_dir = PathBuf::new();
+        project_dir.push(dir.path());
+        project_dir.push(project_name);
+
+        // Deploy the kernel
+        println!("Deploying project");
+        let mut deploy_cmd = Command::cargo_bin("cap9-cli").unwrap();
+        deploy_cmd
+            .arg("deploy")
+            .current_dir(&project_dir);
+        deploy_cmd.assert().success();
+        (dir, project_dir)
     }
 
     #[test]
@@ -132,8 +165,74 @@ mod integration {
             let procedures = kernel_with_acl.kernel.procedures();
             assert_eq!(procedures.len(), 4, "There should be 4 procedures, but there are {}", procedures.len());
         }
+    }
 
-        // Explicity close the temp directory.
-        dir.close().unwrap();
+    #[test]
+    fn deploy_proc_once() {
+        let (_dir, project_dir) = create_temp_project_with_acl();
+        let wasm_path: PathBuf = [&project_dir, &PathBuf::from("acl_group_5.wasm")].iter().collect();
+        let json_path: PathBuf = [&project_dir, &PathBuf::from("ACLGroup5Interface.json")].iter().collect();
+        let caps_path: PathBuf = [&project_dir, &PathBuf::from("example_caps.json")].iter().collect();
+        std::fs::copy(PathBuf::from("src/lib/acl_group_5.wasm"), wasm_path).unwrap();
+        std::fs::copy(PathBuf::from("src/lib/ACLGroup5Interface.json"), json_path).unwrap();
+        std::fs::copy(PathBuf::from("src/lib/example_caps.json"), caps_path).unwrap();
+        // Add a new procedure to the kernel
+        Command::cargo_bin("cap9-cli").unwrap()
+            // The command
+            .arg("deploy-procedure")
+            // The name of the group's procedure
+            .arg("anotherProcName")
+            // The file path of the binary code
+            .arg("acl_group_5.wasm")
+            // The file path of the JSON ABI
+            .arg("ACLGroup5Interface.json")
+            // The file path of the caps file
+            .arg("example_caps.json")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+    }
+
+    /// This test demonstrates that a procedure cannot be replaced or have its
+    /// caps updated simply.
+    #[test]
+    #[should_panic]
+    fn deploy_proc_twice() {
+        let (_dir, project_dir) = create_temp_project_with_acl();
+        let wasm_path: PathBuf = [&project_dir, &PathBuf::from("acl_group_5.wasm")].iter().collect();
+        let json_path: PathBuf = [&project_dir, &PathBuf::from("ACLGroup5Interface.json")].iter().collect();
+        let caps_path: PathBuf = [&project_dir, &PathBuf::from("example_caps.json")].iter().collect();
+        std::fs::copy(PathBuf::from("src/lib/acl_group_5.wasm"), wasm_path).unwrap();
+        std::fs::copy(PathBuf::from("src/lib/ACLGroup5Interface.json"), json_path).unwrap();
+        std::fs::copy(PathBuf::from("src/lib/example_caps.json"), caps_path).unwrap();
+        // Add a new procedure to the kernel
+        Command::cargo_bin("cap9-cli").unwrap()
+            // The command
+            .arg("deploy-procedure")
+            // The name of the group's procedure
+            .arg("anotherProcName")
+            // The file path of the binary code
+            .arg("acl_group_5.wasm")
+            // The file path of the JSON ABI
+            .arg("ACLGroup5Interface.json")
+            // The file path of the caps file
+            .arg("example_caps.json")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+        Command::cargo_bin("cap9-cli").unwrap()
+            // The command
+            .arg("deploy-procedure")
+            // The name of the group's procedure
+            .arg("anotherProcName")
+            // The file path of the binary code
+            .arg("acl_group_5.wasm")
+            // The file path of the JSON ABI
+            .arg("ACLGroup5Interface.json")
+            // The file path of the caps file
+            .arg("example_caps.json")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
     }
 }

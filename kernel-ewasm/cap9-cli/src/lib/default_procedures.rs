@@ -3,7 +3,6 @@
 use std::path::PathBuf;
 use std::io::prelude::*;
 use crate::project::ContractSpec;
-use std::convert::TryInto;
 
 pub struct DefaultProcedure {
     code: &'static [u8],
