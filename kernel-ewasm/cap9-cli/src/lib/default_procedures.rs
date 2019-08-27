@@ -32,7 +32,7 @@ impl DefaultProcedure {
 }
 
 pub const KERNEL: DefaultProcedure = DefaultProcedure {
-    code: include_bytes!("cap9-kernel.wasm"),
+    code: include_bytes!("cap9_kernel.wasm"),
     abi: include_bytes!("KernelInterface.json"),
     name: "cap9-kernel",
 };
