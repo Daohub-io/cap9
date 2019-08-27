@@ -322,7 +322,7 @@ fn print_function(function: &ethabi::Function) {
     print!("{}: (", function.name);
     for (i, param) in function.inputs.iter().enumerate() {
         print_param(param);
-        if i+1 < function.outputs.len() {
+        if i+1 < function.inputs.len() {
             print!(", ");
         }
     }
