@@ -1,20 +1,9 @@
-#![allow(unused_imports)]
 #![allow(dead_code)]
 #[macro_use] extern crate log;
-#[macro_use] extern crate lazy_static;
-#[macro_use] extern crate failure_derive;
 
 use clap::{Arg, App, SubCommand, AppSettings};
-// use std::process::Command;
-// use std::str::FromStr;
-// use web3::futures::Future;
-use web3::types::{Address};
-use web3::contract::{Contract, Options};
 use ethabi::token::Tokenizer;
 
-use cap9_std::data::{Keyable, Storable};
-
-use std::fs::create_dir;
 use std::fs::File;
 use std::path::PathBuf;
 use rustc_hex::ToHex;
@@ -22,12 +11,8 @@ use rustc_hex::ToHex;
 use env_logger;
 
 use cap9_cli::connection;
-use cap9_cli::deploy;
 use cap9_cli::project;
 use cap9_cli::fetch;
-use cap9_cli::constants;
-use cap9_cli::default_procedures;
-use cap9_cli::utils;
 
 use fetch::{DeployedKernel, DeployedKernelWithACL};
 
@@ -242,10 +227,6 @@ fn main() {
         let abi_file = PathBuf::from(deploy_contract_matches.value_of("ABI-FILE").expect("No ABI file"));
         // Connect to a local network over http.
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
-        // // Read the local project from out current directory.
-        // let local_project = project::LocalProject::read();
-        // // The project directory is our current directory.
-        // let project_directory = std::env::current_dir().expect("Could not get CWD");
         // Create a contract specification from the given files.
         let contract_spec = project::ContractSpec::from_files(&code_file, &abi_file);
         // Deploy the contract onto the chain.

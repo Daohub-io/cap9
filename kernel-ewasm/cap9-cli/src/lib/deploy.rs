@@ -5,24 +5,11 @@ extern crate std;
 
 use web3::futures::Future;
 use web3::contract::{Contract, Options};
-use web3::types::{Address, U256, H256};
-// use web3::types::TransactionReceipt;
 use web3::Transport;
-use rustc_hex::FromHex;
 use rustc_hex::ToHex;
-// use ethabi::Token::Uint;
-use crate::connection;
 use crate::connection::EthConn;
-use crate::project::*;
-use cap9_std::proc_table::cap::*;
-use pwasm_abi;
-use std::fs::File;
 use crate::deploy::web3::contract::tokens::Tokenize;
-use crate::default_procedures::*;
-use crate::utils::*;
 use crate::constants::*;
-use ethabi;
-use failure::Error;
 
 #[derive(Debug, Fail)]
 pub enum ContractDeploymentError {

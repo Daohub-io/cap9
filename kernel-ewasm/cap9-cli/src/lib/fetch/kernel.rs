@@ -1,18 +1,14 @@
 
 use web3::futures::Future;
-use web3::contract::{Contract, Options};
 use web3::types::{Address, U256, H256};
 // use web3::types::TransactionReceipt;
 use web3::Transport;
-use rustc_hex::FromHex;
 use rustc_hex::ToHex;
 // use ethabi::Token::Uint;
-use crate::connection;
 use crate::connection::EthConn;
 use crate::project::LocalProject;
 use cap9_std::proc_table::cap::*;
 use pwasm_abi;
-use std::fs::File;
 use std::fmt;
 use cap9_std::proc_table::ProcPointer;
 use cap9_std::proc_table;
@@ -20,10 +16,7 @@ use cap9_core::*;
 use cap9_core::Error;
 use cap9_core::Read;
 use crate::constants;
-use crate::utils::{from_common_u256, to_common_u256, to_common_h256,
-    from_common_address, to_common_address
-};
-use std::collections::{HashMap, HashSet};
+use crate::utils::to_common_h256;
 /// A representation and connection to a deployed kernel. This has both a
 /// connection to the node and a filesystem representation.
 pub struct DeployedKernel<'a, T: Transport> {

@@ -1,9 +1,7 @@
 /// Module for handling the connection to a local Ethereum node.
 use web3::Transport;
 use web3::types::{Address};
-use web3::futures::Future;
 use pwasm_abi::types::*;
-
 
 pub struct EthConn<T: Transport> {
     pub web3: web3::api::Web3<T>,

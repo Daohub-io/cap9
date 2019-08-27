@@ -2,11 +2,7 @@ use web3::Transport;
 use web3::contract::{Contract, Options};
 use web3::types::{Address, U256, H256};
 use web3::contract::tokens::Tokenize;
-// use web3::futures::Future;
-use serde::{Deserialize, Serialize, Serializer};
-// use serde_json::Result;
-use rustc_hex::FromHex;
-use rustc_hex::ToHex;
+use serde::{Deserialize, Serialize};
 
 use web3::futures::Future;
 
@@ -21,9 +17,7 @@ use crate::connection;
 use crate::deploy::*;
 use crate::default_procedures::*;
 use crate::utils::*;
-use crate::constants::*;
 use cap9_std::proc_table::cap::*;
-use failure::Error;
 
 use std::collections::HashMap;
 
