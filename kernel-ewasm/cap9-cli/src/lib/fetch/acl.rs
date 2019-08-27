@@ -85,16 +85,25 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
         group.procedure_key.clone()
     }
 
-    pub fn new_group(&self, group_number: u8, proc_name: String, group_proc: ContractSpec) -> Result<(), ProjectDeploymentError> {
+    pub fn new_group(&self, group_number: u8, proc_name: String, group_proc: ProcSpec) -> Result<(), ProjectDeploymentError> {
         let proc_key = crate::utils::string_to_proc_key(proc_name);
         let cap_index = 0;
-        let contract = group_proc.deploy(&self.kernel.conn, ( )).unwrap();
-        let cap_list: Vec<U256> = vec![];
+        let contract = group_proc.contract_spec.deploy(&self.kernel.conn, ( )).unwrap();
+
+        let cap_file = File::open(group_proc.cap_path).expect("could not open file");
+        let crate::fetch::procedure::SerialNewCapList(caps) = serde_json::from_reader(cap_file).unwrap();
+
+        let existing_caps: Capabilities = self.kernel.procedure(self.admin_proc_key().expect("no admin key")).expect("no admin proc").caps.into();
+        let cap_test = caps.check_subset_of(existing_caps);
+        if cap_test.len() != 0 {
+            panic!("invalid caps: {:?}", cap_test);
+        }
+        let cap_list: Vec<U256> = caps.to_u256_list().into_iter().map(from_common_u256).collect();
 
         let _proxied_admin_contract = web3::contract::Contract::from_json(
                 self.kernel.conn.web3.eth(),
                 self.kernel.address(),
-                group_proc.abi().as_slice(),
+                group_proc.contract_spec.abi().as_slice(),
             )
             .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
 

@@ -114,6 +114,9 @@ fn main() {
                 .arg(Arg::with_name("ABI-FILE")
                     .required(true)
                     .help("JSON ABI file of the group's procedure"))
+                .arg(Arg::with_name("CAP-FILE")
+                    .required(true)
+                    .help("JSON cap file"))
                 .about("Add an new group"))
             .subcommand(SubCommand::with_name("fetch")
                 .setting(AppSettings::ArgRequiredElseHelp)
@@ -204,6 +207,7 @@ fn main() {
         let proc_name = new_group_matches.value_of("PROCEDURE-NAME").expect("No code file");
         let code_file = PathBuf::from(new_group_matches.value_of("CODE-FILE").expect("No code file"));
         let abi_file = PathBuf::from(new_group_matches.value_of("ABI-FILE").expect("No ABI file"));
+        let cap_file = PathBuf::from(new_group_matches.value_of("CAP-FILE").expect("No ABI file"));
         // Connect to a local network over http.
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
@@ -211,7 +215,11 @@ fn main() {
         let kernel = DeployedKernel::new(&conn, local_project);
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
         let group_5_spec = project::ContractSpec::from_files(&code_file, &abi_file);
-        kernel_with_acl.new_group(group_number, proc_name.to_string(), group_5_spec).unwrap();
+        let proc_spec = project::ProcSpec {
+            contract_spec: group_5_spec,
+            cap_path: cap_file,
+        };
+        kernel_with_acl.new_group(group_number, proc_name.to_string(), proc_spec).unwrap();
     } else if let Some(deploy_procedure_matches) = matches.subcommand_matches("deploy-procedure") {
         let proc_name = deploy_procedure_matches.value_of("PROCEDURE-NAME").expect("No code file");
         let code_file = PathBuf::from(deploy_procedure_matches.value_of("CODE-FILE").expect("No code file"));

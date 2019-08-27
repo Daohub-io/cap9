@@ -89,6 +89,8 @@ mod integration {
             .arg("acl_group_5.wasm")
             // The file path of the JSON ABI
             .arg("ACLGroup5Interface.json")
+            // The file path of the JSON capability file
+            .arg("example_caps.json")
             .current_dir(&project_dir)
             .assert()
             .success();

@@ -31,3 +31,20 @@ information. For example:
 ```sh
 cap9-cli deploy-procedure MembersProc proc_code.bin proc_abi.json caps.json
 ```
+
+## Adding a New Group to an ACL-Enabled Kernel
+
+To add a new group to an ACL-enabled kernel use the `cap9-cli new-group`
+command. The command is run in the following format:
+
+```sh
+cap9-cli new-group <GROUP-NUMBER> <PROCEDURE-NAME> <CODE-FILE> <ABI-FILE> <CAP-FILE>
+```
+
+where
+
+* GROUP-NUMBER is the number in [1,255] that the group will be assigned to.
+* PROCEDURE-NAME is the name/key that the procedure will be registered with.
+* CODE-FILE is the file path to the binary code to be deployed.
+* ABI-FILE is the JSON ABI file for the given binary code.
+* CAP-FILE is the JSON file containing the capability specification.
