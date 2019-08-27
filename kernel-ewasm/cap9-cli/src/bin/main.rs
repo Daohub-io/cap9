@@ -1,17 +1,18 @@
 #[macro_use] extern crate log;
 
-use clap::{Arg, App, SubCommand, AppSettings};
+use clap::{App, AppSettings, Arg, SubCommand};
 use ethabi::token::Tokenizer;
 
+use rustc_hex::ToHex;
 use std::fs::File;
 use std::path::PathBuf;
-use rustc_hex::ToHex;
 
 use env_logger;
 
+use cap9_cli::build;
 use cap9_cli::connection;
-use cap9_cli::project;
 use cap9_cli::fetch;
+use cap9_cli::project;
 
 use fetch::{DeployedKernel, DeployedKernelWithACL};
 
@@ -30,6 +31,10 @@ fn main() {
                 .arg(Arg::with_name("acl")
                     .long("acl")
                     .help("Create with the default acl"))
+            )
+            .subcommand(SubCommand::with_name("build")
+                .about("Create a Cap9 compatible procedure from WASM file")
+                .subcommands(build::build_commands()),
             )
             .subcommand(SubCommand::with_name("compile")
                 .about("Compile a WASM contract")
@@ -241,6 +246,14 @@ fn main() {
             project::LocalProject::create(project_name)
         };
         info!("New Project Created: {}", project_name);
+    } else if let Some(build_matches) = matches.subcommand_matches("build") {
+        if let Some(build_proc_matches) = build_matches.subcommand_matches("build-proc") {
+            build::execute_build_proc(build_proc_matches);
+        } else if let Some(set_mem_matches) = build_matches.subcommand_matches("set-mem") {
+            build::execute_set_mem(set_mem_matches);
+        } else {
+            panic!("no build command");
+        }
     } else if let Some(fetch_matches) = matches.subcommand_matches("fetch") {
         let network: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         let local_project = project::LocalProject::read();

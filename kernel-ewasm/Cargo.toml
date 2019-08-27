@@ -1,7 +1,6 @@
 [workspace]
 
 members = [
-    "cap9-build",
     "cap9-cli",
     "cap9-core",
     "cap9-kernel",

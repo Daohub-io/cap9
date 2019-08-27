@@ -21,7 +21,7 @@ pushd cap9-kernel
 cargo build --release --target wasm32-unknown-unknown --no-default-features --features "panic_with_msg"
 popd
 # Increase the number of memory pages in the kernel.
-cargo run --package cap9-build -- set-mem --pages 4 ./target/wasm32-unknown-unknown/release/cap9_kernel.wasm ./target/wasm32-unknown-unknown/release/cap9_kernel.wasm
+cargo run --package cap9-cli -- build set-mem --pages 4 ./target/wasm32-unknown-unknown/release/cap9_kernel.wasm ./target/wasm32-unknown-unknown/release/cap9_kernel.wasm
 # Pass the raw WASM output through the wasm-build post-processor.
 wasm-build --target=wasm32-unknown-unknown ./target cap9-kernel
 
@@ -31,8 +31,8 @@ cp ./target/wasm32-unknown-unknown/release/examples/*.wasm ./target/wasm32-unkno
 # Pass example contracts through the procedure build process.
 function build_procedure {
     echo "Building $1"
-    cargo run --package cap9-build -- build-proc ./target/wasm32-unknown-unknown/release/$1.wasm ./target/wasm32-unknown-unknown/release/$1.wasm
-    cargo run --package cap9-build -- set-mem --pages 4 ./target/wasm32-unknown-unknown/release/$1.wasm ./target/wasm32-unknown-unknown/release/$1.wasm
+    cargo run --package cap9-cli -- build build-proc ./target/wasm32-unknown-unknown/release/$1.wasm ./target/wasm32-unknown-unknown/release/$1.wasm
+    cargo run --package cap9-cli -- build set-mem --pages 4 ./target/wasm32-unknown-unknown/release/$1.wasm ./target/wasm32-unknown-unknown/release/$1.wasm
     wasm-build --target=wasm32-unknown-unknown ./target $1
 }
 

@@ -8,3 +8,4 @@ pub mod deploy;
 pub mod project;
 pub mod utils;
 pub mod fetch;
+pub mod build;

@@ -1,61 +1,72 @@
-extern crate parity_wasm;
-extern crate pwasm_utils;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use parity_wasm::elements::{Instruction, Instructions};
+use parity_wasm::elements::{MemoryType, Module};
 
-use parity_wasm::elements::{Module,MemoryType};
-use clap::{Arg, App, SubCommand};
-use parity_wasm::elements::{Instructions, Instruction};
-
-fn main() {
-    let matches = App::new("cap9-build")
-            .version("0.2.0")
-            .author("Cap9 <info@daohub.io>")
-            .about("A command-line interface for linking Cap9 procedures.")
-            .subcommand(SubCommand::with_name("build-proc")
-                .about("Convert a regular contract into a cap9 procedure.")
-                .arg(Arg::with_name("INPUT-FILE")
-                    .required(true)
-                    .help("input file"))
-                .arg(Arg::with_name("OUTPUT-FILE")
-                    .required(true)
-                    .help("output file")))
-            .subcommand(SubCommand::with_name("set-mem")
-                .about("Set the number of memory pages in a procedure.")
-                .arg(Arg::with_name("INPUT-FILE")
-                    .required(true)
-                    .help("input file"))
-                .arg(Arg::with_name("OUTPUT-FILE")
-                    .required(true)
-                    .help("output file"))
-                .arg(Arg::with_name("pages")
-                    .short("p")
-                    .long("pages")
-                    .value_name("PAGES")
-                    .required(true)
-                    .help("Number of pages to set the memory to")))
-            .get_matches();
-
-    match matches.subcommand() {
-        ("build-proc",  Some(opts)) => {
-            let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
-            let output_path = opts.value_of("OUTPUT-FILE").expect("output path is required");
-
-            let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
-            let new_module = contract_build(module);
-            parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
-        },
-        ("set-mem",  Some(opts)) => {
-            let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
-            let output_path = opts.value_of("OUTPUT-FILE").expect("output path is required");
-            let mem_pages = opts.value_of("pages").expect("number of memory pages is required");
-
-            let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
-            let new_module = set_mem(module, mem_pages.parse().expect("expected number for number of pages"));
-            parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
-        },
-        _ => panic!("unknown subcommand")
-    }
+pub fn build_commands<'a, 'b>() -> Vec<App<'a, 'b>> {
+    let build_command: App = SubCommand::with_name("build-proc")
+        .about("Convert a regular contract into a cap9 procedure.")
+        .arg(
+            Arg::with_name("INPUT-FILE")
+                .required(true)
+                .help("input file"),
+        )
+        .arg(
+            Arg::with_name("OUTPUT-FILE")
+                .required(true)
+                .help("output file"),
+        );
+    let set_mem_command: App = SubCommand::with_name("set-mem")
+        .about("Set the number of memory pages in a procedure.")
+        .arg(
+            Arg::with_name("INPUT-FILE")
+                .required(true)
+                .help("input file"),
+        )
+        .arg(
+            Arg::with_name("OUTPUT-FILE")
+                .required(true)
+                .help("output file"),
+        )
+        .arg(
+            Arg::with_name("pages")
+                .short("p")
+                .long("pages")
+                .value_name("PAGES")
+                .required(true)
+                .help("Number of pages to set the memory to"),
+        );
+    vec![build_command, set_mem_command]
 }
 
+pub fn execute_build_proc(opts: &ArgMatches) {
+    let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
+    let output_path = opts
+        .value_of("OUTPUT-FILE")
+        .expect("output path is required");
+
+    let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
+    let new_module = contract_build(module);
+    parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
+}
+
+pub fn execute_set_mem(opts: &ArgMatches) {
+    let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
+    let output_path = opts
+        .value_of("OUTPUT-FILE")
+        .expect("output path is required");
+    let mem_pages = opts
+        .value_of("pages")
+        .expect("number of memory pages is required");
+
+    let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
+    let new_module = set_mem(
+        module,
+        mem_pages
+            .parse()
+            .expect("expected number for number of pages"),
+    );
+    parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
+}
 
 /// Perform the operations necessary for cap9 procedures.
 fn contract_build(module: Module) -> Module {
