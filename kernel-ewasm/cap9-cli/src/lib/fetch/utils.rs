@@ -1,4 +1,4 @@
-use web3::types::{U256, H256};
+use web3::types::{H256, U256};
 
 pub fn h256_to_u256(h: H256) -> U256 {
     U256::from_big_endian(&h.to_fixed_bytes())

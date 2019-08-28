@@ -1,9 +1,9 @@
-use std::io;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use parity_wasm::elements;
 use parity_wasm::elements::{Instruction, Instructions};
 use parity_wasm::elements::{MemoryType, Module};
 use pwasm_utils::{build, BuildError, SourceTarget, TargetRuntime};
+use std::io;
 
 #[derive(Debug)]
 pub enum Error {
@@ -20,13 +20,20 @@ impl std::fmt::Display for Error {
         match *self {
             Io(ref io) => write!(f, "Generic i/o error: {}", io),
             FailedToCopy(ref msg) => write!(f, "{}. Have you tried to run \"cargo build\"?", msg),
-            Decoding(ref err, ref file) => write!(f, "Decoding error ({}). Must be a valid wasm file {}. Pointed wrong file?", err, file),
-            Encoding(ref err) => write!(f, "Encoding error ({}). Almost impossible to happen, no free disk space?", err),
-            Build(ref err) => write!(f, "Build error: {}", err)
+            Decoding(ref err, ref file) => write!(
+                f,
+                "Decoding error ({}). Must be a valid wasm file {}. Pointed wrong file?",
+                err, file
+            ),
+            Encoding(ref err) => write!(
+                f,
+                "Encoding error ({}). Almost impossible to happen, no free disk space?",
+                err
+            ),
+            Build(ref err) => write!(f, "Build error: {}", err),
         }
     }
 }
-
 
 pub fn build_commands<'a, 'b>() -> Vec<App<'a, 'b>> {
     let full_command: App = SubCommand::with_name("full")
@@ -159,7 +166,12 @@ pub fn build_commands<'a, 'b>() -> Vec<App<'a, 'b>> {
                 .required(true)
                 .help("Number of pages to set the memory to"),
         );
-    vec![build_command, set_mem_command, wasm_build_command, full_command]
+    vec![
+        build_command,
+        set_mem_command,
+        wasm_build_command,
+        full_command,
+    ]
 }
 
 pub fn execute_build_proc(opts: &ArgMatches) {
@@ -183,37 +195,51 @@ pub fn execute_set_mem(opts: &ArgMatches) {
         .expect("number of memory pages is required");
 
     let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
-    let new_module = set_mem( module, mem_pages .parse() .expect("expected number for number of pages"), );
+    let new_module = set_mem(
+        module,
+        mem_pages
+            .parse()
+            .expect("expected number for number of pages"),
+    );
     parity_wasm::serialize_to_file(output_path, new_module).expect("serialising to output failed");
 }
 
 pub fn execute_wasm_build(opts: &ArgMatches) {
     let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
-    let output_path = opts .value_of("OUTPUT-FILE") .expect("output path is required");
+    let output_path = opts
+        .value_of("OUTPUT-FILE")
+        .expect("output path is required");
 
     let module = parity_wasm::deserialize_file(&input_path)
-        .map_err(|e| Error::Decoding(e, input_path.to_string())).unwrap();
+        .map_err(|e| Error::Decoding(e, input_path.to_string()))
+        .unwrap();
     let new_module = wasm_build(opts, module);
-    parity_wasm::serialize_to_file(&output_path, new_module).map_err(Error::Encoding).unwrap();
+    parity_wasm::serialize_to_file(&output_path, new_module)
+        .map_err(Error::Encoding)
+        .unwrap();
 }
 
 pub fn wasm_build(opts: &ArgMatches, module: Module) -> Module {
-    let runtime_type_version = if let (Some(runtime_type), Some(runtime_version))
-         = (opts.value_of("runtime_type"), opts.value_of("runtime_version")) {
+    let runtime_type_version = if let (Some(runtime_type), Some(runtime_version)) = (
+        opts.value_of("runtime_type"),
+        opts.value_of("runtime_version"),
+    ) {
         let mut ty: [u8; 4] = Default::default();
         let runtime_bytes = runtime_type.as_bytes();
         if runtime_bytes.len() != 4 {
             panic!("--runtime-type should be equal to 4 bytes");
         }
         ty.copy_from_slice(runtime_bytes);
-        let version: u32 = runtime_version.parse()
+        let version: u32 = runtime_version
+            .parse()
             .expect("--runtime-version should be a positive integer");
         Some((ty, version))
     } else {
         None
     };
 
-    let public_api_entries = opts.value_of("public_api")
+    let public_api_entries = opts
+        .value_of("public_api")
         .map(|val| val.split(",").collect())
         .unwrap_or(Vec::new());
 
@@ -229,14 +255,20 @@ pub fn wasm_build(opts: &ArgMatches, module: Module) -> Module {
         runtime_type_version,
         &public_api_entries,
         opts.is_present("enforce_stack_adjustment"),
-        opts.value_of("shrink_stack").unwrap_or_else(|| "49152").parse()
+        opts.value_of("shrink_stack")
+            .unwrap_or_else(|| "49152")
+            .parse()
             .expect("New stack size is not valid u32"),
         opts.is_present("skip_optimization"),
         &target_runtime,
-    ).map_err(Error::Build).expect("invalid build");
+    )
+    .map_err(Error::Build)
+    .expect("invalid build");
 
     if let Some(save_raw_path) = opts.value_of("save_raw") {
-        parity_wasm::serialize_to_file(save_raw_path, module.clone()).map_err(Error::Encoding).unwrap();
+        parity_wasm::serialize_to_file(save_raw_path, module.clone())
+            .map_err(Error::Encoding)
+            .unwrap();
     }
 
     if let Some(ctor_module) = ctor_module {
@@ -248,7 +280,9 @@ pub fn wasm_build(opts: &ArgMatches, module: Module) -> Module {
 
 pub fn execute_full(opts: &ArgMatches) {
     let input_path = opts.value_of("INPUT-FILE").expect("input file is required");
-    let output_path = opts .value_of("OUTPUT-FILE") .expect("output path is required");
+    let output_path = opts
+        .value_of("OUTPUT-FILE")
+        .expect("output path is required");
 
     let module = parity_wasm::deserialize_file(input_path).expect("parsing of input failed");
     let contract_module = contract_build(module);
@@ -261,7 +295,6 @@ pub fn execute_full(opts: &ArgMatches) {
 
 /// Perform the operations necessary for cap9 procedures.
 pub fn contract_build(module: Module) -> Module {
-
     // TODO: we need to make sure these values never change between now and when
     // we use them. In the current set up they will not, but it is fragile,
     // there are changes that could be introduced which would change this.
@@ -273,17 +306,17 @@ pub fn contract_build(module: Module) -> Module {
     let mut new_module = if let Ok(syscall_instructions) = syscall_instructions_res {
         new_module_builder
             .function()
-                .signature()
-                    .with_param(parity_wasm::elements::ValueType::I32)
-                    .with_param(parity_wasm::elements::ValueType::I32)
-                    .with_param(parity_wasm::elements::ValueType::I32)
-                    .with_param(parity_wasm::elements::ValueType::I32)
-                    .with_return_type(Some(parity_wasm::elements::ValueType::I32))
-                    .build()
-                .body()
-                    .with_instructions(syscall_instructions)
-                    .build()
-                .build()
+            .signature()
+            .with_param(parity_wasm::elements::ValueType::I32)
+            .with_param(parity_wasm::elements::ValueType::I32)
+            .with_param(parity_wasm::elements::ValueType::I32)
+            .with_param(parity_wasm::elements::ValueType::I32)
+            .with_return_type(Some(parity_wasm::elements::ValueType::I32))
+            .build()
+            .body()
+            .with_instructions(syscall_instructions)
+            .build()
+            .build()
             .build()
     } else {
         new_module_builder.build()
@@ -304,11 +337,17 @@ pub fn contract_build(module: Module) -> Module {
             // Search though the code of each function, if we encounter a
             // Call(syscall_index), replace it with Call(added_syscall_index).
             // TODO: investigate the use of CallIndirect
-            for f in new_module.code_section_mut().unwrap().bodies_mut().iter_mut() {
+            for f in new_module
+                .code_section_mut()
+                .unwrap()
+                .bodies_mut()
+                .iter_mut()
+            {
                 for i in 0..f.code().elements().len() {
                     let instruction = &f.code().elements()[i];
                     if instruction == &Instruction::Call(syscall_index) {
-                        f.code_mut().elements_mut()[i] = Instruction::Call(added_syscall_index as u32);
+                        f.code_mut().elements_mut()[i] =
+                            Instruction::Call(added_syscall_index as u32);
                     }
                 }
             }
@@ -324,13 +363,17 @@ pub fn contract_build(module: Module) -> Module {
     if let Some(dummy_syscall_export_index) = find_export(&new_module, "dummy_syscall") {
         // println!("dummy_syscall_export_index: {}", dummy_syscall_export_index);
         // 2. Delete the export
-        new_module.export_section_mut().unwrap().entries_mut().remove(dummy_syscall_export_index as usize);
+        new_module
+            .export_section_mut()
+            .unwrap()
+            .entries_mut()
+            .remove(dummy_syscall_export_index as usize);
     }
     // 3. At this stage the dummy_syscall function still exists internally. We
     //    can't use the same remove procedure without screwing up the internal
     //    references, so we will just run the parity optmizer again for now to
     //    let it deal with that.
-    pwasm_utils::optimize(&mut new_module, vec!["call","deploy"]).unwrap();
+    pwasm_utils::optimize(&mut new_module, vec!["call", "deploy"]).unwrap();
     new_module
 }
 
@@ -338,14 +381,14 @@ pub fn set_mem(mut module: Module, num_pages: u32) -> Module {
     // We want to find the single memory section, and change it from its current
     // value to the one we've requested.
     let mem_entry: &mut Vec<MemoryType> = module.memory_section_mut().unwrap().entries_mut();
-    mem_entry[0] = parity_wasm::elements::MemoryType::new(num_pages,None);
+    mem_entry[0] = parity_wasm::elements::MemoryType::new(num_pages, None);
     module
 }
 
 // Find the function index of an import
 fn find_import(module: &Module, mod_name: &str, field_name: &str) -> Option<u32> {
     let imports = module.import_section().unwrap().entries();
-    for (i,import) in imports.iter().enumerate() {
+    for (i, import) in imports.iter().enumerate() {
         if import.module() == mod_name && import.field() == field_name {
             return Some(i as u32);
         }
@@ -356,7 +399,7 @@ fn find_import(module: &Module, mod_name: &str, field_name: &str) -> Option<u32>
 // Find the function index of an export
 fn find_export(module: &Module, field_name: &str) -> Option<u32> {
     let exports = module.export_section().unwrap().entries();
-    for (i,export) in exports.iter().enumerate() {
+    for (i, export) in exports.iter().enumerate() {
         if export.field() == field_name {
             return Some(i as u32);
         }
@@ -370,7 +413,7 @@ enum SysCallError {
     NoSender,
 }
 
-fn get_syscall_instructions(module: &Module) -> Result<Instructions,SysCallError> {
+fn get_syscall_instructions(module: &Module) -> Result<Instructions, SysCallError> {
     // If any of these three environments are not pulled in from the
     // environment, we cannot have syscalls.
     let dcall_index = find_import(module, "env", "dcall").ok_or(SysCallError::NoDCall)?;
@@ -405,6 +448,6 @@ fn get_syscall_instructions(module: &Module) -> Result<Instructions,SysCallError
         Instruction::Call(dcall_index),
         // End function
         Instruction::End,
-        ]);
+    ]);
     Ok(syscall_instructions)
 }

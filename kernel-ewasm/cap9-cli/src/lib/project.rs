@@ -1,21 +1,21 @@
-use web3::Transport;
-use web3::contract::{Contract, Options};
-use web3::types::{Address, U256, H256};
-use web3::contract::tokens::Tokenize;
 use serde::{Deserialize, Serialize};
+use web3::contract::tokens::Tokenize;
+use web3::contract::{Contract, Options};
+use web3::types::{Address, H256, U256};
+use web3::Transport;
 
 use web3::futures::Future;
 
 use std::fs::create_dir;
 use std::fs::File;
-use std::path::PathBuf;
 use std::io::prelude::*;
+use std::path::PathBuf;
 
-use crate::fetch::*;
-use crate::connection::*;
 use crate::connection;
-use crate::deploy::*;
+use crate::connection::*;
 use crate::default_procedures::*;
+use crate::deploy::*;
+use crate::fetch::*;
 use crate::utils::*;
 use cap9_std::proc_table::cap::*;
 
@@ -63,7 +63,6 @@ pub struct DeploySpec {
 //     }
 // }
 
-
 #[derive(Serialize, Deserialize)]
 pub struct ProcSpec {
     pub contract_spec: ContractSpec,
@@ -72,12 +71,18 @@ pub struct ProcSpec {
 
 impl ProcSpec {
     /// Deploy the underlying contract to the blockchain.
-    pub fn deploy<T: Transport, P: Tokenize>(&self, conn: &EthConn<T>, params: P) -> Result<Contract<T>, ContractDeploymentError> {
+    pub fn deploy<T: Transport, P: Tokenize>(
+        &self,
+        conn: &EthConn<T>,
+        params: P,
+    ) -> Result<Contract<T>, ContractDeploymentError> {
         // Before a procedure contract is deployed, it must go through
         // "proc-build".
-        let module = parity_wasm::deserialize_file(&self.contract_spec.code_path).expect("ProcSpec::deploy() - parsing of input failed");
+        let module = parity_wasm::deserialize_file(&self.contract_spec.code_path)
+            .expect("ProcSpec::deploy() - parsing of input failed");
         let new_module = crate::build::contract_build(module);
-        let code: Vec<u8> = parity_wasm::serialize(new_module).expect("serialising to output failed");
+        let code: Vec<u8> =
+            parity_wasm::serialize(new_module).expect("serialising to output failed");
         deploy_contract(conn, code, &self.contract_spec.abi(), params)
     }
 }
@@ -99,7 +104,8 @@ impl ContractSpec {
         let mut code_path_rel = PathBuf::new();
         code_path_rel.push(&name);
         code_path_rel.set_extension("bin");
-        let mut code_file = File::create(&code_path).expect(format!("Could not create file: {:?}", code_path).as_str());
+        let mut code_file = File::create(&code_path)
+            .expect(format!("Could not create file: {:?}", code_path).as_str());
         code_file.write_all(code.as_slice()).unwrap();
         let mut abi_path = PathBuf::new();
         abi_path.push(&dir);
@@ -125,7 +131,11 @@ impl ContractSpec {
         }
     }
 
-    pub fn deploy<T: Transport, P: Tokenize>(&self, conn: &EthConn<T>, params: P) -> Result<Contract<T>, ContractDeploymentError> {
+    pub fn deploy<T: Transport, P: Tokenize>(
+        &self,
+        conn: &EthConn<T>,
+        params: P,
+    ) -> Result<Contract<T>, ContractDeploymentError> {
         let code: Vec<u8> = self.code();
         let abi: Vec<u8> = self.abi();
         let deploy_result = deploy_contract(conn, code, &abi, params);
@@ -177,19 +187,18 @@ impl StatusFile {
 
 #[derive(Debug, Fail)]
 pub enum ProjectDeploymentError {
-    #[fail(display = "failed to deploy a contract \"{}\" which is necessary for project, due to: {}", contract_name, error)]
+    #[fail(
+        display = "failed to deploy a contract \"{}\" which is necessary for project, due to: {}",
+        contract_name, error
+    )]
     ContractDeploymentError {
         contract_name: String,
         error: String,
     },
     #[fail(display = "incorrect parameters passed to constructor: {}", err)]
-    BadParameters {
-        err: String,
-    },
+    BadParameters { err: String },
     #[fail(display = "Could not form a proxied contract: {}", err)]
-    ProxiedProcedureError {
-        err: String,
-    },
+    ProxiedProcedureError { err: String },
 }
 
 /// A representation of the local project information. Methods on this struct
@@ -215,7 +224,7 @@ impl LocalProject {
             Err(ref err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
                 println!("The directory {} already exists.", project_name);
                 std::process::exit(1);
-            },
+            }
             e => e.unwrap(),
         }
         // Save the kernel code to file and create a ContractSpec
@@ -226,7 +235,11 @@ impl LocalProject {
         path.set_extension("json");
         let kernel_spec = ContractSpec::from_default(KERNEL, &dir, "kernel".to_string());
         let init_entry_spec = ProcSpec {
-            contract_spec: ContractSpec::from_default(ACL_BOOTSTRAP, &dir, "acl_bootstrap".to_string()),
+            contract_spec: ContractSpec::from_default(
+                ACL_BOOTSTRAP,
+                &dir,
+                "acl_bootstrap".to_string(),
+            ),
             // TODO: fix cap path
             cap_path: PathBuf::from("example_caps.json"),
         };
@@ -235,7 +248,8 @@ impl LocalProject {
         };
         let deploy_file = DeployFile::new(kernel_spec, deploy_spec);
         let f = File::create(&path).expect("Could not create file");
-        serde_json::ser::to_writer_pretty(f, &deploy_file).expect("Could not serialise deploy data");
+        serde_json::ser::to_writer_pretty(f, &deploy_file)
+            .expect("Could not serialise deploy data");
         let abs_path = PathBuf::from(".").canonicalize().unwrap();
         LocalProject {
             abs_path,
@@ -253,7 +267,7 @@ impl LocalProject {
             Err(ref err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
                 println!("The directory {} already exists.", project_name);
                 std::process::exit(1);
-            },
+            }
             e => e.unwrap(),
         }
         // Save the kernel code to file and create a ContractSpec
@@ -264,7 +278,11 @@ impl LocalProject {
         path.set_extension("json");
         let kernel_spec = ContractSpec::from_default(KERNEL, &dir, "kernel".to_string());
         let init_entry_spec = ProcSpec {
-            contract_spec: ContractSpec::from_default(ACL_BOOTSTRAP, &dir, "acl_bootstrap".to_string()),
+            contract_spec: ContractSpec::from_default(
+                ACL_BOOTSTRAP,
+                &dir,
+                "acl_bootstrap".to_string(),
+            ),
             cap_path: PathBuf::from("example_caps.json"),
         };
         let deploy_spec = DeploySpec {
@@ -272,7 +290,8 @@ impl LocalProject {
         };
         let deploy_file = DeployFile::new_with_acl(kernel_spec, deploy_spec);
         let f = File::create(&path).expect("Could not create file");
-        serde_json::ser::to_writer_pretty(f, &deploy_file).expect("Could not serialise deploy data");
+        serde_json::ser::to_writer_pretty(f, &deploy_file)
+            .expect("Could not serialise deploy data");
         let abs_path = PathBuf::from(".").canonicalize().unwrap();
         LocalProject {
             abs_path,
@@ -324,7 +343,9 @@ impl LocalProject {
     /// Write out a status file.
     pub fn add_status_file(&mut self, address: Address) {
         let status_file = StatusFile::new(address);
-        let status_file_path: PathBuf = [&self.abs_path, &PathBuf::from("status.json")].iter().collect();
+        let status_file_path: PathBuf = [&self.abs_path, &PathBuf::from("status.json")]
+            .iter()
+            .collect();
         let out_file = File::create(status_file_path).expect("could not create status file");
         serde_json::to_writer_pretty(out_file, &status_file).expect("could not serialise to file");
         self.status_file = Some(status_file);
@@ -332,12 +353,17 @@ impl LocalProject {
 
     pub fn write_status_file(&self) {
         let status_file: &StatusFile = self.status_file().as_ref().unwrap();
-        let status_file_path: PathBuf = [&self.abs_path, &PathBuf::from("status.json")].iter().collect();
+        let status_file_path: PathBuf = [&self.abs_path, &PathBuf::from("status.json")]
+            .iter()
+            .collect();
         let out_file = File::create(status_file_path).expect("could not create status file");
         serde_json::to_writer_pretty(out_file, &status_file).expect("could not serialise to file");
     }
 
-    pub fn deploy<'a, 'b, T: Transport>(self, conn:  &'a EthConn<T>) -> Result<(),ProjectDeploymentError> {
+    pub fn deploy<'a, 'b, T: Transport>(
+        self,
+        conn: &'a EthConn<T>,
+    ) -> Result<(), ProjectDeploymentError> {
         // Deploy initial procedure
         let deploy_file = self.deploy_file();
         if deploy_file.standard_acl_abi {
@@ -352,12 +378,21 @@ impl LocalProject {
         [&self.abs_path, path].iter().collect()
     }
 
-    pub fn deploy_std<'a, T: Transport>(mut self, conn:  &'a EthConn<T>) -> Result<DeployedKernel<'a, T>, ProjectDeploymentError> {
+    pub fn deploy_std<'a, T: Transport>(
+        mut self,
+        conn: &'a EthConn<T>,
+    ) -> Result<DeployedKernel<'a, T>, ProjectDeploymentError> {
         let deploy_file = self.deploy_file();
         // Deploy initial procedure
         // TODO: does the initial procedure need contructor parameters?
-        let init_contract = &deploy_file.deploy_spec.initial_entry.deploy(&conn, ( ))
-            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "Init contract".to_string(), error: format!("{:?}", err)})?;
+        let init_contract = &deploy_file
+            .deploy_spec
+            .initial_entry
+            .deploy(&conn, ())
+            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {
+                contract_name: "Init contract".to_string(),
+                error: format!("{:?}", err),
+            })?;
         // Setup some parameters for the the kernel constructor
         let proc_key = String::from("init");
         let proc_address = init_contract.address();
@@ -370,21 +405,31 @@ impl LocalProject {
         let encoded_cap_list: Vec<U256> = from_common_u256_vec(cap_list.to_u256_list());
 
         let kernel_constructor_params = (proc_key, proc_address, encoded_cap_list);
-        let kernel_contract = &deploy_file.kernel.deploy(&conn, kernel_constructor_params)
-            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "Kernel contract".to_string(), error: format!("{:?}", err)})?;
+        let kernel_contract = &deploy_file
+            .kernel
+            .deploy(&conn, kernel_constructor_params)
+            .map_err(|err| ProjectDeploymentError::ContractDeploymentError {
+                contract_name: "Kernel contract".to_string(),
+                error: format!("{:?}", err),
+            })?;
 
         self.add_status_file(kernel_contract.address());
         Ok(DeployedKernel::new(conn, self))
     }
 
-    pub fn deploy_with_acl<'a, T: Transport>(self, conn:  &'a EthConn<T>) -> Result<DeployedKernelWithACL<'a, T>, ProjectDeploymentError> {
+    pub fn deploy_with_acl<'a, T: Transport>(
+        self,
+        conn: &'a EthConn<T>,
+    ) -> Result<DeployedKernelWithACL<'a, T>, ProjectDeploymentError> {
         let mut deployed_kernel = self.deploy_std(conn)?;
         let proxied_init_contract = web3::contract::Contract::from_json(
-                conn.web3.eth(),
-                deployed_kernel.address(),
-                ACL_BOOTSTRAP.abi(),
-            )
-            .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {err: format!("{:?}", err)})?;
+            conn.web3.eth(),
+            deployed_kernel.address(),
+            ACL_BOOTSTRAP.abi(),
+        )
+        .map_err(|err| ProjectDeploymentError::ProxiedProcedureError {
+            err: format!("{:?}", err),
+        })?;
         let entry_contract_spec = ACL_ENTRY.contract_spec(&deployed_kernel.local_project.abs_path);
         let admin_contract_spec = ACL_ADMIN.contract_spec(&deployed_kernel.local_project.abs_path);
 
@@ -397,100 +442,148 @@ impl LocalProject {
             cap_path: PathBuf::from(""),
         };
 
-        let entry_contract = entry_proc_spec.deploy(conn, ( )).unwrap();
-        let admin_contract = admin_proc_spec.deploy(conn, ( )).unwrap();
+        let entry_contract = entry_proc_spec.deploy(conn, ()).unwrap();
+        let admin_contract = admin_proc_spec.deploy(conn, ()).unwrap();
         // let entry_path = ACL_ENTRY.write_abi(&deployed_kernel.local_project.abs_path);
         // let admin_path = ACL_ADMIN.write_abi(&deployed_kernel.local_project.abs_path);
         // let entry_contract = deploy_contract(conn, ACL_ENTRY.code(), ACL_ENTRY.abi(), ( ))
-            // .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL entry contract".to_string(), error: format!("{:?}", err)})?;
+        // .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL entry contract".to_string(), error: format!("{:?}", err)})?;
         {
             let local_project: &mut LocalProject = &mut deployed_kernel.local_project;
             let status_file: &mut StatusFile = local_project.status_file.as_mut().unwrap();
-            status_file.add_abi(entry_contract.address(), PathBuf::from(entry_proc_spec.contract_spec.abi_path));
+            status_file.add_abi(
+                entry_contract.address(),
+                PathBuf::from(entry_proc_spec.contract_spec.abi_path),
+            );
         }
         // let admin_contract = deploy_contract(conn, ACL_ADMIN.code(), ACL_ADMIN.abi(), ( ))
-            // .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL admin contract".to_string(), error: format!("{:?}", err)})?;
+        // .map_err(|err| ProjectDeploymentError::ContractDeploymentError {contract_name: "ACL admin contract".to_string(), error: format!("{:?}", err)})?;
         {
             let local_project: &mut LocalProject = &mut deployed_kernel.local_project;
             let status_file: &mut StatusFile = local_project.status_file.as_mut().unwrap();
-            status_file.add_abi(admin_contract.address(), PathBuf::from(admin_proc_spec.contract_spec.abi_path));
+            status_file.add_abi(
+                admin_contract.address(),
+                PathBuf::from(admin_proc_spec.contract_spec.abi_path),
+            );
         }
         let entry_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("entry".to_string())).into();
         let admin_key: U256 = proc_key_to_32_bytes(&string_to_proc_key("admin".to_string())).into();
         let prefix = 0;
         let cap_key = string_to_proc_key("write".to_string());
         let caps: Vec<NewCapability> = vec![
-                NewCapability {
-                    cap: Capability::ProcedureRegister(ProcedureRegisterCap {
-                        prefix,
-                        key: cap_key,
-                    }),
-                    parent_index: 0,
-                },
-                NewCapability {
-                    cap: Capability::ProcedureRegister(ProcedureRegisterCap {
-                        prefix,
-                        key: cap_key,
-                    }),
-                    parent_index: 1,
-                },
-                NewCapability {
-                    cap: Capability::ProcedureCall(ProcedureCallCap {
-                        prefix,
-                        key: cap_key,
-                    }),
-                    parent_index: 0,
-                },
-                NewCapability {
-                    cap: Capability::ProcedureDelete(ProcedureDeleteCap {
-                        prefix,
-                        key: cap_key,
-                    }),
-                    parent_index: 0,
-                },
-                NewCapability {
-                    cap: Capability::StoreWrite(StoreWriteCap {
-                        location: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-                        size:     [0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-                    }),
-                    parent_index: 0,
-                },
-                NewCapability {
-                    cap: Capability::StoreWrite(StoreWriteCap {
-                        location: [0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-                        size:     [0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-                    }),
-                    parent_index: 1,
-                },
-                NewCapability {
-                    cap: Capability::ProcedureEntry(ProcedureEntryCap),
-                    parent_index: 0,
-                },
-            ];
+            NewCapability {
+                cap: Capability::ProcedureRegister(ProcedureRegisterCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureRegister(ProcedureRegisterCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 1,
+            },
+            NewCapability {
+                cap: Capability::ProcedureCall(ProcedureCallCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureDelete(ProcedureDeleteCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: [
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    ],
+                    size: [
+                        0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    ],
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: [
+                        0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    ],
+                    size: [
+                        0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    ],
+                }),
+                parent_index: 1,
+            },
+            NewCapability {
+                cap: Capability::ProcedureEntry(ProcedureEntryCap),
+                parent_index: 0,
+            },
+        ];
 
         let encoded_cap_list_entry: NewCapList = NewCapList(caps.clone());
         let encoded_cap_list_admin: NewCapList = NewCapList(caps.clone());
 
         // Be wary of conflicting U256 types
-        let encoded_cap_list_entry_u256: Vec<U256> = from_common_u256_vec(encoded_cap_list_entry.to_u256_list());
-        let encoded_cap_list_admin_u256: Vec<U256> = from_common_u256_vec(encoded_cap_list_admin.to_u256_list());
+        let encoded_cap_list_entry_u256: Vec<U256> =
+            from_common_u256_vec(encoded_cap_list_entry.to_u256_list());
+        let encoded_cap_list_admin_u256: Vec<U256> =
+            from_common_u256_vec(encoded_cap_list_admin.to_u256_list());
 
         let main_account = &conn.sender;
 
         {
-            let entry_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+            let entry_proc_address: U256 = U256::from_big_endian(&[
+                0xff, 0xff, 0xff, 0xff, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ]);
             // println!("EntryProcAddress: 0x{}", entry_proc_address.to_hex());
-            let store_val = conn.web3.eth().storage(deployed_kernel.address(), entry_proc_address, None).wait();
+            let store_val = conn
+                .web3
+                .eth()
+                .storage(deployed_kernel.address(), entry_proc_address, None)
+                .wait();
             println!("EntryProc: {:?}", store_val);
         }
         {
-            let storage_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x00, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x63, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-            let storage_value = conn.web3.eth().storage(deployed_kernel.address(), storage_address, None).wait();
+            let storage_address: U256 = U256::from_big_endian(&[
+                0xff, 0xff, 0xff, 0xff, 0x00, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x63,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ]);
+            let storage_value = conn
+                .web3
+                .eth()
+                .storage(deployed_kernel.address(), storage_address, None)
+                .wait();
             println!("EntryProcAddress: {:?}", storage_value);
         }
         {
-            let entry_proc_address: U256 = U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-            let store_val2 = conn.web3.eth().storage(deployed_kernel.address(), entry_proc_address, None).wait();
+            let entry_proc_address: U256 = U256::from_big_endian(&[
+                0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ]);
+            let store_val2 = conn
+                .web3
+                .eth()
+                .storage(deployed_kernel.address(), entry_proc_address, None)
+                .wait();
             println!("N Procs: {:?}", store_val2);
         }
 
@@ -500,34 +593,54 @@ impl LocalProject {
         println!("admin_address: {:?}", admin_contract.address());
         println!("main_account: {:?}", main_account);
 
-
         // Initialise ACL via bootstrap procedure.
-        let res = proxied_init_contract.call("init", (
-                entry_key, // entry key
-                entry_contract.address(), // entry address
-                encoded_cap_list_entry_u256, // entry cap list
-                admin_key, // admin key
-                admin_contract.address(), // admin address
-                encoded_cap_list_admin_u256, // admin cap list
-                main_account.clone() // admin account
-            ), conn.sender,
-            Options::with(|opts| {
-                opts.gas = Some(550_621_180.into());
-            }),
-            ).wait().expect("ACL init");
+        let res = proxied_init_contract
+            .call(
+                "init",
+                (
+                    entry_key,                   // entry key
+                    entry_contract.address(),    // entry address
+                    encoded_cap_list_entry_u256, // entry cap list
+                    admin_key,                   // admin key
+                    admin_contract.address(),    // admin address
+                    encoded_cap_list_admin_u256, // admin cap list
+                    main_account.clone(),        // admin account
+                ),
+                conn.sender,
+                Options::with(|opts| {
+                    opts.gas = Some(550_621_180.into());
+                }),
+            )
+            .wait()
+            .expect("ACL init");
         println!("res: {:?}", res);
 
-        let init_receipt = conn.web3.eth().transaction_receipt(res).wait().expect("init receipt").unwrap();
+        let init_receipt = conn
+            .web3
+            .eth()
+            .transaction_receipt(res)
+            .wait()
+            .expect("init receipt")
+            .unwrap();
         println!("Init Receipt: {:?}", init_receipt);
-
 
         if init_receipt.status != Some(web3::types::U64::one()) {
             panic!("ACL init failed!");
         }
 
-        let keys: Vec<H256> = serde_json::value::from_value(connection::list_storage_keys(deployed_kernel.address()).result.unwrap()).unwrap();
+        let keys: Vec<H256> = serde_json::value::from_value(
+            connection::list_storage_keys(deployed_kernel.address())
+                .result
+                .unwrap(),
+        )
+        .unwrap();
         for key in keys {
-            let val = conn.web3.eth().storage(deployed_kernel.address(), key.as_fixed_bytes().into(), None).wait().expect("storage value");
+            let val = conn
+                .web3
+                .eth()
+                .storage(deployed_kernel.address(), key.as_fixed_bytes().into(), None)
+                .wait()
+                .expect("storage value");
             println!("key: {:?}, val: {:?}", key, val);
         }
         deployed_kernel.local_project.write_status_file();
@@ -569,15 +682,31 @@ const DEFAULT_CAPS: [NewCapability; 7] = [
     // TODO: it might be worth warning about overlapping caps
     NewCapability {
         cap: Capability::StoreWrite(StoreWriteCap {
-            location: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-            size:     [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe],
+            location: [
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ],
+            size: [
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xfe,
+            ],
         }),
         parent_index: 0,
     },
     NewCapability {
         cap: Capability::StoreWrite(StoreWriteCap {
-            location: [0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-            size:     [0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa],
+            location: [
+                0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+            ],
+            size: [
+                0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+                0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+                0xaa, 0xaa, 0xaa, 0xaa,
+            ],
         }),
         parent_index: 0,
     },

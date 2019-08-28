@@ -1,16 +1,22 @@
-use web3::types::{Address, U256, H256};
 use pwasm_abi;
+use web3::types::{Address, H256, U256};
 
 pub fn string_to_proc_key(mut name: String) -> [u8; 24] {
     if !name.is_ascii() {
         panic!("name ({}) is not ascii", name);
     }
     if name.len() > 24 {
-        panic!("name ({}) is greater than 24 characters, it is {} characters", name, name.len());
+        panic!(
+            "name ({}) is greater than 24 characters, it is {} characters",
+            name,
+            name.len()
+        );
     }
     name.push_str("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
     name.truncate(24);
-    let mut procedure_key : [u8; 24] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    let mut procedure_key: [u8; 24] = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ];
     let byte_name = name.into_bytes();
     procedure_key.clone_from_slice(&byte_name[..24]);
     procedure_key

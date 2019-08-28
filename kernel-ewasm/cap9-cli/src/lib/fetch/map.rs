@@ -1,14 +1,12 @@
-
-
-use web3::types::{U256, H256};
-use web3::Transport;
-use cap9_std::proc_table;
-use cap9_core::*;
-use crate::utils::{to_common_u256, to_common_h256};
-use cap9_std::data::{Keyable, Storable, DataStructureError};
-use core::marker::PhantomData;
-use super::utils::*;
 use super::kernel::*;
+use super::utils::*;
+use crate::utils::{to_common_h256, to_common_u256};
+use cap9_core::*;
+use cap9_std::data::{DataStructureError, Keyable, Storable};
+use cap9_std::proc_table;
+use core::marker::PhantomData;
+use web3::types::{H256, U256};
+use web3::Transport;
 
 pub struct LocalEnumerableMap<'a, T: Transport, K: Keyable, V: Storable> {
     cap_index: u8,
@@ -25,11 +23,13 @@ pub struct LocalEnumerableMap<'a, T: Transport, K: Keyable, V: Storable> {
 }
 
 impl<'a, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, T, K, V> {
-
-    pub fn from(kernel: &'a DeployedKernel<'a, T>, cap_index: u8) -> Result<Self, DataStructureError> {
+    pub fn from(
+        kernel: &'a DeployedKernel<'a, T>,
+        cap_index: u8,
+    ) -> Result<Self, DataStructureError> {
         // The size of the cap needs to be key_width+1 in bytes
-        let address_bytes = K::key_width()+1;
-        let address_bits = address_bytes*8;
+        let address_bytes = K::key_width() + 1;
+        let address_bits = address_bytes * 8;
         let address_size = U256::from(2).pow(U256::from(address_bits));
         // The address also need to be aligned.
 
@@ -37,24 +37,27 @@ impl<'a, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, T, K, V> 
         // let this_proc_key = proc_table::get_current_proc_id();
         let this_proc_key = kernel.entry_proc().0;
         // We need to get
-        if let Some(proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {location, size})) =
-                kernel.get_proc_cap(this_proc_key, proc_table::cap::CAP_STORE_WRITE, cap_index) {
-                    // Check that the size of the cap is correct.
-                    if U256::from(size) < address_size {
-                        Err(DataStructureError::TooSmall)
-                    } else if U256::from(location).trailing_zeros() < (address_bits as u32 + 1 + 1 + 6) {
-                        // the trailing number of 0 bits should be equal to or greater than the address_bits
-                        Err(DataStructureError::MisAligned)
-                    } else {
-                        Ok(LocalEnumerableMap {
-                            cap_index,
-                            location: location.into(),
-                            key_type: PhantomData,
-                            data_type: PhantomData,
-                            length: None,
-                            kernel,
-                        })
-                    }
+        if let Some(proc_table::cap::Capability::StoreWrite(proc_table::cap::StoreWriteCap {
+            location,
+            size,
+        })) = kernel.get_proc_cap(this_proc_key, proc_table::cap::CAP_STORE_WRITE, cap_index)
+        {
+            // Check that the size of the cap is correct.
+            if U256::from(size) < address_size {
+                Err(DataStructureError::TooSmall)
+            } else if U256::from(location).trailing_zeros() < (address_bits as u32 + 1 + 1 + 6) {
+                // the trailing number of 0 bits should be equal to or greater than the address_bits
+                Err(DataStructureError::MisAligned)
+            } else {
+                Ok(LocalEnumerableMap {
+                    cap_index,
+                    location: location.into(),
+                    key_type: PhantomData,
+                    data_type: PhantomData,
+                    length: None,
+                    kernel,
+                })
+            }
         } else {
             Err(DataStructureError::BadCap)
         }
@@ -75,7 +78,8 @@ impl<'a, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, T, K, V> 
         base[0..key_start].copy_from_slice(&self.location().as_bytes()[0..key_start]);
         // Then we copy in the key
         // TODO: overflow
-        base[key_start..(key_start+K::key_width() as usize)].clone_from_slice(key.key_slice().as_slice());
+        base[key_start..(key_start + K::key_width() as usize)]
+            .clone_from_slice(key.key_slice().as_slice());
         base
     }
 
@@ -130,7 +134,7 @@ impl<'a, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, T, K, V> 
         // If the value at the presence key is non-zero, then a value is
         // present.
         let presence_key = h256_to_u256(self.presence_key(key));
-        let mut buf = [0;32];
+        let mut buf = [0; 32];
         presence_key.to_big_endian(&mut buf);
         let present = self.kernel.get_storage(presence_key);
         let null: [u8; 32] = [0; 32];
@@ -179,7 +183,8 @@ impl<'a, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, T, K, V> 
         let storage_key: U256 = h256_to_u256(storage_key_h) + index + U256::from(1);
         let mut store_buf: [u8; 32] = [0; 32];
         storage_key.to_big_endian(&mut store_buf);
-        let storage_value: StorageValue = to_common_h256(self.kernel.get_storage(storage_key)).into();
+        let storage_value: StorageValue =
+            to_common_h256(self.kernel.get_storage(storage_key)).into();
         Some(storage_value.into())
     }
 
@@ -199,7 +204,6 @@ impl<'a, T: Transport, K: Keyable, V: Storable> LocalEnumerableMap<'a, T, K, V> 
     // }
 }
 
-
 /// An iterator over the keys and values of a [`StorageEnumerableMap`].
 pub struct LocalEnumerableMapIter<'a, 'b, T: Transport, K: Keyable, V: Storable> {
     /// The StorageVec we are iterating over.
@@ -217,7 +221,9 @@ impl<'a, 'b, 'c, T: Transport, K: Keyable, V: Storable> LocalEnumerableMapIter<'
     }
 }
 
-impl<'a, 'b, T: Transport, K: Keyable, V: Storable> Iterator for LocalEnumerableMapIter<'a, 'b, T, K, V> {
+impl<'a, 'b, T: Transport, K: Keyable, V: Storable> Iterator
+    for LocalEnumerableMapIter<'a, 'b, T, K, V>
+{
     type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -225,10 +231,10 @@ impl<'a, 'b, T: Transport, K: Keyable, V: Storable> Iterator for LocalEnumerable
             Some(val) => {
                 self.offset += U256::from(1);
                 val
-            },
+            }
             None => {
                 return None;
-            },
+            }
         };
         Some((key.clone(), self.storage_map.get(key)?))
     }

@@ -1,8 +1,8 @@
+use crate::project::ContractSpec;
+use std::io::prelude::*;
 /// This module holds the default procedures that are compiled into the CLI
 /// binary.
 use std::path::PathBuf;
-use std::io::prelude::*;
-use crate::project::ContractSpec;
 
 pub struct DefaultProcedure {
     code: &'static [u8],
@@ -26,7 +26,8 @@ impl DefaultProcedure {
         let mut path = PathBuf::new();
         path.push(dir);
         path.push(rel_path.clone());
-        let mut abi_file = std::fs::File::create(&path).expect(format!("Could not create file: {:?}", path).as_str());
+        let mut abi_file = std::fs::File::create(&path)
+            .expect(format!("Could not create file: {:?}", path).as_str());
         abi_file.write_all(self.abi()).unwrap();
         rel_path
     }
@@ -38,7 +39,8 @@ impl DefaultProcedure {
         let mut path = PathBuf::new();
         path.push(dir);
         path.push(rel_path.clone());
-        let mut abi_file = std::fs::File::create(&path).expect(format!("Could not create file: {:?}", path).as_str());
+        let mut abi_file = std::fs::File::create(&path)
+            .expect(format!("Could not create file: {:?}", path).as_str());
         abi_file.write_all(&self.code()).unwrap();
         rel_path
     }

@@ -1,18 +1,18 @@
+use crate::connection::EthConn;
+use crate::utils;
+use cap9_core::Error;
+use cap9_core::Read;
+use cap9_std::proc_table::cap::*;
+use cap9_std::proc_table::ProcPointer;
+use rustc_hex::FromHex;
+use rustc_hex::ToHex;
+use serde::de::{self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde::ser::{Serialize, SerializeSeq, SerializeStruct, Serializer};
+use std::collections::HashMap;
+use std::fmt;
 use web3::futures::Future;
 use web3::types::{Address, U256};
 use web3::Transport;
-use rustc_hex::FromHex;
-use rustc_hex::ToHex;
-use crate::connection::EthConn;
-use cap9_std::proc_table::cap::*;
-use std::fmt;
-use cap9_std::proc_table::ProcPointer;
-use cap9_core::Error;
-use cap9_core::Read;
-use crate::utils;
-use std::collections::HashMap;
-use serde::ser::{Serialize, Serializer, SerializeSeq, SerializeStruct};
-use serde::de::{self, Deserialize, Deserializer, Visitor, SeqAccess, MapAccess};
 
 #[derive(Clone, Debug)]
 pub struct Procedure {
@@ -25,9 +25,19 @@ pub struct Procedure {
 impl fmt::Display for Procedure {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let key_hex: String = self.key.to_hex();
-        let key_utf8: &str = std::str::from_utf8(&self.key).unwrap().trim_end_matches('\0');
-        write!(f, "Procedure[{}]: 0x{} (\"{}\")\n  Address: {:?}\n  Caps({}):\n{}",
-            self.index.as_u64(), key_hex, key_utf8, self.address, self.caps.len(), self.caps)
+        let key_utf8: &str = std::str::from_utf8(&self.key)
+            .unwrap()
+            .trim_end_matches('\0');
+        write!(
+            f,
+            "Procedure[{}]: 0x{} (\"{}\")\n  Address: {:?}\n  Caps({}):\n{}",
+            self.index.as_u64(),
+            key_hex,
+            key_utf8,
+            self.address,
+            self.caps.len(),
+            self.caps
+        )
     }
 }
 
@@ -53,7 +63,6 @@ impl Caps {
             + self.acc_call.len()
     }
 }
-
 
 impl fmt::Display for Caps {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -103,7 +112,10 @@ impl fmt::Display for Caps {
     }
 }
 
-struct CapReader<'a, T> where T: Transport {
+struct CapReader<'a, T>
+where
+    T: Transport,
+{
     conn: &'a EthConn<T>,
     kernel_address: Address,
     proc_pointer: ProcPointer,
@@ -115,8 +127,20 @@ struct CapReader<'a, T> where T: Transport {
 impl<'a, T: Transport> Read<pwasm_abi::types::U256> for CapReader<'a, T> {
     fn read(&mut self, buf: &mut [pwasm_abi::types::U256]) -> Result<(), Error> {
         for i in 0..buf.len() {
-            let next_val_ptr = self.proc_pointer.get_cap_val_ptr(self.cap_type, self.cap_index, self.current_val);
-            let next_val = self.conn.web3.eth().storage(self.kernel_address, U256::from_big_endian(&next_val_ptr), None).wait().expect("proc key raw");
+            let next_val_ptr =
+                self.proc_pointer
+                    .get_cap_val_ptr(self.cap_type, self.cap_index, self.current_val);
+            let next_val = self
+                .conn
+                .web3
+                .eth()
+                .storage(
+                    self.kernel_address,
+                    U256::from_big_endian(&next_val_ptr),
+                    None,
+                )
+                .wait()
+                .expect("proc key raw");
             self.current_val += 1;
             buf[i] = pwasm_abi::types::U256::from_big_endian(&next_val.to_fixed_bytes());
         }
@@ -128,10 +152,13 @@ impl<'a, T: Transport> Read<pwasm_abi::types::U256> for CapReader<'a, T> {
     }
 }
 
-
 fn get_idx_proc_address(i: u64) -> U256 {
     let idx: u8 = i as u8;
-    U256::from_big_endian(&[0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, idx, 0x00, 0x00, 0x00])
+    U256::from_big_endian(&[
+        0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, idx, 0x00,
+        0x00, 0x00,
+    ])
 }
 
 #[derive(Clone, Debug)]
@@ -199,37 +226,33 @@ impl Serialize for SerialCapability {
                 state.serialize_field("prefix", &cap.prefix)?;
                 state.serialize_field("key", &key_to_str(cap.key))?;
                 state.end()
-            },
+            }
             Capability::ProcedureRegister(cap) => {
                 let mut state = serializer.serialize_struct("ProcedureRegisterCap", 3)?;
                 state.serialize_field("type", "ProcedureRegisterCap")?;
                 state.serialize_field("prefix", &cap.prefix)?;
                 state.serialize_field("key", &key_to_str(cap.key))?;
                 state.end()
-
-            },
+            }
             Capability::ProcedureDelete(cap) => {
                 let mut state = serializer.serialize_struct("ProcedureDeleteCap", 3)?;
                 state.serialize_field("type", "ProcedureDeleteCap")?;
                 state.serialize_field("prefix", &cap.prefix)?;
                 state.serialize_field("key", &key_to_str(cap.key))?;
                 state.end()
-
-            },
+            }
             Capability::ProcedureEntry(_cap) => {
                 let mut state = serializer.serialize_struct("ProcedureEntryCap", 1)?;
                 state.serialize_field("type", "ProcedureEntryCap")?;
                 state.end()
-
-            },
+            }
             Capability::StoreWrite(cap) => {
                 let mut state = serializer.serialize_struct("StoreWriteCap", 3)?;
                 state.serialize_field("type", "StoreWriteCap")?;
                 state.serialize_field("location", &b32_to_str(cap.location))?;
                 state.serialize_field("size", &b32_to_str(cap.size))?;
                 state.end()
-
-            },
+            }
             Capability::Log(cap) => {
                 let mut state = serializer.serialize_struct("LogCap", 6)?;
                 state.serialize_field("type", "LogCap")?;
@@ -239,17 +262,18 @@ impl Serialize for SerialCapability {
                 state.serialize_field("t3", &b32_to_str(cap.t3))?;
                 state.serialize_field("t4", &b32_to_str(cap.t4))?;
                 state.end()
-
-            },
+            }
             Capability::AccountCall(cap) => {
                 let mut state = serializer.serialize_struct("AccountCallCap", 3)?;
                 state.serialize_field("type", "AccountCallCap")?;
                 state.serialize_field("can_call_any", &cap.can_call_any)?;
                 state.serialize_field("can_send", &cap.can_send)?;
-                state.serialize_field("address", &SerialAddress(utils::from_common_address(cap.address)))?;
+                state.serialize_field(
+                    "address",
+                    &SerialAddress(utils::from_common_address(cap.address)),
+                )?;
                 state.end()
-
-            },
+            }
         }
     }
 }
@@ -260,7 +284,7 @@ impl Serialize for SerialAddress {
         S: Serializer,
     {
         let sl: String = (self.0).to_fixed_bytes().to_hex();
-        serializer.serialize_str(format!("0x{}",sl).as_ref())
+        serializer.serialize_str(format!("0x{}", sl).as_ref())
     }
 }
 
@@ -293,13 +317,12 @@ impl<'de> Visitor<'de> for SerialNewCapListVisitor {
 
 impl<'de> Deserialize<'de> for SerialNewCapList {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_seq(SerialNewCapListVisitor)
     }
 }
-
-
 
 #[derive(Clone, Debug)]
 struct SerialNewCapVisitor;
@@ -325,18 +348,17 @@ impl<'de> Visitor<'de> for SerialNewCapVisitor {
                 "cap" => {
                     let SerialCapability(cap_s) = serde_json::from_value(value).unwrap();
                     cap = Some(cap_s);
-                },
+                }
                 "parent_index" => {
                     parent_index = Some(serde_json::from_value(value).unwrap());
-                },
+                }
                 _ => (),
             }
         }
         match (cap, parent_index) {
-            (Some(cap), Some(parent_index)) => Ok(SerialNewCap(NewCapability {
-                cap,
-                parent_index,
-            })),
+            (Some(cap), Some(parent_index)) => {
+                Ok(SerialNewCap(NewCapability { cap, parent_index }))
+            }
             _ => Err(serde::de::Error::custom("missing data")),
         }
     }
@@ -344,12 +366,12 @@ impl<'de> Visitor<'de> for SerialNewCapVisitor {
 
 impl<'de> Deserialize<'de> for SerialNewCap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_map(SerialNewCapVisitor)
     }
 }
-
 
 #[derive(Clone, Debug)]
 struct SerialCapabilityVisitor;
@@ -379,47 +401,53 @@ impl<'de> Visitor<'de> for SerialCapabilityVisitor {
         let type_string: String = serde_json::from_value(map.get("type").unwrap().clone()).unwrap();
         match type_string.as_ref() {
             "ProcedureCallCap" => {
-                let prefix: u8 = serde_json::from_value(map.get("prefix").unwrap().clone()).unwrap();
-                let key_s: String = serde_json::from_value(map.get("key").unwrap().clone()).unwrap();
+                let prefix: u8 =
+                    serde_json::from_value(map.get("prefix").unwrap().clone()).unwrap();
+                let key_s: String =
+                    serde_json::from_value(map.get("key").unwrap().clone()).unwrap();
                 let key = str_to_key(key_s);
-                Ok(SerialCapability(Capability::ProcedureCall(ProcedureCallCap {
-                        prefix,
-                        key,
-                })))
-            },
+                Ok(SerialCapability(Capability::ProcedureCall(
+                    ProcedureCallCap { prefix, key },
+                )))
+            }
             "ProcedureRegisterCap" => {
-                let prefix: u8 = serde_json::from_value(map.get("prefix").unwrap().clone()).unwrap();
-                let key_s: String = serde_json::from_value(map.get("key").unwrap().clone()).unwrap();
+                let prefix: u8 =
+                    serde_json::from_value(map.get("prefix").unwrap().clone()).unwrap();
+                let key_s: String =
+                    serde_json::from_value(map.get("key").unwrap().clone()).unwrap();
                 let key = str_to_key(key_s);
-                Ok(SerialCapability(Capability::ProcedureRegister(ProcedureRegisterCap {
-                        prefix,
-                        key,
-                })))
-            },
+                Ok(SerialCapability(Capability::ProcedureRegister(
+                    ProcedureRegisterCap { prefix, key },
+                )))
+            }
             "ProcedureDeleteCap" => {
-                let prefix: u8 = serde_json::from_value(map.get("prefix").unwrap().clone()).unwrap();
-                let key_s: String = serde_json::from_value(map.get("key").unwrap().clone()).unwrap();
+                let prefix: u8 =
+                    serde_json::from_value(map.get("prefix").unwrap().clone()).unwrap();
+                let key_s: String =
+                    serde_json::from_value(map.get("key").unwrap().clone()).unwrap();
                 let key = str_to_key(key_s);
-                Ok(SerialCapability(Capability::ProcedureDelete(ProcedureDeleteCap {
-                        prefix,
-                        key,
-                })))
-            },
-            "ProcedureEntryCap" => {
-                Ok(SerialCapability(Capability::ProcedureEntry(ProcedureEntryCap)))
-            },
+                Ok(SerialCapability(Capability::ProcedureDelete(
+                    ProcedureDeleteCap { prefix, key },
+                )))
+            }
+            "ProcedureEntryCap" => Ok(SerialCapability(Capability::ProcedureEntry(
+                ProcedureEntryCap,
+            ))),
             "StoreWriteCap" => {
-                let location_s: String = serde_json::from_value(map.get("location").unwrap().clone()).unwrap();
-                let size_s: String = serde_json::from_value(map.get("size").unwrap().clone()).unwrap();
+                let location_s: String =
+                    serde_json::from_value(map.get("location").unwrap().clone()).unwrap();
+                let size_s: String =
+                    serde_json::from_value(map.get("size").unwrap().clone()).unwrap();
                 let location = str_to_b32(location_s);
                 let size = str_to_b32(size_s);
                 Ok(SerialCapability(Capability::StoreWrite(StoreWriteCap {
-                        location,
-                        size,
+                    location,
+                    size,
                 })))
-            },
+            }
             "LogCap" => {
-                let topics: u8 = serde_json::from_value(map.get("n_topics").unwrap().clone()).unwrap();
+                let topics: u8 =
+                    serde_json::from_value(map.get("n_topics").unwrap().clone()).unwrap();
                 let t1_s: String = serde_json::from_value(map.get("t1").unwrap().clone()).unwrap();
                 let t1 = str_to_b32(t1_s);
                 let t2_s: String = serde_json::from_value(map.get("t2").unwrap().clone()).unwrap();
@@ -429,38 +457,45 @@ impl<'de> Visitor<'de> for SerialCapabilityVisitor {
                 let t4_s: String = serde_json::from_value(map.get("t4").unwrap().clone()).unwrap();
                 let t4 = str_to_b32(t4_s);
                 Ok(SerialCapability(Capability::Log(LogCap {
-                        topics,
-                        t1,
-                        t2,
-                        t3,
-                        t4,
+                    topics,
+                    t1,
+                    t2,
+                    t3,
+                    t4,
                 })))
-            },
+            }
             "AccountCallCap" => {
-                let can_call_any: bool = serde_json::from_value(map.get("can_call_any").unwrap().clone()).unwrap();
-                let can_send: bool = serde_json::from_value(map.get("can_send").unwrap().clone()).unwrap();
-                let SerialAddress(address): SerialAddress = serde_json::from_value(map.get("address").unwrap().clone()).unwrap();
+                let can_call_any: bool =
+                    serde_json::from_value(map.get("can_call_any").unwrap().clone()).unwrap();
+                let can_send: bool =
+                    serde_json::from_value(map.get("can_send").unwrap().clone()).unwrap();
+                let SerialAddress(address): SerialAddress =
+                    serde_json::from_value(map.get("address").unwrap().clone()).unwrap();
                 Ok(SerialCapability(Capability::AccountCall(AccountCallCap {
                     can_call_any,
                     can_send,
                     address: utils::to_common_address(address),
                 })))
-            },
-            t => Err(serde::de::Error::custom(format!("unrecognised cap type: {}", t))),
+            }
+            t => Err(serde::de::Error::custom(format!(
+                "unrecognised cap type: {}",
+                t
+            ))),
         }
     }
 }
 
 impl<'de> Deserialize<'de> for SerialCapability {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_map(SerialCapabilityVisitor)
     }
 }
 
 fn str_to_key(s: String) -> [u8; 24] {
-    let (_,r) = s.split_at(2);
+    let (_, r) = s.split_at(2);
     let v: Vec<u8> = r.from_hex().unwrap();
     let mut n: [u8; 24] = [0; 24];
     n.copy_from_slice(v.as_slice());
@@ -468,13 +503,12 @@ fn str_to_key(s: String) -> [u8; 24] {
 }
 
 fn str_to_b32(s: String) -> [u8; 32] {
-    let (_,r) = s.split_at(2);
+    let (_, r) = s.split_at(2);
     let v: Vec<u8> = r.from_hex().unwrap();
     let mut n: [u8; 32] = [0; 32];
     n.copy_from_slice(v.as_slice());
     n
 }
-
 
 struct SerialAddressVisitor;
 
@@ -489,7 +523,7 @@ impl<'de> Visitor<'de> for SerialAddressVisitor {
     where
         E: de::Error,
     {
-        let (_,r) = s.split_at(2);
+        let (_, r) = s.split_at(2);
         let b: Vec<u8> = r.from_hex().expect("hex decode");
         println!("b: {:?}", b);
         Ok(SerialAddress(Address::from_slice(&b)))
@@ -511,7 +545,7 @@ mod tests {
     use serde_json;
 
     #[test]
-    fn address_serialisation () {
+    fn address_serialisation() {
         let s = "\"0xababababababababababababab1111ffffffffff\"";
         let des: SerialAddress = serde_json::from_str(s).unwrap();
         let ser = serde_json::to_string_pretty(&des);
@@ -520,28 +554,28 @@ mod tests {
     }
 
     #[test]
-    fn cap_serialisation () {
+    fn cap_serialisation() {
         let s = "{ \"type\": \"ProcedureCallCap\", \"prefix\": 4, \"key\": \"0x0000000000000ab000000000000000000000000000000000\" }";
         let des: SerialCapability = serde_json::from_str(s).expect("sss");
         println!("cap: {:?}", des);
     }
 
     #[test]
-    fn new_cap_serialisation () {
+    fn new_cap_serialisation() {
         let s = "{\"cap\":{ \"type\": \"ProcedureCallCap\", \"prefix\": 4, \"key\": \"0x0000000000000ab000000000000000000000000000000000\" },\"parent_index\": 0}";
         let des: SerialNewCap = serde_json::from_str(s).expect("sss");
         println!("cap: {:?}", des);
     }
 
     #[test]
-    fn new_cap_list_serialisation () {
+    fn new_cap_list_serialisation() {
         let s = "[{\"cap\":{ \"type\": \"ProcedureCallCap\", \"prefix\": 4, \"key\": \"0x0000000000000ab000000000000000000000000000000000\" },\"parent_index\": 0}]";
         let des: SerialNewCapList = serde_json::from_str(s).expect("sss");
         println!("cap: {:?}", des);
     }
 
     #[test]
-    fn cap_serialisation_unknown () {
+    fn cap_serialisation_unknown() {
         let s = "{ \"type\": \"SomeCap\", \"prefix\": 4, \"key\": \"0x0000000000000ab000000000000000000000000000000000\" }";
         let des: Result<SerialCapability, _> = serde_json::from_str(s);
         println!("cap: {:?}", des.unwrap_err());
