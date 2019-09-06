@@ -207,11 +207,6 @@ jobs:
       - image: centos:latest
     working_directory: /tmp/my-project
     steps:
-      - restore_cache:
-          keys:
-            - deps12-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
-            - deps12-ewasm-{{ .Branch }}-
-            - deps12-ewasm
       - run:
           name: Install native build prequisites
           command: |
@@ -242,6 +237,11 @@ jobs:
           at: /tmp/my-project
       - checkout:
           path: cap9
+      - restore_cache:
+          keys:
+            - deps12-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
+            - deps12-ewasm-{{ .Branch }}-
+            - deps12-ewasm
       - run:
           name: Get Submodules
           command: |
