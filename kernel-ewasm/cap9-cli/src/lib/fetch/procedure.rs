@@ -447,7 +447,7 @@ impl<'de> Visitor<'de> for SerialCapabilityVisitor {
             }
             "LogCap" => {
                 let topics: u8 =
-                    serde_json::from_value(map.get("n_topics").unwrap().clone()).unwrap();
+                    serde_json::from_value(map.get("topics").expect("no n_topics").clone()).expect("n_topics parse failed");
                 let t1_s: String = serde_json::from_value(map.get("t1").unwrap().clone()).unwrap();
                 let t1 = str_to_b32(t1_s);
                 let t2_s: String = serde_json::from_value(map.get("t2").unwrap().clone()).unwrap();
