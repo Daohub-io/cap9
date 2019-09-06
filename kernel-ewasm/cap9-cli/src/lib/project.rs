@@ -500,6 +500,16 @@ impl LocalProject {
                 parent_index: 0,
             },
             NewCapability {
+                cap: Capability::Log(LogCap {
+                    topics: 0_u8,
+                    t1: [0_u8; 32],
+                    t2: [0_u8; 32],
+                    t3: [0_u8; 32],
+                    t4: [0_u8; 32],
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
                 cap: Capability::StoreWrite(StoreWriteCap {
                     location: [
                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -650,7 +660,7 @@ impl LocalProject {
 
 const EMPTY_KEY: [u8; 24] = [0; 24];
 
-const DEFAULT_CAPS: [NewCapability; 7] = [
+const DEFAULT_CAPS: [NewCapability; 8] = [
     NewCapability {
         cap: Capability::ProcedureRegister(ProcedureRegisterCap {
             prefix: 0,
@@ -676,6 +686,16 @@ const DEFAULT_CAPS: [NewCapability; 7] = [
         cap: Capability::ProcedureDelete(ProcedureDeleteCap {
             prefix: 0,
             key: EMPTY_KEY,
+        }),
+        parent_index: 0,
+    },
+    NewCapability {
+        cap: Capability::Log(LogCap {
+            topics: 0_u8,
+            t1: [0_u8; 32],
+            t2: [0_u8; 32],
+            t3: [0_u8; 32],
+            t4: [0_u8; 32],
         }),
         parent_index: 0,
     },
