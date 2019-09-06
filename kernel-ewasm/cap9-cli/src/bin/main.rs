@@ -8,8 +8,8 @@ use ethabi::token::Tokenizer;
 
 use rustc_hex::ToHex;
 use std::fs::create_dir;
-use std::io::prelude::*;
 use std::fs::File;
+use std::io::prelude::*;
 use std::path::PathBuf;
 
 use env_logger;
@@ -19,12 +19,12 @@ use cap9_cli::connection;
 use cap9_cli::fetch;
 use cap9_cli::project;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use toml::ser;
 
-use fetch::{DeployedKernel, DeployedKernelWithACL, SerialNewCapList};
 use cap9_cli::utils::string_to_proc_key;
 use cap9_std::proc_table::cap::*;
+use fetch::{DeployedKernel, DeployedKernelWithACL, SerialNewCapList};
 
 fn main() {
     env_logger::init();
@@ -367,17 +367,26 @@ fn main() {
         let mut main_path = src_path.clone();
         main_path.push("main.rs");
         let mut main_file = std::fs::File::create(&main_path).unwrap();
-        main_file.write_all(include_bytes!("example_proc.rs.example")).unwrap();
+        main_file
+            .write_all(include_bytes!("example_proc.rs.example"))
+            .unwrap();
 
         let mut toml_path = proc_path.clone();
         toml_path.push("Cargo.toml");
         let mut toml_file = std::fs::File::create(&toml_path).unwrap();
-        let mut toml_data: toml::Value = toml::from_slice(include_bytes!("example_Cargo.toml.example")).unwrap();
+        let mut toml_data: toml::Value =
+            toml::from_slice(include_bytes!("example_Cargo.toml.example")).unwrap();
         // println!("toml-data: {:?}", toml_data);
-        let package_table = toml_data.get_mut("package").unwrap().as_table_mut().unwrap();
+        let package_table = toml_data
+            .get_mut("package")
+            .unwrap()
+            .as_table_mut()
+            .unwrap();
         let package_name: toml::Value = toml::Value::String(proc_name.to_string());
         package_table.insert("name".to_string(), package_name);
-        toml_file.write_all(toml::to_string_pretty(&toml_data).unwrap().as_bytes()).unwrap();
+        toml_file
+            .write_all(toml::to_string_pretty(&toml_data).unwrap().as_bytes())
+            .unwrap();
 
         let config_str = "[target.wasm32-unknown-unknown]\n
 rustflags = [
@@ -471,18 +480,21 @@ rustflags = [
             },
         ];
         let serial_cap_list = SerialNewCapList(NewCapList(caps_data));
-        serde_json::ser::to_writer_pretty(caps_file, &serial_cap_list )
+        serde_json::ser::to_writer_pretty(caps_file, &serial_cap_list)
             .expect("Could not serialise caps data");
     } else if let Some(deploy_procedure_matches) = matches.subcommand_matches("deploy-procedure") {
         let proc_name = deploy_procedure_matches
             .value_of("PROCEDURE-NAME")
             .expect("No pricedure name");
         let code_file_opt = deploy_procedure_matches
-                .value_of("CODE-FILE").map(PathBuf::from);
+            .value_of("CODE-FILE")
+            .map(PathBuf::from);
         let abi_file_opt = deploy_procedure_matches
-                .value_of("ABI-FILE").map(PathBuf::from);
+            .value_of("ABI-FILE")
+            .map(PathBuf::from);
         let cap_file_opt = deploy_procedure_matches
-                .value_of("CAP-FILE").map(PathBuf::from);
+            .value_of("CAP-FILE")
+            .map(PathBuf::from);
         let (code_file, abi_file, cap_file) = match (code_file_opt, abi_file_opt, cap_file_opt) {
             (Some(code_file), Some(abi_file), Some(cap_file)) => (code_file, abi_file, cap_file),
             (None, None, None) => get_proc_paths(&proc_name.to_string()),
