@@ -1,10 +1,14 @@
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate toml;
 
 use clap::{App, AppSettings, Arg, SubCommand};
 use ethabi::token::Tokenizer;
 
 use rustc_hex::ToHex;
+use std::fs::create_dir;
+use std::io::prelude::*;
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -14,6 +18,9 @@ use cap9_cli::build;
 use cap9_cli::connection;
 use cap9_cli::fetch;
 use cap9_cli::project;
+
+use serde::{Serialize, Deserialize};
+use toml::ser;
 
 use fetch::{DeployedKernel, DeployedKernelWithACL};
 
@@ -119,6 +126,30 @@ fn main() {
                         .help("JSON cap file"),
                 )
                 .about("Deploy a contract to the chain and register it as a procedure"),
+        )
+        .subcommand(
+            SubCommand::with_name("new-procedure")
+                .arg(
+                    Arg::with_name("PROCEDURE-NAME")
+                        .required(true)
+                        .help("Name of the procedure"),
+                )
+                // .arg(
+                //     Arg::with_name("CODE-FILE")
+                //         .required(true)
+                //         .help("Binary code file"),
+                // )
+                // .arg(
+                //     Arg::with_name("ABI-FILE")
+                //         .required(true)
+                //         .help("JSON ABI file"),
+                // )
+                // .arg(
+                //     Arg::with_name("CAP-FILE")
+                //         .required(true)
+                //         .help("JSON cap file"),
+                // )
+                .about("Create a new procedure"),
         )
         .subcommand(
             SubCommand::with_name("delete-procedure")
@@ -298,6 +329,116 @@ fn main() {
         kernel_with_acl
             .new_group(group_number, proc_name.to_string(), proc_spec)
             .unwrap();
+    } else if let Some(deploy_procedure_matches) = matches.subcommand_matches("new-procedure") {
+        let proc_name = deploy_procedure_matches
+            .value_of("PROCEDURE-NAME")
+            .expect("No code file");
+        // Read the local project from out current directory. We do this to
+        // ensure we are in a project.
+        let local_project = project::LocalProject::read();
+        // Create a new directory in the local project.
+        // Create a new directory, throw an error if the directory exists.
+        let proc_path = PathBuf::from(proc_name);
+        let creation_result = create_dir(&proc_path);
+        // Check that the directory was correctly created.
+        match creation_result {
+            Ok(_) => (),
+            Err(ref err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
+                println!("The directory {:?} already exists.", proc_path);
+                std::process::exit(1);
+            }
+            e => e.unwrap(),
+        }
+        // Create a source directory within that directory
+        let mut src_path = PathBuf::from(proc_name);
+        src_path.push("src");
+        let creation_result_src = create_dir(&src_path);
+        // Check that the directory was correctly created.
+        match creation_result_src {
+            Ok(_) => (),
+            Err(ref err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
+                println!("The directory {:?} already exists.", src_path);
+                std::process::exit(1);
+            }
+            e => e.unwrap(),
+        }
+        let mut main_path = src_path.clone();
+        main_path.push("main.rs");
+        let mut main_file = std::fs::File::create(&main_path).unwrap();
+        main_file.write_all(include_bytes!("example_proc.rs.example")).unwrap();
+
+        let mut toml_path = proc_path.clone();
+        toml_path.push("Cargo.toml");
+        let mut toml_file = std::fs::File::create(&toml_path).unwrap();
+        let mut toml_data: toml::Value = toml::from_slice(include_bytes!("example_Cargo.toml.example")).unwrap();
+        // println!("toml-data: {:?}", toml_data);
+        let package_table = toml_data.get_mut("package").unwrap().as_table_mut().unwrap();
+        let package_name: toml::Value = toml::Value::String(proc_name.to_string());
+        package_table.insert("name".to_string(), package_name);
+        toml_file.write_all(toml::to_string_pretty(&toml_data).unwrap().as_bytes()).unwrap();
+
+        let config_str = "[target.wasm32-unknown-unknown]\n
+rustflags = [
+  \"-C\", \"link-args=-z stack-size=65536]\",
+]";
+        // Create a source directory within that directory
+        let mut config_dir_path = proc_path.clone();
+        config_dir_path.push(".cargo");
+        let creation_result_config = create_dir(&config_dir_path);
+        // Check that the directory was correctly created.
+        match creation_result_config {
+            Ok(_) => (),
+            Err(ref err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
+                println!("The directory {:?} already exists.", config_dir_path);
+                std::process::exit(1);
+            }
+            e => e.unwrap(),
+        }
+        let mut config_file_path = config_dir_path.clone();
+        config_file_path.push("config");
+        let mut config_file = std::fs::File::create(&config_file_path).unwrap();
+        config_file.write_all(config_str.as_bytes()).unwrap();
+
+        // // Save the kernel code to file and create a ContractSpec
+        // let dir = PathBuf::from(project_name);
+        // let mut path = PathBuf::new();
+        // path.push(project_name);
+        // path.push("deploy");
+        // path.set_extension("json");
+        // let kernel_spec = ContractSpec::from_default(KERNEL, &dir, "kernel".to_string());
+        // let init_entry_spec = ProcSpec {
+        //     contract_spec: ContractSpec::from_default(
+        //         ACL_BOOTSTRAP,
+        //         &dir,
+        //         "acl_bootstrap".to_string(),
+        //     ),
+        //     // TODO: fix cap path
+        //     cap_path: PathBuf::from("example_caps.json"),
+        // };
+        // let deploy_spec = DeploySpec {
+        //     initial_entry: init_entry_spec,
+        // };
+        // let deploy_file = DeployFile::new(kernel_spec, deploy_spec);
+        // let f = File::create(&path).expect("Could not create file");
+        // serde_json::ser::to_writer_pretty(f, &deploy_file)
+        //     .expect("Could not serialise deploy data");
+        // let abs_path = PathBuf::from(".").canonicalize().unwrap();
+        // LocalProject {
+        //     abs_path,
+        //     deploy_file,
+        //     status_file: None,
+        // }
+
+        // let kernel = DeployedKernel::new(&conn, local_project);
+        // let mut kernel_with_acl = DeployedKernelWithACL::new(kernel);
+        // let contract_spec = project::ContractSpec::from_files(&code_file, &abi_file);
+        // let proc_spec = project::ProcSpec {
+        //     contract_spec,
+        //     cap_path: cap_file,
+        // };
+        // kernel_with_acl
+        //     .deploy_procedure(proc_name.to_string(), proc_spec)
+        //     .unwrap();
     } else if let Some(deploy_procedure_matches) = matches.subcommand_matches("deploy-procedure") {
         let proc_name = deploy_procedure_matches
             .value_of("PROCEDURE-NAME")

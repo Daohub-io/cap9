@@ -24,6 +24,7 @@ serde = { version = "1.0.98", features = ["derive"] }
 serde_bytes = "0.11.1"
 serde_json = "1.0.40"
 time = "0.1"
+toml = "0.5.3"
 # web3 = { git = "https://github.com/Daolab/rust-web3", rev = "eda5d97db3133dabba9358fa9d34eef27a0a44c2" }
 web3 = { git = "https://github.com/Daolab/rust-web3", rev = "5967fdfb5f653892c93c716c1b2db4881082c03a" }
 # web3 = { git = "https://github.com/tomusdrw/rust-web3", rev = "a72d21cd3110c96a44c72fbf3ed8021194322d74" }
