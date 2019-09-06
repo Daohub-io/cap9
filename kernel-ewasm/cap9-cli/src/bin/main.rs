@@ -22,7 +22,9 @@ use cap9_cli::project;
 use serde::{Serialize, Deserialize};
 use toml::ser;
 
-use fetch::{DeployedKernel, DeployedKernelWithACL};
+use fetch::{DeployedKernel, DeployedKernelWithACL, SerialNewCapList};
+use cap9_cli::utils::string_to_proc_key;
+use cap9_std::proc_table::cap::*;
 
 fn main() {
     env_logger::init();
@@ -112,17 +114,17 @@ fn main() {
                 )
                 .arg(
                     Arg::with_name("CODE-FILE")
-                        .required(true)
+                        .required(false)
                         .help("Binary code file"),
                 )
                 .arg(
                     Arg::with_name("ABI-FILE")
-                        .required(true)
+                        .required(false)
                         .help("JSON ABI file"),
                 )
                 .arg(
                     Arg::with_name("CAP-FILE")
-                        .required(true)
+                        .required(false)
                         .help("JSON cap file"),
                 )
                 .about("Deploy a contract to the chain and register it as a procedure"),
@@ -399,6 +401,79 @@ rustflags = [
         let mut config_file = std::fs::File::create(&config_file_path).unwrap();
         config_file.write_all(config_str.as_bytes()).unwrap();
 
+        let mut caps_path = proc_path.clone();
+        caps_path.push("caps.json");
+        let prefix = 0;
+        let cap_key = string_to_proc_key("".to_string());
+        let mut caps_file = std::fs::File::create(&caps_path).unwrap();
+        let mut caps_data: Vec<NewCapability> = vec![
+            NewCapability {
+                cap: Capability::ProcedureRegister(ProcedureRegisterCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureRegister(ProcedureRegisterCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 1,
+            },
+            NewCapability {
+                cap: Capability::ProcedureCall(ProcedureCallCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::ProcedureDelete(ProcedureDeleteCap {
+                    prefix,
+                    key: cap_key,
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: [
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    ],
+                    size: [
+                        0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    ],
+                }),
+                parent_index: 0,
+            },
+            NewCapability {
+                cap: Capability::StoreWrite(StoreWriteCap {
+                    location: [
+                        0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    ],
+                    size: [
+                        0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    ],
+                }),
+                parent_index: 1,
+            },
+            NewCapability {
+                cap: Capability::ProcedureEntry(ProcedureEntryCap),
+                parent_index: 0,
+            },
+        ];
+        let serial_cap_list = SerialNewCapList(NewCapList(caps_data));
+        serde_json::ser::to_writer_pretty(caps_file, &serial_cap_list )
+            .expect("Could not serialise caps data");
+
         // // Save the kernel code to file and create a ContractSpec
         // let dir = PathBuf::from(project_name);
         // let mut path = PathBuf::new();
@@ -442,22 +517,19 @@ rustflags = [
     } else if let Some(deploy_procedure_matches) = matches.subcommand_matches("deploy-procedure") {
         let proc_name = deploy_procedure_matches
             .value_of("PROCEDURE-NAME")
-            .expect("No code file");
-        let code_file = PathBuf::from(
-            deploy_procedure_matches
-                .value_of("CODE-FILE")
-                .expect("No code file"),
-        );
-        let abi_file = PathBuf::from(
-            deploy_procedure_matches
-                .value_of("ABI-FILE")
-                .expect("No ABI file"),
-        );
-        let cap_file = PathBuf::from(
-            deploy_procedure_matches
-                .value_of("CAP-FILE")
-                .expect("No cap file"),
-        );
+            .expect("No pricedure name");
+        let code_file_opt = deploy_procedure_matches
+                .value_of("CODE-FILE").map(PathBuf::from);
+        let abi_file_opt = deploy_procedure_matches
+                .value_of("ABI-FILE").map(PathBuf::from);
+        let cap_file_opt = deploy_procedure_matches
+                .value_of("CAP-FILE").map(PathBuf::from);
+        let (code_file, abi_file, cap_file) = match (code_file_opt, abi_file_opt, cap_file_opt) {
+            (Some(code_file), Some(abi_file), Some(cap_file)) => (code_file, abi_file, cap_file),
+            (None, None, None) => get_proc_paths(&proc_name.to_string()),
+            _ => panic!("You must specify either just a procedure name, or a procedure name with CODE-FILE, ABI-FILE, and CAP-FILE arguments."),
+        };
+        println!("paths: {:?}, {:?}. {:?}", code_file, abi_file, cap_file);
         // Connect to a local network over http.
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory.
@@ -615,4 +687,40 @@ fn print_function(function: &ethabi::Function) {
 
 fn print_param(param: &ethabi::Param) {
     print!("{}: {:?}", param.name, param.kind);
+}
+
+fn get_proc_paths(proc_name: &String) -> (PathBuf, PathBuf, PathBuf) {
+    let proc_dir = PathBuf::from(proc_name);
+    let mut code_path = proc_dir.clone();
+    code_path.push("target");
+    code_path.push("wasm32-unknown-unknown");
+    code_path.push("release");
+    code_path.push(proc_name);
+    code_path.set_extension("wasm");
+
+    // For now we will assume there is only one JSON abi file.
+    let mut abi_path = proc_dir.clone();
+    abi_path.push("target");
+    abi_path.push("json");
+    // list dir contents
+    let paths = std::fs::read_dir(&abi_path).unwrap();
+    let mut abi_name = None;
+    for path in paths {
+        let p = path.unwrap().path();
+        if p.extension() == Some(std::ffi::OsStr::new("json")) {
+            abi_name = Some(p);
+            break;
+        }
+    }
+    if let Some(name) = abi_name {
+        abi_path = PathBuf::from(name);
+    } else {
+        panic!("No ABI files");
+    }
+
+    let mut cap_path = proc_dir.clone();
+    cap_path.push("caps");
+    cap_path.set_extension("json");
+
+    (code_path, abi_path, cap_path)
 }
