@@ -473,47 +473,6 @@ rustflags = [
         let serial_cap_list = SerialNewCapList(NewCapList(caps_data));
         serde_json::ser::to_writer_pretty(caps_file, &serial_cap_list )
             .expect("Could not serialise caps data");
-
-        // // Save the kernel code to file and create a ContractSpec
-        // let dir = PathBuf::from(project_name);
-        // let mut path = PathBuf::new();
-        // path.push(project_name);
-        // path.push("deploy");
-        // path.set_extension("json");
-        // let kernel_spec = ContractSpec::from_default(KERNEL, &dir, "kernel".to_string());
-        // let init_entry_spec = ProcSpec {
-        //     contract_spec: ContractSpec::from_default(
-        //         ACL_BOOTSTRAP,
-        //         &dir,
-        //         "acl_bootstrap".to_string(),
-        //     ),
-        //     // TODO: fix cap path
-        //     cap_path: PathBuf::from("example_caps.json"),
-        // };
-        // let deploy_spec = DeploySpec {
-        //     initial_entry: init_entry_spec,
-        // };
-        // let deploy_file = DeployFile::new(kernel_spec, deploy_spec);
-        // let f = File::create(&path).expect("Could not create file");
-        // serde_json::ser::to_writer_pretty(f, &deploy_file)
-        //     .expect("Could not serialise deploy data");
-        // let abs_path = PathBuf::from(".").canonicalize().unwrap();
-        // LocalProject {
-        //     abs_path,
-        //     deploy_file,
-        //     status_file: None,
-        // }
-
-        // let kernel = DeployedKernel::new(&conn, local_project);
-        // let mut kernel_with_acl = DeployedKernelWithACL::new(kernel);
-        // let contract_spec = project::ContractSpec::from_files(&code_file, &abi_file);
-        // let proc_spec = project::ProcSpec {
-        //     contract_spec,
-        //     cap_path: cap_file,
-        // };
-        // kernel_with_acl
-        //     .deploy_procedure(proc_name.to_string(), proc_spec)
-        //     .unwrap();
     } else if let Some(deploy_procedure_matches) = matches.subcommand_matches("deploy-procedure") {
         let proc_name = deploy_procedure_matches
             .value_of("PROCEDURE-NAME")
@@ -529,13 +488,38 @@ rustflags = [
             (None, None, None) => get_proc_paths(&proc_name.to_string()),
             _ => panic!("You must specify either just a procedure name, or a procedure name with CODE-FILE, ABI-FILE, and CAP-FILE arguments."),
         };
-        println!("paths: {:?}, {:?}. {:?}", code_file, abi_file, cap_file);
+        // println!("paths: {:?}, {:?}. {:?}", code_file, abi_file, cap_file);
+        // Check that the code file exists
+        if !code_file.as_path().exists() {
+            println!("The compiled WASM code does not exist. Be sure to compile with --target wasm32-unknown-unknown --release.");
+            std::process::exit(1);
+        }
+        // Check that the abi file exists
+        if !abi_file.as_path().exists() {
+            println!("The ABI file does not exist. Be sure that the code is compiled and that there is only one *.json file in the <proc-name>/target/json directory.");
+            std::process::exit(1);
+        }
+        // Check that the cap file exists
+        if !cap_file.as_path().exists() {
+            println!("The capabilities JSON file does not exist. The root of the procedure directory should contain a file called \"caps.json\" which contains JSON formatted capability information.");
+            std::process::exit(1);
+        }
+
         // Connect to a local network over http.
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
-        // Read the local project from out current directory.
-        let local_project = project::LocalProject::read();
+        // Read the local project from out current directory. We don't need it,
+        // we just want to make sure we are in one.
+        let _local_project = project::LocalProject::read();
         let kernel = DeployedKernel::new(&conn, local_project);
         let mut kernel_with_acl = DeployedKernelWithACL::new(kernel);
+        // Check that the procedure doesn't already exist.
+        let procedures = kernel_with_acl.kernel.procedures();
+        for procedure in procedures {
+            if procedure.key == string_to_proc_key(proc_name.to_string()) {
+                println!("The procedure \"{}\" is already registered in the kernel. You need to delete the procedure first if you'd like to re-register this procedure. Use `cap9-cli delete-procedure {}` to delete this procedure.", proc_name, proc_name);
+                std::process::exit(1);
+            }
+        }
         let contract_spec = project::ContractSpec::from_files(&code_file, &abi_file);
         let proc_spec = project::ProcSpec {
             contract_spec,
@@ -691,6 +675,10 @@ fn print_param(param: &ethabi::Param) {
 
 fn get_proc_paths(proc_name: &String) -> (PathBuf, PathBuf, PathBuf) {
     let proc_dir = PathBuf::from(proc_name);
+    if !proc_dir.as_path().exists() {
+        println!("The directory for {} does not exist. Are you sure you created such a procedure? Try using `cap9-cli new-procedure {}`.",proc_name, proc_name);
+        std::process::exit(1);
+    }
     let mut code_path = proc_dir.clone();
     code_path.push("target");
     code_path.push("wasm32-unknown-unknown");
@@ -703,6 +691,10 @@ fn get_proc_paths(proc_name: &String) -> (PathBuf, PathBuf, PathBuf) {
     abi_path.push("target");
     abi_path.push("json");
     // list dir contents
+    if !abi_path.as_path().exists() {
+        println!("The abi directory for {} does not exist. Are you sure you compiled the code for this procedure?",proc_name);
+        std::process::exit(1);
+    }
     let paths = std::fs::read_dir(&abi_path).unwrap();
     let mut abi_name = None;
     for path in paths {

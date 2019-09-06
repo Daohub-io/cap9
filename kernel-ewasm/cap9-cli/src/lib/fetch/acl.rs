@@ -346,6 +346,11 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
         let encoded_proc_key: U256 = crate::utils::proc_key_to_32_bytes(&proc_key).into();
 
         let params = (cap_index, encoded_proc_key);
+        self.kernel.conn.web3
+            .personal()
+            .unlock_account(self.kernel.conn.sender, "user", None)
+            .wait()
+            .unwrap();
         // Register the procedure
         let file: &[u8] = default_procedures::ACL_ADMIN.abi();
         let admin_abi = ethabi::Contract::load(file).expect("no ABI");
