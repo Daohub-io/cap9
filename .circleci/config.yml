@@ -227,6 +227,7 @@ jobs:
               echo "rustup already installed"
               . ~/.profile
             fi
+            rustup target add wasm32-unknown-unknown
             RUST_BACKTRACE=1
             rustc -vV
             cargo -V
