@@ -16,6 +16,7 @@ use cap9_cli::build;
 use cap9_cli::connection;
 use cap9_cli::fetch;
 use cap9_cli::project;
+use futures::future::Future;
 
 use cap9_cli::utils::string_to_proc_key;
 use cap9_std::proc_table::cap::*;
@@ -317,6 +318,7 @@ fn main() {
         let kernel = DeployedKernel::new(&network, local_project);
         let kernel_with_acl = DeployedKernelWithACL::new(kernel);
 
+
         // First we need to encode the message to the final procedure
         // let proc_key = kernel_with_acl.get_group_proc(&kernel_with_acl.kernel.conn.sender);
         // This will need to be the admin proc
@@ -328,10 +330,10 @@ fn main() {
             .as_ref()
             .expect("could not get status file");
         let abi_path = status_file.abis.get(&procedure.address).expect("could not find ABI");
-        println!("ABI Path: {:?}", abi_path);
+        // println!("ABI Path: {:?}", abi_path);
         let abi_file = File::open(abi_path).unwrap();
         let abi = ethabi::Contract::load(abi_file).unwrap();
-        println!("ABI: {:?}", abi);
+        // println!("ABI: {:?}", abi);
         let inputs: Vec<ethabi::Token> = match call_any_matches.values_of("INPUTS") {
             Some(vals) => vals
                 .zip(abi.functions.get(function_name).unwrap().inputs.clone())
@@ -343,36 +345,20 @@ fn main() {
             None => Vec::new(),
         };
 
-
-        //  // First we need to encode the message to the final procedure
-        // let proc_key = kernel_with_acl.get_group_proc(&kernel_with_acl.kernel.conn.sender);
-        // // This will need to be the admin proc
-        // let procedure = kernel_with_acl.kernel.procedure(user_proc_key).unwrap();
-        // let status_file: &project::StatusFile = kernel_with_acl
-        //     .kernel
-        //     .local_project
-        //     .status_file()
-        //     .as_ref()
-        //     .unwrap();
-        // let abi_path = status_file.abis.get(&procedure.address).unwrap();
-        // let abi_file = File::open(abi_path).unwrap();
-        // let abi = ethabi::Contract::load(abi_file).unwrap();
-        // let inputs: Vec<ethabi::Token> = match call_any_matches.values_of("INPUTS") {
-        //     Some(vals) => vals
-        //         .zip(abi.functions.get(function_name).unwrap().inputs.clone())
-        //         .map(|(s, input)| {
-        //             ethabi::token::LenientTokenizer::tokenize(&input.kind, s)
-        //                 .expect("input parse failure")
-        //         })
-        //         .collect(),
-        //     None => Vec::new(),
-        // };
-
-
-        println!("Sending from: {:?}", kernel_with_acl.kernel.conn.sender);
-        println!("Inputs: {:?}", inputs);
+        // println!("Sending from: {:?}", kernel_with_acl.kernel.conn.sender);
+        // println!("Inputs: {:?}", inputs);
         let result: web3::types::TransactionReceipt = kernel_with_acl.call_any(proc_key, function_name, &inputs);
         println!("Result: {:?}", result);
+        let logs = kernel_with_acl.kernel.all_logs();
+        for (i,log) in logs.iter().enumerate() {
+            let hex_s: String = log.data.0.clone().to_hex();
+            print!("log[{}]: 0x{}", i, hex_s);
+            match String::from_utf8(log.data.0.clone()) {
+                Ok(s) => print!(" => {}", s),
+                Err(_) => (),
+            }
+            println!("");
+        }
     } else if let Some(call_any_matches) = matches.subcommand_matches("query-any") {
         let proc_name = call_any_matches
             .value_of("PROC-NAME")

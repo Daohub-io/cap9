@@ -1,5 +1,5 @@
 use web3::futures::Future;
-use web3::types::{Address, H256, U256};
+use web3::types::{Address, H256, U256, Log};
 // use web3::types::TransactionReceipt;
 use rustc_hex::ToHex;
 use web3::Transport;
@@ -170,6 +170,15 @@ impl<'a, T: Transport> DeployedKernel<'a, T> {
             procs.push(procedure);
         }
         procs
+    }
+
+    pub fn all_logs(&self) -> Vec<Log> {
+        let filter = web3::types::FilterBuilder::default()
+            .from_block(web3::types::BlockNumber::Number(0_u64))
+            .to_block(web3::types::BlockNumber::Latest)
+            .address(vec!{self.address()})
+            .build();
+        self.conn.web3.eth().logs(filter).wait().unwrap()
     }
 
     /// Retrieve a specific procedure.

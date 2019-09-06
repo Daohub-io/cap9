@@ -487,10 +487,10 @@ impl<'a, T: Transport> DeployedKernelWithACL<'a, T> {
                 .as_ref()
                 .expect("could not get status file");
             let abi_path = status_file.abis.get(&procedure.address).expect("could not find ABI");
-            println!("ABI Path: {:?}", abi_path);
+            // println!("ABI Path: {:?}", abi_path);
             let abi_file = File::open(abi_path).unwrap();
             let abi = ethabi::Contract::load(abi_file).unwrap();
-            println!("ABI: {:?}", abi);
+            // println!("ABI: {:?}", abi);
             abi
         };
 

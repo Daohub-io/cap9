@@ -282,6 +282,27 @@ mod integration {
                 procedures.len()
             );
         }
+
+        // Determine how many log entries there are before the call
+        let n_logs1 = kernel_with_acl.kernel.all_logs().len();
+
+        // Call the new procedure
+        Command::cargo_bin("cap9-cli")
+            .unwrap()
+            // The command
+            .arg("call-any")
+            // The name of theprocedure
+            .arg(&proc_name)
+            .arg("say_hello")
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+
+        // Check that "Hello World!" was logged
+        let logs2 = kernel_with_acl.kernel.all_logs();
+        assert_eq!(n_logs1+1, logs2.len(), "The number of logs should have increased by 1");
+        assert_eq!(String::from_utf8(logs2.last().unwrap().data.0.clone()).unwrap(), "Hello World!".to_string(), "The most recent log should say \"Hello World!\"");
+
     }
 
     #[test]
