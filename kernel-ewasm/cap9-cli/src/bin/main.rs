@@ -381,7 +381,7 @@ fn main() {
 
         let config_str = "[target.wasm32-unknown-unknown]\n
 rustflags = [
-  \"-C\", \"link-args=-z stack-size=65536]\",
+  \"-C\", \"link-args=-z stack-size=65536\",
 ]";
         // Create a source directory within that directory
         let mut config_dir_path = proc_path.clone();
