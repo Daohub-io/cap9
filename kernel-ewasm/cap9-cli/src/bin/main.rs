@@ -1,7 +1,5 @@
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate toml;
 
 use clap::{App, AppSettings, Arg, SubCommand};
 use ethabi::token::Tokenizer;
@@ -18,9 +16,6 @@ use cap9_cli::build;
 use cap9_cli::connection;
 use cap9_cli::fetch;
 use cap9_cli::project;
-
-use serde::{Deserialize, Serialize};
-use toml::ser;
 
 use cap9_cli::utils::string_to_proc_key;
 use cap9_std::proc_table::cap::*;
@@ -337,7 +332,7 @@ fn main() {
             .expect("No code file");
         // Read the local project from out current directory. We do this to
         // ensure we are in a project.
-        let local_project = project::LocalProject::read();
+        let _local_project = project::LocalProject::read();
         // Create a new directory in the local project.
         // Create a new directory, throw an error if the directory exists.
         let proc_path = PathBuf::from(proc_name);
@@ -414,8 +409,8 @@ rustflags = [
         caps_path.push("caps.json");
         let prefix = 0;
         let cap_key = string_to_proc_key("".to_string());
-        let mut caps_file = std::fs::File::create(&caps_path).unwrap();
-        let mut caps_data: Vec<NewCapability> = vec![
+        let caps_file = std::fs::File::create(&caps_path).unwrap();
+        let caps_data: Vec<NewCapability> = vec![
             NewCapability {
                 cap: Capability::ProcedureRegister(ProcedureRegisterCap {
                     prefix,
@@ -521,7 +516,7 @@ rustflags = [
         let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
         // Read the local project from out current directory. We don't need it,
         // we just want to make sure we are in one.
-        let _local_project = project::LocalProject::read();
+        let local_project = project::LocalProject::read();
         let kernel = DeployedKernel::new(&conn, local_project);
         let mut kernel_with_acl = DeployedKernelWithACL::new(kernel);
         // Check that the procedure doesn't already exist.
@@ -656,8 +651,6 @@ rustflags = [
                     }
                     println!("");
                 }
-            } else {
-                println!("fetching acl stuff");
             }
         }
     }

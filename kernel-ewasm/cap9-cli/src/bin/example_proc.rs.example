@@ -32,7 +32,7 @@ pub mod writer {
         #[constant]
         fn testNum(&mut self) -> U256;
 
-        fn log(&mut self, cap_idx: U256, topics: Vec<H256>, value: Vec<u8>);
+        fn say_hello(&mut self);
 
     }
 
@@ -46,8 +46,8 @@ pub mod writer {
             76.into()
         }
 
-        fn log(&mut self, cap_idx: U256, topics: Vec<H256>, value: Vec<u8>) {
-            cap9_std::log(cap_idx.as_u32() as u8, topics, value).unwrap();
+        fn say_hello(&mut self) {
+            cap9_std::log(0_u8, b"Hello World~".to_vec()).unwrap();
         }
     }
 }
