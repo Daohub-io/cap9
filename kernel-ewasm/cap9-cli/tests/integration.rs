@@ -188,6 +188,103 @@ mod integration {
     }
 
     #[test]
+    fn create_and_deploy_new_procedure() {
+        let project_name = "example";
+
+        // Create a directory inside the temporary directory of the system.
+        let dir = tempdir().unwrap();
+
+        // Create a new project
+        let mut create_cmd = Command::cargo_bin("cap9-cli").unwrap();
+        create_cmd
+            .arg("new")
+            .arg("--acl")
+            .arg(project_name)
+            .current_dir(dir.path());
+        create_cmd.assert().success();
+
+        let mut project_dir = std::path::PathBuf::new();
+        project_dir.push(dir.path());
+        project_dir.push(project_name);
+
+        // Deploy the kernel
+        println!("Deploying project");
+        let mut deploy_cmd = Command::cargo_bin("cap9-cli").unwrap();
+        deploy_cmd.arg("deploy").current_dir(&project_dir);
+        deploy_cmd.assert().success();
+
+        // There should be one group (1)
+        let conn: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        // Read the local project from out current directory.
+        let local_project = project::LocalProject::read_dir(&project_dir);
+        let kernel = DeployedKernel::new(&conn, local_project);
+        let kernel_with_acl = DeployedKernelWithACL::new(kernel);
+
+        {
+            // There should be 2 procedures:
+            //   1. Entry
+            //   2. Admin
+            let procedures = kernel_with_acl.kernel.procedures();
+            assert_eq!(
+                procedures.len(),
+                2,
+                "There should be 2 procedures, but there are {}",
+                procedures.len()
+            );
+        }
+        let proc_name = String::from("hello_world");
+        // Create a new procedure
+        Command::cargo_bin("cap9-cli")
+            .unwrap()
+            // The command
+            .arg("new-procedure")
+            // The name of the group's procedure
+            .arg(&proc_name)
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+
+        let mut new_proc_dir = project_dir.clone();
+        new_proc_dir.push(&proc_name);
+
+        // Create a new procedure
+        Command::new("cargo")
+            // The command
+            .arg("build")
+            .arg("--target")
+            .arg("wasm32-unknown-unknown")
+            .arg("--release")
+            .current_dir(&new_proc_dir)
+            .assert()
+            .success();
+
+        // Add a new procedure to the kernel
+        Command::cargo_bin("cap9-cli")
+            .unwrap()
+            // The command
+            .arg("deploy-procedure")
+            // The name of the group's procedure
+            .arg(&proc_name)
+            .current_dir(&project_dir)
+            .assert()
+            .success();
+
+        {
+            // There should be 3 procedures:
+            //   1. Entry
+            //   2. Admin
+            //   3. hello_world
+            let procedures = kernel_with_acl.kernel.procedures();
+            assert_eq!(
+                procedures.len(),
+                3,
+                "There should be 3 procedures, but there are {}",
+                procedures.len()
+            );
+        }
+    }
+
+    #[test]
     fn deploy_proc_once() {
         let (_dir, project_dir) = create_temp_project_with_acl();
         let wasm_path: PathBuf = [&project_dir, &PathBuf::from("acl_group_5.wasm")]
