@@ -71,6 +71,26 @@ fn main() {
                         .help("function inputs"),
                 ),
         )
+        // This will understand the ACL
+        .subcommand(
+            SubCommand::with_name("call-any")
+                .about("Call a procedure using the admin procs special support for calling any procedure.")
+                .arg(
+                    Arg::with_name("PROC-NAME")
+                        .required(true)
+                        .help("Name of the procedure to call"),
+                )
+                .arg(
+                    Arg::with_name("FUNCTION-NAME")
+                        .required(true)
+                        .help("Name of the function to call"),
+                )
+                .arg(
+                    Arg::with_name("INPUTS")
+                        .multiple(true)
+                        .help("function inputs"),
+                ),
+        )
         .subcommand(
             SubCommand::with_name("query")
                 .about("Query a procedure")
@@ -78,6 +98,25 @@ fn main() {
                     Arg::with_name("FUNCTION-NAME")
                         .required(true)
                         .help("path to cargo project"),
+                )
+                .arg(
+                    Arg::with_name("INPUTS")
+                        .multiple(true)
+                        .help("function inputs"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("query-any")
+                .about("Query a procedure using the admin procs special support for calling any procedure.")
+                .arg(
+                    Arg::with_name("PROC-NAME")
+                        .required(true)
+                        .help("Name of the procedure to call"),
+                )
+                .arg(
+                    Arg::with_name("FUNCTION-NAME")
+                        .required(true)
+                        .help("Name of the function to call"),
                 )
                 .arg(
                     Arg::with_name("INPUTS")
@@ -260,6 +299,121 @@ fn main() {
         println!("Sending from: {:?}", kernel_with_acl.kernel.conn.sender);
         println!("Inputs: {:?}", inputs);
         let result: web3::types::TransactionReceipt = kernel_with_acl.call(function_name, &inputs);
+        println!("Result: {:?}", result);
+    } else if let Some(call_any_matches) = matches.subcommand_matches("call-any") {
+        let proc_name = call_any_matches
+            .value_of("PROC-NAME")
+            .expect("No code file");
+        let function_name = call_any_matches
+            .value_of("FUNCTION-NAME")
+            .expect("No code file");
+
+        // Here we assume the proc_name is simply ascii.
+        let proc_key = cap9_std::SysCallProcedureKey(string_to_proc_key(proc_name.to_string()));
+
+
+        let network: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        let local_project = project::LocalProject::read();
+        let kernel = DeployedKernel::new(&network, local_project);
+        let kernel_with_acl = DeployedKernelWithACL::new(kernel);
+
+        // First we need to encode the message to the final procedure
+        // let proc_key = kernel_with_acl.get_group_proc(&kernel_with_acl.kernel.conn.sender);
+        // This will need to be the admin proc
+        let procedure = kernel_with_acl.kernel.procedure(proc_key.clone()).unwrap();
+        let status_file: &project::StatusFile = kernel_with_acl
+            .kernel
+            .local_project
+            .status_file()
+            .as_ref()
+            .expect("could not get status file");
+        let abi_path = status_file.abis.get(&procedure.address).expect("could not find ABI");
+        println!("ABI Path: {:?}", abi_path);
+        let abi_file = File::open(abi_path).unwrap();
+        let abi = ethabi::Contract::load(abi_file).unwrap();
+        println!("ABI: {:?}", abi);
+        let inputs: Vec<ethabi::Token> = match call_any_matches.values_of("INPUTS") {
+            Some(vals) => vals
+                .zip(abi.functions.get(function_name).unwrap().inputs.clone())
+                .map(|(s, input)| {
+                    ethabi::token::LenientTokenizer::tokenize(&input.kind, s)
+                        .expect("input parse failure")
+                })
+                .collect(),
+            None => Vec::new(),
+        };
+
+
+        //  // First we need to encode the message to the final procedure
+        // let proc_key = kernel_with_acl.get_group_proc(&kernel_with_acl.kernel.conn.sender);
+        // // This will need to be the admin proc
+        // let procedure = kernel_with_acl.kernel.procedure(user_proc_key).unwrap();
+        // let status_file: &project::StatusFile = kernel_with_acl
+        //     .kernel
+        //     .local_project
+        //     .status_file()
+        //     .as_ref()
+        //     .unwrap();
+        // let abi_path = status_file.abis.get(&procedure.address).unwrap();
+        // let abi_file = File::open(abi_path).unwrap();
+        // let abi = ethabi::Contract::load(abi_file).unwrap();
+        // let inputs: Vec<ethabi::Token> = match call_any_matches.values_of("INPUTS") {
+        //     Some(vals) => vals
+        //         .zip(abi.functions.get(function_name).unwrap().inputs.clone())
+        //         .map(|(s, input)| {
+        //             ethabi::token::LenientTokenizer::tokenize(&input.kind, s)
+        //                 .expect("input parse failure")
+        //         })
+        //         .collect(),
+        //     None => Vec::new(),
+        // };
+
+
+        println!("Sending from: {:?}", kernel_with_acl.kernel.conn.sender);
+        println!("Inputs: {:?}", inputs);
+        let result: web3::types::TransactionReceipt = kernel_with_acl.call_any(proc_key, function_name, &inputs);
+        println!("Result: {:?}", result);
+    } else if let Some(call_any_matches) = matches.subcommand_matches("query-any") {
+        let proc_name = call_any_matches
+            .value_of("PROC-NAME")
+            .expect("No code file");
+        let function_name = call_any_matches
+            .value_of("FUNCTION-NAME")
+            .expect("No code file");
+
+        // Here we assume the proc_name is simply ascii.
+        let proc_key = cap9_std::SysCallProcedureKey(string_to_proc_key(proc_name.to_string()));
+
+
+        let network: connection::EthConn<web3::transports::Http> = connection::EthConn::new_http();
+        let local_project = project::LocalProject::read();
+        let kernel = DeployedKernel::new(&network, local_project);
+        let kernel_with_acl = DeployedKernelWithACL::new(kernel);
+
+        // First we need to encode the message to the final procedure
+        // let proc_key = kernel_with_acl.get_group_proc(&kernel_with_acl.kernel.conn.sender);
+        // This will need to be the admin proc
+        let procedure = kernel_with_acl.kernel.procedure(proc_key.clone()).unwrap();
+        let status_file: &project::StatusFile = kernel_with_acl
+            .kernel
+            .local_project
+            .status_file()
+            .as_ref()
+            .expect("could not get status file");
+        let abi_path = status_file.abis.get(&procedure.address).expect("could not find ABI");
+        let abi_file = File::open(abi_path).unwrap();
+        let abi = ethabi::Contract::load(abi_file).unwrap();
+        let inputs: Vec<ethabi::Token> = match call_any_matches.values_of("INPUTS") {
+            Some(vals) => vals
+                .zip(abi.functions.get(function_name).unwrap().inputs.clone())
+                .map(|(s, input)| {
+                    ethabi::token::LenientTokenizer::tokenize(&input.kind, s)
+                        .expect("input parse failure")
+                })
+                .collect(),
+            None => Vec::new(),
+        };
+        let result = kernel_with_acl.query_any(proc_key, function_name, &inputs);
         println!("Result: {:?}", result);
     } else if let Some(query_matches) = matches.subcommand_matches("query") {
         let function_name = query_matches

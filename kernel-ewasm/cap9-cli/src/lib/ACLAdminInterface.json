@@ -195,6 +195,23 @@
     "payable": false
   },
   {
+    "type": "function",
+    "name": "call_any",
+    "inputs": [
+      {
+        "name": "key",
+        "type": "uint256"
+      },
+      {
+        "name": "payload",
+        "type": "bytes"
+      }
+    ],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
     "type": "constructor",
     "inputs": [],
     "payable": false

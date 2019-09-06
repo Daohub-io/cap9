@@ -47,7 +47,7 @@ pub mod writer {
         }
 
         fn say_hello(&mut self) {
-            cap9_std::log(0_u8, b"Hello World~".to_vec()).unwrap();
+            cap9_std::log(0_u8, [].to_vec(), b"Hello World!".to_vec()).unwrap();
         }
     }
 }
