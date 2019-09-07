@@ -237,6 +237,9 @@ fn main() {
                     SubCommand::with_name("procedures").about("List all the registered procedures"),
                 )
                 .subcommand(
+                    SubCommand::with_name("all-logs").about("Print all logs of the kernel"),
+                )
+                .subcommand(
                     SubCommand::with_name("acl")
                         .about("Query information pertaining to a standard ACL")
                         .subcommand(
@@ -349,16 +352,6 @@ fn main() {
         // println!("Inputs: {:?}", inputs);
         let result: web3::types::TransactionReceipt = kernel_with_acl.call_any(proc_key, function_name, &inputs);
         println!("Result: {:?}", result);
-        let logs = kernel_with_acl.kernel.all_logs();
-        for (i,log) in logs.iter().enumerate() {
-            let hex_s: String = log.data.0.clone().to_hex();
-            print!("log[{}]: 0x{}", i, hex_s);
-            match String::from_utf8(log.data.0.clone()) {
-                Ok(s) => print!(" => {}", s),
-                Err(_) => (),
-            }
-            println!("");
-        }
     } else if let Some(call_any_matches) = matches.subcommand_matches("query-any") {
         let proc_name = call_any_matches
             .value_of("PROC-NAME")
@@ -753,6 +746,17 @@ rustflags = [
         } else if let Some(_gas_matches) = fetch_matches.subcommand_matches("gas") {
             let gas = kernel.gas();
             println!("Gas: {}", gas);
+        } else if let Some(_all_logs_matches) = fetch_matches.subcommand_matches("all-logs") {
+            let logs = kernel.all_logs();
+            for (i,log) in logs.iter().enumerate() {
+                let hex_s: String = log.data.0.clone().to_hex();
+                print!("log[{}]: 0x{}", i, hex_s);
+                match String::from_utf8(log.data.0.clone()) {
+                    Ok(s) => print!(" => {}", s),
+                    Err(_) => (),
+                }
+                println!("");
+            }
         } else if let Some(acl_matches) = fetch_matches.subcommand_matches("acl") {
             let kernel_with_acl = DeployedKernelWithACL::new(kernel);
             if let Some(_groups_matches) = acl_matches.subcommand_matches("groups") {
