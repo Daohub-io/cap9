@@ -12,6 +12,14 @@ pub struct AccountCallCap {
     pub address: Address,
 }
 
+
+#[cfg(feature="std")]
+impl std::fmt::Display for AccountCallCap {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "AccountCallCap: call_any: {}, send: {}, address: {}", self.can_call_any, self.can_send, self.address)
+    }
+}
+
 impl AsCap for AccountCallCap {
     fn is_subset_of(&self, parent_cap: &Self) -> bool {
         // If the requested value of callAny is true, then the parent cap

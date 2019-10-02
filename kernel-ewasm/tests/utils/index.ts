@@ -51,7 +51,7 @@ const WEB3_OPTIONS = {
 };
 
 // Kernel Code
-const KERNEL_WASM = '0x' + fs.readFileSync(path.resolve(TARGET_PATH, "./cap9-kernel.wasm")).toString('hex');
+const KERNEL_WASM = '0x' + fs.readFileSync(path.resolve(TARGET_PATH, "./cap9_kernel.wasm")).toString('hex');
 const KERNEL_WASM_ABI = JSON.parse(fs.readFileSync(path.resolve(TARGET_PATH, "./json/KernelInterface.json")))
 
 const DEFAULT_ACCOUNT = {

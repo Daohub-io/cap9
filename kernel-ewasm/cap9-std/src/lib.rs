@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature="std"), no_std)]
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
@@ -15,7 +15,7 @@ pub mod syscalls;
 pub use syscalls::*;
 
 /// Capability compatible data structures for use with Ethereum storage.
-mod data;
+pub mod data;
 pub use data::map::StorageMap;
 use data::map::*;
 pub use data::map_enumerable::StorageEnumerableMap;

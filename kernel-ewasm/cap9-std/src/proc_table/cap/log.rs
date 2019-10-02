@@ -1,6 +1,10 @@
 use super::{AsCap,ProcedureKey,matching_keys};
 use cap9_core::{Serialize, Deserialize};
 use pwasm_abi::types::*;
+
+#[cfg(feature="std")]
+use rustc_hex::ToHex;
+
 pub const CAP_LOG: u8 = 8;
 pub const CAP_LOG_SIZE: u8 = 5;
 
@@ -11,6 +15,18 @@ pub struct LogCap {
     pub t2: [u8; 32],
     pub t3: [u8; 32],
     pub t4: [u8; 32],
+}
+
+#[cfg(feature="std")]
+impl std::fmt::Display for LogCap {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let t1_hex: String = self.t1.to_hex();
+        let t2_hex: String = self.t2.to_hex();
+        let t3_hex: String = self.t3.to_hex();
+        let t4_hex: String = self.t4.to_hex();
+        write!(f, "LogCap: n_topics: {}, t1: 0x{}, t2: 0x{}, t3: 0x{}, t4: 0x{}",
+            self.topics, t1_hex, t2_hex, t3_hex, t4_hex)
+    }
 }
 
 impl AsCap for LogCap {

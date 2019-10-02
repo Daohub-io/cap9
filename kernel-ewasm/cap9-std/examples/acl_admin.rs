@@ -43,6 +43,8 @@ pub trait ACLAdminInterface {
 
         fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>);
 
+        fn delProc(&mut self, cap_idx: U256, key: H256);
+
         fn listProcs(&mut self) -> Vec<H256>;
 
         fn getCap(&mut self, cap_type: U256, cap_index: U256) -> (U256, U256);
@@ -50,6 +52,8 @@ pub trait ACLAdminInterface {
         fn getNCaps(&mut self, key: H256) -> u64;
 
         fn proxy(&mut self, payload: Vec<u8>);
+
+        fn call_any(&mut self, key: H256, payload: Vec<u8>);
 
     }
 
@@ -98,6 +102,11 @@ pub trait ACLAdminInterface {
 
         fn regProc(&mut self, cap_idx: U256, key: H256, address: Address, cap_list: Vec<H256>) {
             cap9_std::reg(cap_idx.as_u32() as u8, key.into(), address, cap_list).unwrap();
+            pwasm_ethereum::ret(&cap9_std::result());
+        }
+
+        fn delProc(&mut self, cap_idx: U256, key: H256) {
+            cap9_std::delete(cap_idx.as_u32() as u8, key.into()).unwrap();
             pwasm_ethereum::ret(&cap9_std::result());
         }
 
@@ -155,6 +164,17 @@ pub trait ACLAdminInterface {
             pwasm_ethereum::ret(&cap9_std::result());
         }
 
+        fn call_any(&mut self, key: H256, payload: Vec<u8>) {
+            let sender = pwasm_ethereum::origin();
+            // let group_id = self.get_account_group(sender).as_u32() as u8;
+            // let procecedure_map: cap9_std::StorageEnumerableMap<u8,cap9_std::SysCallProcedureKey> = cap9_std::StorageEnumerableMap::from(0).unwrap();
+            let procedure_key = key.into();
+            // Here the cap is hard coded. This procedure expects its first
+            // procedure call capability to give it all the necessary
+            // permissions.
+            cap9_std::call(0_u8, procedure_key, payload).unwrap();
+            pwasm_ethereum::ret(&cap9_std::result());
+        }
     }
 }
 // Declares the dispatch and dispatch_ctor methods

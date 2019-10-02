@@ -590,6 +590,7 @@ impl Serialize<u8> for Payload {
 }
 
 /// Newtype wrapper over procedure keys for interaction with syscalls.
+#[derive(Clone, Debug)]
 pub struct SysCallProcedureKey(pub proc_table::ProcedureKey);
 
 impl From<H256> for SysCallProcedureKey {

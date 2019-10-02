@@ -1,0 +1,20 @@
+[
+  {
+    "type": "function",
+    "name": "testNum",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "returnValue0",
+        "type": "uint256"
+      }
+    ],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "constructor",
+    "inputs": [],
+    "payable": false
+  }
+]

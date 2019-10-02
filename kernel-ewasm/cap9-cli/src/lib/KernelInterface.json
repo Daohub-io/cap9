@@ -1,0 +1,28 @@
+[
+  {
+    "type": "function",
+    "name": "panic",
+    "inputs": [],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_entry_proc_key",
+        "type": "string"
+      },
+      {
+        "name": "_entry_proc_address",
+        "type": "address"
+      },
+      {
+        "name": "_cap_list",
+        "type": "uint256[]"
+      }
+    ],
+    "payable": true
+  }
+]

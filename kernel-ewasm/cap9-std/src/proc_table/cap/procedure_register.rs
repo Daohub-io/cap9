@@ -1,6 +1,10 @@
 use super::{AsCap,ProcedureKey,matching_keys};
 use cap9_core::{Serialize, Deserialize};
 use pwasm_abi::types::*;
+
+#[cfg(feature="std")]
+use rustc_hex::ToHex;
+
 pub const CAP_PROC_REGISTER: u8 = 4;
 pub const CAP_PROC_REGISTER_SIZE: u8 = 1;
 
@@ -8,6 +12,14 @@ pub const CAP_PROC_REGISTER_SIZE: u8 = 1;
 pub struct ProcedureRegisterCap {
     pub prefix: u8,
     pub key: ProcedureKey,
+}
+
+#[cfg(feature="std")]
+impl std::fmt::Display for ProcedureRegisterCap {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let key_hex: String = self.key.to_hex();
+        write!(f, "ProcedureRegisterCap: prefix: {}, key: 0x{}", self.prefix, key_hex)
+    }
 }
 
 impl AsCap for ProcedureRegisterCap {

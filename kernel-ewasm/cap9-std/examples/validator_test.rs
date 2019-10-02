@@ -9,13 +9,7 @@ extern crate parity_wasm;
 extern crate validator;
 extern crate cap9_std;
 
-use pwasm_abi::types::*;
-
-use cap9_std::proc_table;
 use cap9_std::*;
-use cap9_std::syscalls::SysCall;
-
-use cap9_core::{Cursor, Deserialize};
 
 // When we are compiling to WASM, unresolved references are left as (import)
 // expressions. However, under any other target symbols will have to be linked

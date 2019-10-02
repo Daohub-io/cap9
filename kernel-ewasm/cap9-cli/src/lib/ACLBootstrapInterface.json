@@ -1,0 +1,44 @@
+[
+  {
+    "type": "function",
+    "name": "init",
+    "inputs": [
+      {
+        "name": "entry_key",
+        "type": "uint256"
+      },
+      {
+        "name": "entry_address",
+        "type": "address"
+      },
+      {
+        "name": "entry_cap_list",
+        "type": "uint256[]"
+      },
+      {
+        "name": "admin_key",
+        "type": "uint256"
+      },
+      {
+        "name": "admin_address",
+        "type": "address"
+      },
+      {
+        "name": "admin_cap_list",
+        "type": "uint256[]"
+      },
+      {
+        "name": "admin_account",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "constant": false,
+    "payable": false
+  },
+  {
+    "type": "constructor",
+    "inputs": [],
+    "payable": false
+  }
+]

@@ -1,0 +1,23 @@
+[package]
+edition = '2018'
+name = 'hello_world11'
+version = '0.1.0'
+
+[dependencies]
+cap9-std = { git = "https://github.com/Daohub-io/cap9.git", branch = "master" }
+pwasm-std = { version = "0.13", default-features = false }
+pwasm-ethereum = { version = "0.8", features = ["kip6"] }
+pwasm-abi = "0.2"
+cap9-core = { git = "https://github.com/Daohub-io/cap9.git", default-features = false}
+rustc-hex = {version = "2.0.1", optional = true }
+pwasm-abi-derive = { git = "https://github.com/Daohub-io/pwasm-abi.git", branch = "json-payable-constructors" }
+
+[dev-dependencies]
+validator = { git = "https://github.com/Daohub-io/cap9.git", default-features = false }
+parity-wasm = { git = "https://github.com/paritytech/parity-wasm.git", default-features = false }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+cap9-test = { git = "https://github.com/Daohub-io/cap9.git" }
+pwasm-test = { git = "https://github.com/paritytech/pwasm-test", default-features = false }
+
+[workspace]

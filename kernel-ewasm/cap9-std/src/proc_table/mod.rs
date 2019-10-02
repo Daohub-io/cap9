@@ -36,15 +36,16 @@ use cap::*;
 
 use crate::syscalls::*;
 
+#[derive(Clone, Debug)]
 pub struct ProcPointer(ProcedureKey);
 
 impl ProcPointer {
-    fn from_key(key: ProcedureKey) -> ProcPointer {
+    pub fn from_key(key: ProcedureKey) -> ProcPointer {
         ProcPointer(key)
     }
 
     /// Get Procedure Storage Pointer
-    fn get_store_ptr(&self) -> [u8; 32] {
+    pub fn get_store_ptr(&self) -> [u8; 32] {
         let mut result: [u8; 32] = KERNEL_PROC_HEAP_PTR;
         result[5..29].copy_from_slice(&self.0);
         result
@@ -53,25 +54,25 @@ impl ProcPointer {
     /// Get Procedure Address Pointer
     ///
     /// (Equivalent to crate::get_store_ptr)
-    fn get_addr_ptr(&self) -> [u8; 32] {
+    pub fn get_addr_ptr(&self) -> [u8; 32] {
         self.get_store_ptr()
     }
 
-    fn get_index_ptr(&self) -> [u8; 32] {
+    pub fn get_index_ptr(&self) -> [u8; 32] {
         let mut pointer = self.get_store_ptr();
         pointer[31] = 1;
         pointer
     }
 
     /// Get the Storage Pointer to the Length of a Capability Type List
-    fn get_cap_type_len_ptr(&self, cap_type: u8) -> [u8; 32] {
+    pub fn get_cap_type_len_ptr(&self, cap_type: u8) -> [u8; 32] {
         let mut pointer = self.get_store_ptr();
         pointer[29] = cap_type;
         pointer
     }
 
     /// Get the Storage Pointer to the Index of a Capability
-    fn get_cap_index_ptr(&self, cap_type: u8, cap_index: u8) -> [u8; 32] {
+    pub fn get_cap_index_ptr(&self, cap_type: u8, cap_index: u8) -> [u8; 32] {
         let mut pointer = self.get_store_ptr();
         pointer[29] = cap_type;
         pointer[30] = cap_index + 1;
@@ -79,7 +80,7 @@ impl ProcPointer {
     }
 
     /// Get the Storage Pointer of a Capability Value at Index
-    fn get_cap_val_ptr(&self, cap_type: u8, cap_index: u8, val_index: u8) -> [u8; 32] {
+    pub fn get_cap_val_ptr(&self, cap_type: u8, cap_index: u8, val_index: u8) -> [u8; 32] {
         let mut pointer = self.get_store_ptr();
         pointer[29] = cap_type;
         pointer[30] = cap_index + 1;
@@ -87,7 +88,7 @@ impl ProcPointer {
         pointer
     }
 
-    fn get_list_ptr(index: U256) -> [u8; 32] {
+    pub fn get_list_ptr(index: U256) -> [u8; 32] {
         let mut result: [u8; 32] = KERNEL_PROC_LIST_PTR;
         let slice: [u8; 32] = index.into();
         result[5..29].copy_from_slice(&slice[8..]);
