@@ -328,10 +328,6 @@ jobs:
             #   cd ..
             cd substrate/contracts
             cargo build --release
-      - persist_to_workspace:
-          root: /tmp/my-project
-          paths:
-            - parity
       - save_cache:
           key: deps12-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
           paths:
