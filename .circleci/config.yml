@@ -298,9 +298,6 @@ jobs:
           command: |
             yum -y update
             yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
-            # curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
-            # tar -xzf cmake.tar.gz
-            # cp -r cmake-3.12.0-Linux-x86_64/* /usr/
             echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
             # only update cargo if it is not installed
             if [ ! -d /root/.rustup ]
@@ -318,14 +315,6 @@ jobs:
             cargo -V
             gcc -v
             g++ -v
-            # cmake --version
-            # if [ ! -d gflags ]
-            # then
-            #   git clone https://github.com/gflags/gflags.git
-            #   cd gflags
-            #   git checkout v2.0
-            #   ./configure && make && make install
-            #   cd ..
             cd substrate/contracts
             cargo build --release
       - save_cache:
