@@ -326,6 +326,7 @@ jobs:
             #   git checkout v2.0
             #   ./configure && make && make install
             #   cd ..
+            cd substrate/contracts
             cargo build --release
       - persist_to_workspace:
           root: /tmp/my-project
