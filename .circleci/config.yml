@@ -286,6 +286,7 @@ jobs:
           command: |
             yum -y update
             yum install -y git
+      - checkout
       - restore_cache:
           keys:
             - deps12-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
