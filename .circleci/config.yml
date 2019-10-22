@@ -350,7 +350,7 @@ jobs:
               export LIBRARY_PATH=/usr/local/lib
               rustup override set nightly
               rustup target add wasm32-unknown-unknown --toolchain nightly
-              cargo build --release
+              cargo build --release -j 1
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
             cp target/release/substrate /tmp/my-project/substrate
