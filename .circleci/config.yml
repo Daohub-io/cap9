@@ -349,6 +349,7 @@ jobs:
               fi
               export LIBRARY_PATH=/usr/local/lib
               rustup override set nightly
+              rustup target add wasm32-unknown-unknown --toolchain nightly
               cargo build --release
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
