@@ -348,6 +348,7 @@ jobs:
                 cd ..
               fi
               export LIBRARY_PATH=/usr/local/lib
+              rustup override set nightly
               cargo build --release
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
