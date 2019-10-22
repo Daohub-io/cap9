@@ -492,7 +492,7 @@ workflows:
           requires:
             - build-parity
       - build-substrate
-      - srml-build
+      - srml-build:
           requires:
             - build-substrate
       # - srml-test
