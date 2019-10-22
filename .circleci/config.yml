@@ -317,6 +317,70 @@ jobs:
             g++ -v
             cd substrate/contracts
             cargo build --release
+      - run:
+          name: Build Test Contract
+          command: |
+            cd substrate/flipper
+            cargo  install --git https://github.com/paritytech/ink.git --force
+            cargo install --force --git https://github.com/paritytech/substrate subkey
+            cargo contract build
+            cargo contract deploy target/flipper-pruned.wasm --suri "//Ferdie" --url ws://127.0.0.1:9944 --gas 500000
+      - save_cache:
+          key: deps12-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+            - "~/.rustup"
+          when: always
+  srml-test:
+    docker:
+      - image: centos:latest
+    working_directory: /tmp/my-project
+    steps:
+      - run:
+          name: Install git
+          command: |
+            yum -y update
+            yum install -y git
+      - checkout
+      - restore_cache:
+          keys:
+            - deps12-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+            - deps12-contracts-{{ .Branch }}
+            - deps12-contracts
+      - run:
+          name: Build Contracts Module
+          no_output_timeout: 1.25h
+          command: |
+            yum -y update
+            yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
+            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+            # only update cargo if it is not installed
+            if [ ! -d /root/.rustup ]
+            then
+              echo "Installing rustup"
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              . ~/.profile
+              rustup default stable
+            else
+              echo "rustup already installed"
+              . ~/.profile
+            fi
+            RUST_BACKTRACE=1
+            rustc -vV
+            cargo -V
+            gcc -v
+            g++ -v
+            cd substrate/contracts
+            cargo build --release
+      - run:
+          name: Build Test Contract
+          command: |
+            cd substrate/flipper
+            cargo  install --git https://github.com/paritytech/ink.git --force
+            cargo install --force --git https://github.com/paritytech/substrate subkey
+            cargo contract build
+            cargo contract deploy target/flipper-pruned.wasm --suri "//Ferdie" --url ws://127.0.0.1:9944 --gas 500000
+            # npm install -g @polkadot/api-cli
       - save_cache:
           key: deps12-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
           paths:
@@ -336,3 +400,4 @@ workflows:
           requires:
             - build-parity
       - srml-build
+      # - srml-test
