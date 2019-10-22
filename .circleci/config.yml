@@ -300,7 +300,6 @@ jobs:
               echo "Substrate not installed, cloning..."
               git clone https://github.com/paritytech/substrate
             fi
-            git checkout 9b08e7ff938a45dbec7fcdb854063202e2b0cb48
       - restore_cache:
           keys:
             - deps13-substrate-{{ .Branch }}-{{ checksum "../substrate/Cargo.lock" }}
@@ -354,6 +353,7 @@ jobs:
               export LIBRARY_PATH=/usr/local/lib
               rustup override set nightly-2019-08-08
               rustup target add wasm32-unknown-unknown --toolchain nightly
+              git checkout 9b08e7ff938a45dbec7fcdb854063202e2b0cb48
               cargo build --release -j 1
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
