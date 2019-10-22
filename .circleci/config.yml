@@ -420,6 +420,7 @@ jobs:
       - run:
           name: Build Test Contract
           command: |
+            . ~/.profile
             cd substrate/flipper
             cargo  install --git https://github.com/paritytech/ink.git --force
             cargo install --force --git https://github.com/paritytech/substrate subkey
