@@ -432,6 +432,9 @@ jobs:
             # cargo contract build
             #TODO: Does not currently test flipper, just deploys a trivial contract
             cd ../deploy-flipper
+            rustup install nightly-2019-08-08
+            rustup override set nightly-2019-08-08
+            rustup target add wasm32-unknown-unknown
             cargo run
             # cargo contract deploy target/flipper-pruned.wasm --suri "//Ferdie" --url ws://127.0.0.1:9944 --gas 500000
       - save_cache:

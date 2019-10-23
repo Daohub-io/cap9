@@ -26,7 +26,12 @@ use std::sync::mpsc::{channel, Receiver};
 use clap::{load_yaml, App};
 use codec::Decode;
 use log::*;
+use keyring::AccountKeyring;
 use primitives::H256 as Hash;
+use primitives::sr25519;
+use rstd::prelude::*;
+use primitives::sr25519::Pair;
+// use primitives::crypto::Pair;
 // FIXME: this type doesn't include contract events -> example broken (would rely on test-node-runtime which we try
 // to avoid because of a cargo issue https://github.com/rust-lang/cargo/issues/6571)
 // If you'd like to use this in your crate, add your node_runtime to dependencies and add
@@ -34,33 +39,51 @@ use primitives::H256 as Hash;
 use node_runtime::Event;
 
 use substrate_api_client::{
-    crypto::*,
     extrinsic::{contract, xt_primitives::GenericAddress},
     utils::*,
     Api,
 };
 
-fn main() {
-    env_logger::init();
-    let url = get_node_url_from_cli();
-
-    // initialize api and set the signer (sender) that is used to sign the extrinsics
-    let from = AccountKey::new("//Ferdie", Some(""), CryptoKind::Sr25519);
-    println!("Got key");
-    let api = Api::new(format!("ws://{}", url)).set_signer(from);
-    println!("[+] Ferdie's Account Nonce is {}", api.get_nonce().unwrap());
-
-    // contract to be deployed on the chain
-    const CONTRACT: &str = r#"
+// This is the minimal valid substrate contract.
+const CONTRACT: &str = r#"
 (module
     (func (export "call"))
     (func (export "deploy"))
 )
 "#;
+
+/// This is a contract which returns a number when executed. When the contract
+/// is called it should return the number 7.
+const R_CONTRACT: &str = r#"
+(module
+    ;; Import the "ext_return" opcode from the environment
+    (import "env" "ext_return" (func $ext_return (param i32 i32)))
+    (import "env" "memory" (memory 1 1))
+    (func (export "call")
+        (call $ext_return
+            (i32.const 8) ;; The data buffer
+            (i32.const 1) ;; The data buffer's length
+        )
+    )
+    (func (export "deploy"))
+    ;; Set some data to the value 7
+    (data (i32.const 8) "\07")
+)
+"#;
+
+/// This is a contract which executes a simple substrate opcode when executed.
+const S_CONTRACT: &str = r#"
+(module
+    (func (export "call"))
+    (func (export "deploy"))
+)
+"#;
+
+fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, contract: &str) {
     let wasm = wabt::wat2wasm(CONTRACT).expect("invalid wabt");
 
     // 1. Put the contract code as a wasm blob on the chain
-    let xt = contract::put_code(api.clone(), 500_000, wasm);
+    let xt = api.contract_put_code(api.clone(), 500_000, wasm);
     println!(
         "[+] Putting contract code on chain with extrinsic:\n\n{:?}\n",
         xt
@@ -79,7 +102,7 @@ fn main() {
     println!("[+] Event was received. Got code hash: {:?}\n", code_hash);
 
     // 2. Create an actual instance of the contract
-    let xt = contract::create(api.clone(), 10_000_000_000_000_000, 500_000, code_hash, vec![1u8]);
+    let xt = api.contract_create(api.clone(), 10_000_000_000_000_000, 500_000, code_hash, vec![1u8]);
 
     println!(
         "[+] Creating a contract instance with extrinsic:\n\n{:?}\n",
@@ -109,7 +132,7 @@ fn main() {
     );
 
     // 3. Call the contract instance
-    let xt = contract::call(api.clone(), deployed_at, 500_000, 500_000, vec![1u8]);
+    let xt = api.contract_call(api.clone(), deployed_at, 500_000, 500_000, vec![1u8]);
 
     // Currently, a contract call does not fire any events nor interact in any other fashion with
     // the outside world. Only node logs can supply information on the consequences of a contract
@@ -120,6 +143,21 @@ fn main() {
     );
     let tx_hash = api.send_extrinsic(xt.hex_encode()).unwrap();
     println!("[+] Transaction got finalized. Hash: {:?}", tx_hash);
+}
+
+fn main() {
+    env_logger::init();
+    let url = get_node_url_from_cli();
+
+    // initialize api and set the signer (sender) that is used to sign the extrinsics
+    // let from = AccountKeyring::new("//Ferdie", Some(""), CryptoKind::Sr25519);
+    let from = AccountKeyring::Ferdie.pair();
+
+    println!("Got key");
+    let api = Api::new(format!("ws://{}", url)).set_signer(from);
+    println!("[+] Ferdie's Account Nonce is {}", api.get_nonce().unwrap());
+
+    deploy_contract(&api, CONTRACT);
 }
 
 fn subcribe_to_code_stored_event(events_out: &Receiver<String>) -> Hash {
