@@ -60,9 +60,9 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - deps12-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
-            - deps12-parity-{{ .Branch }}
-            - deps12-parity
+            - deps16-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
+            - deps16-parity-{{ .Branch }}
+            - deps16-parity
       - run:
           name: Install Parity
           no_output_timeout: 1.25h
@@ -71,11 +71,11 @@ jobs:
             pwd
             ls
             cd parity-ethereum
-            git fetch --all
-            git checkout master
-            if parity --version; then
+            if [ -f target/release/parity ]; then
               echo "Parity node installed"
             else
+              git fetch --all
+              git checkout 11894549f0a5c16cff84a965ddd6be6ed45d8f0c
               yum -y update
               yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
               curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
@@ -93,6 +93,7 @@ jobs:
                 echo "rustup already installed"
                 . ~/.profile
               fi
+              rustup target add wasm32-unknown-unknown
               RUST_BACKTRACE=1
               rustc -vV
               cargo -V
@@ -118,7 +119,7 @@ jobs:
           paths:
             - parity
       - save_cache:
-          key: deps12-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
+          key: deps16-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -131,9 +132,9 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps12-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps12-ewasm-{{ .Branch }}-
-            - deps12-ewasm
+            - deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps16-ewasm-{{ .Branch }}-
+            - deps16-ewasm
       - run:
           name: Install native build prequisites
           command: |
@@ -154,6 +155,7 @@ jobs:
               echo "rustup already installed"
               . ~/.profile
             fi
+            rustup target add wasm32-unknown-unknown
             RUST_BACKTRACE=1
             rustc -vV
             cargo -V
@@ -190,7 +192,7 @@ jobs:
             cd cap9
             cd kernel-ewasm && ./scripts/build.sh
       - save_cache:
-          key: deps12-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
+          key: deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -240,9 +242,9 @@ jobs:
           path: cap9
       - restore_cache:
           keys:
-            - deps12-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
-            - deps12-ewasm-{{ .Branch }}-
-            - deps12-ewasm
+            - deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
+            - deps16-ewasm-{{ .Branch }}-
+            - deps16-ewasm
       - run:
           name: Get Submodules
           command: |
@@ -266,7 +268,7 @@ jobs:
             cd cap9/kernel-ewasm/cap9-cli
             cargo build
       - save_cache:
-          key: deps12-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -276,6 +278,237 @@ jobs:
             . ~/.profile
             cd cap9/kernel-ewasm/cap9-cli
             cargo test
+  build-substrate:
+    docker:
+      - image: centos:latest
+    working_directory: /tmp/my-project
+    steps:
+      - run:
+          name: Install git
+          command: |
+            yum -y update
+            yum install -y git
+      - run:
+          name: Checkout substrate
+          command: |
+            cd ..
+            # If the substrate directory does not exist, clone it
+            pwd
+            ls
+            if [ ! -d substrate ]
+            then
+              echo "Substrate not installed, cloning..."
+              git clone https://github.com/paritytech/substrate
+            fi
+      - restore_cache:
+          keys:
+            - deps16-substrate-{{ .Branch }}-{{ checksum "../substrate/Cargo.lock" }}
+            - deps16-substrate-{{ .Branch }}
+            - deps16-substrate
+      - run:
+          name: Install Substrate
+          no_output_timeout: 1.25h
+          command: |
+            cd ..
+            pwd
+            ls
+            cd substrate
+            if [ -f target/release/substrate ]; then
+              echo "substrate node installed"
+            else
+              git fetch --all
+              yum -y update
+              yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel clang
+              curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
+              tar -xzf cmake.tar.gz
+              cp -r cmake-3.12.0-Linux-x86_64/* /usr/
+              echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+              # only update cargo if it is not installed
+              if [ ! -d /root/.rustup ]
+              then
+                echo "Installing rustup"
+                curl https://sh.rustup.rs -sSf | sh -s -- -y
+                . ~/.profile
+                rustup default stable
+              else
+                echo "rustup already installed"
+                . ~/.profile
+              fi
+              rustup target add wasm32-unknown-unknown
+              RUST_BACKTRACE=1
+              rustc -vV
+              cargo -V
+              gcc -v
+              g++ -v
+              cmake --version
+              if [ ! -d gflags ]
+              then
+                git clone https://github.com/gflags/gflags.git
+                cd gflags
+                git checkout v2.0
+                ./configure && make && make install
+                cd ..
+              fi
+              export LIBRARY_PATH=/usr/local/lib
+              rustup install nightly-2019-08-08
+              rustup override set nightly-2019-08-08
+              rustup target add wasm32-unknown-unknown
+              cargo install --git https://github.com/alexcrichton/wasm-gc -f
+              git checkout 9b08e7ff938a45dbec7fcdb854063202e2b0cb48
+              cargo build --release -j 1
+            fi
+            # cp ~/.cargo/bin/parity /tmp/my-project/parity
+            mkdir /tmp/bin
+            cp target/release/substrate /tmp/bin/substrate
+      - persist_to_workspace:
+          root: /tmp/bin
+          paths:
+            - substrate
+      - save_cache:
+          key: deps16-substrate-{{ .Branch }}-{{ checksum "../substrate/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+            - "~/.rustup"
+            - /tmp/substrate
+          when: always
+  srml-build:
+    docker:
+      - image: centos:latest
+    working_directory: /tmp/my-project
+    steps:
+      - attach_workspace:
+            at: /tmp/bin
+      - run:
+          name: Install git
+          command: |
+            yum -y update
+            yum install -y git
+      - checkout
+      - restore_cache:
+          keys:
+            - deps16-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+            - deps16-contracts-{{ .Branch }}
+            - deps16-contracts
+      - run:
+          name: Build Contracts Module
+          no_output_timeout: 1.25h
+          command: |
+            yum -y update
+            yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel clang
+            curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
+            tar -xzf cmake.tar.gz
+            cp -r cmake-3.12.0-Linux-x86_64/* /usr/
+            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+            # only update cargo if it is not installed
+            if [ ! -d /root/.rustup ]
+            then
+              echo "Installing rustup"
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              . ~/.profile
+              rustup default stable
+            else
+              echo "rustup already installed"
+              . ~/.profile
+            fi
+            rustup target add wasm32-unknown-unknown
+            RUST_BACKTRACE=1
+            rustc -vV
+            cargo -V
+            gcc -v
+            g++ -v
+            cd substrate/contracts
+            rustup install nightly-2019-08-08
+            rustup override set nightly-2019-08-08
+            rustup target add wasm32-unknown-unknown
+            cargo install --git https://github.com/alexcrichton/wasm-gc -f
+            cargo build --release
+      - run:
+          name: Start substrate node
+          command: |
+            . ~/.profile
+            /tmp/bin/substrate --dev
+          background: true
+      - run:
+          name: Build Test Contract
+          command: |
+            . ~/.profile
+            cd substrate/flipper
+            # cargo  install --git https://github.com/paritytech/ink.git --force
+            # cargo install --force --git https://github.com/paritytech/substrate subkey
+            # cargo contract build
+            #TODO: Does not currently test flipper, just deploys a trivial contract
+            cd ../deploy-flipper
+            rustup install nightly-2019-08-08
+            rustup override set nightly-2019-08-08
+            rustup target add wasm32-unknown-unknown
+            cargo build -j 2
+            cargo run
+            # cargo contract deploy target/flipper-pruned.wasm --suri "//Ferdie" --url ws://127.0.0.1:9944 --gas 500000
+      - save_cache:
+          key: deps16-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+            - "~/.rustup"
+            - /tmp/my-project/cap9/substrate
+          when: always
+  srml-test:
+    docker:
+      - image: centos:latest
+    working_directory: /tmp/my-project
+    steps:
+      - run:
+          name: Install git
+          command: |
+            yum -y update
+            yum install -y git
+      - checkout
+      - restore_cache:
+          keys:
+            - deps16-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+            - deps16-contracts-{{ .Branch }}
+            - deps16-contracts
+      - run:
+          name: Build Contracts Module
+          no_output_timeout: 1.25h
+          command: |
+            yum -y update
+            yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
+            echo "PATH=/root/.cargo/bin:$PATH" >> ~/.profile
+            # only update cargo if it is not installed
+            if [ ! -d /root/.rustup ]
+            then
+              echo "Installing rustup"
+              curl https://sh.rustup.rs -sSf | sh -s -- -y
+              . ~/.profile
+              rustup default stable
+            else
+              echo "rustup already installed"
+              . ~/.profile
+            fi
+            rustup target add wasm32-unknown-unknown
+            RUST_BACKTRACE=1
+            rustc -vV
+            cargo -V
+            gcc -v
+            g++ -v
+            cd substrate/contracts
+            cargo build --release
+      - run:
+          name: Build Test Contract
+          command: |
+            . ~/.profile
+            cd substrate/flipper
+            cargo install --git https://github.com/paritytech/ink.git --force
+            cargo install --force --git https://github.com/paritytech/substrate subkey
+            cargo contract build
+            cargo contract deploy target/flipper-pruned.wasm --suri "//Ferdie" --url ws://127.0.0.1:9944 --gas 500000
+            # npm install -g @polkadot/api-cli
+      - save_cache:
+          key: deps16-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+          paths:
+            - "~/.cargo"
+            - "~/.rustup"
+          when: always
 
 workflows:
   version: 2
@@ -288,3 +521,8 @@ workflows:
       - cli-build:
           requires:
             - build-parity
+      - build-substrate
+      - srml-build:
+          requires:
+            - build-substrate
+      # - srml-test
