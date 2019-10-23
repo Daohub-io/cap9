@@ -268,7 +268,7 @@ jobs:
             cd cap9/kernel-ewasm/cap9-cli
             cargo build
       - save_cache:
-          key: deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
