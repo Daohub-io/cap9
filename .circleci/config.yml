@@ -358,9 +358,10 @@ jobs:
               cargo build --release -j 1
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
-            cp target/release/substrate /tmp/substrate
+            mkdir /tmp/bin
+            cp target/release/substrate /tmp/bin/substrate
       - persist_to_workspace:
-          root: /tmp
+          root: /tmp/bin
           paths:
             - substrate
       - save_cache:
@@ -376,7 +377,7 @@ jobs:
     working_directory: /tmp/my-project
     steps:
       - attach_workspace:
-            at: /tmp
+            at: /tmp/bin
       - run:
           name: Install git
           command: |
@@ -425,7 +426,7 @@ jobs:
           name: Start substrate node
           command: |
             . ~/.profile
-            /tmp/substrate --dev
+            /tmp/bin/substrate --dev
           background: true
       - run:
           name: Build Test Contract
