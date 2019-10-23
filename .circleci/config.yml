@@ -419,9 +419,13 @@ jobs:
             rustup target add wasm32-unknown-unknown
             cargo install --git https://github.com/alexcrichton/wasm-gc -f
             cargo build --release
+      - attach_workspace:
+          at: /tmp/my-project
       - run:
-          name: Run substrate
-          command: substrate --dev
+          name: Start substrate node
+          command: |
+            . ~/.profile
+            /tmp/my-project/substrate --dev
           background: true
       - run:
           name: Build Test Contract
