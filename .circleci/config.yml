@@ -75,7 +75,7 @@ jobs:
               echo "Parity node installed"
             else
               git fetch --all
-              git checkout master
+              git checkout 11894549f0a5c16cff84a965ddd6be6ed45d8f0c
               yum -y update
               yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
               curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
