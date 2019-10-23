@@ -358,9 +358,9 @@ jobs:
               cargo build --release -j 1
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
-            cp target/release/substrate /tmp/my-project/substrate
+            cp target/release/substrate /tmp/substrate
       - persist_to_workspace:
-          root: /tmp/my-project
+          root: /tmp
           paths:
             - substrate
       - save_cache:
@@ -375,6 +375,8 @@ jobs:
       - image: centos:latest
     working_directory: /tmp/my-project
     steps:
+      - attach_workspace:
+            at: /tmp
       - run:
           name: Install git
           command: |
@@ -419,13 +421,11 @@ jobs:
             rustup target add wasm32-unknown-unknown
             cargo install --git https://github.com/alexcrichton/wasm-gc -f
             cargo build --release
-      - attach_workspace:
-          at: /tmp/my-project
       - run:
           name: Start substrate node
           command: |
             . ~/.profile
-            /tmp/my-project/substrate --dev
+            /tmp/substrate --dev
           background: true
       - run:
           name: Build Test Contract
