@@ -390,8 +390,6 @@ jobs:
           no_output_timeout: 1.25h
           command: |
             yum -y update
-            yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
-            yum -y update
             yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel clang
             curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
             tar -xzf cmake.tar.gz
@@ -415,6 +413,8 @@ jobs:
             gcc -v
             g++ -v
             cd substrate/contracts
+            rustup override set nightly-2019-08-08
+            rustup target add wasm32-unknown-unknown
             cargo build --release
       - run:
           name: Run substrate
