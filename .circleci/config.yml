@@ -350,6 +350,7 @@ jobs:
                 cd ..
               fi
               export LIBRARY_PATH=/usr/local/lib
+              rustup install nightly-2019-08-08
               rustup override set nightly-2019-08-08
               rustup target add wasm32-unknown-unknown
               cargo install --git https://github.com/alexcrichton/wasm-gc -f
@@ -413,6 +414,7 @@ jobs:
             gcc -v
             g++ -v
             cd substrate/contracts
+            rustup install nightly-2019-08-08
             rustup override set nightly-2019-08-08
             rustup target add wasm32-unknown-unknown
             cargo build --release
