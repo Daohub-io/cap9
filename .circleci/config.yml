@@ -417,6 +417,7 @@ jobs:
             rustup install nightly-2019-08-08
             rustup override set nightly-2019-08-08
             rustup target add wasm32-unknown-unknown
+            cargo install --git https://github.com/alexcrichton/wasm-gc -f
             cargo build --release
       - run:
           name: Run substrate
