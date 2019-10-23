@@ -71,11 +71,11 @@ jobs:
             pwd
             ls
             cd parity-ethereum
-            git fetch --all
-            git checkout master
-            if parity --version; then
+            if [ -f target/release/parity ]; then
               echo "Parity node installed"
             else
+              git fetch --all
+              git checkout master
               yum -y update
               yum install -y systemd-devel git make gcc-c++ gcc file binutils openssl-devel
               curl -L "https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.tar.gz" -o cmake.tar.gz
