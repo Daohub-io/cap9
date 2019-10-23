@@ -60,9 +60,9 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - deps15-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
-            - deps15-parity-{{ .Branch }}
-            - deps15-parity
+            - deps16-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
+            - deps16-parity-{{ .Branch }}
+            - deps16-parity
       - run:
           name: Install Parity
           no_output_timeout: 1.25h
@@ -119,7 +119,7 @@ jobs:
           paths:
             - parity
       - save_cache:
-          key: deps15-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
+          key: deps16-parity-{{ .Branch }}-{{ checksum "../parity-ethereum/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -132,9 +132,9 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - deps15-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
-            - deps15-ewasm-{{ .Branch }}-
-            - deps15-ewasm
+            - deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+            - deps16-ewasm-{{ .Branch }}-
+            - deps16-ewasm
       - run:
           name: Install native build prequisites
           command: |
@@ -192,7 +192,7 @@ jobs:
             cd cap9
             cd kernel-ewasm && ./scripts/build.sh
       - save_cache:
-          key: deps15-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
+          key: deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -242,9 +242,9 @@ jobs:
           path: cap9
       - restore_cache:
           keys:
-            - deps15-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
-            - deps15-ewasm-{{ .Branch }}-
-            - deps15-ewasm
+            - deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "cap9/kernel-ewasm/Cargo.lock" }}
+            - deps16-ewasm-{{ .Branch }}-
+            - deps16-ewasm
       - run:
           name: Get Submodules
           command: |
@@ -268,7 +268,7 @@ jobs:
             cd cap9/kernel-ewasm/cap9-cli
             cargo build
       - save_cache:
-          key: deps15-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
+          key: deps16-ewasm-{{ .Branch }}-cargo-{{ checksum "kernel-ewasm/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -302,9 +302,9 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - deps15-substrate-{{ .Branch }}-{{ checksum "../substrate/Cargo.lock" }}
-            - deps15-substrate-{{ .Branch }}
-            - deps15-substrate
+            - deps16-substrate-{{ .Branch }}-{{ checksum "../substrate/Cargo.lock" }}
+            - deps16-substrate-{{ .Branch }}
+            - deps16-substrate
       - run:
           name: Install Substrate
           no_output_timeout: 1.25h
@@ -363,7 +363,7 @@ jobs:
           paths:
             - substrate
       - save_cache:
-          key: deps15-substrate-{{ .Branch }}-{{ checksum "../substrate/Cargo.lock" }}
+          key: deps16-substrate-{{ .Branch }}-{{ checksum "../substrate/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -382,9 +382,9 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - deps15-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
-            - deps15-contracts-{{ .Branch }}
-            - deps15-contracts
+            - deps16-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+            - deps16-contracts-{{ .Branch }}
+            - deps16-contracts
       - run:
           name: Build Contracts Module
           no_output_timeout: 1.25h
@@ -433,7 +433,7 @@ jobs:
             cargo run
             # cargo contract deploy target/flipper-pruned.wasm --suri "//Ferdie" --url ws://127.0.0.1:9944 --gas 500000
       - save_cache:
-          key: deps15-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+          key: deps16-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
@@ -451,9 +451,9 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - deps15-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
-            - deps15-contracts-{{ .Branch }}
-            - deps15-contracts
+            - deps16-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+            - deps16-contracts-{{ .Branch }}
+            - deps16-contracts
       - run:
           name: Build Contracts Module
           no_output_timeout: 1.25h
@@ -491,7 +491,7 @@ jobs:
             cargo contract deploy target/flipper-pruned.wasm --suri "//Ferdie" --url ws://127.0.0.1:9944 --gas 500000
             # npm install -g @polkadot/api-cli
       - save_cache:
-          key: deps15-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
+          key: deps16-contracts-{{ .Branch }}-{{ checksum "substrate/contracts/Cargo.lock" }}
           paths:
             - "~/.cargo"
             - "~/.rustup"
