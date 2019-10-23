@@ -448,6 +448,7 @@ jobs:
           paths:
             - "~/.cargo"
             - "~/.rustup"
+            - /tmp/my-project/cap9/substrate
           when: always
   srml-test:
     docker:
