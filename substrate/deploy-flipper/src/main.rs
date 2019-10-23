@@ -83,7 +83,7 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
     let wasm = wabt::wat2wasm(CONTRACT).expect("invalid wabt");
 
     // 1. Put the contract code as a wasm blob on the chain
-    let xt = api.contract_put_code(api.clone(), 500_000, wasm);
+    let xt = api.contract_put_code(500_000, wasm);
     println!(
         "[+] Putting contract code on chain with extrinsic:\n\n{:?}\n",
         xt
@@ -102,7 +102,7 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
     println!("[+] Event was received. Got code hash: {:?}\n", code_hash);
 
     // 2. Create an actual instance of the contract
-    let xt = api.contract_create(api.clone(), 10_000_000_000_000_000, 500_000, code_hash, vec![1u8]);
+    let xt = api.contract_create(10_000_000_000_000_000, 500_000, code_hash, vec![1u8]);
 
     println!(
         "[+] Creating a contract instance with extrinsic:\n\n{:?}\n",
@@ -132,7 +132,7 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
     );
 
     // 3. Call the contract instance
-    let xt = api.contract_call(api.clone(), deployed_at, 500_000, 500_000, vec![1u8]);
+    let xt = api.contract_call(deployed_at, 500_000, 500_000, vec![1u8]);
 
     // Currently, a contract call does not fire any events nor interact in any other fashion with
     // the outside world. Only node logs can supply information on the consequences of a contract

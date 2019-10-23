@@ -313,7 +313,7 @@ jobs:
             pwd
             ls
             cd substrate
-            if substrate --version; then
+            if [ -f target/release/substrate ]; then
               echo "substrate node installed"
             else
               git fetch --all
