@@ -421,9 +421,9 @@ jobs:
           command: |
             . ~/.profile
             cd substrate/flipper
-            cargo  install --git https://github.com/paritytech/ink.git --force
-            cargo install --force --git https://github.com/paritytech/substrate subkey
-            cargo contract build
+            # cargo  install --git https://github.com/paritytech/ink.git --force
+            # cargo install --force --git https://github.com/paritytech/substrate subkey
+            # cargo contract build
             #TODO: Does not currently test flipper, just deploys a trivial contract
             cd ../deploy-flipper
             cargo run
