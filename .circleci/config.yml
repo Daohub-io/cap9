@@ -437,7 +437,7 @@ jobs:
             # cargo install --force --git https://github.com/paritytech/substrate subkey
             # cargo contract build
             #TODO: Does not currently test flipper, just deploys a trivial contract
-            cd ../deploy-flipper
+            cd ../test-harness
             rustup install nightly-2019-08-08
             rustup override set nightly-2019-08-08
             rustup target add wasm32-unknown-unknown
