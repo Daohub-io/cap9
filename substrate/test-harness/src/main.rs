@@ -58,29 +58,57 @@ const R_CONTRACT: &str = r#"
 (module
     ;; Import the "ext_return" opcode from the environment
     (import "env" "ext_return" (func $ext_return (param i32 i32)))
+    (import "env" "ext_println" (func $ext_println (param i32 i32)))
+    ;; env.println
     (import "env" "memory" (memory 1 1))
     (func (export "call")
-        (call $ext_return
+        (call $ext_println
             (i32.const 8) ;; The data buffer
-            (i32.const 1) ;; The data buffer's length
+            (i32.const 52) ;; The data buffer's length
         )
+        ;; (call $ext_return
+        ;;     (i32.const 8) ;; The data buffer
+        ;;     (i32.const 2) ;; The data buffer's length
+        ;; )
     )
     (func (export "deploy"))
-    ;; Set some data to the value 7
-    (data (i32.const 8) "\07")
+    (data (i32.const 8) "This is the value we want to log, it is of length 52")
 )
 "#;
 
 /// This is a contract which executes a simple substrate opcode when executed.
 const S_CONTRACT: &str = r#"
 (module
-    (func (export "call"))
+    (import "env" "ext_scratch_size" (func $ext_scratch_size (result i32)))
+    (import "env" "ext_scratch_read" (func $ext_scratch_read (param i32 i32 i32)))
+    (import "env" "ext_set_storage" (func $ext_set_storage (param i32 i32 i32 i32)))
+    (import "env" "ext_get_storage" (func $ext_get_storage (param i32) (result i32)))
+    (import "env" "memory" (memory 1 1))
+    (func (export "call")
+        ;; Return value is 0 for success
+        (call $ext_get_storage
+            (i32.const 16) ;; Pointer to the key
+        )
+        (call $ext_scratch_read
+            (i32.const 1) ;; The pointer where to store the data.
+            (i32.const 0) ;; Offset from the start of the scratch buffer.
+            (i32.const 1) ;; Count of bytes to copy.
+        )
+        (call $ext_set_storage
+            (i32.const 1)
+            (i32.const 1)
+            (i32.const 0)
+            (i32.const 4)
+        )
+    )
     (func (export "deploy"))
+    ;; The value to store
+    (data (i32.const 0) "\28")
 )
 "#;
 
 fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, contract: &str) {
-    let wasm = wabt::wat2wasm(CONTRACT).expect("invalid wabt");
+    let wasm = wabt::wat2wasm(contract).expect("invalid wabt");
 
     // 1. Put the contract code as a wasm blob on the chain
     let xt = api.contract_put_code(500_000, wasm);
@@ -122,12 +150,10 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
     // Note: Trying to instantiate the same contract with the same data twice does not work. No event is
     // fired correspondingly.
     println!("[+] Waiting for the contract.Instantiated event");
-    // TODO: for some reason the code is never instantiated. This waiting for
-    // event works, as if we trigger instantiation via the web ui it works fine.
     // TODO: print as hex hash
     let deployed_at = subscribe_to_code_instantiated_event(&events_out);
     println!(
-        "[+] Event was received. Contract deployed at: {:?}\n",
+        "[+] Event was received. Contract deployed at: {}\n",
         deployed_at
     );
 
@@ -141,8 +167,9 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
         "[+] Calling the contract with extrinsic Extrinsic:\n{:?}\n\n",
         xt
     );
-    let tx_hash = api.send_extrinsic(xt.hex_encode()).unwrap();
+    let tx_hash: primitive_types::H256 = api.send_extrinsic(xt.hex_encode()).unwrap();
     println!("[+] Transaction got finalized. Hash: {:?}", tx_hash);
+    // We can't get return values from contract calls.
 }
 
 fn main() {
@@ -157,7 +184,12 @@ fn main() {
     let api = Api::new(format!("ws://{}", url)).set_signer(from);
     println!("[+] Ferdie's Account Nonce is {}", api.get_nonce().unwrap());
 
-    deploy_contract(&api, CONTRACT);
+    // deploy_contract(&api, CONTRACT);
+    // get_storage(&api);
+    deploy_contract(&api, R_CONTRACT);
+    // get_storage(&api);
+    // deploy_contract(&api, S_CONTRACT);
+    // get_storage(&api);
 }
 
 fn subcribe_to_code_stored_event(events_out: &Receiver<String>) -> Hash {
@@ -216,4 +248,32 @@ pub fn get_node_url_from_cli() -> String {
     let url = format!("{}:{}", node_ip, node_port);
     println!("Interacting with node on {}", url);
     url
+}
+
+
+fn get_storage(api: &substrate_api_client::Api<primitives::sr25519::Pair>) {
+    // get some plain storage value
+    let result_str = api.get_storage("Cap9", "SpecialValue", None).unwrap();
+    let result = hexstr_to_u256(result_str).unwrap();
+    println!("[+] SpecialValue is {}", result);
+
+    // // get Alice's AccountNonce
+    // let accountid = AccountId::from(AccountKeyring::Alice);
+    // let result_str = api
+    //     .get_storage("System", "AccountNonce", Some(accountid.encode()))
+    //     .unwrap();
+    // let result = hexstr_to_u256(result_str).unwrap();
+    // println!("[+] Ferdie's Account Nonce is {}", result.low_u32());
+
+    // // get Ferdie's AccountNonce with the AccountKey
+    // let signer = AccountKeyring::Ferdie.pair();
+    // let result_str = api
+    //     .get_storage("System", "AccountNonce", Some(signer.public().encode()))
+    //     .unwrap();
+    // let result = hexstr_to_u256(result_str).unwrap();
+    // println!("[+] Ferdie's Account Nonce is {}", result.low_u32());
+
+    // // get Ferdie's AccountNonce with api.get_nonce()
+    // api.signer = Some(signer);
+    // println!("[+] Ferdie's Account Nonce is {}", api.get_nonce().unwrap());
 }
