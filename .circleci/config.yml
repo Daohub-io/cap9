@@ -109,8 +109,8 @@ jobs:
                 cd ..
               fi
               export LIBRARY_PATH=/usr/local/lib
-              cargo build --release -j 1
-              # cargo install --bin parity -j 1 --path . --bin parity parity-ethereum
+              cargo build --release -j 2
+              # cargo install --bin parity -j 2 --path . --bin parity parity-ethereum
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
             cp target/release/parity /tmp/my-project/parity
@@ -355,7 +355,7 @@ jobs:
               rustup target add wasm32-unknown-unknown
               cargo install --git https://github.com/alexcrichton/wasm-gc -f
               git checkout f17d023bbe179f15678ac9989f471c9b18917e17
-              cargo build --release -j 1
+              cargo build --release -j 2
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
             mkdir /tmp/bin
