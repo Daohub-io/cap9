@@ -76,6 +76,35 @@ const R_CONTRACT: &str = r#"
 )
 "#;
 
+const BAD_CONTRACT: &str = r#"
+(module
+    ;; Import the "ext_return" opcode from the environment
+    (import "env" "ext_return" (func $ext_return (param i32 i32)))
+    (import "env" "ext_println" (func $ext_println (param i32 i32)))
+    ;; env.println
+    (import "env" "memory" (memory 1 1))
+    (func $assert (param $test i32)
+        (if
+            (get_local $test)
+            (then
+                unreachable
+            )
+            (else
+
+            )
+        )
+    )
+    (func (export "call")
+        i32.const 3
+        i32.const 4
+        i32.ne
+        call $assert
+    )
+    (func (export "deploy"))
+    (data (i32.const 8) "This is the value we want to log, it is of length 52")
+)
+"#;
+
 /// This is a contract which executes a simple substrate opcode when executed.
 const S_CONTRACT: &str = r#"
 (module
@@ -169,7 +198,8 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
     );
     let tx_hash: primitive_types::H256 = api.send_extrinsic(xt.hex_encode()).unwrap();
     println!("[+] Transaction got finalized. Hash: {:?}", tx_hash);
-    // We can't get return values from contract calls.
+    // We can't get return values from contract calls. We want to get
+    // information about this extrinsic, such as if it was successful.
 }
 
 fn main() {
@@ -187,7 +217,9 @@ fn main() {
     // deploy_contract(&api, CONTRACT);
     // get_storage(&api);
     deploy_contract(&api, R_CONTRACT);
-    // get_storage(&api);
+    get_storage(&api);
+    deploy_contract(&api, BAD_CONTRACT);
+    get_storage(&api);
     // deploy_contract(&api, S_CONTRACT);
     // get_storage(&api);
 }
@@ -217,7 +249,6 @@ fn subcribe_to_code_stored_event(events_out: &Receiver<String>) -> Hash {
 fn subscribe_to_code_instantiated_event(events_out: &Receiver<String>) -> GenericAddress {
     loop {
         let event_str = events_out.recv().unwrap();
-
         let _unhex = hexstr_to_vec(event_str).unwrap();
         let mut _er_enc = _unhex.as_slice();
         let _events = Vec::<system::EventRecord<Event, Hash>>::decode(&mut _er_enc);
