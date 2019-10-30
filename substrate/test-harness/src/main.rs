@@ -76,6 +76,33 @@ const R_CONTRACT: &str = r#"
 )
 "#;
 
+
+/// This is a contract which returns a number when executed. When the contract
+/// is called it should return the number 7.
+const Q_CONTRACT: &str = r#"
+(module
+    (import "env" "cap9_seven" (func $cap9_seven))
+    (import "env" "ext_println" (func $ext_println (param i32 i32)))
+    (import "env" "ext_scratch_size" (func $ext_scratch_size (result i32)))
+    (import "env" "ext_scratch_read" (func $ext_scratch_read (param i32 i32 i32)))
+    ;; env.println
+    (import "env" "memory" (memory 1 1))
+    (func (export "call")
+        call $cap9_seven
+        i32.const 1 ;; The pointer where to store the data.
+        i32.const 0 ;; Offset from the start of the scratch buffer.
+        i32.const 1 ;; Count of bytes to copy.
+        call $ext_scratch_read
+        (call $ext_println
+            (i32.const 1) ;; The data buffer
+            (i32.const 1) ;; The data buffer's length
+        )
+    )
+    (func (export "deploy"))
+    (data (i32.const 8) "This is the value we want to log, it is of length 52")
+)
+"#;
+
 const BAD_CONTRACT: &str = r#"
 (module
     ;; Import the "ext_return" opcode from the environment
@@ -220,8 +247,8 @@ fn main() {
     get_storage(&api);
     deploy_contract(&api, BAD_CONTRACT);
     get_storage(&api);
-    // deploy_contract(&api, S_CONTRACT);
-    // get_storage(&api);
+    deploy_contract(&api, Q_CONTRACT);
+    get_storage(&api);
 }
 
 fn subcribe_to_code_stored_event(events_out: &Receiver<String>) -> Hash {

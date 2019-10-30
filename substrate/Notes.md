@@ -28,4 +28,4 @@ Currently we don't get any feedback on the success or failure of a call.
 
 A nice way to test would be to test the success of contracts by reading directly
 from the contract storage, however, finding the right key is currently
-difficult.
+difficult. This is put on hold until there is progress in other areas.
