@@ -25,3 +25,7 @@ hitting an `unreachable` instruction). The problem with this is that the way
 calls work is that an extrinsic (i.e. the call transaction) is submitted and
 then the client waits for an event that says the call has been executed.
 Currently we don't get any feedback on the success or failure of a call.
+
+A nice way to test would be to test the success of contracts by reading directly
+from the contract storage, however, finding the right key is currently
+difficult.
