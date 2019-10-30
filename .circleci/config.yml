@@ -298,7 +298,7 @@ jobs:
             if [ ! -d substrate ]
             then
               echo "Substrate not installed, cloning..."
-              git clone https://github.com/paritytech/substrate
+              git clone https://github.com/Daohub-io/substrate
             fi
       - restore_cache:
           keys:
@@ -354,7 +354,7 @@ jobs:
               rustup override set nightly-2019-08-08
               rustup target add wasm32-unknown-unknown
               cargo install --git https://github.com/alexcrichton/wasm-gc -f
-              git checkout f17d023bbe179f15678ac9989f471c9b18917e17
+              git checkout daohub
               cargo build --release -j 2
             fi
             # cp ~/.cargo/bin/parity /tmp/my-project/parity
