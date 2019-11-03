@@ -390,7 +390,7 @@ jobs:
             - deps18-contracts-{{ .Branch }}
             - deps18-contracts
       - run:
-          name: Build Contracts Module
+          name: Setup
           no_output_timeout: 1.25h
           command: |
             yum -y update
@@ -416,12 +416,12 @@ jobs:
             cargo -V
             gcc -v
             g++ -v
-            cd substrate/contracts
-            rustup install nightly-2019-08-08
-            rustup override set nightly-2019-08-08
-            rustup target add wasm32-unknown-unknown
-            cargo install --git https://github.com/alexcrichton/wasm-gc -f
-            cargo build --release
+            # cd substrate/contracts
+            # rustup install nightly-2019-08-08
+            # rustup override set nightly-2019-08-08
+            # rustup target add wasm32-unknown-unknown
+            # cargo install --git https://github.com/alexcrichton/wasm-gc -f
+            # cargo build --release
       - run:
           name: Start substrate node
           command: |
