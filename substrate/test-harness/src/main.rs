@@ -1,26 +1,3 @@
-/*
-    Copyright 2019 Supercomputing Systems AG
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
-
-//! This example shows how to use the predefined contract extrinsics found in the extrinsic module.
-//! General (slightly outdated) background on how to deploy ink! contract is found here:
-//! `https://substrate.dev/docs/en/contracts/deploying-a-contract`
-//!
-//!
-//! *Note*: The runtime module here is not in the generic substrate node. Hence, this example
-//! must run against the customized node found in `https://github.com/scs/substrate-test-nodes`.
-
 use std::sync::mpsc::{channel, Receiver};
 
 use clap::{load_yaml, App};
@@ -31,11 +8,6 @@ use primitives::H256 as Hash;
 use primitives::sr25519;
 use rstd::prelude::*;
 use primitives::sr25519::Pair;
-// use primitives::crypto::Pair;
-// FIXME: this type doesn't include contract events -> example broken (would rely on test-node-runtime which we try
-// to avoid because of a cargo issue https://github.com/rust-lang/cargo/issues/6571)
-// If you'd like to use this in your crate, add your node_runtime to dependencies and add
-// use my_node_runtime::Event;
 use node_runtime::Event;
 
 use substrate_api_client::{
