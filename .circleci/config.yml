@@ -441,6 +441,11 @@ jobs:
             rustup install nightly-2019-08-08
             rustup override set nightly-2019-08-08
             rustup target add wasm32-unknown-unknown
+            if [ wasm-gc ]; then
+              echo "wasm-gc already installed"
+            else
+              cargo install wasm-gc
+            fi
             cargo build -j 2
             cargo run
             # cargo contract deploy target/flipper-pruned.wasm --suri "//Ferdie" --url ws://127.0.0.1:9944 --gas 500000
