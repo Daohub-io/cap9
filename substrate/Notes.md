@@ -53,3 +53,45 @@ contract capabilities is useless in this case.
 One idea is to have the idea of a "main" contract and "sub" contracts enforced
 by the runtime. This would require a lot more work as it means modify the way
 contracts are stored and executed, which is far from trivial code.
+
+## Design of Code Isolation
+
+The current implementation on Substrate embeds a primitive capability listed
+(associated with each contract) into the runtime. The next question is "how do
+we use these capabilities?". As mentioned above, there is no trivial path. To
+implement the original design (as on Ethereum) we would need to simply implement
+the kernel structure *out* of the runtime (i.e. in contract code). However, this
+would also require new opcodes to match those of Ethereum.
+
+Alternatively, we could keep as much implemented in the runtime as possible. The
+advantage for this is that is a single standard for the chain, and it can expose
+a nice clean interface, just like regular contract functions (i.e. `ext_*`
+functions). The problem here is that the old model doesn't fit in the same way.
+
+For all these reasons it is necessary to step through the design again an make
+sure every design decision is the right one. It seems that the key thing we need
+to keep in mind is that the purpose of this system is:
+
+> to isolate chunks of code and determine categorically (and statically) what
+> they are and are not capable of.
+
+Currently the only *unit of isolation* available to Substrate contracts is a
+contract. This means that to isolate units of code we must divide them into
+separate contracts. If a contract was made up of multiple WASM modules this
+would be different. A single WASM module is a natural place to apply
+capabilities, but for now the assumption is that each WASM module is a separate
+contract.
+
+Next we must determine where our resources are. If our resources can be split
+and restricted to a single piece of code as an owner, then we can isolate
+resources (such as storage) behind individual contracts. But how do we manage
+capabilities then? What is the flow of a transaction and where do the
+capabilities come in?
+
+One way would be to isolate resources behind contracts and only allow certain
+addresses to call these contracts. This would be difficult to manage as it would
+be necessary to update and manage many disparate lists of addresses, and the
+mechanism would need to be stored in each contract.
+
+Without secret keys, we need some central storage mechanism to determine what
+the capabilities for each unit of isolation are (i.e. our kernel space).
