@@ -103,29 +103,23 @@ const Q_CONTRACT: &str = r#"
 )
 "#;
 
-const T_CONTRACT: &str = r#"
-(module
-    (import "env" "cap9_clist" (func $cap9_clist))
-    (import "env" "ext_println" (func $ext_println (param i32 i32)))
-    (import "env" "ext_scratch_size" (func $ext_scratch_size (result i32)))
-    (import "env" "ext_scratch_read" (func $ext_scratch_read (param i32 i32 i32)))
-    ;; env.println
-    (import "env" "memory" (memory 1 1))
-    (func (export "call")
-        call $cap9_clist
-        i32.const 1 ;; The pointer where to store the data.
-        i32.const 0 ;; Offset from the start of the scratch buffer.
-        i32.const 4 ;; Count of bytes to copy.
-        call $ext_scratch_read
-        (call $ext_println
-            (i32.const 1) ;; The data buffer
-            (i32.const 4) ;; The data buffer's length
-        )
-    )
-    (func (export "deploy"))
-    (data (i32.const 8) "This is the value we want to log, it is of length 52")
-)
-"#;
+// This contract reads the caplist using the $cap_clist function. The scratch
+// buffer is filled with the output from this function. We then copy the data
+// from the scratch buffer into memory so we can work with it. Currently the
+// data is an array[7] of bytes, either 0x00 (false) or 0x01 (true). These
+// represent a crude for of capability in order:
+//
+//   0. ProcedureCall (Cap Index 3)
+//   1. ProcedureRegister (Cap Index 4)
+//   2. ProcedureDelete (Cap Index 5)
+//   3. ProcedureEntry (Cap Index 6)
+//   4. StoreWrite (Cap Index 7)
+//   5. Log (Cap Index 8)
+//   6. AccountCall (Cap Index 9)
+//
+// This example contract will iteratre through its own capabilities and print
+// true or false.
+const T_CONTRACT: &str = include_str!("t_contract.wat");
 
 const BAD_CONTRACT: &str = r#"
 (module
@@ -267,12 +261,12 @@ fn main() {
 
     // deploy_contract(&api, CONTRACT);
     // get_storage(&api);
-    deploy_contract(&api, R_CONTRACT);
-    get_storage(&api);
-    deploy_contract(&api, BAD_CONTRACT);
-    get_storage(&api);
-    deploy_contract(&api, Q_CONTRACT);
-    get_storage(&api);
+    // deploy_contract(&api, R_CONTRACT);
+    // get_storage(&api);
+    // deploy_contract(&api, BAD_CONTRACT);
+    // get_storage(&api);
+    // deploy_contract(&api, Q_CONTRACT);
+    // get_storage(&api);
     deploy_contract(&api, T_CONTRACT);
     get_storage(&api);
 }

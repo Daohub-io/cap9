@@ -29,3 +29,27 @@ Currently we don't get any feedback on the success or failure of a call.
 A nice way to test would be to test the success of contracts by reading directly
 from the contract storage, however, finding the right key is currently
 difficult. This is put on hold until there is progress in other areas.
+
+## Calling and Storage
+
+A key part of previous cap9 implementations is that a single contract holds the
+storage and each procedure is delegated access to that storage according to the
+capability list. In the case of the current substrate contracts, that may no
+longer be the case. Unlike Ethereum, Substrate contracts do not appear to have a
+concept such as `DELEGATECALL`. `DELEGATECALL` allowed us to delegate to
+something like "subcontracts" and let them modify our storage. In Substrate,
+with each contract only modifying its own storage, we can't do this. The closest
+we can come is to call to other contracts, but allow them to make "system calls"
+back to our main contract. To ensure that contracts don't suicide themselves, we
+would need to make sure each contract is only called by its "owning" contract.
+
+All of this could be done at the contract code level (as was the case with
+Ethereum), and does not actually need runtime support. One advantage is that we
+don't need to verify code anymore as it can't modify our storage, however, it
+means that we can't store capabilities per-contract, as we are no longer in
+control of them. In fact, the earlier concept of using the runtime to store
+contract capabilities is useless in this case.
+
+One idea is to have the idea of a "main" contract and "sub" contracts enforced
+by the runtime. This would require a lot more work as it means modify the way
+contracts are stored and executed, which is far from trivial code.
