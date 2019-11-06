@@ -98,8 +98,13 @@ the capabilities for each unit of isolation are (i.e. our kernel space). Here
 are some potential solutions:
 
   - Make a kernel as with EVM and rely on various on-chain mechanisms to make
-   sure procedures don't damage themselves.
+    sure procedures don't damage themselves.
   - As above, but with the capabilities of each procedure stored in the kernel's
     capability list. In this case we need to work around the lack of
-    `DELEGATECALL`. Seems a shame not to capitilise on being able to modify the
+    `DELEGATECALL`. Seems a shame not to capitalise on being able to modify the
     runtime.
+
+With the second option, the only difference between the EVM and Substrate
+versions would be that the capability information is stored in the runtime
+rather than on-chain. We would still need to implement the system call interface
+on-chain (i.e. as contract code).
