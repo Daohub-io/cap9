@@ -154,6 +154,7 @@ const S_CONTRACT: &str = r#"
 "#;
 
 const STORE_CONTRACT: &str = include_str!("store_contract.wat");
+const CALLER_CONTRACT: &str = include_str!("caller_contract.wat");
 
 fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, contract: &str) {
     let wasm = wabt::wat2wasm(contract).expect("invalid wabt");
@@ -234,16 +235,12 @@ fn main() {
     println!("[+] Ferdie's Account Nonce is {}", api.get_nonce().unwrap());
 
     // deploy_contract(&api, CONTRACT);
-    // get_storage(&api);
     // deploy_contract(&api, R_CONTRACT);
-    // get_storage(&api);
     // deploy_contract(&api, BAD_CONTRACT);
-    // get_storage(&api);
     // deploy_contract(&api, Q_CONTRACT);
-    // get_storage(&api);
     deploy_contract(&api, T_CONTRACT);
-    get_storage(&api);
     deploy_contract(&api, STORE_CONTRACT);
+    deploy_contract(&api, CALLER_CONTRACT);
     get_storage(&api);
 }
 
