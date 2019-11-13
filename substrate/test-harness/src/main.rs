@@ -153,6 +153,8 @@ const S_CONTRACT: &str = r#"
 )
 "#;
 
+const STORE_CONTRACT: &str = include_str!("store_contract.wat");
+
 fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, contract: &str) {
     let wasm = wabt::wat2wasm(contract).expect("invalid wabt");
 
@@ -240,6 +242,8 @@ fn main() {
     // deploy_contract(&api, Q_CONTRACT);
     // get_storage(&api);
     deploy_contract(&api, T_CONTRACT);
+    get_storage(&api);
+    deploy_contract(&api, STORE_CONTRACT);
     get_storage(&api);
 }
 
