@@ -29,7 +29,7 @@
         )
     )
 
-    (func (export "call") (local $address_size i32) (local $balance_size i32)
+    (func (export "call") (local $address_size i32) (local $balance_size i32) (local $scratch_size_temp i32)
         (call $ext_balance)
         (set_local $balance_size (call $ext_scratch_size))
         (call $ext_scratch_read
@@ -45,6 +45,38 @@
         (call $ext_println
             (i32.const 3000) ;; The data buffer
             (i32.mul (i32.const 2) (get_local $balance_size)) ;; The data buffer's length
+        )
+        (call $ext_set_storage
+            (i32.const 6000) ;; Pointer to the key
+            (i32.const 1)    ;; Value is not null
+            (i32.const 32)   ;; Pointer to the value
+            (i32.const 1)    ;; Length of the value
+        )
+        ;; Get the storage value
+        (drop (call $ext_get_storage
+            (i32.const 6000) ;; Pointer to storage key
+        ))
+        (set_local $scratch_size_temp (call $ext_scratch_size))
+        ;; Read the address from the scratch buffer and store it in memory at
+        ;; location 7000.
+        (call $ext_scratch_read
+            (i32.const 7000) ;; The pointer where to store the data.
+            (i32.const 0) ;; Offset from the start of the scratch buffer.
+            ;; (i32.const 32) ;; Count of bytes to copy.
+            (get_local $scratch_size_temp)
+        )
+        (call $to_hex_ascii
+            (i32.const 7000)
+            (get_local $scratch_size_temp)
+            (i32.const 8000)
+        )
+        (call $ext_println
+            (i32.const 5000) ;; The data buffer
+            (i32.const 23)   ;; The data buffer's length
+        )
+        (call $ext_println
+            (i32.const 8000) ;; The data buffer
+            (i32.mul (i32.const 2) (get_local $scratch_size_temp)) ;; The data buffer's length
         )
 
         ;; Store the address of this contract into the scratch buffer
@@ -66,10 +98,10 @@
             (then
                     ;; First, as we are recursing we decrement the recurse counter
                     (i32.store (i32.const 32) (i32.sub (i32.load (i32.const 32)) (i32.const 1)))
-                    ;; "calling..." message
+                    ;; "calling from..." message
                     (call $ext_println
                         (i32.const 1000) ;; The data buffer
-                        (i32.const 10) ;; The data buffer's length
+                        (i32.const 15) ;; The data buffer's length
                     )
                     ;; println expects utf8, we can't just send it any bytes. If
                     ;; it is not utf8 it will just skip it.
@@ -82,6 +114,23 @@
                         (i32.const 3000) ;; The data buffer
                         (i32.mul (i32.const 2) (get_local $address_size)) ;; The data buffer's length
                     )
+                    ;; "calling to..." message
+                    (call $ext_println
+                        (i32.const 1200) ;; The data buffer
+                        (i32.const 13) ;; The data buffer's length
+                    )
+                    ;; println expects utf8, we can't just send it any bytes. If
+                    ;; it is not utf8 it will just skip it.
+                    (call $to_hex_ascii
+                        (i32.const 1500)
+                        (get_local $address_size)
+                        (i32.const 3000)
+                    )
+                    (call $ext_println
+                        (i32.const 3000) ;; The data buffer
+                        (i32.mul (i32.const 2) (get_local $address_size)) ;; The data buffer's length
+                    )
+
                     (call $ext_call
                         (i32.const 1500) ;; callee_ptr: u32, a pointer to the address of the callee contract. Should be decodable as an `T::AccountId`. Traps otherwise.
                         (i32.const 32) ;; callee_len: u32, length of the address buffer.
@@ -114,8 +163,12 @@
     (data (i32.const 0) "\00")
     ;; The number of times we will recurse
     (data (i32.const 32) "\02")
-    (data (i32.const 1000) "calling...")
+    (data (i32.const 1000) "calling from...")
+    (data (i32.const 1200) "calling to...")
     (data (i32.const 1500) "\75\42\96\BF\90\25\43\8B\ED\85\16\FB\57\46\7B\A6\1A\58\6C\C1\61\57\2B\13\AA\42\3B\88\C5\51\B6\14")
     ;; byte to hex conversion table
     (data (i32.const 2000) "0123456789ABCDEF")
+    (data (i32.const 5000) "Current Storage Value: ")
+    ;; Some random storage key (32 bytes)
+    (data (i32.const 6000) "\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb")
 )
