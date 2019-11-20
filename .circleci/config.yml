@@ -300,6 +300,7 @@ jobs:
           command: |
             pwd
             ls
+            git submodule update --init --recursive
             cd substrate/substrate
             if [ -f target/release/substrate ]; then
               echo "substrate node installed"
