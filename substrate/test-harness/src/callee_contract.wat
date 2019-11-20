@@ -101,7 +101,7 @@
         (call $to_hex_ascii
             (i32.const 10)
             (i32.const 1)
-            (i32.const 5065)
+            (i32.const 5074)
         )
         (call $ext_println
             (i32.const 5040) ;; The data buffer

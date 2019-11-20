@@ -38,11 +38,11 @@
         (call $to_hex_ascii
             (i32.const 1500)
             (call $ext_scratch_size)
-            (i32.const 8022)
+            (i32.const 8024)
         )
         (call $ext_println
             (i32.const 8000) ;; The data buffer
-            (i32.add (i32.const 22) (i32.mul (i32.const 2) (call $ext_scratch_size))) ;; The data buffer's length
+            (i32.add (i32.const 24) (i32.mul (i32.const 2) (call $ext_scratch_size))) ;; The data buffer's length
         )
         (call $ext_balance)
         (set_local $balance_size (call $ext_scratch_size))
@@ -145,11 +145,11 @@
                     (call $to_hex_ascii
                         (i32.const 0)
                         (i32.const 4)
-                        (i32.const 3000)
+                        (i32.const 12025)
                     )
                     (call $ext_println
-                        (i32.const 3000) ;; The data buffer
-                        (i32.const 4) ;; The data buffer's length
+                        (i32.const 12000) ;; The data buffer
+                        (i32.const 29) ;; The data buffer's length
                     )
             )
             (else
@@ -171,6 +171,7 @@
     (data (i32.const 5000) "[CALLER] Current Storage Value: 0x")
     ;; Some random storage key (32 bytes)
     (data (i32.const 6000) "\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb")
-    (data (i32.const 8000) "[CALLER] Called with: ")
+    (data (i32.const 8000) "[CALLER] Called with: 0x")
     (data (i32.const 11000) "[CALLER] Balance: 0x")
+    (data (i32.const 12000) "[CALLER] Return Value: 0x")
 )
