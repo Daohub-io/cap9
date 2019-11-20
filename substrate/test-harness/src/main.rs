@@ -3,13 +3,14 @@ use std::sync::mpsc::{channel, Receiver};
 use clap::{load_yaml, App};
 use codec::Decode;
 use log::*;
+use hex::ToHex;
 use keyring::AccountKeyring;
 use primitives::H256 as Hash;
 use primitives::sr25519;
 use rstd::prelude::*;
 use primitives::sr25519::Pair;
 use node_runtime::Event;
-
+use indices::address::Address;
 use substrate_api_client::{
     extrinsic::{contract, xt_primitives::GenericAddress},
     utils::*,
@@ -155,8 +156,9 @@ const S_CONTRACT: &str = r#"
 
 const STORE_CONTRACT: &str = include_str!("store_contract.wat");
 const CALLER_CONTRACT: &str = include_str!("caller_contract.wat");
+const CALLEE_CONTRACT: &str = include_str!("callee_contract.wat");
 
-fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, contract: &str) {
+fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, contract: &str, init_data: Vec<u8>, call_data: Vec<u8>) -> [u8; 32] {
     let wasm = wabt::wat2wasm(contract).expect("invalid wabt");
 
     // 1. Put the contract code as a wasm blob on the chain
@@ -179,7 +181,7 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
     println!("[+] Event was received. Got code hash: {:?}\n", code_hash);
 
     // 2. Create an actual instance of the contract
-    let xt = api.contract_create(10_000_000_000_000_000, 500_000, code_hash, vec![1u8]);
+    let xt = api.contract_create(10_000_000_000_000_000, 500_000, code_hash, init_data);
 
     println!(
         "[+] Creating a contract instance with extrinsic:\n\n{:?}\n",
@@ -201,13 +203,19 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
     println!("[+] Waiting for the contract.Instantiated event");
     // TODO: print as hex hash
     let deployed_at = subscribe_to_code_instantiated_event(&events_out);
+    let address = match deployed_at {
+        Address::Id(address) => address,
+        _ => panic!("address not id"),
+    };
+
     println!(
-        "[+] Event was received. Contract deployed at: {}\n",
-        deployed_at
+        "[+] Event was received. Contract deployed at (address of contract): 0x{}\n",
+        // address.encode_hex::<String>()
+        hex::encode(address)
     );
 
     // 3. Call the contract instance
-    let xt = api.contract_call(deployed_at, 500_000, 500_000, vec![1u8]);
+    let xt = api.contract_call(deployed_at, 500_000, 500_000, call_data);
 
     // Currently, a contract call does not fire any events nor interact in any other fashion with
     // the outside world. Only node logs can supply information on the consequences of a contract
@@ -220,6 +228,7 @@ fn deploy_contract(api: &substrate_api_client::Api<primitives::sr25519::Pair>, c
     println!("[+] Transaction got finalized. Hash: {:?}", tx_hash);
     // We can't get return values from contract calls. We want to get
     // information about this extrinsic, such as if it was successful.
+    address
 }
 
 fn main() {
@@ -234,13 +243,14 @@ fn main() {
     let api = Api::new(format!("ws://{}", url)).set_signer(from);
     println!("[+] Ferdie's Account Nonce is {}", api.get_nonce().unwrap());
 
-    // deploy_contract(&api, CONTRACT);
-    // deploy_contract(&api, R_CONTRACT);
-    // deploy_contract(&api, BAD_CONTRACT);
-    // deploy_contract(&api, Q_CONTRACT);
-    deploy_contract(&api, T_CONTRACT);
-    deploy_contract(&api, STORE_CONTRACT);
-    deploy_contract(&api, CALLER_CONTRACT);
+    // deploy_contract(&api, CONTRACT, vec![1u8]);
+    // deploy_contract(&api, R_CONTRACT, vec![1u8]);
+    // deploy_contract(&api, BAD_CONTRACT, vec![1u8]);
+    // deploy_contract(&api, Q_CONTRACT, vec![1u8]);
+    // deploy_contract(&api, T_CONTRACT, vec![1u8]);
+    // deploy_contract(&api, STORE_CONTRACT, vec![1u8]);
+    let callee_address = deploy_contract(&api, CALLEE_CONTRACT, vec![], vec![]);
+    deploy_contract(&api, CALLER_CONTRACT, vec![], callee_address.to_vec());
     get_storage(&api);
 }
 

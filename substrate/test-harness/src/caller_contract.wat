@@ -30,6 +30,20 @@
     )
 
     (func (export "call") (local $address_size i32) (local $balance_size i32) (local $scratch_size_temp i32)
+        (call $ext_scratch_read
+            (i32.const 1500)
+            (i32.const 0)
+            (call $ext_scratch_size)
+        )
+        (call $to_hex_ascii
+            (i32.const 1500)
+            (call $ext_scratch_size)
+            (i32.const 8022)
+        )
+        (call $ext_println
+            (i32.const 8000) ;; The data buffer
+            (i32.add (i32.const 22) (i32.mul (i32.const 2) (call $ext_scratch_size))) ;; The data buffer's length
+        )
         (call $ext_balance)
         (set_local $balance_size (call $ext_scratch_size))
         (call $ext_scratch_read
@@ -40,11 +54,11 @@
         (call $to_hex_ascii
             (i32.const 4000)
             (get_local $balance_size)
-            (i32.const 3000)
+            (i32.const 11020)
         )
         (call $ext_println
-            (i32.const 3000) ;; The data buffer
-            (i32.mul (i32.const 2) (get_local $balance_size)) ;; The data buffer's length
+            (i32.const 11000) ;; The data buffer
+            (i32.add (i32.const 20) (i32.mul (i32.const 2) (get_local $balance_size))) ;; The data buffer's length
         )
         (call $ext_set_storage
             (i32.const 6000) ;; Pointer to the key
@@ -68,15 +82,11 @@
         (call $to_hex_ascii
             (i32.const 7000)
             (get_local $scratch_size_temp)
-            (i32.const 8000)
+            (i32.const 5034)
         )
         (call $ext_println
             (i32.const 5000) ;; The data buffer
-            (i32.const 23)   ;; The data buffer's length
-        )
-        (call $ext_println
-            (i32.const 8000) ;; The data buffer
-            (i32.mul (i32.const 2) (get_local $scratch_size_temp)) ;; The data buffer's length
+            (i32.add (i32.const 34) (i32.mul (i32.const 2) (get_local $scratch_size_temp)))   ;; The data buffer's length
         )
 
         ;; Store the address of this contract into the scratch buffer
@@ -99,36 +109,25 @@
                     ;; First, as we are recursing we decrement the recurse counter
                     (i32.store (i32.const 32) (i32.sub (i32.load (i32.const 32)) (i32.const 1)))
                     ;; "calling from..." message
-                    (call $ext_println
-                        (i32.const 1000) ;; The data buffer
-                        (i32.const 15) ;; The data buffer's length
-                    )
-                    ;; println expects utf8, we can't just send it any bytes. If
-                    ;; it is not utf8 it will just skip it.
+                    ;; Store the address into the message
                     (call $to_hex_ascii
                         (i32.const 64)
                         (get_local $address_size)
-                        (i32.const 3000)
+                        (i32.const 1025)
                     )
                     (call $ext_println
-                        (i32.const 3000) ;; The data buffer
-                        (i32.mul (i32.const 2) (get_local $address_size)) ;; The data buffer's length
+                        (i32.const 1000) ;; The data buffer
+                        (i32.add (i32.const 25) (i32.mul (i32.const 2) (get_local $address_size))) ;; The data buffer's length
                     )
                     ;; "calling to..." message
-                    (call $ext_println
-                        (i32.const 1200) ;; The data buffer
-                        (i32.const 13) ;; The data buffer's length
-                    )
-                    ;; println expects utf8, we can't just send it any bytes. If
-                    ;; it is not utf8 it will just skip it.
                     (call $to_hex_ascii
                         (i32.const 1500)
                         (get_local $address_size)
-                        (i32.const 3000)
+                        (i32.const 1223)
                     )
                     (call $ext_println
-                        (i32.const 3000) ;; The data buffer
-                        (i32.mul (i32.const 2) (get_local $address_size)) ;; The data buffer's length
+                        (i32.const 1200) ;; The data buffer
+                        (i32.add (i32.const 23) (i32.mul (i32.const 2) (get_local $address_size))) ;; The data buffer's length
                     )
 
                     (call $ext_call
@@ -161,14 +160,17 @@
     (func (export "deploy"))
     ;; The value we're passing in our call
     (data (i32.const 0) "\00")
-    ;; The number of times we will recurse
+    ;; The number of times we will recurse, we need to have that in storage
+    ;; somewhere for it to be useful.
     (data (i32.const 32) "\02")
-    (data (i32.const 1000) "calling from...")
-    (data (i32.const 1200) "calling to...")
+    (data (i32.const 1000) "[CALLER] Calling From: 0x")
+    (data (i32.const 1200) "[CALLER] Calling To: 0x")
     (data (i32.const 1500) "\75\42\96\BF\90\25\43\8B\ED\85\16\FB\57\46\7B\A6\1A\58\6C\C1\61\57\2B\13\AA\42\3B\88\C5\51\B6\14")
     ;; byte to hex conversion table
     (data (i32.const 2000) "0123456789ABCDEF")
-    (data (i32.const 5000) "Current Storage Value: ")
+    (data (i32.const 5000) "[CALLER] Current Storage Value: 0x")
     ;; Some random storage key (32 bytes)
     (data (i32.const 6000) "\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb")
+    (data (i32.const 8000) "[CALLER] Called with: ")
+    (data (i32.const 11000) "[CALLER] Balance: 0x")
 )
