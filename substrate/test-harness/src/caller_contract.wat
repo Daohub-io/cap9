@@ -4,7 +4,7 @@
     (import "env" "ext_set_storage" (func $ext_set_storage (param i32 i32 i32 i32)))
     (import "env" "ext_get_storage" (func $ext_get_storage (param i32) (result i32)))
     (import "env" "ext_println" (func $ext_println (param i32 i32)))
-    (import "env" "ext_call" (func $ext_call (param i32 i32 i64 i32 i32 i32 i32) (result i32)))
+    (import "env" "cap9_call_with_caps" (func $ext_call (param i32 i32 i64 i32 i32 i32 i32) (result i32)))
     (import "env" "ext_address" (func $ext_address))
     (import "env" "ext_balance" (func $ext_balance))
     (import "env" "memory" (memory 1 1))
@@ -97,12 +97,12 @@
             (i32.const 11000) ;; The data buffer
             (i32.add (i32.const 20) (i32.mul (i32.const 2) (get_local $balance_size))) ;; The data buffer's length
         )
-        ;; (call $ext_set_storage
-        ;;     (i32.const 6000) ;; Pointer to the key
-        ;;     (i32.const 1)    ;; Value is not null
-        ;;     (i32.const 32)   ;; Pointer to the value
-        ;;     (i32.const 1)    ;; Length of the value
-        ;; )
+        (call $ext_set_storage
+            (i32.const 6000) ;; Pointer to the key
+            (i32.const 1)    ;; Value is not null
+            (i32.const 32)   ;; Pointer to the value
+            (i32.const 1)    ;; Length of the value
+        )
         (call $print_storage_value)
 
         ;; Store the address of this contract into the scratch buffer
