@@ -342,7 +342,6 @@ jobs:
               rustup override set nightly-2019-08-08
               rustup target add wasm32-unknown-unknown
               cargo install --git https://github.com/alexcrichton/wasm-gc -f
-              git checkout daohub
               cargo build --release -j 2
             fi
             mkdir /tmp/bin
