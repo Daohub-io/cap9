@@ -36,6 +36,24 @@
         ;; Retrieve the current value from storage (which we will then
         ;; increment). It should be a single byte. If there is currently no
         ;; value this call will return 1.
+        ;; Read the value back out of storage.
+        (drop (call $ext_get_storage
+            (i32.const 6000) ;; Pointer to storage key
+        ))
+        (call $ext_scratch_read
+            (i32.const 10) ;; The pointer where to store the data.
+            (i32.const 0) ;; Offset from the start of the scratch buffer.
+            (i32.const 1) ;; Count of bytes to copy.
+        )
+        (call $to_hex_ascii
+            (i32.const 10)
+            (i32.const 1)
+            (i32.const 5034)
+        )
+        (call $ext_println
+            (i32.const 5000) ;; The data buffer
+            (i32.const 36)   ;; The data buffer's length
+        )
         (if
             (call $ext_get_storage
                 (i32.const 6000) ;; Pointer to storage key
