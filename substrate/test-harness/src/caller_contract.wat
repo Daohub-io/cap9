@@ -29,6 +29,43 @@
         )
     )
 
+    (func $print_storage_value
+        (local $scratch_size_temp i32)
+        ;; Get the storage value
+        (if
+            (call $ext_get_storage
+                (i32.const 6000) ;; Pointer to storage key
+            )
+            (then
+                ;; No storage value
+                (call $ext_println
+                    (i32.const 12100) ;; The data buffer
+                    (i32.const 25)   ;; The data buffer's length
+                )
+                )
+            (else
+                (set_local $scratch_size_temp (call $ext_scratch_size))
+                ;; Read the address from the scratch buffer and store it in memory at
+                ;; location 7000.
+                (call $ext_scratch_read
+                    (i32.const 7000) ;; The pointer where to store the data.
+                    (i32.const 0) ;; Offset from the start of the scratch buffer.
+                    ;; (i32.const 32) ;; Count of bytes to copy.
+                    (get_local $scratch_size_temp)
+                )
+                (call $to_hex_ascii
+                    (i32.const 7000)
+                    (get_local $scratch_size_temp)
+                    (i32.const 5034)
+                )
+                (call $ext_println
+                    (i32.const 5000) ;; The data buffer
+                    (i32.add (i32.const 34) (i32.mul (i32.const 2) (get_local $scratch_size_temp)))   ;; The data buffer's length
+                )
+            )
+        )
+    )
+
     (func (export "call") (local $address_size i32) (local $balance_size i32) (local $scratch_size_temp i32)
         (call $ext_scratch_read
             (i32.const 1500)
@@ -60,34 +97,13 @@
             (i32.const 11000) ;; The data buffer
             (i32.add (i32.const 20) (i32.mul (i32.const 2) (get_local $balance_size))) ;; The data buffer's length
         )
-        (call $ext_set_storage
-            (i32.const 6000) ;; Pointer to the key
-            (i32.const 1)    ;; Value is not null
-            (i32.const 32)   ;; Pointer to the value
-            (i32.const 1)    ;; Length of the value
-        )
-        ;; Get the storage value
-        (drop (call $ext_get_storage
-            (i32.const 6000) ;; Pointer to storage key
-        ))
-        (set_local $scratch_size_temp (call $ext_scratch_size))
-        ;; Read the address from the scratch buffer and store it in memory at
-        ;; location 7000.
-        (call $ext_scratch_read
-            (i32.const 7000) ;; The pointer where to store the data.
-            (i32.const 0) ;; Offset from the start of the scratch buffer.
-            ;; (i32.const 32) ;; Count of bytes to copy.
-            (get_local $scratch_size_temp)
-        )
-        (call $to_hex_ascii
-            (i32.const 7000)
-            (get_local $scratch_size_temp)
-            (i32.const 5034)
-        )
-        (call $ext_println
-            (i32.const 5000) ;; The data buffer
-            (i32.add (i32.const 34) (i32.mul (i32.const 2) (get_local $scratch_size_temp)))   ;; The data buffer's length
-        )
+        ;; (call $ext_set_storage
+        ;;     (i32.const 6000) ;; Pointer to the key
+        ;;     (i32.const 1)    ;; Value is not null
+        ;;     (i32.const 32)   ;; Pointer to the value
+        ;;     (i32.const 1)    ;; Length of the value
+        ;; )
+        (call $print_storage_value)
 
         ;; Store the address of this contract into the scratch buffer
         (call $ext_address)
@@ -151,6 +167,7 @@
                         (i32.const 12000) ;; The data buffer
                         (i32.const 29) ;; The data buffer's length
                     )
+                    (call $print_storage_value)
             )
             (else
                 ;; If we're finished we just do nothing
@@ -174,4 +191,5 @@
     (data (i32.const 8000) "[CALLER] Called with: 0x")
     (data (i32.const 11000) "[CALLER] Balance: 0x")
     (data (i32.const 12000) "[CALLER] Return Value: 0x")
+    (data (i32.const 12100) "[CALLER] No Storage Value")
 )
