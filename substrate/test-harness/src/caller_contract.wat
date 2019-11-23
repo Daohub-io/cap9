@@ -146,7 +146,7 @@
                         (i32.add (i32.const 23) (i32.mul (i32.const 2) (get_local $address_size))) ;; The data buffer's length
                     )
 
-                    (call $ext_call
+                    (i32.store (i32.const 0) (call $ext_call
                         (i32.const 1500) ;; callee_ptr: u32, a pointer to the address of the callee contract. Should be decodable as an `T::AccountId`. Traps otherwise.
                         (i32.const 32) ;; callee_len: u32, length of the address buffer.
                         (i64.const 0) ;; gas: u64, how much gas to devote to the execution (0 = all).
@@ -155,9 +155,7 @@
                         (i32.const 32) ;; value_len: u32, length of the value buffer.
                         (i32.const 50) ;; input_data_ptr: u32, a pointer to a buffer to be used as input data to the callee.
                         (i32.const 8) ;; no data sent ;; input_data_len: u32, length of the input data buffer.
-                    )
-                    i32.const 0
-                    i32.store
+                    ))
                     (call $to_hex_ascii
                         (i32.const 0)
                         (i32.const 4)
@@ -166,6 +164,20 @@
                     (call $ext_println
                         (i32.const 12000) ;; The data buffer
                         (i32.const 29) ;; The data buffer's length
+                    )
+                    (if (i32.load (i32.const 0))
+                        (then
+                            (call $ext_println
+                                (i32.const 12300) ;; The data buffer
+                                (i32.const 30) ;; The data buffer's length
+                            )
+                        )
+                        (else
+                            (call $ext_println
+                                (i32.const 12200) ;; The data buffer
+                                (i32.const 35) ;; The data buffer's length
+                            )
+                        )
                     )
                     (call $print_storage_value)
             )
@@ -192,4 +204,6 @@
     (data (i32.const 11000) "[CALLER] Balance: 0x")
     (data (i32.const 12000) "[CALLER] Return Value: 0x")
     (data (i32.const 12100) "[CALLER] No Storage Value")
+    (data (i32.const 12200) "[CALLER] Callee exited successfully") ;; 35
+    (data (i32.const 12300) "[CALLER] Callee threw an error") ;; 30
 )
