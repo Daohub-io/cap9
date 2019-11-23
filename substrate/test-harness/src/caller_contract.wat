@@ -4,7 +4,7 @@
     (import "env" "ext_set_storage" (func $ext_set_storage (param i32 i32 i32 i32)))
     (import "env" "ext_get_storage" (func $ext_get_storage (param i32) (result i32)))
     (import "env" "ext_println" (func $ext_println (param i32 i32)))
-    (import "env" "cap9_call_with_caps" (func $ext_call (param i32 i32 i64 i32 i32 i32 i32) (result i32)))
+    (import "env" "cap9_call_with_caps" (func $ext_call (param i32 i32 i64 i32 i32 i32 i32 i32 i32) (result i32)))
     (import "env" "cap9_clist" (func $cap9_clist))
     (import "env" "ext_address" (func $ext_address))
     (import "env" "ext_balance" (func $ext_balance))
@@ -167,6 +167,8 @@
             (i32.const 32) ;; value_len: u32, length of the value buffer.
             (i32.const 50) ;; input_data_ptr: u32, a pointer to a buffer to be used as input data to the callee.
             (i32.const 8) ;; no data sent ;; input_data_len: u32, length of the input data buffer.
+            (i32.const 13000) ;; cap_data_ptr
+            (i32.const 2) ;; cap_data_len
         ))
         (call $to_hex_ascii
             (i32.const 0)
@@ -214,4 +216,5 @@
     (data (i32.const 12200) "[CALLER] Callee exited successfully") ;; 35
     (data (i32.const 12300) "[CALLER] Callee threw an error") ;; 30
     (data (i32.const 12400) "[CALLER] Caps: 0x") ;; 17
+    (data (i32.const 13000) "\00\01")
 )

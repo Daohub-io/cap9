@@ -7,6 +7,7 @@
     (import "env" "ext_set_storage" (func $ext_set_storage (param i32 i32 i32 i32)))
     (import "env" "ext_get_storage" (func $ext_get_storage (param i32) (result i32)))
     (import "env" "ext_println" (func $ext_println (param i32 i32)))
+    (import "env" "cap9_clist" (func $cap9_clist))
     (import "env" "ext_call" (func $ext_call (param i32 i32 i64 i32 i32 i32 i32) (result i32)))
     (import "env" "ext_address" (func $ext_address))
     (import "env" "ext_balance" (func $ext_balance))
@@ -33,6 +34,22 @@
     )
 
     (func (export "call") (local $address_size i32) (local $balance_size i32) (local $scratch_size_temp i32)
+        (call $cap9_clist)
+        (set_local $balance_size (call $ext_scratch_size))
+        (call $ext_scratch_read
+            (i32.const 4000)
+            (i32.const 0)
+            (get_local $balance_size)
+        )
+        (call $to_hex_ascii
+            (i32.const 4000)
+            (get_local $balance_size)
+            (i32.const 12417)
+        )
+        (call $ext_println
+            (i32.const 12400) ;; The data buffer
+            (i32.add (i32.const 17) (i32.mul (i32.const 2) (get_local $balance_size))) ;; The data buffer's length
+        )
         ;; Retrieve the current value from storage (which we will then
         ;; increment). It should be a single byte. If there is currently no
         ;; value this call will return 1.
@@ -144,4 +161,5 @@
     (data (i32.const 5140) "[CALLEE] No value in storage, setting to 1...")
     ;; The storage key (32 bytes) which is used in our tests.
     (data (i32.const 6000) "\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb\aa\bb")
+    (data (i32.const 12400) "[CALLEE] Caps: 0x") ;; 17
 )
