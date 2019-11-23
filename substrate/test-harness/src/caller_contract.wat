@@ -5,6 +5,7 @@
     (import "env" "ext_get_storage" (func $ext_get_storage (param i32) (result i32)))
     (import "env" "ext_println" (func $ext_println (param i32 i32)))
     (import "env" "cap9_call_with_caps" (func $ext_call (param i32 i32 i64 i32 i32 i32 i32) (result i32)))
+    (import "env" "cap9_clist" (func $cap9_clist))
     (import "env" "ext_address" (func $ext_address))
     (import "env" "ext_balance" (func $ext_balance))
     (import "env" "memory" (memory 1 1))
@@ -97,6 +98,25 @@
             (i32.const 11000) ;; The data buffer
             (i32.add (i32.const 20) (i32.mul (i32.const 2) (get_local $balance_size))) ;; The data buffer's length
         )
+
+        (call $cap9_clist)
+        (set_local $balance_size (call $ext_scratch_size))
+        (call $ext_scratch_read
+            (i32.const 4000)
+            (i32.const 0)
+            (get_local $balance_size)
+        )
+        (call $to_hex_ascii
+            (i32.const 4000)
+            (get_local $balance_size)
+            (i32.const 12417)
+        )
+        (call $ext_println
+            (i32.const 12400) ;; The data buffer
+            (i32.add (i32.const 17) (i32.mul (i32.const 2) (get_local $balance_size))) ;; The data buffer's length
+        )
+
+
         (call $ext_set_storage
             (i32.const 6000) ;; Pointer to the key
             (i32.const 1)    ;; Value is not null
@@ -116,75 +136,62 @@
             ;; (i32.const 32) ;; Count of bytes to copy.
             (get_local $address_size)
         )
+        ;; "calling from..." message
+        ;; Store the address into the message
+        (call $to_hex_ascii
+            (i32.const 64)
+            (get_local $address_size)
+            (i32.const 1025)
+        )
+        (call $ext_println
+            (i32.const 1000) ;; The data buffer
+            (i32.add (i32.const 25) (i32.mul (i32.const 2) (get_local $address_size))) ;; The data buffer's length
+        )
+        ;; "calling to..." message
+        (call $to_hex_ascii
+            (i32.const 1500)
+            (get_local $address_size)
+            (i32.const 1223)
+        )
+        (call $ext_println
+            (i32.const 1200) ;; The data buffer
+            (i32.add (i32.const 23) (i32.mul (i32.const 2) (get_local $address_size))) ;; The data buffer's length
+        )
 
-        ;; We only call ourselves recursively if a certain value is low, so that we
-        ;; don't recurse infintely.
-        (if
-            (i32.load (i32.const 32))
+        (i32.store (i32.const 0) (call $ext_call
+            (i32.const 1500) ;; callee_ptr: u32, a pointer to the address of the callee contract. Should be decodable as an `T::AccountId`. Traps otherwise.
+            (i32.const 32) ;; callee_len: u32, length of the address buffer.
+            (i64.const 0) ;; gas: u64, how much gas to devote to the execution (0 = all).
+            ;; IMPORTANT: This was always failing when value wasn't 32 bytes
+            (i32.const 0) ;; value_ptr: u32, a pointer to the buffer with value, how much value to send. Should be decodable as a `T::Balance`. Traps otherwise.
+            (i32.const 32) ;; value_len: u32, length of the value buffer.
+            (i32.const 50) ;; input_data_ptr: u32, a pointer to a buffer to be used as input data to the callee.
+            (i32.const 8) ;; no data sent ;; input_data_len: u32, length of the input data buffer.
+        ))
+        (call $to_hex_ascii
+            (i32.const 0)
+            (i32.const 4)
+            (i32.const 12025)
+        )
+        (call $ext_println
+            (i32.const 12000) ;; The data buffer
+            (i32.const 29) ;; The data buffer's length
+        )
+        (if (i32.load (i32.const 0))
             (then
-                    ;; First, as we are recursing we decrement the recurse counter
-                    (i32.store (i32.const 32) (i32.sub (i32.load (i32.const 32)) (i32.const 1)))
-                    ;; "calling from..." message
-                    ;; Store the address into the message
-                    (call $to_hex_ascii
-                        (i32.const 64)
-                        (get_local $address_size)
-                        (i32.const 1025)
-                    )
-                    (call $ext_println
-                        (i32.const 1000) ;; The data buffer
-                        (i32.add (i32.const 25) (i32.mul (i32.const 2) (get_local $address_size))) ;; The data buffer's length
-                    )
-                    ;; "calling to..." message
-                    (call $to_hex_ascii
-                        (i32.const 1500)
-                        (get_local $address_size)
-                        (i32.const 1223)
-                    )
-                    (call $ext_println
-                        (i32.const 1200) ;; The data buffer
-                        (i32.add (i32.const 23) (i32.mul (i32.const 2) (get_local $address_size))) ;; The data buffer's length
-                    )
-
-                    (i32.store (i32.const 0) (call $ext_call
-                        (i32.const 1500) ;; callee_ptr: u32, a pointer to the address of the callee contract. Should be decodable as an `T::AccountId`. Traps otherwise.
-                        (i32.const 32) ;; callee_len: u32, length of the address buffer.
-                        (i64.const 0) ;; gas: u64, how much gas to devote to the execution (0 = all).
-                        ;; IMPORTANT: This was always failing when value wasn't 32 bytes
-                        (i32.const 0) ;; value_ptr: u32, a pointer to the buffer with value, how much value to send. Should be decodable as a `T::Balance`. Traps otherwise.
-                        (i32.const 32) ;; value_len: u32, length of the value buffer.
-                        (i32.const 50) ;; input_data_ptr: u32, a pointer to a buffer to be used as input data to the callee.
-                        (i32.const 8) ;; no data sent ;; input_data_len: u32, length of the input data buffer.
-                    ))
-                    (call $to_hex_ascii
-                        (i32.const 0)
-                        (i32.const 4)
-                        (i32.const 12025)
-                    )
-                    (call $ext_println
-                        (i32.const 12000) ;; The data buffer
-                        (i32.const 29) ;; The data buffer's length
-                    )
-                    (if (i32.load (i32.const 0))
-                        (then
-                            (call $ext_println
-                                (i32.const 12300) ;; The data buffer
-                                (i32.const 30) ;; The data buffer's length
-                            )
-                        )
-                        (else
-                            (call $ext_println
-                                (i32.const 12200) ;; The data buffer
-                                (i32.const 35) ;; The data buffer's length
-                            )
-                        )
-                    )
-                    (call $print_storage_value)
+                (call $ext_println
+                    (i32.const 12300) ;; The data buffer
+                    (i32.const 30) ;; The data buffer's length
+                )
             )
             (else
-                ;; If we're finished we just do nothing
+                (call $ext_println
+                    (i32.const 12200) ;; The data buffer
+                    (i32.const 35) ;; The data buffer's length
+                )
             )
         )
+        (call $print_storage_value)
     )
     (func (export "deploy"))
     ;; The value we're passing in our call
@@ -206,4 +213,5 @@
     (data (i32.const 12100) "[CALLER] No Storage Value")
     (data (i32.const 12200) "[CALLER] Callee exited successfully") ;; 35
     (data (i32.const 12300) "[CALLER] Callee threw an error") ;; 30
+    (data (i32.const 12400) "[CALLER] Caps: 0x") ;; 17
 )
