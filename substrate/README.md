@@ -1,5 +1,60 @@
 # Cap9 Substrate Contracts
 
+## Overview
+
+The cap9 modifications to the contracts module introduce 3 new functions that
+can be imported into contracts.
+
+- `cap9_clist`
+- `cap9_clist_downgrade`
+- `cap9_call_with_caps`
+
+Each of these new functions act on the two pieces of additional metadata that
+have been added to the runtime.
+
+- During a contracts call (be it directly from an external source or from
+  another contract) it possesses a set of _contextual_ capabilities. These
+  define what can or cannot happen during the execution of this contract.
+- Each contract has an _intrinsic_ list of capabilities. These become the
+  _contextual_ capabilites whenever a contract is called directly from an
+  external source, or via a regular `ext_call`.
+
+### `cap9_clist`
+
+This function has the signature `(func $cap9_clist)`. It takes no arguments and
+returns nothing, but fills the scratch buffer with the current contextual
+capabilities.
+
+### `cap9_clist_downgrade`
+
+This function has the signature `(func $cap9_clist_downgrade (param i32 i32))`.
+Its two arguments are the pointer and length of the memory that contains the
+capabilities that will be downgraded to. To _downgrade_ capabilities is to
+relinquish some of the intrinsic capabilities that a contract has. When a
+contract is instantiated normally it has the full set of capabilities. By using
+this function it can voluntarily reduce the capabilities it has. This function
+does not affect the current _contextual_ capabilities.
+
+This function is well suited to using during the deploy phase.
+
+### `cap9_call_with_caps`
+
+This function has the signature `(func $cap9_call_with_caps (param i32 i32 i64 i32 i32 i32 i32 i32 i32) (result i32))`. This is like an `ext_call` but with two important differences:
+
+ - The "state" that is used by the called contract is the state of the current
+   contract (the one executing this function). That is, if the contract that is
+   called with this function writes to storage, it writes to the storage of the
+   function that executed this function (much like a delegate call in Ethereum).
+ - This function takes a set of capabilities as an argument. This set of
+   capabilities defines what the called contract can do. If the set of
+   capabilities is zero, it can do nothing but return a value. This set of
+   capabilities must also be a subset of the current _contextual_ capabilities,
+   i.e. it can do no more than the parent can already do.
+
+The arguments and return value of this function are the same as `ext_call`
+except that it has two additional arguments (the last two) which are the pointer
+and length (respectively) of the set of capabilities which will be passed.
+
 ## Quickstart
 
 First make sure that you've built the substrate node in this directory and have
