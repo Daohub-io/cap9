@@ -6,6 +6,7 @@
     (import "env" "ext_println" (func $ext_println (param i32 i32)))
     (import "env" "cap9_call_with_caps" (func $ext_call (param i32 i32 i64 i32 i32 i32 i32 i32 i32) (result i32)))
     (import "env" "cap9_clist" (func $cap9_clist))
+    (import "env" "cap9_clist_downgrade" (func $cap9_clist_downgrade (param i32 i32)))
     (import "env" "ext_address" (func $ext_address))
     (import "env" "ext_balance" (func $ext_balance))
     (import "env" "memory" (memory 1 1))
@@ -195,7 +196,12 @@
         )
         (call $print_storage_value)
     )
-    (func (export "deploy"))
+    (func (export "deploy")
+        (call $cap9_clist_downgrade
+            (i32.const 14000) ;; The data buffer
+            (i32.const 2) ;; The data buffer's length
+        )
+    )
     ;; The value we're passing in our call
     (data (i32.const 0) "\00")
     ;; The number of times we will recurse, we need to have that in storage
@@ -216,5 +222,9 @@
     (data (i32.const 12200) "[CALLER] Callee exited successfully") ;; 35
     (data (i32.const 12300) "[CALLER] Callee threw an error") ;; 30
     (data (i32.const 12400) "[CALLER] Caps: 0x") ;; 17
-    (data (i32.const 13000) "\00\01")
+    ;; The capabilities which we will pass to the callee.
+    (data (i32.const 13000) "\01\00")
+    ;; The capabilities which we downgrade this contract to instrinsically
+    ;; possess. I.e. these are the capabilities that this contract will possess when it is instantiated.
+    (data (i32.const 14000) "\01\00")
 )
