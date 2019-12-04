@@ -1,0 +1,3 @@
+[submodule "substrate/substrate"]
+	path = substrate/substrate
+	url = https://github.com/Daohub-io/substrate
